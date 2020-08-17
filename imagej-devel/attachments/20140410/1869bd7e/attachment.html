@@ -1,0 +1,245 @@
+<tt>
+&lt;div&nbsp;dir=&quot;ltr&quot;&gt;Hi&nbsp;Stefan,&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;&gt;&nbsp;Maybe&nbsp;I&nbsp;was&nbsp;unclear&nbsp;on&nbsp;this&nbsp;issue.&nbsp;May&nbsp;question&nbsp;is,&nbsp;what&nbsp;does&nbsp;a&nbsp;method&lt;/div&gt;&lt;div&gt;&gt;&nbsp;of&nbsp;a&nbsp;Command&nbsp;(e.g.&nbsp;its&nbsp;initializer,&nbsp;the&nbsp;run&nbsp;method)&nbsp;or&nbsp;rather&nbsp;the&lt;/div&gt;&lt;div&gt;<br>
+<br>
+<br>
+&gt;&nbsp;implementor&nbsp;may&nbsp;assumed&nbsp;to&nbsp;have&nbsp;&quot;happend&quot;.&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;No&nbsp;worries,&nbsp;you&nbsp;were&nbsp;clear.&nbsp;The&nbsp;term&nbsp;&quot;preconditions&quot;&nbsp;is&nbsp;a&nbsp;technical&nbsp;software&nbsp;engineering&nbsp;term,&nbsp;so&nbsp;I&nbsp;know&nbsp;what&nbsp;you&nbsp;meant.&nbsp;I&nbsp;just&nbsp;dodged&nbsp;the&nbsp;question&nbsp;a&nbsp;bit&nbsp;there,&nbsp;figuring&nbsp;my&nbsp;detailed&nbsp;answers&nbsp;later&nbsp;would&nbsp;clarify&nbsp;everything.&nbsp;But&nbsp;I&nbsp;guess&nbsp;it&nbsp;still&nbsp;was&nbsp;not&nbsp;clear,&nbsp;sorry...&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;*&nbsp;The&nbsp;run()&nbsp;method&nbsp;of&nbsp;a&nbsp;module&nbsp;can&nbsp;assume&nbsp;that&nbsp;all&nbsp;required&nbsp;input&nbsp;parameters&nbsp;have&nbsp;been&nbsp;filled&nbsp;(i.e.,&nbsp;are&nbsp;non-null).&nbsp;And&nbsp;the&nbsp;corresponding&nbsp;post-condition&nbsp;of&nbsp;run()&nbsp;is&nbsp;that&nbsp;all&nbsp;required&nbsp;output&nbsp;parameters&nbsp;are&nbsp;now&nbsp;filled.&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;*&nbsp;The&nbsp;initialize()&nbsp;method&nbsp;of&nbsp;a&nbsp;module&nbsp;cannot&nbsp;necessarily&nbsp;assume&nbsp;anything&nbsp;about&nbsp;the&nbsp;state&nbsp;of&nbsp;its&nbsp;parameters.&nbsp;As&nbsp;you&nbsp;pointed&nbsp;out,&nbsp;ImageJ2&nbsp;has&nbsp;various&nbsp;commands&nbsp;right&nbsp;now&nbsp;that&nbsp;*do*&nbsp;assume&nbsp;certain&nbsp;parameters&nbsp;have&nbsp;been&nbsp;filled&nbsp;via&nbsp;preprocessing.&nbsp;This&nbsp;works&nbsp;in&nbsp;practice&nbsp;(at&nbsp;least&nbsp;from&nbsp;the&nbsp;ImageJ&nbsp;application),&nbsp;but&nbsp;is&nbsp;not&nbsp;particularly&nbsp;rigorous.&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;*&nbsp;Similarly,&nbsp;ImageJ2&nbsp;has&nbsp;several&nbsp;commands&nbsp;which&nbsp;assume&nbsp;their&nbsp;initializer&nbsp;has&nbsp;been&nbsp;called,&nbsp;but&nbsp;it&nbsp;is&nbsp;not&nbsp;stated&nbsp;as&nbsp;a&nbsp;formal&nbsp;precondition.&nbsp;Most&nbsp;probably&nbsp;it&nbsp;makes&nbsp;sense&nbsp;to&nbsp;state&nbsp;that&nbsp;in&nbsp;the&nbsp;javadoc,&nbsp;would&nbsp;you&nbsp;agree?&nbsp;In&nbsp;other&nbsp;words:&nbsp;if&nbsp;you&nbsp;aren&#39;t&nbsp;going&nbsp;to&nbsp;include&nbsp;the&nbsp;InitPreprocessor&nbsp;in&nbsp;the&nbsp;preprocessing&nbsp;chain,&nbsp;you&nbsp;are&nbsp;still&nbsp;somehow&nbsp;responsible&nbsp;for&nbsp;calling&nbsp;module.initialize()&nbsp;before&nbsp;calling&nbsp;module.run().&nbsp;Is&nbsp;that&nbsp;fair?&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;So&nbsp;the&nbsp;main&nbsp;sticky&nbsp;point&nbsp;is&nbsp;what&nbsp;to&nbsp;do&nbsp;about&nbsp;initialize()&nbsp;requiring&nbsp;certain&nbsp;parameters&nbsp;to&nbsp;be&nbsp;already&nbsp;filled.&nbsp;This&nbsp;is&nbsp;useful&nbsp;for&nbsp;dynamic&nbsp;modules,&nbsp;but&nbsp;also&nbsp;just&nbsp;for&nbsp;computing&nbsp;defaults&nbsp;--&nbsp;e.g.,&nbsp;setting&nbsp;default&nbsp;brightness/contrast&nbsp;min&nbsp;&amp;&nbsp;max&nbsp;values&nbsp;to&nbsp;the&nbsp;current&nbsp;display&nbsp;min&nbsp;max&nbsp;of&nbsp;the&nbsp;input&nbsp;image.&nbsp;So&nbsp;it&nbsp;seems&nbsp;there&nbsp;are&nbsp;two&nbsp;&quot;layers&quot;&nbsp;of&nbsp;input&nbsp;parameters:&nbsp;those&nbsp;needed&nbsp;before&nbsp;initialize()&nbsp;and&nbsp;those&nbsp;not&nbsp;needed&nbsp;for&nbsp;it.&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&lt;br&gt;Maybe&nbsp;we&nbsp;need&nbsp;a&nbsp;way&nbsp;to&nbsp;formally&nbsp;flag&nbsp;these&nbsp;&quot;required&nbsp;before&nbsp;initialize&quot;&nbsp;parameters&nbsp;in&nbsp;the&nbsp;annotation?&nbsp;What&nbsp;do&nbsp;you&nbsp;think?&nbsp;Would&nbsp;that&nbsp;help&nbsp;you?&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;In&nbsp;any&nbsp;case,&nbsp;now&nbsp;is&nbsp;the&nbsp;perfect&nbsp;time&nbsp;to&nbsp;get&nbsp;the&nbsp;module&nbsp;framework&nbsp;fully&nbsp;solidified,&nbsp;since&nbsp;we&nbsp;are&nbsp;on&nbsp;the&nbsp;cusp&nbsp;of&nbsp;migrating&nbsp;it&nbsp;into&nbsp;the&nbsp;(non-image-specific)&nbsp;SciJava&nbsp;layer.&nbsp;After&nbsp;the&nbsp;June&nbsp;1&nbsp;release,&nbsp;we&nbsp;will&nbsp;not&nbsp;be&nbsp;able&nbsp;to&nbsp;introduce&nbsp;any&nbsp;more&nbsp;breaking&nbsp;changes.&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;&gt;&nbsp;Besides&nbsp;interesting&nbsp;for&nbsp;a&nbsp;programmer&nbsp;of&nbsp;a&nbsp;Command&nbsp;we&nbsp;are&nbsp;interested&nbsp;in&lt;/div&gt;&lt;div&gt;&gt;&nbsp;this&nbsp;issue&nbsp;to&nbsp;be&nbsp;able&nbsp;to&nbsp;wrap&nbsp;IJ2&nbsp;commands&nbsp;in&nbsp;order&nbsp;to&nbsp;run&nbsp;them&nbsp;from&lt;/div&gt;&lt;div&gt;&gt;&nbsp;our&nbsp;GUI&nbsp;(originaly&nbsp;design&nbsp;for&nbsp;alida&nbsp;operators),&nbsp;our&nbsp;command&nbsp;line&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&gt;&nbsp;runner,&nbsp;and&nbsp;to&nbsp;support&nbsp;them&nbsp;in&nbsp;our&nbsp;graphical&nbsp;editor&nbsp;for&nbsp;alida/mitobo&lt;/div&gt;&lt;div&gt;&gt;&nbsp;operators&nbsp;and&nbsp;hopefully&nbsp;ij2&nbsp;commands&nbsp;(at&nbsp;least&nbsp;head&nbsp;less&nbsp;and&nbsp;non&lt;/div&gt;&lt;div&gt;&gt;&nbsp;DynamicCommands)&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;<br>
+<br>
+<br>
+One&nbsp;thing&nbsp;that&nbsp;may&nbsp;interest&nbsp;you&nbsp;is&nbsp;the&nbsp;recent&nbsp;ImageJ&nbsp;OPS&nbsp;announcement:&lt;/div&gt;&lt;div&gt; &nbsp; &lt;a&nbsp;href=&quot;http://developer.imagej.net/2014/04/04/announcing-imagej-ops&quot;&nbsp;target=&quot;_blank&quot;&gt;http://developer.imagej.net/2014/04/04/announcing-imagej-ops&lt;/a&gt;&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;An&nbsp;Op&nbsp;is&nbsp;just&nbsp;an&nbsp;ImageJ&nbsp;command&nbsp;intended&nbsp;to&nbsp;be&nbsp;fully&nbsp;functional&nbsp;--&nbsp;i.e.,&nbsp;all&nbsp;inputs&nbsp;and&nbsp;outputs&nbsp;declared&nbsp;explicitly&nbsp;as&nbsp;parameters,&nbsp;with&nbsp;no&nbsp;side&nbsp;effects.&nbsp;They&nbsp;are&nbsp;essentially&nbsp;&quot;lower&nbsp;level&quot;&nbsp;commands&nbsp;intended&nbsp;for&nbsp;image&nbsp;processing,&nbsp;and&nbsp;they&nbsp;might&nbsp;be&nbsp;another&nbsp;good&nbsp;integration&nbsp;point&nbsp;for&nbsp;Alida.&nbsp;Really,&nbsp;your&nbsp;current&nbsp;implementation&nbsp;should&nbsp;gain&nbsp;access&nbsp;to&nbsp;them&nbsp;&quot;for&nbsp;free&quot;&nbsp;since&nbsp;they&nbsp;are&nbsp;just&nbsp;a&nbsp;subtype&nbsp;of&nbsp;Commands,&nbsp;but&nbsp;perhaps&nbsp;it&nbsp;makes&nbsp;sense&nbsp;to&nbsp;special&nbsp;case&nbsp;them&nbsp;somehow&nbsp;since&nbsp;they&nbsp;are&nbsp;in&nbsp;many&nbsp;ways&nbsp;friendlier&nbsp;for&nbsp;headless&nbsp;&amp;&nbsp;non-dynamic&nbsp;situations?&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&gt;&nbsp;I&nbsp;am&nbsp;not&nbsp;sure&nbsp;whether&nbsp;we&nbsp;can&nbsp;recycle&nbsp;all&nbsp;IJ2s&nbsp;preprocessors&nbsp;as&nbsp;there&lt;/div&gt;&lt;div&gt;&gt;&nbsp;might&nbsp;be&nbsp;differences&nbsp;in&nbsp;the&nbsp;concept&nbsp;of&nbsp;parameter&nbsp;handling.&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Actually,&nbsp;there&nbsp;is&nbsp;a&nbsp;fair&nbsp;chance&nbsp;you&nbsp;could.&nbsp;It&#39;s&nbsp;just&nbsp;that&nbsp;the&nbsp;ActiveFooPreprocessor&nbsp;style&nbsp;things&nbsp;may&nbsp;either:&nbsp;A)&nbsp;always&nbsp;return&nbsp;null&nbsp;for&nbsp;you;&nbsp;or&nbsp;B)&nbsp;be&nbsp;populated&nbsp;via&nbsp;some&nbsp;alternate&nbsp;means&nbsp;that&nbsp;you&nbsp;can&nbsp;specify&nbsp;by&nbsp;extending&nbsp;the&nbsp;DefaultDisplayService,&nbsp;DefaultImageDisplayService,&nbsp;etc.,&nbsp;with&nbsp;overridden&nbsp;method&nbsp;implementations&nbsp;that&nbsp;draw&nbsp;the&nbsp;&quot;active&quot;&nbsp;objects&nbsp;from&nbsp;somewhere&nbsp;else.&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Alternately,&nbsp;it&nbsp;is&nbsp;just&nbsp;fine&nbsp;if&nbsp;they&nbsp;are&nbsp;always&nbsp;null,&nbsp;as&nbsp;long&nbsp;as&nbsp;you&nbsp;pass&nbsp;them&nbsp;in&nbsp;via&nbsp;the&nbsp;moduleService#run&nbsp;method&nbsp;&quot;Object...&quot;&nbsp;or&nbsp;&quot;Map&lt;String,&nbsp;Object&gt;&quot;&nbsp;arguments.&lt;/div&gt;&lt;div&gt;&lt;br&gt;<br>
+<br>
+<br>
+&lt;/div&gt;&lt;div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&gt;&nbsp;In&nbsp;the&nbsp;attached&nbsp;zip&nbsp;of&nbsp;a&nbsp;tiny&nbsp;maven&nbsp;project&nbsp;using&nbsp;ij2&nbsp;(2.0.0-beta-7.8)&lt;/div&gt;&lt;div&gt;&gt;&nbsp;there&nbsp;is&nbsp;a&nbsp;command&nbsp;RunTestOp&nbsp;which&nbsp;tries&nbsp;to&nbsp;invoke&nbsp;a&nbsp;IJTestOp&nbsp;command&lt;/div&gt;&lt;div&gt;&gt;&nbsp;&quot;by&nbsp;hand&quot;.&lt;/div&gt;<br>
+<br>
+<br>
+&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;span&nbsp;style=&quot;font-family:arial,sans-serif;font-size:13px&quot;&gt;It&nbsp;seems&nbsp;the&nbsp;mailing&nbsp;list&nbsp;stripped&nbsp;your&nbsp;attachment.&nbsp;Can&nbsp;you&nbsp;please&nbsp;post&nbsp;on&nbsp;GitHub?&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&gt;&nbsp;I&nbsp;first&nbsp;create&nbsp;a&nbsp;CommandInfo&nbsp;for&nbsp;IJTestOp,&nbsp;then&nbsp;a&nbsp;CommandModule&nbsp;for&nbsp;this&nbsp;info,&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&gt;&nbsp;collects&nbsp;all&nbsp;preprocessors&nbsp;and&nbsp;(try&nbsp;to)&nbsp;invoke&nbsp;them&nbsp;for&nbsp;the&nbsp;CommandModule&nbsp;created.&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&gt;&nbsp;I&nbsp;disabled&nbsp;invoking&nbsp;of&nbsp;the&nbsp;InitPreprocessor,&nbsp;as&nbsp;it&nbsp;crashes&nbsp;with&nbsp;a&nbsp;null&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&gt;&nbsp;pointer&nbsp;exception:&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&gt;&nbsp; &nbsp;Exception&nbsp;in&nbsp;thread&nbsp;&quot;main&quot;&nbsp;java.lang.NullPointerException&nbsp;at&lt;/div&gt;&lt;div&gt;&gt;&nbsp; &nbsp; &nbsp;imagej.command.CommandModule.initialize(CommandModule.java:144)&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;That&nbsp;error&nbsp;indicates&nbsp;that&nbsp;the&nbsp;CommandModule&nbsp;did&nbsp;not&nbsp;have&nbsp;a&nbsp;context&nbsp;injected&nbsp;properly.&nbsp;From&nbsp;your&nbsp;description,&nbsp;it&nbsp;sounds&nbsp;like&nbsp;your&nbsp;code&nbsp;is&nbsp;more&nbsp;low-level&nbsp;than&nbsp;it&nbsp;needs&nbsp;to&nbsp;be.&nbsp;But&nbsp;I&#39;d&nbsp;have&nbsp;to&nbsp;see&nbsp;the&nbsp;code&nbsp;to&nbsp;be&nbsp;certain.&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;For&nbsp;customizing&nbsp;which&nbsp;pre-&nbsp;and&nbsp;post-processors&nbsp;get&nbsp;run,&nbsp;it&nbsp;is&nbsp;enough&nbsp;to&nbsp;do:&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;pre&nbsp;=&nbsp;pluginService.createInstancesOfType(PreprocessorPlugin.class);&lt;/div&gt;&lt;div&gt;post&nbsp;=&nbsp;pluginService.createInstancesOfType(PostprocessorPlugin.class);&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;//&nbsp;then&nbsp;loop&nbsp;over&nbsp;pre&nbsp;and&nbsp;post,&nbsp;removing&nbsp;blacklisted&nbsp;entries&lt;br&gt;&lt;/div&gt;&lt;div&gt;//&nbsp;alternately,&nbsp;loop&nbsp;over&nbsp;pre&nbsp;and&nbsp;post,&nbsp;populating&nbsp;whitelists&nbsp;with&nbsp;desired&nbsp;entries&lt;/div&gt;&lt;div&gt;moduleService.run(moduleInfo,&nbsp;pre,&nbsp;post,&nbsp;inputName1,&nbsp;inputValue1,&nbsp;inputName2,&nbsp;inputValue2,&nbsp;...etc...)&lt;br&gt;<br>
+<br>
+<br>
+&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Is&nbsp;that&nbsp;how&nbsp;you&nbsp;were&nbsp;doing&nbsp;it?&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;//&nbsp;or&nbsp;if&nbsp;you&nbsp;really&nbsp;want&nbsp;to&nbsp;avoid&nbsp;creating&nbsp;instances&nbsp;which&nbsp;you&nbsp;then&nbsp;throw&nbsp;away...&lt;/div&gt;&lt;div&gt;//&nbsp;you&nbsp;can&nbsp;write:&lt;/div&gt;&lt;div&gt;//&nbsp; &nbsp;infos&nbsp;=&nbsp;pluginService.getPluginsOfType(PreprocessorPlugin.class)&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;//&nbsp;and/or:&lt;/div&gt;&lt;div&gt;//&nbsp; &nbsp;info&nbsp;=&nbsp;pluginService.getPlugin(InitPreprocessor.class)&lt;/div&gt;&lt;div&gt;//&nbsp;get&nbsp;the&nbsp;infos&nbsp;you&nbsp;want&nbsp;onto&nbsp;a&nbsp;list&nbsp;and&nbsp;then&nbsp;call:&lt;/div&gt;&lt;div&gt;//&nbsp; &nbsp;pre&nbsp;=&nbsp;pluginService.createInstances(info);&lt;/div&gt;&lt;div&gt;//&nbsp;or&nbsp;even&nbsp;this&nbsp;way:&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;//&nbsp; &nbsp;pre.add(pluginService.createInstance(InitPreprocessor.class);&lt;/div&gt;&lt;div&gt;//&nbsp;the&nbsp;advantage&nbsp;being&nbsp;that&nbsp;all&nbsp;context&nbsp;is&nbsp;injected&nbsp;automatically&nbsp;for&nbsp;you.&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&gt;&nbsp;And&nbsp;the&nbsp;ImageDisplayService&nbsp;is&nbsp;also&nbsp;still&nbsp;null.&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Regardless&nbsp;of&nbsp;which&nbsp;preprocessors&nbsp;you&nbsp;use,&nbsp;such&nbsp;service&nbsp;parameters&nbsp;should&nbsp;not&nbsp;be&nbsp;null,&nbsp;as&nbsp;long&nbsp;as&nbsp;the&nbsp;context&nbsp;has&nbsp;that&nbsp;service&nbsp;associated&nbsp;with&nbsp;it;&nbsp;see&nbsp;below.&nbsp;Again,&nbsp;I&#39;m&nbsp;guessing&nbsp;you&nbsp;didn&#39;t&nbsp;inject&nbsp;the&nbsp;context...&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&gt;&nbsp;BTW:&nbsp;when&nbsp;diving&nbsp;a&nbsp;little&nbsp;bit&nbsp;into&nbsp;the&nbsp;code&nbsp;I&nbsp;realized&nbsp;that&nbsp;Service&lt;/div&gt;&lt;div&gt;&gt;&nbsp;and&nbsp;Context&nbsp;@Parameters&nbsp;of&nbsp;Commands&nbsp;are&nbsp;nor&nbsp;reflected&nbsp;in&nbsp;the&lt;/div&gt;&lt;div&gt;&gt;&nbsp;CommandInfo.&nbsp;Somehow&nbsp;I&nbsp;was&nbsp;confused&nbsp;when&nbsp;I&nbsp;saw,&nbsp;that&nbsp;the&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&gt;&nbsp;ServicePreprocessor&#39;s&nbsp;process&nbsp;method&nbsp;looks&nbsp;for&nbsp;Service&nbsp;and&nbsp;Context&lt;/div&gt;&lt;div&gt;&gt;&nbsp;parameters&nbsp;in&nbsp;the&nbsp;moduls&nbsp;CommandInfo.inputs().&nbsp;Could&nbsp;there&nbsp;ever&nbsp;by&lt;/div&gt;&lt;div&gt;&gt;&nbsp;any?&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Yes.&nbsp;:-)&nbsp;You&nbsp;have&nbsp;found&nbsp;a&nbsp;wrinkle&nbsp;that&nbsp;I&nbsp;didn&#39;t&nbsp;expect&nbsp;anyone&nbsp;to&nbsp;notice&nbsp;yet.&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;In&nbsp;the&nbsp;case&nbsp;of&nbsp;Modules&nbsp;generally&nbsp;(not&nbsp;just&nbsp;Commands),&nbsp;there&nbsp;can&nbsp;certainly&nbsp;be&nbsp;Service&nbsp;and&nbsp;Context&nbsp;parameters.&nbsp;The&nbsp;prime&nbsp;example&nbsp;there&nbsp;is&nbsp;scripts:&nbsp;we&nbsp;want&nbsp;to&nbsp;annotate&nbsp;scripts&nbsp;written&nbsp;various&nbsp;languages&nbsp;such&nbsp;as&nbsp;Jython&nbsp;with&nbsp;a&nbsp;header&nbsp;comment&nbsp;that&nbsp;declares&nbsp;all&nbsp;the&nbsp;typed&nbsp;input&nbsp;and&nbsp;output&nbsp;parameters,&nbsp;including&nbsp;services.&nbsp;The&nbsp;ServicePreprocessor&nbsp;will&nbsp;take&nbsp;care&nbsp;of&nbsp;filling&nbsp;them,&nbsp;and&nbsp;the&nbsp;ModuleInfo&nbsp;API&nbsp;will&nbsp;include&nbsp;them&nbsp;when&nbsp;iterating&nbsp;the&nbsp;inputs.&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;However,&nbsp;in&nbsp;the&nbsp;case&nbsp;of&nbsp;Commands&nbsp;specifically,&nbsp;the&nbsp;Service&nbsp;and&nbsp;Context&nbsp;fields&nbsp;annotated&nbsp;with&nbsp;@Parameter&nbsp;will&nbsp;actually&nbsp;*not*&nbsp;be&nbsp;reported&nbsp;as&nbsp;parameters&nbsp;by&nbsp;the&nbsp;ModuleInfo&nbsp;API.&nbsp;It&nbsp;was&nbsp;changed&nbsp;8&nbsp;months&nbsp;ago:&lt;br&gt;<br>
+<br>
+<br>
+&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt; &nbsp; &lt;a&nbsp;href=&quot;https://github.com/imagej/imagej/commit/5a86785506f94dc0e58d5860559903b23fb64187&quot;&nbsp;target=&quot;_blank&quot;&gt;https://github.com/imagej/imagej/commit/5a86785506f94dc0e58d5860559903b23fb64187&lt;/a&gt;&lt;/div&gt;<br>
+<br>
+&lt;div&gt;&lt;br&gt;&lt;/div&gt;<br>
+&lt;div&gt;Unfortunately,&nbsp;I&nbsp;did&nbsp;not&nbsp;bother&nbsp;to&nbsp;elaborate&nbsp;in&nbsp;my&nbsp;commit&nbsp;message&nbsp;on&nbsp;*why*&nbsp;&quot;we&nbsp;do&nbsp;then&nbsp;need&nbsp;to&nbsp;have&nbsp;a&nbsp;special&nbsp;exclusion&nbsp;for&nbsp;such&nbsp;parameters&nbsp;in&nbsp;the&nbsp;CommandInfo&nbsp;wrapper&quot;&nbsp;and&nbsp;I&#39;ve&nbsp;forgotten&nbsp;what&nbsp;problems&nbsp;it&nbsp;caused&nbsp;not&nbsp;to&nbsp;have&nbsp;that&nbsp;special&nbsp;exclusion.&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;So&nbsp;this&nbsp;is&nbsp;certainly&nbsp;inconsistent&nbsp;and&nbsp;confusing.&nbsp;Do&nbsp;you&nbsp;think&nbsp;that&nbsp;Commands&nbsp;should&nbsp;also&nbsp;include&nbsp;service&nbsp;and&nbsp;context&nbsp;inputs&nbsp;when&nbsp;iterating&nbsp;them?&nbsp;If&nbsp;so,&nbsp;we&nbsp;can&nbsp;try&nbsp;removing&nbsp;that&nbsp;exclusion&nbsp;and&nbsp;see&nbsp;what&nbsp;explodes...&nbsp;;-)&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&gt;&nbsp;I&nbsp;was&nbsp;aware&nbsp;of&nbsp;the&nbsp;option&nbsp;to&nbsp;create&nbsp;a&nbsp;context&nbsp;but&nbsp;was/am&nbsp;reluctant&nbsp;to&lt;br&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&gt;&nbsp;use&nbsp;it&nbsp;(in&nbsp;excess)&nbsp;due&nbsp;to&nbsp;overhead&nbsp;considerations.&nbsp;Just&nbsp;looking&nbsp;at&nbsp;the&lt;/div&gt;&lt;div&gt;&gt;&nbsp;logging&nbsp;output&nbsp;it&nbsp;seems&nbsp;pretty&nbsp;time&nbsp;consuming.&nbsp;Is&nbsp;this&nbsp;impression&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&gt;&nbsp;wrong?&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Regardless&nbsp;of&nbsp;how&nbsp;you&nbsp;do&nbsp;things,&nbsp;you&nbsp;should&nbsp;be&nbsp;able&nbsp;to&nbsp;keep&nbsp;reusing&nbsp;the&nbsp;same&nbsp;context.&nbsp;You&nbsp;can&nbsp;either&nbsp;create&nbsp;one&nbsp;static&nbsp;one&nbsp;as&nbsp;I&nbsp;described,&nbsp;or&nbsp;you&nbsp;can&nbsp;create&nbsp;one&nbsp;non-static&nbsp;one&nbsp;and&nbsp;then&nbsp;pass&nbsp;it&nbsp;around&nbsp;everywhere&nbsp;to&nbsp;things&nbsp;that&nbsp;need&nbsp;it&nbsp;(either&nbsp;via&nbsp;constructors,&nbsp;setters,&nbsp;or&nbsp;by&nbsp;injecting&nbsp;it&nbsp;as&nbsp;a&nbsp;@Parameter&nbsp;--&nbsp;whatever&nbsp;pattern&nbsp;suits&nbsp;your&nbsp;fancy).&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;That&nbsp;said,&nbsp;we&nbsp;have&nbsp;put&nbsp;a&nbsp;fair&nbsp;amount&nbsp;of&nbsp;effort&nbsp;into&nbsp;optimizing&nbsp;context&nbsp;creation.&nbsp;What&nbsp;it&nbsp;comes&nbsp;down&nbsp;to&nbsp;is&nbsp;which&nbsp;services&nbsp;are&nbsp;part&nbsp;of&nbsp;the&nbsp;context.&nbsp;Creating&nbsp;a&nbsp;full-blown&nbsp;ImageJ&nbsp;context&nbsp;(all&nbsp;available&nbsp;services,&nbsp;huge&nbsp;classpath)&nbsp;on&nbsp;my&nbsp;system&nbsp;takes&nbsp;about&nbsp;2000ms&nbsp;right&nbsp;now;&nbsp;creating&nbsp;one&nbsp;with&nbsp;only&nbsp;core&nbsp;SciJava&nbsp;services&nbsp;takes&nbsp;450ms.&nbsp;This&nbsp;is&nbsp;actually&nbsp;much&nbsp;slower&nbsp;than&nbsp;last&nbsp;I&nbsp;checked,&nbsp;probably&nbsp;due&nbsp;to&nbsp;the&nbsp;Eclipse&nbsp;Helper&nbsp;making&nbsp;absolutely&nbsp;sure&nbsp;the&nbsp;annotation&nbsp;metadata&nbsp;is&nbsp;up&nbsp;to&nbsp;date.&nbsp;We&nbsp;will&nbsp;certainly&nbsp;be&nbsp;optimizing&nbsp;this&nbsp;more&nbsp;in&nbsp;the&nbsp;future&nbsp;--&nbsp;e.g.,&nbsp;if&nbsp;you&nbsp;run&nbsp;outside&nbsp;of&nbsp;the&nbsp;Eclipse&nbsp;development&nbsp;environment,&nbsp;the&nbsp;Eclipse&nbsp;Helper&nbsp;should&nbsp;not&nbsp;bog&nbsp;things&nbsp;down.&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Also,&nbsp;as&nbsp;of&nbsp;&lt;a&nbsp;href=&quot;https://github.com/scijava/scijava-common/commit/0fd0e2916d39505e792f1bbd8e56e3de0f1f8904&quot;&nbsp;target=&quot;_blank&quot;&gt;https://github.com/scijava/scijava-common/commit/0fd0e2916d39505e792f1bbd8e56e3de0f1f8904&lt;/a&gt;,&nbsp;the&nbsp;log&nbsp;spam&nbsp;when&nbsp;creating&nbsp;a&nbsp;context&nbsp;has&nbsp;been&nbsp;eliminated&nbsp;by&nbsp;default.&nbsp;(It&nbsp;got&nbsp;to&nbsp;the&nbsp;point&nbsp;where&nbsp;those&nbsp;log&nbsp;messages&nbsp;were&nbsp;really&nbsp;annoying&nbsp;me.&nbsp;;-)&nbsp;The&nbsp;next&nbsp;release&nbsp;will&nbsp;of&nbsp;course&nbsp;include&nbsp;this&nbsp;change.&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&gt;&nbsp;In&nbsp;addition&nbsp;I&nbsp;am&nbsp;able&nbsp;to&nbsp;create&nbsp;only&nbsp;on&nbsp;instance&nbsp;of&nbsp;imagej.ImageJ,&nbsp;the&lt;/div&gt;&lt;div&gt;&gt;&nbsp;second&nbsp;constructor&nbsp;crashes.&nbsp;See&nbsp;the&nbsp;file&nbsp;createContext.log&nbsp;in&nbsp;the&nbsp;zip&lt;/div&gt;&lt;div&gt;&gt;&nbsp;which&nbsp;results&nbsp;from&nbsp;running&nbsp;RunTestOp.&nbsp;(It&nbsp;seems&nbsp;to&nbsp;me&nbsp;the&nbsp;creating&nbsp;a&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&gt;&nbsp;second&nbsp;instance&nbsp;of&nbsp;DefaultLegacyService&nbsp;fails,&nbsp;and&nbsp;I&nbsp;faintly&nbsp;remeber&lt;/div&gt;&lt;div&gt;&gt;&nbsp;to&nbsp;have&nbsp;read&nbsp;somewhere&nbsp;that&nbsp;only&nbsp;one&nbsp;instance&nbsp;of&nbsp;the&lt;/div&gt;&lt;div&gt;&gt;&nbsp;DefaultLegacyService&nbsp;may&nbsp;exist&nbsp;??)&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;Indeed,&nbsp;trying&nbsp;to&nbsp;create&nbsp;two&nbsp;contexts&nbsp;each&nbsp;with&nbsp;a&nbsp;DefaultLegacyService&nbsp;fails&nbsp;right&nbsp;now.&nbsp;The&nbsp;reasons&nbsp;are&nbsp;complex,&nbsp;but&nbsp;in&nbsp;short,&nbsp;it&nbsp;is&nbsp;a&nbsp;bug.&nbsp;And&nbsp;unfortunately&nbsp;one&nbsp;we&nbsp;will&nbsp;not&nbsp;be&nbsp;able&nbsp;to&nbsp;address&nbsp;before&nbsp;the&nbsp;June&nbsp;release.&nbsp;The&nbsp;problem&nbsp;can&nbsp;be&nbsp;avoided&nbsp;by&nbsp;either:&nbsp;A)&nbsp;calling&nbsp;context.dispose()&nbsp;on&nbsp;the&nbsp;first&nbsp;context&nbsp;before&nbsp;creating&nbsp;the&nbsp;second&nbsp;one;&nbsp;or&nbsp;B)&nbsp;creating&nbsp;additional&nbsp;contexts&nbsp;beyond&nbsp;the&nbsp;first&nbsp;without&nbsp;a&nbsp;LegacyService&nbsp;(admittedly&nbsp;awkward&nbsp;to&nbsp;code&nbsp;since&nbsp;you&nbsp;can&nbsp;no&nbsp;longer&nbsp;use&nbsp;the&nbsp;default&nbsp;Context()&nbsp;constructor).&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;If&nbsp;you&nbsp;urgently&nbsp;need&nbsp;support&nbsp;for&nbsp;multiple&nbsp;simultaneous&nbsp;ImageJ&nbsp;contexts&nbsp;created&nbsp;with&nbsp;the&nbsp;default&nbsp;constructor&nbsp;while&nbsp;ij-legacy&nbsp;is&nbsp;on&nbsp;the&nbsp;classpath,&nbsp;and&nbsp;you&nbsp;want&nbsp;to&nbsp;try&nbsp;fixing&nbsp;the&nbsp;bug&nbsp;yourself,&nbsp;we&nbsp;would&nbsp;be&nbsp;happy&nbsp;to&nbsp;elaborate&nbsp;further&nbsp;so&nbsp;that&nbsp;you&nbsp;can&nbsp;give&nbsp;it&nbsp;a&nbsp;shot.&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&gt;&nbsp;The&nbsp;Command&nbsp;EquationDataValues.java&nbsp;ist&nbsp;annotated&nbsp;as&nbsp;headless&nbsp;and&nbsp;has&lt;/div&gt;&lt;div&gt;&gt;&nbsp;a&nbsp;@Parameter&nbsp;of&nbsp;type&nbsp;Button.&nbsp;Is&nbsp;this&nbsp;as&nbsp;intended?&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Yes,&nbsp;the&nbsp;&quot;Button&quot;&nbsp;is&nbsp;just&nbsp;a&nbsp;marker&nbsp;interface&nbsp;indicating&nbsp;that&nbsp;the&nbsp;input&nbsp;harvester&nbsp;UI&nbsp;should&nbsp;render&nbsp;a&nbsp;button&nbsp;with&nbsp;that&nbsp;label&nbsp;which&nbsp;when&nbsp;pressed&nbsp;calls&nbsp;that&nbsp;callback&nbsp;method.&nbsp;In&nbsp;the&nbsp;case&nbsp;of&nbsp;no&nbsp;input&nbsp;harvester&nbsp;UI,&nbsp;there&nbsp;will&nbsp;be&nbsp;no&nbsp;button,&nbsp;and&nbsp;the&nbsp;callback&nbsp;will&nbsp;hence&nbsp;never&nbsp;occur.&nbsp;But&nbsp;that&nbsp;should&nbsp;not&nbsp;interfere&nbsp;with&nbsp;headless&nbsp;operation.&nbsp;Such&nbsp;Button&nbsp;parameters&nbsp;can&nbsp;be&nbsp;safely&nbsp;ignored&nbsp;on&nbsp;your&nbsp;end.&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Note&nbsp;that&nbsp;we&nbsp;recently&nbsp;made&nbsp;the&nbsp;Button&nbsp;interface&nbsp;extend&nbsp;the&nbsp;Optional&nbsp;interface&nbsp;to&nbsp;clarify&nbsp;the&nbsp;fact&nbsp;that&nbsp;Button&nbsp;&quot;values&quot;&nbsp;are&nbsp;always&nbsp;allowed&nbsp;to&nbsp;be&nbsp;null,&nbsp;even&nbsp;if&nbsp;the&nbsp;@Parameter&nbsp;of&nbsp;the&nbsp;Button&nbsp;does&nbsp;not&nbsp;declare&nbsp;&quot;required&nbsp;=&nbsp;false&quot;.&nbsp;See:&nbsp;&lt;a&nbsp;href=&quot;https://github.com/imagej/imagej/commit/09ed9f9b6178312d86083094732b2a1201f82e16&quot;&nbsp;target=&quot;_blank&quot;&gt;https://github.com/imagej/imagej/commit/09ed9f9b6178312d86083094732b2a1201f82e16&lt;/a&gt;&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Let&#39;s&nbsp;hope&nbsp;our&nbsp;next&nbsp;exchange&nbsp;does&nbsp;not&nbsp;need&nbsp;to&nbsp;be&nbsp;quite&nbsp;so&nbsp;long&nbsp;winded...&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Regards,&lt;/div&gt;&lt;div&gt;Curtis&lt;/div&gt;&lt;div&nbsp;class=&quot;gmail_extra&quot;&gt;&lt;br&gt;&lt;br&gt;&lt;div&nbsp;class=&quot;gmail_quote&quot;&gt;On&nbsp;Thu,&nbsp;Apr&nbsp;10,&nbsp;2014&nbsp;at&nbsp;9:01&nbsp;AM,&nbsp;Stefan&nbsp;Posch&nbsp;&lt;span&nbsp;dir=&quot;ltr&quot;&gt;&lt;&lt;a&nbsp;href=&quot;mailto:posch@informatik.uni-halle.de&quot;&nbsp;target=&quot;_blank&quot;&gt;posch@informatik.uni-halle.de&lt;/a&gt;&gt;&lt;/span&gt;&nbsp;wrote:&lt;br&gt;<br>
+<br>
+<br>
+&lt;blockquote&nbsp;class=&quot;gmail_quote&quot;&nbsp;style=&quot;margin:0&nbsp;0&nbsp;0&nbsp;.8ex;border-left:1px&nbsp;#ccc&nbsp;solid;padding-left:1ex&quot;&gt;Hi&nbsp;Curtis,&lt;br&gt;<br>
+&lt;br&gt;<br>
+thank&nbsp;you&nbsp;very&nbsp;much&nbsp;for&nbsp;the&nbsp;details&nbsp;answers&nbsp;(and&nbsp;I&nbsp;did&nbsp;not&nbsp;mean&nbsp;to&nbsp;press&nbsp;you&nbsp;with&lt;br&gt;<br>
+regard&nbsp;to&nbsp;&quot;delays&quot;&nbsp;-&nbsp;this&nbsp;goes,&nbsp;of&nbsp;course,&nbsp;also&nbsp;for&nbsp;the&nbsp;future).&lt;br&gt;<br>
+&lt;br&gt;<br>
+Though&nbsp;very&nbsp;helpful&nbsp;a&nbsp;few&nbsp;issues&nbsp;are&nbsp;still&nbsp;open:&lt;br&gt;<br>
+&lt;div&gt;&lt;br&gt;<br>
+&gt;&gt;&nbsp;What&nbsp;are&nbsp;the&nbsp;precoditions&nbsp;assumed&nbsp;when&nbsp;running&nbsp;a&nbsp;(headless)&nbsp;command&lt;br&gt;<br>
+&gt;&nbsp;What&nbsp;happens&nbsp;is&nbsp;highly&nbsp;dependent&nbsp;on&nbsp;*how*&nbsp;you&nbsp;invoke&nbsp;the&nbsp;command...&lt;br&gt;<br>
+&lt;br&gt;<br>
+&lt;/div&gt; &nbsp; Maybe&nbsp;I&nbsp;was&nbsp;unclear&nbsp;on&nbsp;this&nbsp;issue.&nbsp;May&nbsp;question&nbsp;is,&nbsp;what&nbsp;does&nbsp;a&nbsp;method&lt;br&gt;<br>
+ &nbsp; of&nbsp;a&nbsp;Command&nbsp;(e.g.&nbsp;its&nbsp;initializer,&nbsp;the&nbsp;run&nbsp;method)&nbsp;or&nbsp;rather&nbsp;the&nbsp;implementor&lt;br&gt;<br>
+ &nbsp; may&nbsp;assumed&nbsp;to&nbsp;have&nbsp;&quot;happend&quot;.&lt;br&gt;<br>
+&lt;br&gt;<br>
+ &nbsp; Or&nbsp;other&nbsp;way&nbsp;round:&nbsp;in&nbsp;case&nbsp;the&nbsp;run-method&nbsp;of&nbsp;OpenFile&nbsp;command&nbsp;used&nbsp;in&nbsp;the&nbsp;tutorial&lt;br&gt;<br>
+ &nbsp; requires&nbsp;the&nbsp;initializer&nbsp;to&nbsp;have&nbsp;been&nbsp;executed:&lt;br&gt;<br>
+ &nbsp; Is&nbsp;the&nbsp;run-method&nbsp;responsible&nbsp;to&nbsp;check,&nbsp;if&nbsp;it&nbsp;has&nbsp;already&nbsp;been&nbsp;executed&nbsp;(e.g.&nbsp;if&nbsp;called&lt;br&gt;<br>
+ &nbsp; via&nbsp;the&nbsp;invokeWithArgs&nbsp;or&nbsp;invokeWihtMap&nbsp;methods&nbsp;of&nbsp;the&nbsp;tutorial)&nbsp;or&nbsp;not&lt;br&gt;<br>
+ &nbsp; (if&nbsp;e.g.&nbsp;called&nbsp;via&nbsp;invokeFrmoJava).&lt;br&gt;<br>
+ &nbsp; Or&nbsp;is&nbsp;it&nbsp;the&nbsp;callers&nbsp;responsibility&nbsp;to&nbsp;ensure&nbsp;the&nbsp;the&nbsp;initializer&nbsp;has&nbsp;been&nbsp;already&nbsp;been&lt;br&gt;<br>
+ &nbsp; executed&nbsp;before&nbsp;actually&nbsp;running&nbsp;the&nbsp;OpenFile&nbsp;command&nbsp;(if&nbsp;it&nbsp;indeed&nbsp;requires&nbsp;the&nbsp;initializer&nbsp;to&lt;br&gt;<br>
+ &nbsp; have&nbsp;been&nbsp;invoked&nbsp;beforehand).&lt;br&gt;<br>
+&lt;br&gt;<br>
+ &nbsp; The&nbsp;same&nbsp;questions&nbsp;goes&nbsp;for&nbsp;the&nbsp;initializer&nbsp;method:&nbsp;may&nbsp;it&nbsp;assume&nbsp;that&nbsp;a&nbsp;single&nbsp;Dataset&lt;br&gt;<br>
+ &nbsp; parameter&nbsp;has&nbsp;already&nbsp;been&nbsp;set?&nbsp;And&nbsp;if&nbsp;so,&nbsp;may&nbsp;it&nbsp;asume&nbsp;other&nbsp;prerequisites&nbsp;as&nbsp;well?&lt;br&gt;<br>
+ &nbsp; E.g.&nbsp;it&nbsp;seems&nbsp;to&nbsp;me&nbsp;that&nbsp;the&nbsp;initializer&nbsp;of&nbsp;DuplicateImage&nbsp;would&nbsp;probably&nbsp;crash&nbsp;if&lt;br&gt;<br>
+ &nbsp; the&nbsp;inputDisplay&nbsp;is&nbsp;null.&lt;br&gt;<br>
+ &nbsp; Or&nbsp;is&nbsp;it&nbsp;the&nbsp;other&nbsp;way&nbsp;round:&nbsp;That&nbsp;whoever&nbsp;(indirectly)&nbsp;invokes&nbsp;the&nbsp;initializer&nbsp;is&lt;br&gt;<br>
+ &nbsp; responsible&nbsp;for&nbsp;certain&nbsp;parameters&nbsp;to&nbsp;be&nbsp;set&nbsp;in&nbsp;advance.&lt;br&gt;<br>
+&lt;br&gt;<br>
+ &nbsp; Besides&nbsp;interesting&nbsp;for&nbsp;a&nbsp;programmer&nbsp;of&nbsp;a&nbsp;Command&nbsp;we&nbsp;are&nbsp;interested&nbsp;in&nbsp;this&nbsp;issue&lt;br&gt;<br>
+ &nbsp; to&nbsp;be&nbsp;able&nbsp;to&nbsp;wrap&nbsp;IJ2&nbsp;commands&nbsp;in&nbsp;order&nbsp;to&nbsp;run&nbsp;them&nbsp;from&nbsp;our&nbsp;GUI&nbsp;(originaly&nbsp;design&lt;br&gt;<br>
+ &nbsp; for&nbsp;alida&nbsp;operators),&nbsp;our&nbsp;command&nbsp;line&nbsp;runner,&lt;br&gt;<br>
+ &nbsp; and&nbsp;to&nbsp;support&nbsp;them&nbsp;in&nbsp;our&nbsp;graphical&nbsp;editor&nbsp;for&nbsp;alida/mitobo&nbsp;operators&nbsp;and&nbsp;hopefully&lt;br&gt;<br>
+ &nbsp; ij2&nbsp;commands&nbsp;(at&nbsp;least&nbsp;head&nbsp;less&nbsp;and&nbsp;non&nbsp;DynamicCommands)&lt;br&gt;<br>
+&lt;div&gt;&lt;br&gt;<br>
+&gt;&nbsp;It&nbsp;should&nbsp;be&nbsp;case&nbsp;that&nbsp;Alida&nbsp;can&nbsp;reuse&nbsp;the&nbsp;default&nbsp;pre-&nbsp;and&nbsp;post-processing&lt;br&gt;<br>
+&gt;&nbsp;plugin&nbsp;stack&nbsp;--&nbsp;in&nbsp;other&nbsp;words,&nbsp;you&nbsp;should&nbsp;be&nbsp;able&nbsp;to&nbsp;pass&nbsp;&quot;process=true&quot;&lt;br&gt;<br>
+&gt;&nbsp;to&nbsp;the&nbsp;ModuleService#run&nbsp;and&nbsp;everything&nbsp;will&nbsp;&quot;just&nbsp;work&quot;.&nbsp;Let&nbsp;us&nbsp;know&nbsp;if&lt;br&gt;<br>
+&gt;&nbsp;not,&nbsp;and&nbsp;we&nbsp;can&nbsp;troubleshoot.&nbsp;As&nbsp;long&nbsp;as&nbsp;no&nbsp;UI&nbsp;has&nbsp;been&nbsp;shown,&nbsp;you&nbsp;will&nbsp;be&lt;br&gt;<br>
+&gt;&nbsp;in&nbsp;headless&nbsp;mode&nbsp;and&nbsp;no&nbsp;dialogs&nbsp;should&nbsp;ever&nbsp;be&nbsp;shown.&nbsp;(If&nbsp;one&nbsp;does&nbsp;pop&nbsp;up,&lt;br&gt;<br>
+&gt;&nbsp;it&nbsp;is&nbsp;probably&nbsp;a&nbsp;bug.)&lt;br&gt;<br>
+&lt;br&gt;<br>
+&lt;/div&gt; &nbsp;I&nbsp;am&nbsp;not&nbsp;sure&nbsp;whether&nbsp;we&nbsp;can&nbsp;recycle&nbsp;all&nbsp;IJ2s&nbsp;preprocessors&nbsp;as&nbsp;there&nbsp;might&nbsp;be&nbsp;differences&lt;br&gt;<br>
+ &nbsp;in&nbsp;the&nbsp;concept&nbsp;of&nbsp;parameter&nbsp;handling.&lt;br&gt;<br>
+&lt;br&gt;<br>
+ &nbsp;But&nbsp;trying&nbsp;to&nbsp;reused&nbsp;(some&nbsp;of)&nbsp;them&nbsp;&quot;by&nbsp;hand&quot;,&nbsp;not&nbsp;by&nbsp;using&nbsp;the&nbsp;Modules&nbsp;run&nbsp;method,&lt;br&gt;<br>
+ &nbsp;I&nbsp;somehow&nbsp;got&nbsp;stuck,&nbsp;as&nbsp;obviously&nbsp;I&nbsp;do&nbsp;not&nbsp;understand&nbsp;the&nbsp;concepts&lt;br&gt;<br>
+ &nbsp;properly.&nbsp;Maybe&nbsp;you&nbsp;are&nbsp;willing&nbsp;to&nbsp;help&nbsp;with&nbsp;this.&lt;br&gt;<br>
+&lt;br&gt;<br>
+ &nbsp;In&nbsp;the&nbsp;attached&nbsp;zip&nbsp;of&nbsp;a&nbsp;tiny&nbsp;maven&nbsp;project&nbsp;using&nbsp;ij2&nbsp;(2.0.0-beta-7.8)&lt;br&gt;<br>
+ &nbsp;there&nbsp;is&nbsp;a&nbsp;command&nbsp;RunTestOp&nbsp;which&nbsp;tries&nbsp;to&nbsp;invoke&nbsp;a&nbsp;IJTestOp&nbsp;command&nbsp;&quot;by&nbsp;hand&quot;.&lt;br&gt;<br>
+ &nbsp;I&nbsp;first&nbsp;create&nbsp;a&nbsp;CommandInfo&nbsp;for&nbsp;IJTestOp,&nbsp;then&nbsp;a&nbsp;CommandModule&nbsp;for&nbsp;this&nbsp;info,&lt;br&gt;<br>
+ &nbsp;collects&nbsp;all&nbsp;preprocessors&nbsp;and&nbsp;(try&nbsp;to)&nbsp;invoke&nbsp;them&nbsp;for&nbsp;the&nbsp;CommandModule&nbsp;created.&lt;br&gt;<br>
+ &nbsp;I&nbsp;disabled&nbsp;invoking&nbsp;of&nbsp;the&nbsp;InitPreprocessor,&nbsp;as&nbsp;it&nbsp;crashes&nbsp;with&nbsp;a&nbsp;null&nbsp;pointer&nbsp;exception:&lt;br&gt;<br>
+ &nbsp; &nbsp;Exception&nbsp;in&nbsp;thread&nbsp;&quot;main&quot;&nbsp;java.lang.NullPointerException&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;at&nbsp;imagej.command.CommandModule.initialize(CommandModule.java:144)&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;at&nbsp;imagej.module.process.InitPreprocessor.process(InitPreprocessor.java:61)&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;at&nbsp;mainroutine.RunTestOp.main(RunTestOp.java:49)&lt;br&gt;<br>
+&lt;br&gt;<br>
+ &nbsp;Additionally&nbsp;it&nbsp;seems&nbsp;to&nbsp;be&nbsp;that&nbsp;creating&nbsp;the&nbsp;CommandInfo&nbsp;already&nbsp;invokes&nbsp;preprocessors,&lt;br&gt;<br>
+ &nbsp;however&nbsp;the&nbsp;initializer&nbsp;of&nbsp;IJTestOp&nbsp;is&nbsp;not&nbsp;invoked.&lt;br&gt;<br>
+&lt;br&gt;<br>
+ &nbsp;And&nbsp;the&nbsp;ImageDisplayService&nbsp;is&nbsp;also&nbsp;still&nbsp;null.&lt;br&gt;<br>
+&lt;br&gt;<br>
+ &nbsp;BTW:&nbsp;when&nbsp;diving&nbsp;a&nbsp;little&nbsp;bit&nbsp;into&nbsp;the&nbsp;code&nbsp;I&nbsp;realized&nbsp;that&lt;br&gt;<br>
+ &nbsp; Service&nbsp;and&nbsp;Context&nbsp;@Parameters&nbsp;of&nbsp;Commands&nbsp;are&nbsp;nor&nbsp;reflected&nbsp;in&nbsp;the&nbsp;CommandInfo.&lt;br&gt;<br>
+ &nbsp; Somehow&nbsp;I&nbsp;was&nbsp;confused&nbsp;when&nbsp;I&nbsp;saw,&nbsp;that&nbsp;the&nbsp;ServicePreprocessor&#39;s&nbsp;process&nbsp;method&lt;br&gt;<br>
+ &nbsp; looks&nbsp;for&nbsp;Service&nbsp;and&nbsp;Context&nbsp;parameters&nbsp;in&nbsp;the&nbsp;moduls&nbsp;CommandInfo.inputs().&lt;br&gt;<br>
+ &nbsp; Could&nbsp;there&nbsp;ever&nbsp;by&nbsp;any?&lt;br&gt;<br>
+&lt;div&gt;&lt;br&gt;<br>
+&gt;&nbsp;modules&nbsp;should&nbsp;not&nbsp;be&nbsp;dynamic.&nbsp;Dynamic&nbsp;commands&nbsp;are&nbsp;*much*&nbsp;more&nbsp;challenging&lt;br&gt;<br>
+&gt;&nbsp;to&nbsp;support&nbsp;across&nbsp;many&nbsp;different&nbsp;environments&nbsp;(CellProfiler,&nbsp;KNIME,&nbsp;OMERO,&lt;br&gt;<br>
+&gt;&nbsp;Alida,&nbsp;etc.)&nbsp;*much*&nbsp;more&nbsp;challenging.&lt;br&gt;<br>
+&lt;/div&gt; Is&nbsp;it&nbsp;easily&nbsp;possible&nbsp;to&nbsp;state&nbsp;what&nbsp;makes&nbsp;a&nbsp;Command&nbsp;a&nbsp;DynamicCommand,&lt;br&gt;<br>
+ and&nbsp;what&nbsp;is&nbsp;the&nbsp;difference&nbsp;to&nbsp;interactive()&nbsp;commands?&lt;br&gt;<br>
+&lt;div&gt;&lt;br&gt;<br>
+&gt;&nbsp;On&nbsp;the&nbsp;CLI,&nbsp;we&#39;ll&nbsp;harvest&nbsp;values&nbsp;from&nbsp;the&nbsp;user&nbsp;at&nbsp;the&nbsp;same&nbsp;point&nbsp;in&nbsp;time&lt;br&gt;<br>
+&gt;&nbsp;that&nbsp;we&nbsp;currently&nbsp;do&nbsp;it&nbsp;via&nbsp;the&nbsp;UI.&nbsp;So&nbsp;most&nbsp;of&nbsp;the&nbsp;other&nbsp;preprocessing&nbsp;will&lt;br&gt;<br>
+&gt;&nbsp;be&nbsp;done;&nbsp;there&nbsp;will&nbsp;be&nbsp;a&nbsp;&quot;CLIInputHarvesterPlugin&quot;&nbsp;that&nbsp;prompts&nbsp;the&nbsp;user&nbsp;to&lt;br&gt;<br>
+&gt;&nbsp;type&nbsp;in&nbsp;these&nbsp;values&nbsp;using&nbsp;System.in&nbsp;or&nbsp;similar.&nbsp;We&nbsp;have&nbsp;not&nbsp;yet&nbsp;created&lt;br&gt;<br>
+&gt;&nbsp;this&nbsp;preprocessor&nbsp;plugin,&nbsp;but&nbsp;it&nbsp;would&nbsp;be&nbsp;very&nbsp;straightforward.&nbsp;If&nbsp;you&nbsp;need&lt;br&gt;<br>
+&gt;&nbsp;this,&nbsp;let&nbsp;me&nbsp;know&nbsp;--&nbsp;it&nbsp;would&nbsp;be&nbsp;a&nbsp;fun&nbsp;side&nbsp;project.&nbsp;:-)&lt;br&gt;<br>
+&lt;/div&gt; &nbsp; We&nbsp;have&nbsp;one&nbsp;&quot;command&nbsp;line&nbsp;oprunner&quot;&nbsp;for&nbsp;alida&lt;br&gt;<br>
+ &nbsp; (which&nbsp;does&nbsp;not&nbsp;work&nbsp;interactively,&nbsp;thus&nbsp;can&nbsp;be&nbsp;used&nbsp;also&nbsp;from&nbsp;shell-scripts,&lt;br&gt;<br>
+ &nbsp; e.g.&nbsp;for&nbsp;parameter&nbsp;tuning).&nbsp;And&nbsp;as&nbsp;noted&nbsp;above&nbsp;would&nbsp;like&nbsp;to&nbsp;support&nbsp;also&lt;br&gt;<br>
+ &nbsp; ij2&nbsp;commands.&lt;br&gt;<br>
+&lt;div&gt;&lt;br&gt;<br>
+&gt;&nbsp;The&nbsp;SciJava&nbsp;context&nbsp;is&nbsp;definitely&nbsp;not&nbsp;a&nbsp;singleton.&nbsp;But&nbsp;you&nbsp;can&nbsp;use&nbsp;it&nbsp;that&lt;br&gt;<br>
+&gt;&nbsp;way&nbsp;if&nbsp;you&nbsp;want:&nbsp;just&nbsp;create&nbsp;one&nbsp;a&nbsp;static&nbsp;variable&nbsp;in&nbsp;your&nbsp;own&nbsp;codebase&lt;br&gt;<br>
+&gt;&nbsp;somewhere;&nbsp;e.g.:&lt;br&gt;<br>
+&gt;&lt;br&gt;<br>
+&gt;&lt;br&gt;<br>
+&gt;&nbsp;public&nbsp;static&nbsp;final&nbsp;imagej.ImageJ&nbsp;IJ&nbsp;=&nbsp;new&nbsp;imagej.ImageJ();&lt;br&gt;<br>
+&lt;br&gt;<br>
+&lt;/div&gt; &nbsp; I&nbsp;was&nbsp;aware&nbsp;of&nbsp;the&nbsp;option&nbsp;to&nbsp;create&nbsp;a&nbsp;context&nbsp;but&nbsp;was/am&nbsp;reluctant&nbsp;to&nbsp;use&lt;br&gt;<br>
+ &nbsp; it&nbsp;(in&nbsp;excess)&nbsp;due&nbsp;to&nbsp;overhead&nbsp;considerations.&nbsp;Just&nbsp;looking&nbsp;at&nbsp;the&nbsp;logging&nbsp;output&lt;br&gt;<br>
+ &nbsp; it&nbsp;seems&nbsp;pretty&nbsp;time&nbsp;consuming.&nbsp;Is&nbsp;this&nbsp;impression&nbsp;wrong?&lt;br&gt;<br>
+&lt;br&gt;<br>
+ &nbsp; In&nbsp;addition&nbsp;I&nbsp;am&nbsp;able&nbsp;to&nbsp;create&nbsp;only&nbsp;on&nbsp;instance&nbsp;of&nbsp;imagej.ImageJ,&nbsp;the&nbsp;second&lt;br&gt;<br>
+ &nbsp; constructor&nbsp;crashes.&nbsp;See&nbsp;the&nbsp;file&nbsp;createContext.log&nbsp;in&nbsp;the&nbsp;zip&nbsp;which&nbsp;results&nbsp;from&lt;br&gt;<br>
+ &nbsp; running&nbsp;RunTestOp.&lt;br&gt;<br>
+ &nbsp; (It&nbsp;seems&nbsp;to&nbsp;me&nbsp;the&nbsp;creating&nbsp;a&nbsp;second&nbsp;instance&nbsp;of&nbsp;DefaultLegacyService&nbsp;fails,&lt;br&gt;<br>
+ &nbsp; and&nbsp;I&nbsp;faintly&nbsp;remeber&nbsp;to&nbsp;have&nbsp;read&nbsp;somewhere&nbsp;that&nbsp;only&nbsp;one&nbsp;instance&nbsp;of&nbsp;the&lt;br&gt;<br>
+ &nbsp; DefaultLegacyService&nbsp;may&nbsp;exist&nbsp;??)&lt;br&gt;<br>
+&lt;br&gt;<br>
+A&nbsp;new&nbsp;(and&nbsp;for&nbsp;the&nbsp;moment&nbsp;last)&nbsp;question:&lt;br&gt;<br>
+ &nbsp;The&nbsp;Command&nbsp;EquationDataValues.java&nbsp;ist&nbsp;annotated&nbsp;as&nbsp;headless&nbsp;and&nbsp;has&nbsp;a&nbsp;@Parameter&lt;br&gt;<br>
+ &nbsp;of&nbsp;type&nbsp;Button.&nbsp;Is&nbsp;this&nbsp;as&nbsp;intended?&lt;br&gt;<br>
+&lt;br&gt;<br>
+Again&nbsp;thanks&nbsp;a&nbsp;lot&lt;br&gt;<br>
+&lt;br&gt;<br>
+Best&nbsp;regards&nbsp; &nbsp; Stefan&lt;br&gt;<br>
+&lt;div&gt;&lt;div&gt;&lt;br&gt;<br>
+_______________________________________________&lt;br&gt;<br>
+ImageJ-devel&nbsp;mailing&nbsp;list&lt;br&gt;<br>
+&lt;a&nbsp;href=&quot;mailto:ImageJ-devel@imagej.net&quot;&nbsp;target=&quot;_blank&quot;&gt;ImageJ-devel@imagej.net&lt;/a&gt;&lt;br&gt;<br>
+&lt;a&nbsp;href=&quot;http://imagej.net/mailman/listinfo/imagej-devel&quot;&nbsp;target=&quot;_blank&quot;&gt;http://imagej.net/mailman/listinfo/imagej-devel&lt;/a&gt;&lt;br&gt;<br>
+&lt;/div&gt;&lt;/div&gt;&lt;/blockquote&gt;&lt;/div&gt;&lt;br&gt;&lt;/div&gt;&lt;/div&gt;<br>
+
+</tt>

@@ -1,0 +1,145 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] creating io.scif.img.ImgOpener currently fails in	Fiji
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20creating%20io.scif.img.ImgOpener%20currently%20fails%20in%0A%09Fiji&In-Reply-To=%3C6ECEB0A7-0F51-4F78-922B-43B6AB834412%40mpi-cbg.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002199.html">
+   <LINK REL="Next"  HREF="002204.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] creating io.scif.img.ImgOpener currently fails in	Fiji</H1>
+    <B>Tobias Pietzsch</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20creating%20io.scif.img.ImgOpener%20currently%20fails%20in%0A%09Fiji&In-Reply-To=%3C6ECEB0A7-0F51-4F78-922B-43B6AB834412%40mpi-cbg.de%3E"
+       TITLE="[ImageJ-devel] creating io.scif.img.ImgOpener currently fails in	Fiji">pietzsch at mpi-cbg.de
+       </A><BR>
+    <I>Thu Aug 21 18:05:28 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002199.html">[ImageJ-devel] Image Orientation
+</A></li>
+        <LI>Next message: <A HREF="002204.html">[ImageJ-devel] creating io.scif.img.ImgOpener currently fails in Fiji
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2203">[ date ]</a>
+              <a href="thread.html#2203">[ thread ]</a>
+              <a href="subject.html#2203">[ subject ]</a>
+              <a href="author.html#2203">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+Currently
+new io.scif.img.ImgOpener();
+fails with
+java.lang.IllegalArgumentException: Invalid service: net.imagej.legacy.LegacyAppEventService
+
+To reproduce run
+new io.scif.img.ImgOpener();
+in Beanshell interpreter.
+
+The exception displayed in Beanshell interpreter is a bit non-helpful.
+Benjamin Schmid noticed the error, when it occurred in BigDataViewer&#8217;s ExportSpimSequencePlugIn.
+Here is the exception from that, which is a bit more detailed
+
+java.lang.IllegalArgumentException: Invalid service: net.imagej.legacy.LegacyAppEventService
+	at org.scijava.service.ServiceHelper.createExactService(ServiceHelper.java:280)
+	at org.scijava.service.ServiceHelper.loadService(ServiceHelper.java:231)
+	at org.scijava.service.ServiceHelper.loadService(ServiceHelper.java:194)
+	at org.scijava.service.ServiceHelper.loadServices(ServiceHelper.java:166)
+	at org.scijava.Context.&lt;init&gt;(Context.java:244)
+	at org.scijava.Context.&lt;init&gt;(Context.java:203)
+	at org.scijava.Context.&lt;init&gt;(Context.java:142)
+	at org.scijava.Context.&lt;init&gt;(Context.java:128)
+	at io.scif.img.AbstractImgIOComponent.&lt;init&gt;(AbstractImgIOComponent.java:57)
+	at io.scif.img.ImgOpener.&lt;init&gt;(ImgOpener.java:94)
+	at bdv.ij.export.imgloader.StackImageLoader.&lt;init&gt;(StackImageLoader.java:52)
+	at bdv.ij.export.SpimRegistrationSequence.createImageLoader(SpimRegistrationSequence.java:109)
+	at bdv.ij.export.SpimRegistrationSequence.&lt;init&gt;(SpimRegistrationSequence.java:56)
+	at bdv.ij.ExportSpimSequencePlugIn.getParameters(ExportSpimSequencePlugIn.java:490)
+	at bdv.ij.ExportSpimSequencePlugIn.run(ExportSpimSequencePlugIn.java:52)
+	at ij.IJ.runUserPlugIn(IJ.java:202)
+	at ij.IJ.runPlugIn(IJ.java:166)
+	at ij.Executer.runCommand(Executer.java:131)
+	at ij.Executer.run(Executer.java:64)
+	at java.lang.Thread.run(Thread.java:744)
+Caused by: java.lang.IllegalArgumentException: Invalid service: net.imagej.legacy.DefaultLegacyService
+	at org.scijava.service.ServiceHelper.createExactService(ServiceHelper.java:280)
+	at org.scijava.service.ServiceHelper.loadService(ServiceHelper.java:231)
+	at org.scijava.service.ServiceHelper.createServiceRecursively(ServiceHelper.java:340)
+	at org.scijava.service.ServiceHelper.createExactService(ServiceHelper.java:269)
+	... 19 more
+Caused by: java.lang.UnsupportedOperationException: Cannot instantiate more than one DefaultLegacyService
+	at net.imagej.legacy.DefaultLegacyService.checkInstance(DefaultLegacyService.java:606)
+	at net.imagej.legacy.DefaultLegacyService.initialize(DefaultLegacyService.java:411)
+	at org.scijava.service.ServiceHelper.createServiceRecursively(ServiceHelper.java:353)
+	at org.scijava.service.ServiceHelper.createExactService(ServiceHelper.java:269)
+	... 22 more
+Caused by: java.lang.Throwable: Initialized here:
+	at net.imagej.legacy.DefaultLegacyService.initialize(DefaultLegacyService.java:429)
+	at org.scijava.service.ServiceHelper.createServiceRecursively(ServiceHelper.java:353)
+	at org.scijava.service.ServiceHelper.createExactService(ServiceHelper.java:269)
+	at org.scijava.service.ServiceHelper.loadService(ServiceHelper.java:231)
+	at org.scijava.service.ServiceHelper.createServiceRecursively(ServiceHelper.java:340)
+	at org.scijava.service.ServiceHelper.createExactService(ServiceHelper.java:269)
+	at org.scijava.service.ServiceHelper.loadService(ServiceHelper.java:231)
+	at org.scijava.service.ServiceHelper.loadService(ServiceHelper.java:194)
+	at org.scijava.service.ServiceHelper.loadServices(ServiceHelper.java:166)
+	at org.scijava.Context.&lt;init&gt;(Context.java:244)
+	at org.scijava.Context.&lt;init&gt;(Context.java:203)
+	at org.scijava.Context.&lt;init&gt;(Context.java:142)
+	at org.scijava.Context.&lt;init&gt;(Context.java:98)
+	at org.scijava.Context.&lt;init&gt;(Context.java:86)
+	at net.imagej.ImageJ.&lt;init&gt;(ImageJ.java:82)
+	at net.imagej.Main.launch(Main.java:61)
+	at net.imagej.Main.main(Main.java:73)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:606)
+	at net.imagej.launcher.ClassLauncher.launch(ClassLauncher.java:258)
+	at net.imagej.launcher.ClassLauncher.run(ClassLauncher.java:184)
+	at net.imagej.launcher.ClassLauncher.main(ClassLauncher.java:76)
+
+best regards,
+Tobias
+
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140822/0c88dddb/attachment-0001.pgp">http://imagej.net/pipermail/imagej-devel/attachments/20140822/0c88dddb/attachment-0001.pgp</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002199.html">[ImageJ-devel] Image Orientation
+</A></li>
+	<LI>Next message: <A HREF="002204.html">[ImageJ-devel] creating io.scif.img.ImgOpener currently fails in Fiji
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2203">[ date ]</a>
+              <a href="thread.html#2203">[ thread ]</a>
+              <a href="subject.html#2203">[ subject ]</a>
+              <a href="author.html#2203">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

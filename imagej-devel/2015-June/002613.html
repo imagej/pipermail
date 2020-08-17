@@ -1,0 +1,104 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Bug? using ConnectedComponents and LabelRegion(s) with ImageJFunctions.wrapByte(ImagePlus imp)
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Bug%3F%20using%20ConnectedComponents%20and%0A%20LabelRegion%28s%29%20with%20ImageJFunctions.wrapByte%28ImagePlus%20imp%29&In-Reply-To=%3CB740DEF4-B38F-4C27-9FF0-92CFB9F64FC0%40wisc.edu%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002612.html">
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Bug? using ConnectedComponents and LabelRegion(s) with ImageJFunctions.wrapByte(ImagePlus imp)</H1>
+    <B>Jay Warrick</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Bug%3F%20using%20ConnectedComponents%20and%0A%20LabelRegion%28s%29%20with%20ImageJFunctions.wrapByte%28ImagePlus%20imp%29&In-Reply-To=%3CB740DEF4-B38F-4C27-9FF0-92CFB9F64FC0%40wisc.edu%3E"
+       TITLE="[ImageJ-devel] Bug? using ConnectedComponents and LabelRegion(s) with ImageJFunctions.wrapByte(ImagePlus imp)">warrick at wisc.edu
+       </A><BR>
+    <I>Tue Jun 30 15:05:26 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002612.html">[ImageJ-devel] Bug? using ConnectedComponents and LabelRegion(s) with ImageJFunctions.wrapByte(ImagePlus imp)
+</A></li>
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2613">[ date ]</a>
+              <a href="thread.html#2613">[ thread ]</a>
+              <a href="subject.html#2613">[ subject ]</a>
+              <a href="author.html#2613">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Curtis - Thanks so much for digging. This focuses my efforts greatly. 
+
+Tobias - If you see this email... I noticed that you are listed as author of the ConnectedComponents class. Any thoughts as I dig in?
+
+Thanks,
+
+Jay
+
+&gt;<i> On Jun 30, 2015, at 12:34 PM, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt; wrote:
+</I>&gt;<i> 
+</I>&gt;<i> Hi Jay,
+</I>&gt;<i> 
+</I>&gt;<i> Interesting bug. I did some digging. The two Img&lt;UnsignedByteType&gt; instances are identical in terms of dimensionality and pixel values, so that isn't the culprit.
+</I>&gt;<i> 
+</I>&gt;<i> I also tried disabling the labeling computation for SCIFIO to see if it was an issue of tainted state, but the order of computation doesn't seem to make a difference either.
+</I>&gt;<i> 
+</I>&gt;<i> I also stepped a bit with the debugger and certainly the issue is inside of ConnectedComponents.labelAllConnectedComponents. On line 115, the value of numLabels comes back as 2 for the SCIFIO image and 1 for the IJ1 image. Digging deeper becomes tricky due to the multithreadedness of the algorithm, but I fear that's what you'll have to do in order to isolate the difference in behavior.
+</I>&gt;<i> 
+</I>&gt;<i> Regards,
+</I>&gt;<i> Curtis
+</I>&gt;<i> 
+</I>&gt;<i> On Tue, Jun 30, 2015 at 1:01 AM, Jay Warrick &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">warrick at wisc.edu</A> &lt;mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">warrick at wisc.edu</A>&gt;&gt; wrote:
+</I>&gt;<i> Hi All,
+</I>&gt;<i> 
+</I>&gt;<i> I am getting different behavior using the new ConnectedComponents class of imglib2-algorithm depending on whether I get and Img&lt;UnsignedByteType&gt; from a SCIFIO ImageOpener vs. when I get the same image as an Img&lt;UnsignedByteType&gt; by wrapping an ImagePlus. In the SCIFIO case, ConnectedComponents finds the expected single circle while with a wrapped ImagePlus, it doesn't find any regions.
+</I>&gt;<i> 
+</I>&gt;<i> Any thoughts/fixes? Might there be something occurring during the wrapping process to cause an issue? Here is a tiny commented maven project with the example scenario.
+</I>&gt;<i> 
+</I>&gt;<i> <A HREF="https://github.com/jaywarrick/ConnectedComponentsTest">https://github.com/jaywarrick/ConnectedComponentsTest</A> &lt;<A HREF="https://github.com/jaywarrick/ConnectedComponentsTest">https://github.com/jaywarrick/ConnectedComponentsTest</A>&gt;
+</I>&gt;<i> 
+</I>&gt;<i> The tiny .tif I'm using is included in the project but is loaded by a string path. Thus, you need to retype the path to the image to match your computer, but that should be it. Sorry... wasn't sure how to avoid that easily.
+</I>&gt;<i> 
+</I>&gt;<i> Thanks for your help,
+</I>&gt;<i> 
+</I>&gt;<i> Jay
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A> &lt;mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>&gt;
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A> &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>&gt;
+</I>&gt;<i> 
+</I>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20150630/9a3ab628/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20150630/9a3ab628/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002612.html">[ImageJ-devel] Bug? using ConnectedComponents and LabelRegion(s) with ImageJFunctions.wrapByte(ImagePlus imp)
+</A></li>
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2613">[ date ]</a>
+              <a href="thread.html#2613">[ thread ]</a>
+              <a href="subject.html#2613">[ subject ]</a>
+              <a href="author.html#2613">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

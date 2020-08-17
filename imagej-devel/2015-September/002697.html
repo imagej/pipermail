@@ -1,0 +1,423 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Qeustion regarding labeling and regions of interest in imglib2
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Qeustion%20regarding%20labeling%20and%20regions%20of%0A%20interest%20in%20imglib2&In-Reply-To=%3C55F13B3A.6040507%40mpi-cbg.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002696.html">
+   <LINK REL="Next"  HREF="002695.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Qeustion regarding labeling and regions of interest in imglib2</H1>
+    <B>Robert Haase</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Qeustion%20regarding%20labeling%20and%20regions%20of%0A%20interest%20in%20imglib2&In-Reply-To=%3C55F13B3A.6040507%40mpi-cbg.de%3E"
+       TITLE="[ImageJ-devel] Qeustion regarding labeling and regions of interest in imglib2">rhaase at mpi-cbg.de
+       </A><BR>
+    <I>Thu Sep 10 03:11:38 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002696.html">[ImageJ-devel] Qeustion regarding labeling and regions of	interest in imglib2
+</A></li>
+        <LI>Next message: <A HREF="002695.html">[ImageJ-devel] JEX
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2697">[ date ]</a>
+              <a href="thread.html#2697">[ thread ]</a>
+              <a href="subject.html#2697">[ subject ]</a>
+              <a href="author.html#2697">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Tobias,
+
+thanks a lot for the help. Actually, the presented for-loop only worked 
+for byte images, but the needed change is not too complicated.
+
+Just in case, somebody out there has a similar issue, the final solution is:
+
+//Transform an ImagePlus to an ImpLabeling. The original pixel value 
+should be the label afterwards.
+     public static ImgLabeling&lt;Integer, IntType&gt; 
+getIntIntImgLabellingFromLabelMapImagePlus(ImagePlus labelMap)
+     {
+         final Img&lt; FloatType &gt; img2 = ImageJFunctions.wrapFloat( 
+labelMap );
+         final Dimensions dims = img2;
+         final IntType t = new IntType();
+         final RandomAccessibleInterval&lt; IntType &gt; img = 
+Util.getArrayOrCellImgFactory( dims, t ).create( dims, t );
+         final ImgLabeling&lt; Integer, IntType &gt; labeling = new 
+ImgLabeling&lt; Integer, IntType &gt;( img );
+
+         final Cursor&lt; LabelingType&lt; Integer &gt; &gt; labelCursor = 
+Views.flatIterable( labeling ).cursor();
+
+         for ( final FloatType input : Views.flatIterable( img2 ) )
+         {
+             final LabelingType&lt; Integer &gt; element = labelCursor.next();
+             if ( input.get() != 0 )
+                 element.add( (int)input.get() );
+         }
+
+         return labeling;
+     }
+
+So, thanks again!
+
+Best,
+Robert
+
+Am 9/9/15 um 9:21 PM schrieb Tobias Pietzsch:
+&gt;<i> Hi Robert,
+</I>&gt;<i>
+</I>&gt;<i> the problem is the following:
+</I>&gt;<i> In the ImgLabeling constructor
+</I>&gt;<i> public ImgLabeling( final RandomAccessibleInterval&lt; I &gt; img )
+</I>&gt;<i> the img you pass is used to store the labels at each pixel.
+</I>&gt;<i> (The way that works is that integers are mapped to sets of labels that 
+</I>&gt;<i> occur. If you have labels of type String, i.e., a 
+</I>&gt;<i> ImgLabeling&lt;String,IntType&gt;,
+</I>&gt;<i> then depending on which labels and combinations of labels actually 
+</I>&gt;<i> occur in your labeling, the mapping might be something like
+</I>&gt;<i>  0 -&gt; {}
+</I>&gt;<i>  1 -&gt; {&quot;A&quot;}
+</I>&gt;<i>  2 -&gt; {&quot;B&quot;}
+</I>&gt;<i>  3 -&gt; {&quot;B&quot;,&quot;C&quot;}
+</I>&gt;<i> etc...
+</I>&gt;<i> The mapping is build, as you add labels to pixels.)
+</I>&gt;<i>
+</I>&gt;<i> The assumption is that initially the labeling is empty, that is all 
+</I>&gt;<i> zeros in the backing image, and the mapping just comprising 0 -&gt; {}.
+</I>&gt;<i> In your example, you passed the labelMap as the backing image. This is 
+</I>&gt;<i> not zeroed.
+</I>&gt;<i>
+</I>&gt;<i> One way to make your example work is to simply use a new, empty 
+</I>&gt;<i> backing image, and then set the labels from the labelMap like you did.
+</I>&gt;<i> Replace this:
+</I>&gt;<i> final RandomAccessibleInterval&lt; IntType &gt; img = 
+</I>&gt;<i> ImageJFunctions.wrapNumeric( labelMap );
+</I>&gt;<i> Img&lt; FloatType &gt; img2 = ImageJFunctions.convertFloat( labelMap );
+</I>&gt;<i> final long[] dims = new long[ img.numDimensions() ];
+</I>&gt;<i> ImgLabeling&lt; Integer, IntType &gt; labeling = new ImgLabeling&lt; Integer, 
+</I>&gt;<i> IntType &gt;( img );
+</I>&gt;<i> by this:
+</I>&gt;<i> final Img&lt; FloatType &gt; img2 = ImageJFunctions.convertFloat( labelMap );
+</I>&gt;<i> final Dimensions dims = img2;
+</I>&gt;<i> final IntType t = new IntType();
+</I>&gt;<i> final RandomAccessibleInterval&lt; IntType &gt; img = 
+</I>&gt;<i> Util.getArrayOrCellImgFactory( dims, t ).create( dims, t );
+</I>&gt;<i> final ImgLabeling&lt; Integer, IntType &gt; labeling = new ImgLabeling&lt; 
+</I>&gt;<i> Integer, IntType &gt;( img );
+</I>&gt;<i> Then it works.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> For transfering the labeling you do not have to loop over all the 
+</I>&gt;<i> labels. you could just do this:
+</I>&gt;<i> final Cursor&lt; LabelingType&lt; Integer &gt; &gt; labelCursor = 
+</I>&gt;<i> Views.flatIterable( labeling ).cursor();
+</I>&gt;<i> for ( final UnsignedByteType input : Views.flatIterable( 
+</I>&gt;<i> ImageJFunctions.wrapByte( labelMap ) ) )
+</I>&gt;<i> {
+</I>&gt;<i> final LabelingType&lt; Integer &gt; element = labelCursor.next();
+</I>&gt;<i> if ( input.get() != 0 )
+</I>&gt;<i> element.add( input.get() );
+</I>&gt;<i> }
+</I>&gt;<i> (This assumes that in labelMap the value 0 means &#8220;no label&#8221;).
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> In principle, if your labelMap has values 0, 1, 2, ... without big 
+</I>&gt;<i> gaps, and 0 means &#8220;no label&#8221; you could just use it directly as backing 
+</I>&gt;<i> image and produce a fitting LabelingMapping, like
+</I>&gt;<i>  0 -&gt; {}
+</I>&gt;<i>  1 -&gt; {1}
+</I>&gt;<i>  2 -&gt; {2}
+</I>&gt;<i>  3 -&gt; {3}
+</I>&gt;<i> etc yourself. But that involves diving much deeper into the details, 
+</I>&gt;<i> basically reading through the code of ImgLabeling and LabelingMapping.
+</I>&gt;<i> I would recommend above solution for now.
+</I>&gt;<i>
+</I>&gt;<i> best regards,
+</I>&gt;<i> Tobias
+</I>&gt;<i>
+</I>&gt;<i> On 08 Sep 2015, at 09:11, Robert Haase &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">rhaase at mpi-cbg.de</A> 
+</I>&gt;<i> &lt;mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">rhaase at mpi-cbg.de</A>&gt;&gt; wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> Hi All,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I'm quite new in developing imagej-plugins using imglib2. I ran in 
+</I>&gt;&gt;<i> some issues working with Labeling and Regions in imglib2. Hopefully, 
+</I>&gt;&gt;<i> somebody of you can help me. This is what I would like to do:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I have an image(Plus) where pixel values correspond to the desired 
+</I>&gt;&gt;<i> labeling. Thus, all pixels with value 1 belong to label 1, all pixels 
+</I>&gt;&gt;<i> with value 2 belong to label 2 and so on. Labelled regions cannot 
+</I>&gt;&gt;<i> overlap. Now, I would like to create an ImgLabeling from the given 
+</I>&gt;&gt;<i> ImagePlus to manage the corresponding regions of interest in imglib2 
+</I>&gt;&gt;<i> and to do the analysis using this library.
+</I>&gt;&gt;<i> I was able to create some functions which appear to do the 
+</I>&gt;&gt;<i> transformation, however, the results are not fully understandable for 
+</I>&gt;&gt;<i> me. On bottom of this email you find &quot;minimal&quot; example code (which 
+</I>&gt;&gt;<i> runs fine in eclipse set up for ImageJ-development) which creates a 
+</I>&gt;&gt;<i> labelmap-ImagePlus, transforms it into ImgLabeling and displays 
+</I>&gt;&gt;<i> binary images corresponding to the regions. However, when I input a 
+</I>&gt;&gt;<i> label with 100 pixels, the corresponding output region may or may not 
+</I>&gt;&gt;<i> have the same number of pixels. So the output of the program is:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Number of input pixels in label 0: 9400
+</I>&gt;&gt;<i> Number of input pixels in label 1: 100
+</I>&gt;&gt;<i> Number of input pixels in label 2: 200
+</I>&gt;&gt;<i> Number of input pixels in label 3: 300
+</I>&gt;&gt;<i> Number of input pixels in label 4: 0
+</I>&gt;&gt;<i> Number of out pixels in region: 10000
+</I>&gt;&gt;<i> Number of out pixels in region: 600
+</I>&gt;&gt;<i> Number of out pixels in region: 500
+</I>&gt;&gt;<i> Number of out pixels in region: 300
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> As you can see, the number of read-in pixels is not equal to the 
+</I>&gt;&gt;<i> number of pixels which are positive afterwards in the corresponding 
+</I>&gt;&gt;<i> region. The program visualises the images as well. The mistake in the 
+</I>&gt;&gt;<i> result is obvious. My mistake in the code is not that obvious to me.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I guess, I interpret the meaning of regions and/or labels wrong. 
+</I>&gt;&gt;<i> Hopefully somebody of you may point me in the right direction to do 
+</I>&gt;&gt;<i> the above mentioned transformation properly.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Thanks a lot in advance!
+</I>&gt;&gt;<i> Robert
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> LabelingExample.java ----------------------------
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> import ij.ImagePlus;
+</I>&gt;&gt;<i> import ij.gui.NewImage;
+</I>&gt;&gt;<i> import ij.process.ImageProcessor;
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> import java.awt.Rectangle;
+</I>&gt;&gt;<i> import java.io.IOException;
+</I>&gt;&gt;<i> import java.util.Set;
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> import net.imglib2.Cursor;
+</I>&gt;&gt;<i> import net.imglib2.RandomAccess;
+</I>&gt;&gt;<i> import net.imglib2.RandomAccessibleInterval;
+</I>&gt;&gt;<i> import net.imglib2.img.Img;
+</I>&gt;&gt;<i> import net.imglib2.img.array.ArrayImgs;
+</I>&gt;&gt;<i> import net.imglib2.img.display.imagej.ImageJFunctions;
+</I>&gt;&gt;<i> import net.imglib2.roi.labeling.ImgLabeling;
+</I>&gt;&gt;<i> import net.imglib2.roi.labeling.LabelRegion;
+</I>&gt;&gt;<i> import net.imglib2.roi.labeling.LabelRegionCursor;
+</I>&gt;&gt;<i> import net.imglib2.roi.labeling.LabelRegions;
+</I>&gt;&gt;<i> import net.imglib2.roi.labeling.LabelingType;
+</I>&gt;&gt;<i> import net.imglib2.type.logic.BitType;
+</I>&gt;&gt;<i> import net.imglib2.type.logic.BoolType;
+</I>&gt;&gt;<i> import net.imglib2.type.numeric.integer.IntType;
+</I>&gt;&gt;<i> import net.imglib2.type.numeric.real.FloatType;
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> public class LabelingExample {
+</I>&gt;&gt;<i>    LabelingExample()
+</I>&gt;&gt;<i>    {
+</I>&gt;&gt;<i>        new ij.ImageJ();
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>        //Create and show a simple test image, 100x100
+</I>&gt;&gt;<i>        ImagePlus imp = createTestImage();
+</I>&gt;&gt;<i>        imp.show();
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>        //Create an ImgLabeling from the ImagePlus
+</I>&gt;&gt;<i>        ImgLabeling&lt;Integer, IntType&gt; labeling = 
+</I>&gt;&gt;<i> getIntIntImgLabellingFromLabelMapImagePlus(imp);
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>        //Read out regions and labelNames
+</I>&gt;&gt;<i>        LabelRegions&lt;Integer&gt; regions = new 
+</I>&gt;&gt;<i> LabelRegions&lt;Integer&gt;(labeling);
+</I>&gt;&gt;<i>        Set&lt;Integer&gt; labelNames = labeling.getMapping().getLabels();
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>        //Visualise the labels as binary images.
+</I>&gt;&gt;<i>        for (Integer labelName : labelNames )
+</I>&gt;&gt;<i>        {
+</I>&gt;&gt;<i>            LabelRegion&lt;Integer&gt; lr = regions.getLabelRegion(labelName);
+</I>&gt;&gt;<i>            ImageJFunctions.show(labelRegionToBinaryImage(lr, 
+</I>&gt;&gt;<i> (Img&lt;IntType&gt;)labeling.getIndexImg()));
+</I>&gt;&gt;<i>        }
+</I>&gt;&gt;<i>    }
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>    //Create an image with three labels (+background)
+</I>&gt;&gt;<i>    //The three labels have an area of 100, 200 and 300.
+</I>&gt;&gt;<i>    private ImagePlus createTestImage()
+</I>&gt;&gt;<i>    {
+</I>&gt;&gt;<i>        ImagePlus imp = NewImage.createByteImage(&quot;Test iamge&quot;, 100, 
+</I>&gt;&gt;<i> 100, 1, NewImage.FILL_BLACK);
+</I>&gt;&gt;<i>        ImageProcessor ip = imp.getProcessor();
+</I>&gt;&gt;<i>        ip.setRoi(new Rectangle(10, 10, 10, 10));
+</I>&gt;&gt;<i>        ip.setColor(1);
+</I>&gt;&gt;<i>        ip.fill();
+</I>&gt;&gt;<i>        ip.setRoi(new Rectangle(20, 20, 10, 20));
+</I>&gt;&gt;<i>        ip.setColor(2);
+</I>&gt;&gt;<i>        ip.fill();
+</I>&gt;&gt;<i>        ip.setRoi(new Rectangle(40, 40, 10, 30));
+</I>&gt;&gt;<i>        ip.setColor(3);
+</I>&gt;&gt;<i>        ip.fill();
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>        return imp;
+</I>&gt;&gt;<i>    }
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>    //Transform an ImagePlus to a Labeling Imp. The original pixel 
+</I>&gt;&gt;<i> value should be the label afterwards.
+</I>&gt;&gt;<i>    public static ImgLabeling&lt;Integer, IntType&gt; 
+</I>&gt;&gt;<i> getIntIntImgLabellingFromLabelMapImagePlus(ImagePlus labelMap)
+</I>&gt;&gt;<i>    {
+</I>&gt;&gt;<i>        final RandomAccessibleInterval&lt; IntType &gt; img = 
+</I>&gt;&gt;<i> ImageJFunctions.wrapNumeric(labelMap);
+</I>&gt;&gt;<i>        Img&lt; FloatType &gt; img2 = ImageJFunctions.convertFloat(labelMap);
+</I>&gt;&gt;<i>        final long[] dims = new long[ img.numDimensions() ];
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>        ImgLabeling&lt; Integer, IntType &gt; labeling = new ImgLabeling&lt; 
+</I>&gt;&gt;<i> Integer, IntType &gt;( img );
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>        Cursor&lt;LabelingType&lt;Integer&gt;&gt; labelCursor = labeling.cursor();
+</I>&gt;&gt;<i>        RandomAccess&lt;FloatType&gt; imageRA = img2.randomAccess();
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>        // Go through the whole image again and again for every single 
+</I>&gt;&gt;<i> label, until no more label is found.
+</I>&gt;&gt;<i>        // If you know a more efficient way to do this, tell me...
+</I>&gt;&gt;<i>        int currentLabel = 0;
+</I>&gt;&gt;<i>        boolean anythingFound = true;
+</I>&gt;&gt;<i>        while (anythingFound)
+</I>&gt;&gt;<i>        {
+</I>&gt;&gt;<i>            anythingFound = false;
+</I>&gt;&gt;<i>            labelCursor.reset();
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>            //Go through the whole image and add every pixel, that 
+</I>&gt;&gt;<i> belongs to the currently processed label
+</I>&gt;&gt;<i>            int count = 0;
+</I>&gt;&gt;<i>            while (labelCursor.hasNext())
+</I>&gt;&gt;<i>            {
+</I>&gt;&gt;<i>                LabelingType&lt;Integer&gt; element = labelCursor.next();
+</I>&gt;&gt;<i>                imageRA.setPosition(labelCursor);
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>                int i = (int)(imageRA.get().get());
+</I>&gt;&gt;<i>                if (i == currentLabel)
+</I>&gt;&gt;<i>                {
+</I>&gt;&gt;<i>                    element.add(i);
+</I>&gt;&gt;<i>                    anythingFound = true;
+</I>&gt;&gt;<i>                    count ++;
+</I>&gt;&gt;<i>                }
+</I>&gt;&gt;<i>            }
+</I>&gt;&gt;<i>            System.out.println(&quot;Number of input pixels in label &quot; + 
+</I>&gt;&gt;<i> currentLabel + &quot;: &quot; + count);
+</I>&gt;&gt;<i>            currentLabel++;
+</I>&gt;&gt;<i>        }
+</I>&gt;&gt;<i>        ImageJFunctions.show(labeling.getIndexImg());
+</I>&gt;&gt;<i>        return labeling;
+</I>&gt;&gt;<i>    }
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>    //Transform a Region to a binary image, which can be displayed
+</I>&gt;&gt;<i>    public static &lt; T, F &gt; Img&lt;BitType&gt; 
+</I>&gt;&gt;<i> labelRegionToBinaryImage(LabelRegion&lt;T&gt; region, Img&lt;F&gt; img)
+</I>&gt;&gt;<i>    {
+</I>&gt;&gt;<i>        final long[] pos = new long[ img.numDimensions() ];
+</I>&gt;&gt;<i>        final long[] dims = new long[ img.numDimensions() ];
+</I>&gt;&gt;<i>        img.dimensions( dims );
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>        final Img&lt; BitType &gt; newImage = ArrayImgs.bits( dims );
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>        RandomAccess&lt;BitType&gt; imageRA = newImage.randomAccess();
+</I>&gt;&gt;<i>        LabelRegionCursor regionCursor = region.cursor();
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>        int count = 0;
+</I>&gt;&gt;<i>        while (regionCursor.hasNext())
+</I>&gt;&gt;<i>        {
+</I>&gt;&gt;<i>            //Read yes/no from region
+</I>&gt;&gt;<i>            BoolType regionElement = regionCursor.next();
+</I>&gt;&gt;<i>            regionCursor.localize(pos);
+</I>&gt;&gt;<i>            imageRA.setPosition(pos);
+</I>&gt;&gt;<i>            BitType imageElement = imageRA.get();
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>            //Draw binary image pixel by pixel
+</I>&gt;&gt;<i>            if (regionElement.get())
+</I>&gt;&gt;<i>            {
+</I>&gt;&gt;<i>                count++;
+</I>&gt;&gt;<i>                imageElement.set(true);
+</I>&gt;&gt;<i>            }
+</I>&gt;&gt;<i>            else
+</I>&gt;&gt;<i>            {
+</I>&gt;&gt;<i>                imageElement.set(false);
+</I>&gt;&gt;<i>            }
+</I>&gt;&gt;<i>        }
+</I>&gt;&gt;<i>        System.out.println(&quot;Number of output pixels in region: &quot; + count);
+</I>&gt;&gt;<i>        return newImage;
+</I>&gt;&gt;<i>    }
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>    //Just to run it
+</I>&gt;&gt;<i>    public static void main(final String... args) throws IOException
+</I>&gt;&gt;<i>    {
+</I>&gt;&gt;<i>        new LabelingExample();
+</I>&gt;&gt;<i>    }
+</I>&gt;&gt;<i> }
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> -- 
+</I>&gt;&gt;<i> Robert Haase
+</I>&gt;&gt;<i> Bio-Image informatics, Scientific Computing Facility
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Max Planck Institute CBG
+</I>&gt;&gt;<i> Pfotenhauer Str. 108, 01307 Dresden
+</I>&gt;&gt;<i> room: 106 (s)
+</I>&gt;&gt;<i> phone: +49 351 210 2972
+</I>&gt;&gt;<i> fax:   +49 351 210 1689
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A> &lt;mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>&gt;
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>
+-- 
+Robert Haase
+Bio-Image informatics, Scientific Computing Facility
+
+Max Planck Institute CBG
+Pfotenhauer Str. 108, 01307 Dresden
+room: 106 (s)
+phone: +49 351 210 2972
+fax:   +49 351 210 1689
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20150910/fc115410/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20150910/fc115410/attachment-0001.html</A>&gt;
+</PRE>
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002696.html">[ImageJ-devel] Qeustion regarding labeling and regions of	interest in imglib2
+</A></li>
+	<LI>Next message: <A HREF="002695.html">[ImageJ-devel] JEX
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2697">[ date ]</a>
+              <a href="thread.html#2697">[ thread ]</a>
+              <a href="subject.html#2697">[ subject ]</a>
+              <a href="author.html#2697">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

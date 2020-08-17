@@ -1,0 +1,170 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [fiji-devel] Re: jython scripting, No compatible service: io.scif.SCIFIOService
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20Re%3A%20jython%20scripting%2C%0A%20No%20compatible%20service%3A%20io.scif.SCIFIOService&In-Reply-To=%3CCA%2BB%3DmGoJOTLzj%2B8J%3Dz9efHh%2BHynpowXmC72hwz3V16JrcRcezQ%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001966.html">
+   <LINK REL="Next"  HREF="001969.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [fiji-devel] Re: jython scripting, No compatible service: io.scif.SCIFIOService</H1>
+    <B>Mark Hiner</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20Re%3A%20jython%20scripting%2C%0A%20No%20compatible%20service%3A%20io.scif.SCIFIOService&In-Reply-To=%3CCA%2BB%3DmGoJOTLzj%2B8J%3Dz9efHh%2BHynpowXmC72hwz3V16JrcRcezQ%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] [fiji-devel] Re: jython scripting, No compatible service: io.scif.SCIFIOService">hinerm at gmail.com
+       </A><BR>
+    <I>Thu Feb 27 12:01:28 CST 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001966.html">[ImageJ-devel] [fiji-devel] Re:  jython scripting, No compatible service: io.scif.SCIFIOService
+</A></li>
+        <LI>Next message: <A HREF="001969.html">[ImageJ-devel] [fiji-devel] Re: jython scripting, No compatible service: io.scif.SCIFIOService
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1968">[ date ]</a>
+              <a href="thread.html#1968">[ thread ]</a>
+              <a href="subject.html#1968">[ subject ]</a>
+              <a href="author.html#1968">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Harri,
+
+[ERROR] Cannot create plugin: class='io.scif.bf.
+&gt;<i> BioFormatsFormat', priority=10000.0, enabled=true, pluginType=Format
+</I>&gt;<i> java.lang.IllegalAccessError: tried to access field
+</I>&gt;<i> io.scif.AbstractFormat.suffixes from class io.scif.bf.BioFormatsFormat
+</I>&gt;<i>
+</I>
+This ugly stack trace comes up from the jar containing BioFormatsFormat,
+part of the SCIFIO-BF-Compat
+&lt;<A HREF="https://github.com/scifio/scifio-bf-compat">https://github.com/scifio/scifio-bf-compat</A>&gt;layer, being out of date.
+In and of itself, that is not a critical problem
+as long as there are other formats that can open your dataset. But
+something that should still be fixed, certainly.
+
+at io.scif.ome.xml.meta.OMEXMLFormat$Checker.&lt;init&gt;(OMEXMLFormat.java:244)
+&gt;<i> ...
+</I>&gt;<i> java.lang.NoSuchFieldError: java.lang.NoSuchFieldError: suffixNecessary
+</I>&gt;<i>
+</I>
+Similarly, the OME-Formats
+&lt;<A HREF="https://github.com/scifio/ome-formats">https://github.com/scifio/ome-formats</A>&gt;component was out of date and
+did not adhere to the latest SCIFIO API.
+Ideally it would be great to get this working properly as it adds better
+support for ome.tiffs.
+
+export CLASSPATH=`find /home/hajaalin/Software/mvn-IJ2/target/dependency
+&gt;<i> -name '*.jar' |sed ':a;N;$!ba;s/\n/:/g'`
+</I>&gt;<i>
+</I>jython /home/hajaalin/Software/fiji-20140219/Fiji.app/macros/imglib1.py
+&gt;<i> /home/hajaalin/Data/Misha/composite1.ome.tif
+</I>&gt;<i>
+</I>
+This is tangential, but I feel like I am doing a disservice by using the
+command line invocations as examples in my e-mails. You were doing the
+exact correct thing by using Fiji.app/ImageJ-linux64 to execute your
+script, and that is something I would like to encourage (additionally
+because if there are problems using fiji to run your script, I want to
+ensure they are fixed).
+
+I will still test with both Fiji and jython directly on my end to ensure
+they behave equivalently, but I would encourage you to just stick with
+using Fiji for general use, as it takes care of bookkeeping for you and
+really should be both simpler and superior.
+
+Now there are no errors and I get directly the Java elf, but still no image.
+&gt;<i>
+</I>
+OK, so I uploaded several new components to Fiji this morning to at least
+fix the jar skew errors you were seeing (although we won't have perfect
+ome.tif support until this
+ticket&lt;<A HREF="https://github.com/imagej/imagej/issues/21">https://github.com/imagej/imagej/issues/21</A>&gt;is complete -
+hopefully soon). I tested on my Linux VM by downloading a
+fresh Fiji, and got your datasets (thank you for that!). On my end, I was
+able to open both composite1.ome.tif and joo.jpg from all of:
+
+* Fiji (legacy mode)
+* IJ2 (Fiji -&gt; Switch to modern mode)
+* your script via Fiji
+* your script via jython
+
+These datasets definitely look worse from the script than Fiji/IJ2, which
+is reasonable since they aren't composited or autoscaled or anything... but
+they do look correct to me and opened without error.
+
+Anyway, I hope the latest Fiji works for you. Give it a try and let me know
+if you run into any more problems.
+
+Thank you for your persistence!
+
+- Mark
+
+
+On Thu, Feb 27, 2014 at 5:04 AM, Harri J&#228;&#228;linoja &lt;
+<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">harri.jaalinoja at helsinki.fi</A>&gt; wrote:
+
+&gt;<i> Hi again,
+</I>&gt;<i>
+</I>&gt;<i> I tried also with the set of jars I got with the maven and the pom.xml I
+</I>&gt;<i> sent earlier:
+</I>&gt;<i>
+</I>&gt;<i> export CLASSPATH=`find /home/hajaalin/Software/mvn-IJ2/target/dependency
+</I>&gt;<i> -name '*.jar' |sed ':a;N;$!ba;s/\n/:/g'`
+</I>&gt;<i> jython /home/hajaalin/Software/fiji-20140219/Fiji.app/macros/imglib1.py
+</I>&gt;<i> /home/hajaalin/Data/Misha/composite1.ome.tif
+</I>&gt;<i>
+</I>&gt;<i> Now there are no errors and I get directly the Java elf, but still no
+</I>&gt;<i> image.
+</I>&gt;<i>
+</I>&gt;<i> Harri
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> --
+</I>&gt;<i> __________________________________________________
+</I>&gt;<i> Harri J&#228;&#228;linoja
+</I>&gt;<i> Light Microscopy Unit
+</I>&gt;<i> Institute of Biotechnology, University of Helsinki
+</I>&gt;<i> <A HREF="http://www.biocenter.helsinki.fi/bi/lmu/">http://www.biocenter.helsinki.fi/bi/lmu/</A>
+</I>&gt;<i> +358 9 191 59370 fax +358 9 191 59366
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140227/1f482f40/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20140227/1f482f40/attachment.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001966.html">[ImageJ-devel] [fiji-devel] Re:  jython scripting, No compatible service: io.scif.SCIFIOService
+</A></li>
+	<LI>Next message: <A HREF="001969.html">[ImageJ-devel] [fiji-devel] Re: jython scripting, No compatible service: io.scif.SCIFIOService
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1968">[ date ]</a>
+              <a href="thread.html#1968">[ thread ]</a>
+              <a href="subject.html#1968">[ subject ]</a>
+              <a href="author.html#1968">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,266 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] ImgLib split?
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImgLib%20split%3F&In-Reply-To=%3CCADN69ynFcz6jqw2tnb10CB6ZfC1c60Wi3uLHudVtwc5w13j_nA%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002009.html">
+   <LINK REL="Next"  HREF="002011.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] ImgLib split?</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImgLib%20split%3F&In-Reply-To=%3CCADN69ynFcz6jqw2tnb10CB6ZfC1c60Wi3uLHudVtwc5w13j_nA%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] ImgLib split?">ctrueden at wisc.edu
+       </A><BR>
+    <I>Tue Apr  8 16:24:10 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002009.html">[ImageJ-devel] ImgLib split?
+</A></li>
+        <LI>Next message: <A HREF="002011.html">[ImageJ-devel] ImgLib split?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2010">[ date ]</a>
+              <a href="thread.html#2010">[ thread ]</a>
+              <a href="subject.html#2010">[ subject ]</a>
+              <a href="author.html#2010">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Tobias,
+
+&gt;<i> I must have missed that. Can you send a link?
+</I>
+<A HREF="https://list.nih.gov/cgi-bin/wa.exe?A2=IMAGEJ;8570535e.1404">https://list.nih.gov/cgi-bin/wa.exe?A2=IMAGEJ;8570535e.1404</A>
+
+&gt;<i> I would just ask that Curtis or you explain for a half hour or so
+</I>&gt;<i> these magic release engineering helpers over skype.
+</I>
+Happy to do it, once it is all in place. Early progress is here:
+* <A HREF="https://github.com/scijava/pom-scijava/compare/developer-profiles">https://github.com/scijava/pom-scijava/compare/developer-profiles</A>
+Though in general we are moving toward this:
+* <A HREF="https://github.com/scijava/scijava-maven-plugin">https://github.com/scijava/scijava-maven-plugin</A>
+
+The idea being to have a Maven plugin that eliminates tediousness in
+various ways.
+
+Unfortunately, developing this infrastructure cannot be our priority before
+June 1.
+
+&gt;<i> My fear with splitting subprojects is that this will make it harder to
+</I>&gt;<i> consistently refactor across subprojects, (or clean up behind commits
+</I>&gt;<i> that don't), see this discussion
+</I>&gt;<i> <A HREF="https://github.com/imglib/imglib/pull/23">https://github.com/imglib/imglib/pull/23</A> (last 10 messages or so). How
+</I>&gt;<i> can we pull this off consistently?
+</I>
+That is a fair concern. However, as long as all affected projects are open
+in Eclipse, and coupled with project couplings at the time, the refactoring
+will cover everything. If someone does a refactoring while excluding a
+downstream project, the easiest solution I know to &quot;fix it&quot; later is to
+check out the old version of the code prior to performing the refactoring
+and reperform it with the project linkage in place this time.
+
+&gt;<i> Also I image that we will require quite a bit more of &quot;git logistics&quot;
+</I>&gt;<i> with split projects. For example, assume that I want to make a new
+</I>&gt;<i> topic branch that touches more than one subproject (which easily
+</I>&gt;<i> happens when refactoring).
+</I>
+This is actually a larger concern to me. However, it comes down to how
+mature the project is. When you are in the incubation phase (pre-release),
+then these refactorings are common, and SNAPSHOT couplings with a
+multi-module Maven project are desirable. However, once you become released
+and stable, there is an increased need to maintain backwards compatibility.
+In that case, you really want to *avoid* those sorts of refactorings in the
+future. I mean sure, you can do them, but you must also maintain backwards
+compatibility, meaning that you leave the old API there too (often
+@Deprecated). In that common scenario, you probably actually want to alter
+only one project at a time, then make sure the changes in a &quot;low-level&quot;
+project like imglib2 core do not adversely affect downstream &quot;higher-level&quot;
+projects such as imglib2-realtransform.
+
+&gt;<i> How will Jenkins deal with this decoupled situation: I will merge my
+</I>&gt;<i> topic branches into master in each of the subprojects sequentially.
+</I>&gt;<i> This will produce a lot of failing intermediate builds in Jenkins,
+</I>&gt;<i> right?
+</I>
+No, because each component is pinned to release versions of other
+components. So changing master of one component will have no effect on the
+Jenkins builds of other components. You would need to do a release of
+component A, then update component B's dependency to the new version of A,
+before the Jenkins build would be affected.
+
+It is useful locally to pin a bunch of components together temporarily
+using SNAPSHOTs. But you never want that pin to make it onto the master
+branch, or else the build will be irreproducible. So one of our goals is to
+make it as easy as possible to toggle your local developer configuration
+between release and snapshot couplings, while simultaneously making it as
+difficult as possible to accidentally commit and push code that uses or
+requires the SNAPSHOT bindings to work.
+
+&gt;<i> How about doing decoupled versions without splitting up the git
+</I>&gt;<i> repository? It seems to me that this would be an easy way to avoid the
+</I>&gt;<i> downsides mentioned before.
+</I>
+It would avoid some of them, and cause others...
+
+&gt;<i> One more thing: If you want to bring imglib core out of beta, we
+</I>&gt;<i> should probably do a clean-up. There are things that are in core now,
+</I>&gt;<i> I would not consider ready for release (ROIs come to mind). So either
+</I>&gt;<i> we live with rapidly growing major version numbers due to frequent API
+</I>&gt;<i> breaks (fine with me) or split out the not-quite-ready parts into
+</I>&gt;<i> their own subprojects (also fine with me).
+</I>
+It is not a matter of &quot;if&quot; but &quot;when&quot;. We simply cannot leave ImgLib2 in
+beta forever. That said, ImgLib2 does not need to be released before ImageJ
+2.0.0's June 1 deadline, because that deadline has very limited scope. The
+new N-dimensional data model is not included with that. But we will need to
+bite the bullet eventually, possibly even later this year...
+
+&gt;<i> either we live with rapidly growing major version numbers due to
+</I>&gt;<i> frequent API breaks (fine with me)
+</I>
+To a limited extent I am also fine with that. But I think we should impose
+a limit; e.g., &quot;no more than one major release bump per year&quot; or some such.
+Ideally much less often, if ever. Keep in mind that in a highly extensible
+framework like ImageJ, every breaking change can have enormous disruptive
+consequences. The fact that ImgLib2 is not stable and released with a
+guaranteed-not-to-break-later API has surely stunted its adoption. We can
+discuss and refine more as the projects continue to mature.
+
+Regards,
+Curtis
+
+
+On Tue, Apr 8, 2014 at 1:49 AM, Tobias Pietzsch &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pietzsch at mpi-cbg.de</A>&gt; wrote:
+
+&gt;<i> Hi Johannes and Curtis,
+</I>&gt;<i>
+</I>&gt;<i> certainly you saw Curtis' recent mail about our plans for ImageJ2?
+</I>&gt;<i>
+</I>&gt;<i> I must have missed that. Can you send a link?
+</I>&gt;<i>
+</I>&gt;<i> First of all: in principle, I have no problem with that if it is necessary.
+</I>&gt;<i> I would just ask that Curtis or you explain for a half hour or so these
+</I>&gt;<i> magic release engineering helpers over skype. (It would by the way also be
+</I>&gt;<i> nice to know how this currently works. I have no idea, how I would do a
+</I>&gt;<i> &quot;proper beta release&quot; if I wanted to do so... I would appreciate some
+</I>&gt;<i> pointers to documentation or scripts etc.)
+</I>&gt;<i>
+</I>&gt;<i> That being said, here are my concerns and questions:
+</I>&gt;<i>
+</I>&gt;<i> My fear with splitting subprojects is that this will make it harder to
+</I>&gt;<i> consistently refactor across subprojects, (or clean up behind commits that
+</I>&gt;<i> don't), see this discussion <A HREF="https://github.com/imglib/imglib/pull/23">https://github.com/imglib/imglib/pull/23</A> (last
+</I>&gt;<i> 10 messages or so).
+</I>&gt;<i> How can we pull this off consistently?
+</I>&gt;<i>
+</I>&gt;<i> Also I image that we will require quite a bit more of &quot;git logistics&quot; with
+</I>&gt;<i> split projects. For example, assume that I want to make a new topic branch
+</I>&gt;<i> that touches more than one subproject (which easily happens when
+</I>&gt;<i> refactoring). Will I have to make topic branches in all subprojects? Is
+</I>&gt;<i> there a way to relate these other than manually by using the same branch
+</I>&gt;<i> names across projects, etc?
+</I>&gt;<i> How will Jenkins deal with this decoupled situation: I will merge my topic
+</I>&gt;<i> branches into master in each of the subprojects sequentially. This will
+</I>&gt;<i> produce a lot of failing intermediate builds in Jenkins, right? I think
+</I>&gt;<i> this will complicate hunting down errors.
+</I>&gt;<i> Overall, I'm a bit afraid of the additional overhead.
+</I>&gt;<i>
+</I>&gt;<i> How about doing decoupled versions without splitting up the git
+</I>&gt;<i> repository? It seems to me that this would be an easy way to avoid the
+</I>&gt;<i> downsides mentioned before.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> One more thing: If you want to bring imglib core out of beta, we should
+</I>&gt;<i> probably do a clean-up.
+</I>&gt;<i> There are things that are in core now, I would not consider ready for
+</I>&gt;<i> release (ROIs come to mind).
+</I>&gt;<i> So either we live with rapidly growing major version numbers due to
+</I>&gt;<i> frequent API breaks (fine with me) or split out the not-quite-ready parts
+</I>&gt;<i> into their own subprojects (also fine with me).
+</I>&gt;<i>
+</I>&gt;<i> Stephans, what do you think?
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> best regards,
+</I>&gt;<i> Tobias
+</I>&gt;<i>
+</I>&gt;<i> On Apr 7, 2014, at 11:06 PM, Johannes Schindelin &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">schindelin at wisc.edu</A>&gt;
+</I>&gt;<i> wrote:
+</I>&gt;<i>
+</I>&gt;<i> Hi Tobias, Stephan &amp; Stephan,
+</I>&gt;<i>
+</I>&gt;<i> certainly you saw Curtis' recent mail about our plans for ImageJ2?
+</I>&gt;<i> Basically, we want to release a version of ImageJ whose user interface
+</I>&gt;<i> looks like ImageJ1, but internally uses all the goodies on which we worked
+</I>&gt;<i> so hard these past years.
+</I>&gt;<i>
+</I>&gt;<i> That includes ImgLib2, of course, so we would need to bring parts of
+</I>&gt;<i> ImgLib2 out of beta. In particular, we found it unwise to always version
+</I>&gt;<i> all of ImgLib2 in unison. Rather, there should be releases of the
+</I>&gt;<i> individual components whenever there should be new releases: bug fixes,
+</I>&gt;<i> API enhancements, API-breaking major new developments.
+</I>&gt;<i>
+</I>&gt;<i> As always, Curtis &amp; I are ready to help with all of that stuff, in
+</I>&gt;<i> particular with helpers making release engineering close to fun. Our
+</I>&gt;<i> central goal in that respect is to make it as easy as possible to switch
+</I>&gt;<i> between A) reproducible builds with release couplings; and B)
+</I>&gt;<i> tightly-coupled builds with snapshot couplings for rapid development
+</I>&gt;<i> across components.
+</I>&gt;<i>
+</I>&gt;<i> The first step would be to break the multi-module ImgLib2 repository apart
+</I>&gt;<i> (much in the way we split out imglib2-tests and friends, except that we
+</I>&gt;<i> split out *all* of the individual projects). We do not see any other way
+</I>&gt;<i> to get only that part of ImgLib2 out of beta that we really need for the
+</I>&gt;<i> ImageJ2 release...
+</I>&gt;<i>
+</I>&gt;<i> Are you okay with that plan?
+</I>&gt;<i>
+</I>&gt;<i> Ciao,
+</I>&gt;<i> Dscho
+</I>&gt;<i>
+</I>&gt;<i> P.S. We are planning to split up imagej.git in very much the same way.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140408/a4ef165b/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20140408/a4ef165b/attachment.html</A>&gt;
+</PRE>
+
+
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002009.html">[ImageJ-devel] ImgLib split?
+</A></li>
+	<LI>Next message: <A HREF="002011.html">[ImageJ-devel] ImgLib split?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2010">[ date ]</a>
+              <a href="thread.html#2010">[ thread ]</a>
+              <a href="subject.html#2010">[ subject ]</a>
+              <a href="author.html#2010">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

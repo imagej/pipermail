@@ -1,0 +1,173 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Design meeting notes
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Design%20meeting%20notes&In-Reply-To=%3C4CADCDC2.1070609%40broadinstitute.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000170.html">
+   <LINK REL="Next"  HREF="000169.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Design meeting notes</H1>
+    <B>Lee Kamentsky</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Design%20meeting%20notes&In-Reply-To=%3C4CADCDC2.1070609%40broadinstitute.org%3E"
+       TITLE="[ImageJ-devel] Design meeting notes">leek at broadinstitute.org
+       </A><BR>
+    <I>Thu Oct  7 08:40:18 CDT 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000170.html">[ImageJ-devel] Design meeting notes
+</A></li>
+        <LI>Next message: <A HREF="000169.html">[ImageJ-devel] Design meeting notes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#167">[ date ]</a>
+              <a href="thread.html#167">[ thread ]</a>
+              <a href="subject.html#167">[ subject ]</a>
+              <a href="author.html#167">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>  My notes on your notes - I'm not wedded to any of the positions taken 
+below, so if yours differ, try to convince me otherwise:
+
+*&quot;Each plugin pushes the result forward in the chain using an image 
+dispatcher&quot;*
+I'd recommend CellProfiler's approach and note that @parameter for 
+images could let any UI, along with the user, determine which images are 
+associated with which arguments. A UI should suggest any previous output 
+image as a possible input image for a later stage. For interactive 
+ImageJ, this is a list of whatever images are open, for a pipelined or 
+batch model, this is a list of the outputs of previous pipeline steps.
+
+*View: 8 GenericDialog
+*
+
+    * Is there any mechanism that lets a plugin validate the consistency
+      of its arguments? For instance, a certain combination of options
+      may not make sense - most typical case would be a minimum and
+      maximum numeric value with the maximum larger than the minimum.
+          o Related, some @parameters will be superfluous under some
+            circumstances: as an example, CellProfiler's mixture of
+            gaussians thresholding method asks &quot;what percentage of the
+            image is foreground?&quot;, but the Otsu thresholding method does
+            not. CellProfiler does this by asking the module for the
+            settings to display (and the user doesn't have to implement
+            the method in which case all are displayed). How would such
+            a method in ImageJ name the parameters to display? (string
+            matching the field name? Tags in @parameters matching a
+            string array returned by the method?
+    * *How to specify choices*? For instance, our Otsu thresholding
+      method takes 2 or 3 classes or maximizes the inter-class variance
+      or entropy. (and there are about 8 thresholding algorithms to
+      choose from other than Otsu). I would recommend a &quot;choices&quot;
+      attribute in @parameter. I am hoping that you all can make the
+      architecturally elegant choice of how to link an ordered array of
+      strings to the attribute.
+    * Help annotations in @parameter - user-visible explanations of the
+      effect of each parameter. CellProfiler uses a bastardized HTML
+      here (limitations of our HTML control).
+    * &quot;Nudge&quot;: the controller can nudge the view, possibly does not need
+      to nudge the model. UIs can be slow, in CellProfiler, the nudge is
+      pretty coarse: &quot;View, completely reconstruct yourself&quot;.
+
+*Display plugin architecture*
+My prejudice here is to find ways to be clever and keep UI out of the 
+plugin. The trick is to imagine the plugin as being unable to concieve 
+of the concept of UI and you have to ask the stupid thing questions that 
+get past its lack of imagination: &quot;Which of your parameters are relevant 
+for your operation?&quot; = &quot;what parameters should be displayed on screen&quot;. 
+If the plugin hankers to display something, maybe that's an output 
+parameter and maybe there are hints as to how it might be displayed, but 
+little more than that: histogram of a vector of values, scattergram of 
+pairs of values. I have my personal reasons for these choices (make it 
+work with CellProfiler), but the result of these choices is an 
+architecture that will not lock you into display particulars, will 
+regularize the appearance and interactions across plugins and will give 
+plugin developers easy to use tools to do the things they need to do.
+
+Be extremely clever here - it can be a game, how dumb can you make a 
+plugin? A plugin wants the user to select points or regions or wants to 
+draw on an image - the drawing, etc, is an input parameter to the 
+algorithm and it isn't the plugin's job to control the interaction.
+
+Maybe think of ways that plugin developers can add both controller and 
+display elements and reference them from their plugin - the developer's 
+package registers controller and display names that are used by the 
+plugin. This would encourage contribution of generic controller and 
+display code that would be reusable instead of buried in a single plugin.
+
+*Demo of CellProfiler
+
+*I think Curtis has either the binary or a link to one - trunk 
+CellProfiler build that is demoable for Tubeness. *Grant* is looking 
+over my mods to Tubeness - *Johannes*, you are a Tubeness author, my 
+mods to it are attached and you are welcome to correct my mistakes, also 
+if you have any other favorite plugins that you want to mod or have me 
+mod, I'd love that.
+
+*Action items
+
+*Lee: CellProfiler demo
+
+
+On 10/6/2010 6:02 PM, Curtis Rueden wrote:
+&gt;<i> Hi everyone,
+</I>&gt;<i>
+</I>&gt;<i> A few of us met for several hours today to discuss some design issues 
+</I>&gt;<i> for ImageJ 2.0. The original goal of the meeting was to begin defining 
+</I>&gt;<i> a new core class hierarchy corresponding to many of ImageJ's 
+</I>&gt;<i> historically most central classes: e.g., ImagePlus, ImageStack, 
+</I>&gt;<i> ImageProcessor. However, we discussed several other architectural 
+</I>&gt;<i> issues as well. I tried to take notes but they ended up being very 
+</I>&gt;<i> terse. Nonetheless, I wanted to mention their availability at:
+</I>&gt;<i>
+</I>&gt;<i> <A HREF="https://docs.google.com/document/pub?id=13zVORIFldha5xT8C3wUPLPGr_ok30rh9whLrEsxYA_s">https://docs.google.com/document/pub?id=13zVORIFldha5xT8C3wUPLPGr_ok30rh9whLrEsxYA_s</A>
+</I>&gt;<i>
+</I>&gt;<i> There are not really any detailed class and/or interface definitions 
+</I>&gt;<i> yet&#8212;when the design is that far along we will post details, diagrams, 
+</I>&gt;<i> etc. to the imagejdev.org &lt;<A HREF="http://imagejdev.org">http://imagejdev.org</A>&gt; web site. But for the 
+</I>&gt;<i> moment we are focusing on some concrete milestones within the existing 
+</I>&gt;<i> ImageJ v1.x codebase, to present at the ImageJ conference later this 
+</I>&gt;<i> month.
+</I>&gt;<i>
+</I>&gt;<i> -Curtis
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagejdev.org</A>
+</I>&gt;<i> <A HREF="http://imagejdev.org/mailman/listinfo/imagej-devel">http://imagejdev.org/mailman/listinfo/imagej-devel</A>
+</I>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20101007/964e90e6/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20101007/964e90e6/attachment.html</A>&gt;
+-------------- next part --------------
+An embedded and charset-unspecified text was scrubbed...
+Name: Tubeness_.java
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20101007/964e90e6/attachment.ksh">http://imagej.net/pipermail/imagej-devel/attachments/20101007/964e90e6/attachment.ksh</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000170.html">[ImageJ-devel] Design meeting notes
+</A></li>
+	<LI>Next message: <A HREF="000169.html">[ImageJ-devel] Design meeting notes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#167">[ date ]</a>
+              <a href="thread.html#167">[ thread ]</a>
+              <a href="subject.html#167">[ subject ]</a>
+              <a href="author.html#167">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

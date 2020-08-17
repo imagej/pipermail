@@ -1,0 +1,172 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Netbeans and Maven
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Netbeans%20and%20Maven&In-Reply-To=%3Calpine.DEB.1.00.1301150053580.32206%40s15462909.onlinehome-server.info%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001365.html">
+   <LINK REL="Next"  HREF="001367.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Netbeans and Maven</H1>
+    <B>Johannes Schindelin</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Netbeans%20and%20Maven&In-Reply-To=%3Calpine.DEB.1.00.1301150053580.32206%40s15462909.onlinehome-server.info%3E"
+       TITLE="[ImageJ-devel] Netbeans and Maven">Johannes.Schindelin at gmx.de
+       </A><BR>
+    <I>Mon Jan 14 18:12:18 CST 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001365.html">[ImageJ-devel] Netbeans and Maven
+</A></li>
+        <LI>Next message: <A HREF="001367.html">[ImageJ-devel] Netbeans and Maven
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1366">[ date ]</a>
+              <a href="thread.html#1366">[ thread ]</a>
+              <a href="subject.html#1366">[ subject ]</a>
+              <a href="author.html#1366">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Gerrit,
+
+On Mon, 14 Jan 2013, Polder, Gerrit wrote:
+
+&gt;<i> I am using netbeans with ant as the building system quite some time now
+</I>&gt;<i> (on Mac OS X).  During the last developer conference there was a strong
+</I>&gt;<i> emphasis on maven as build/dependency tool, so I decided to give it a
+</I>&gt;<i> try.  I started with the process_pixels example which compiles and runs
+</I>&gt;<i> nice, but I have some questions.  Sorry if these are dumb questions, but
+</I>&gt;<i> I scanned through the documentation and didn't find answers quickly.
+</I>
+The ImageJ and ImageJ-devel lists are pleasant lists, no need to apologize
+for asking questions that were not answered well enough at the conference.
+
+&gt;<i> 1- what does the pom version mean, and which version should I use, I
+</I>&gt;<i> found different numbers in the examples.
+</I>
+If I understand correctly, you are referring to the version number here:
+
+<A HREF="https://github.com/imagej/minimal-ij1-plugin/blob/master/pom.xml#L16">https://github.com/imagej/minimal-ij1-plugin/blob/master/pom.xml#L16</A>
+
+The idea of Maven is that every project comes in a specific version. For
+example, you might want to release your plugin as version 0.1.0 or 1.0.0.
+Leading up to that version, you would probably label it as 0.1.0-SNAPSHOT
+or 1.0.0-SNAPSHOT to indicate that this is an intermediate revision
+leading up to said version.
+
+So it is your choice what version number to use ;-)
+
+&gt;<i> 2- how is the imagej version determined
+</I>&gt;<i> (&lt;version&gt;${imagej1.version}&lt;/version&gt;) ?
+</I>
+It is defined in the SciJava POM, as a version range:
+
+<A HREF="https://github.com/scijava/scijava-common/blob/master/pom-scijava/pom.xml#L21">https://github.com/scijava/scijava-common/blob/master/pom-scijava/pom.xml#L21</A>
+
+Basically, it says: every version from 1.45s on is good enough for us.
+
+If it is actually not good enough for your project, e.g. because you
+require a feature Wayne introduced in, say, 1.47b, you need to override
+that setting in your pom.xml in the properties section:
+
+	&lt;properties&gt;
+		&lt;imagej1.version&gt;1.47b&lt;/imagej1.version&gt;
+	&lt;/properties&gt;
+
+You could also decide that a version range [1.47b,) is preferable, of
+course.
+
+&gt;<i> 3- During build I see the following message: Property
+</I>&gt;<i> 'imagej.app.directory' unset; Skipping copy-jars
+</I>&gt;<i> So it must be possible to place the jar into my own imagej installation,
+</I>&gt;<i> how?
+</I>
+You can set the property either in the &lt;properties&gt; section of your
+pom.xml as described for imagej1.version above, or via the command-line.
+Probably Netbeans lets you define that, too, but since I am not using
+Netbeans myself, I cannot tell you how, sorry!
+
+&gt;<i> 4- During run an imagej jar from ~/.m2.... is started, is this only for
+</I>&gt;<i> test/debug? how to use my own imagej?
+</I>
+This is only used to compile your .jar file. If you set the
+imagej.app.directory property properly, it will actually be copied into
+the jars/ subdirectory of the location you pointed the property to.
+
+&gt;<i> 5- The process_pixels application does not quit properly, I have to stop
+</I>&gt;<i> it from netbeans.
+</I>
+Sorry, do you have more information about that? I do not understand the
+issue.
+
+&gt;<i> 6- My software is dependent from other plugins, such as particle8 from
+</I>&gt;<i> Gabriel Landini's Morphology, can/is this incorporated in the imagej
+</I>&gt;<i> maven repository?
+</I>
+The easiest way to do that would probably to install it locally for the
+moment. Please see Maven's console log for details how to do that after
+specifying a dependency, e.g.
+
+		&lt;dependency&gt;
+			&lt;groupId&gt;uk.ac.bham.dentistry&lt;/groupId&gt;
+			&lt;artifactId&gt;Particles8_&lt;/artifactId&gt;
+			&lt;version&gt;1.6&lt;/version&gt;
+		&lt;/dependency&gt;
+
+(I took the version number from the web site, and constructed the groupId
+from the web site, too. Note that you will need to wrap the .class files
+in a .jar file before installing it locally.)
+
+&gt;<i> 7- In my ant script I'm using a call to svnversion, in order to place
+</I>&gt;<i> the latest build number and date in the about box. Can this be done in
+</I>&gt;<i> maven?
+</I>
+The way this is done in Maven is by using the buildnumber plugin. This
+will put the current revision into the MANIFEST.MF under the tag
+'Implementation-Build'.
+
+You probably want to depend on ij-core (groupId net.imagej, version
+2.0.0-SNAPSHOT for now) to retrieve that:
+
+<A HREF="http://jenkins.imagej.net/job/ImageJ-daily/javadoc/imagej/util/Manifest.html#getManifest(java.lang.Class">http://jenkins.imagej.net/job/ImageJ-daily/javadoc/imagej/util/Manifest.html#getManifest(java.lang.Class</A>)
+
+and
+
+<A HREF="http://jenkins.imagej.net/job/ImageJ-daily/javadoc/imagej/util/Manifest.html#getImplementationBuild(">http://jenkins.imagej.net/job/ImageJ-daily/javadoc/imagej/util/Manifest.html#getImplementationBuild(</A>)
+
+Ciao,
+Johannes
+
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001365.html">[ImageJ-devel] Netbeans and Maven
+</A></li>
+	<LI>Next message: <A HREF="001367.html">[ImageJ-devel] Netbeans and Maven
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1366">[ date ]</a>
+              <a href="thread.html#1366">[ thread ]</a>
+              <a href="subject.html#1366">[ subject ]</a>
+              <a href="author.html#1366">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

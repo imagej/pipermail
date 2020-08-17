@@ -1,0 +1,210 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Deadlock: DefaultStatusService.showStatus calls EventService.publish / AbstractColorTool.drawIcon gets active dataset view
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Deadlock%3A%20DefaultStatusService.showStatus%20calls%0A%20EventService.publish%20/%20AbstractColorTool.drawIcon%20gets%20active%20dataset%20view&In-Reply-To=%3CCAKcvfuQXKTCZc%2BrJbDVKfKMS%2BMC2TRN7fOQNYHRpYSpUQYh_Ng%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001756.html">
+   <LINK REL="Next"  HREF="001758.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Deadlock: DefaultStatusService.showStatus calls EventService.publish / AbstractColorTool.drawIcon gets active dataset view</H1>
+    <B>Barry DeZonia</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Deadlock%3A%20DefaultStatusService.showStatus%20calls%0A%20EventService.publish%20/%20AbstractColorTool.drawIcon%20gets%20active%20dataset%20view&In-Reply-To=%3CCAKcvfuQXKTCZc%2BrJbDVKfKMS%2BMC2TRN7fOQNYHRpYSpUQYh_Ng%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Deadlock: DefaultStatusService.showStatus calls EventService.publish / AbstractColorTool.drawIcon gets active dataset view">bdezonia at gmail.com
+       </A><BR>
+    <I>Thu Sep 26 18:53:12 CDT 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001756.html">[ImageJ-devel] Deadlock: DefaultStatusService.showStatus calls EventService.publish / AbstractColorTool.drawIcon gets active dataset view
+</A></li>
+        <LI>Next message: <A HREF="001758.html">[ImageJ-devel] Deadlock: DefaultStatusService.showStatus calls EventService.publish / AbstractColorTool.drawIcon gets active dataset view
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1757">[ date ]</a>
+              <a href="thread.html#1757">[ thread ]</a>
+              <a href="subject.html#1757">[ subject ]</a>
+              <a href="author.html#1757">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Lee,
+
+I added the synchronized keyword yesterday to fix a bug. We can undo that
+change. I can work around the problem in another fashion if necessary.
+
+
+On Thu, Sep 26, 2013 at 3:57 PM, Lee Kamentsky &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">leek at broadinstitute.org</A>&gt;wrote:
+
+&gt;<i> Hi all, I'm getting a deadly embrace that happens when the AWT event queue
+</I>&gt;<i> thread tries to get a lock within DefaultDatasetView.getColor and when
+</I>&gt;<i> DefaultStatusService.showStatus on a worker thread tries to publish a
+</I>&gt;<i> synchronous request for status display after taking the
+</I>&gt;<i> DefaultDatasetView's lock in DefaultDatasetView.rebuild. It happens
+</I>&gt;<i> periodically, but it's timing-dependent, so not so reproducible.
+</I>&gt;<i>
+</I>&gt;<i> The bug is somewhat debatable. Possible candidates: It's a little drastic
+</I>&gt;<i> for DefaultDatasetView.getColor to synchronize on the view itself. Maybe
+</I>&gt;<i> some proxy for the color system could have a synchronizing object. The
+</I>&gt;<i> other candidate is DefaultEventService.showStatus which could use
+</I>&gt;<i> EventService.publishLater - I don't think there's much need for status
+</I>&gt;<i> publishers to wait around for the status to show on the screen.
+</I>&gt;<i>
+</I>&gt;<i> The two stack traces:
+</I>&gt;<i> Thread [AWT-EventQueue-0] (Suspended)
+</I>&gt;<i> DefaultDatasetView.getColor(ChannelCollection) line: 261 Synchronized
+</I>&gt;<i> method on DefaultDatasetView
+</I>&gt;<i>  FgColorTool(AbstractColorTool).drawIcon() line: 175
+</I>&gt;<i> FgColorTool(AbstractColorTool).onEvent(DisplayActivatedEvent) line: 184
+</I>&gt;<i>  NativeMethodAccessorImpl.invoke0(Method, Object, Object[]) line: not
+</I>&gt;<i> available [native method]
+</I>&gt;<i> NativeMethodAccessorImpl.invoke(Object, Object[]) line: 39
+</I>&gt;<i>  DelegatingMethodAccessorImpl.invoke(Object, Object[]) line: 25
+</I>&gt;<i> Method.invoke(Object, Object...) line: 597
+</I>&gt;<i>  DefaultEventService$ProxySubscriber&lt;E&gt;.onEvent(E) line: 282
+</I>&gt;<i> DefaultEventService$ProxySubscriber&lt;E&gt;.onEvent(Object) line: 1
+</I>&gt;<i>  DefaultEventBus(ThreadSafeEventService).publish(Object, String, Object,
+</I>&gt;<i> List, List, StackTraceElement[]) line: 971
+</I>&gt;<i>  DefaultEventBus.access$1(DefaultEventBus, Object, String, Object, List,
+</I>&gt;<i> List, StackTraceElement[]) line: 1
+</I>&gt;<i> DefaultEventBus$1.run() line: 201
+</I>&gt;<i>  DefaultThreadService.invoke(Runnable) line: 91
+</I>&gt;<i> DefaultEventBus.publishNow(Object, String, Object, List, List,
+</I>&gt;<i> StackTraceElement[]) line: 195
+</I>&gt;<i>  DefaultEventBus.publishNow(Object) line: 86
+</I>&gt;<i> DefaultEventService.publish(E) line: 95
+</I>&gt;<i>  DefaultDisplayService.setActiveDisplay(Display&lt;?&gt;) line: 129
+</I>&gt;<i> DefaultDisplayService.onEvent(WinActivatedEvent) line: 247
+</I>&gt;<i>  NativeMethodAccessorImpl.invoke0(Method, Object, Object[]) line: not
+</I>&gt;<i> available [native method]
+</I>&gt;<i> NativeMethodAccessorImpl.invoke(Object, Object[]) line: 39
+</I>&gt;<i>  DelegatingMethodAccessorImpl.invoke(Object, Object[]) line: 25
+</I>&gt;<i> Method.invoke(Object, Object...) line: 597
+</I>&gt;<i>  DefaultEventService$ProxySubscriber&lt;E&gt;.onEvent(E) line: 282
+</I>&gt;<i> DefaultEventService$ProxySubscriber&lt;E&gt;.onEvent(Object) line: 1
+</I>&gt;<i>  DefaultEventBus(ThreadSafeEventService).publish(Object, String, Object,
+</I>&gt;<i> List, List, StackTraceElement[]) line: 971
+</I>&gt;<i>  DefaultEventBus.access$1(DefaultEventBus, Object, String, Object, List,
+</I>&gt;<i> List, StackTraceElement[]) line: 1
+</I>&gt;<i> DefaultEventBus$1.run() line: 201
+</I>&gt;<i>  DefaultThreadService.invoke(Runnable) line: 91
+</I>&gt;<i> DefaultEventBus.publishNow(Object, String, Object, List, List,
+</I>&gt;<i> StackTraceElement[]) line: 195
+</I>&gt;<i>  DefaultEventBus.publishNow(Object) line: 86
+</I>&gt;<i> DefaultEventService.publish(E) line: 95
+</I>&gt;<i>  AWTWindowEventDispatcher.windowActivated(WindowEvent) line: 94
+</I>&gt;<i> SwingDisplayWindow(Window).processWindowEvent(WindowEvent) line: 1877
+</I>&gt;<i>  SwingDisplayWindow(JFrame).processWindowEvent(WindowEvent) line: 274
+</I>&gt;<i> SwingDisplayWindow(Window).processEvent(AWTEvent) line: 1823
+</I>&gt;<i>  SwingDisplayWindow(Component).dispatchEventImpl(AWTEvent) line: 4630
+</I>&gt;<i> SwingDisplayWindow(Container).dispatchEventImpl(AWTEvent) line: 2099
+</I>&gt;<i>  SwingDisplayWindow(Window).dispatchEventImpl(AWTEvent) line: 2478
+</I>&gt;<i> SwingDisplayWindow(Component).dispatchEvent(AWTEvent) line: 4460
+</I>&gt;<i>  DefaultKeyboardFocusManager(KeyboardFocusManager).redispatchEvent(Component,
+</I>&gt;<i> AWTEvent) line: 1850
+</I>&gt;<i> DefaultKeyboardFocusManager.typeAheadAssertions(Component, AWTEvent) line:
+</I>&gt;<i> 910
+</I>&gt;<i>  DefaultKeyboardFocusManager.dispatchEvent(AWTEvent) line: 409
+</I>&gt;<i> SwingDisplayWindow(Component).dispatchEventImpl(AWTEvent) line: 4502
+</I>&gt;<i>  SwingDisplayWindow(Container).dispatchEventImpl(AWTEvent) line: 2099
+</I>&gt;<i> SwingDisplayWindow(Window).dispatchEventImpl(AWTEvent) line: 2478
+</I>&gt;<i>  SwingDisplayWindow(Component).dispatchEvent(AWTEvent) line: 4460
+</I>&gt;<i> EventQueue.dispatchEvent(AWTEvent) line: 599
+</I>&gt;<i>  DefaultKeyboardFocusManager$DefaultKeyboardFocusManagerSentEvent(SentEvent).dispatch()
+</I>&gt;<i> line: 55
+</I>&gt;<i> DefaultKeyboardFocusManager$DefaultKeyboardFocusManagerSentEvent.dispatch()
+</I>&gt;<i> line: 183
+</I>&gt;<i>  DefaultKeyboardFocusManager.sendMessage(Component, AWTEvent) line: 210
+</I>&gt;<i> DefaultKeyboardFocusManager.dispatchEvent(AWTEvent) line: 286
+</I>&gt;<i>  SwingDisplayWindow(Component).dispatchEventImpl(AWTEvent) line: 4502
+</I>&gt;<i> SwingDisplayWindow(Container).dispatchEventImpl(AWTEvent) line: 2099
+</I>&gt;<i>  SwingDisplayWindow(Window).dispatchEventImpl(AWTEvent) line: 2478
+</I>&gt;<i> SwingDisplayWindow(Component).dispatchEvent(AWTEvent) line: 4460
+</I>&gt;<i>  EventQueue.dispatchEvent(AWTEvent) line: 599
+</I>&gt;<i> SequencedEvent.dispatch() line: 101
+</I>&gt;<i>  EventQueue.dispatchEvent(AWTEvent) line: 597
+</I>&gt;<i> EventDispatchThread.pumpOneEventForFilters(int) line: 269
+</I>&gt;<i>  EventDispatchThread.pumpEventsForFilter(int, Conditional, EventFilter)
+</I>&gt;<i> line: 184
+</I>&gt;<i> EventDispatchThread.pumpEventsForHierarchy(int, Conditional, Component)
+</I>&gt;<i> line: 174
+</I>&gt;<i>  EventDispatchThread.pumpEvents(int, Conditional) line: 169
+</I>&gt;<i> EventDispatchThread.pumpEvents(Conditional) line: 161
+</I>&gt;<i>  EventDispatchThread.run() line: 122
+</I>&gt;<i>
+</I>&gt;<i> Thread [SciJava-4b2922f6-Thread-27] (Suspended)
+</I>&gt;<i>  Object.wait(long) line: not available [native method]
+</I>&gt;<i> EventQueue$1AWTInvocationLock(Object).wait() line: 485 Waiting for AWT
+</I>&gt;<i> event thread to read invocation request.
+</I>&gt;<i>  EventQueue.invokeAndWait(Runnable) line: 993
+</I>&gt;<i> DefaultThreadService.invoke(Runnable) line: 95
+</I>&gt;<i>  DefaultEventBus.publishNow(Object, String, Object, List, List,
+</I>&gt;<i> StackTraceElement[]) line: 195
+</I>&gt;<i> DefaultEventBus.publishNow(Object) line: 86
+</I>&gt;<i>  DefaultEventService.publish(E) line: 95
+</I>&gt;<i> DefaultStatusService.showStatus(int, int, String) line: 77
+</I>&gt;<i>  DefaultMinMaxMethod&lt;T&gt;.report() line: 296
+</I>&gt;<i> DefaultMinMaxMethod&lt;T&gt;.process() line: 155
+</I>&gt;<i>  DefaultAutoscaleMethod&lt;T&gt;.getRange(IterableInterval&lt;T&gt;) line: 70
+</I>&gt;<i> DefaultAutoscaleService.getDefaultIntervalRange(IterableInterval&lt;RealType&lt;?&gt;&gt;)
+</I>&gt;<i> line: 97
+</I>&gt;<i>  DefaultAutoscaleService.getDefaultRandomAccessRange(RandomAccessibleInterval&lt;RealType&lt;?&gt;&gt;)
+</I>&gt;<i> line: 105
+</I>&gt;<i>  DefaultDatasetView.autoscale(int) line: 176
+</I>&gt;<i> DefaultDatasetView.initializeView(boolean) line: 499
+</I>&gt;<i>  DefaultDatasetView.rebuild() line: 383 Takes the DefaultDatasetView lock.
+</I>&gt;<i> DefaultImageDisplay.rebuild() line: 140
+</I>&gt;<i>  DefaultImageDisplay.display(Object) line: 273
+</I>&gt;<i> DefaultOverlayService.addOverlays(ImageDisplay, List&lt;Overlay&gt;) line: 148
+</I>&gt;<i>  TurboRegRegister.run() line: 144
+</I>&gt;<i> CommandModule.run() line: 196
+</I>&gt;<i>  ModuleRunner.run() line: 168
+</I>&gt;<i> ModuleRunner.call() line: 129
+</I>&gt;<i>  ModuleRunner.call() line: 1
+</I>&gt;<i> FutureTask$Sync.innerRun() line: 303
+</I>&gt;<i>  FutureTask&lt;V&gt;.run() line: 138
+</I>&gt;<i> ThreadPoolExecutor$Worker.runTask(Runnable) line: 886
+</I>&gt;<i>  ThreadPoolExecutor$Worker.run() line: 908
+</I>&gt;<i> Thread.run() line: 662
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20130926/5eec5cac/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20130926/5eec5cac/attachment-0001.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001756.html">[ImageJ-devel] Deadlock: DefaultStatusService.showStatus calls EventService.publish / AbstractColorTool.drawIcon gets active dataset view
+</A></li>
+	<LI>Next message: <A HREF="001758.html">[ImageJ-devel] Deadlock: DefaultStatusService.showStatus calls EventService.publish / AbstractColorTool.drawIcon gets active dataset view
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1757">[ date ]</a>
+              <a href="thread.html#1757">[ thread ]</a>
+              <a href="subject.html#1757">[ subject ]</a>
+              <a href="author.html#1757">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

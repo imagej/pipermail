@@ -1,0 +1,144 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-bugs] [Bug 1203] memory leak with python script
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%201203%5D%20memory%20leak%20with%20python%20script&In-Reply-To=%3Cbug-1203-19-iev4x4kord%40http.fiji.sc/bugzilla/%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001538.html">
+   <LINK REL="Next"  HREF="001540.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-bugs] [Bug 1203] memory leak with python script</H1>
+    <B>bugzilla at fiji.sc</B> 
+    <A HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%201203%5D%20memory%20leak%20with%20python%20script&In-Reply-To=%3Cbug-1203-19-iev4x4kord%40http.fiji.sc/bugzilla/%3E"
+       TITLE="[ImageJ-bugs] [Bug 1203] memory leak with python script">bugzilla at fiji.sc
+       </A><BR>
+    <I>Tue Dec  8 23:08:59 CST 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001538.html">[ImageJ-bugs] [Bug 1203] memory leak with python script
+</A></li>
+        <LI>Next message: <A HREF="001540.html">[ImageJ-bugs] [Bug 1203] memory leak with python script
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1539">[ date ]</a>
+              <a href="thread.html#1539">[ thread ]</a>
+              <a href="subject.html#1539">[ subject ]</a>
+              <a href="author.html#1539">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE><A HREF="http://fiji.sc/bugzilla/show_bug.cgi?id=1203">http://fiji.sc/bugzilla/show_bug.cgi?id=1203</A>
+
+--- Comment #3 from Aryeh Weiss &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">aryeh at cc.huji.ac.il</A>&gt; ---
+Concerning the python.jar:
+This was added whenI needed to evaluate a python script from a plugin - 
+    eval(&quot;python&quot;, script);
+When I did this, it prompted me that I to install Jython.jar, and it even was
+kind enough to do it for me.
+
+Motivated by Mark's comment, I renamed that jython to python.old, and copied
+the Jython snapshot file (which was in jars) to the plugin/jars directory (and
+renamed that one to jython.jar). The results are the same for my minimal script
+
+I modified my minimal script to run the gc, and then close the image and runthe
+gc again (twice). 
+
+So here is the new script:
+from ij import IJ, Prefs, ImagePlus
+from ij.io import DirectoryChooser,  OpenDialog
+from ij.process import ImageConverter, ByteProcessor, BinaryProcessor
+import time, gc
+
+def forceGc():
+    print &quot;memory before gc = &quot;, IJ.currentMemory()
+    gc.collect()
+    print &quot;memory after gc = &quot;, IJ.currentMemory()
+
+
+op = OpenDialog(&quot;Choose input image...&quot;, &quot;&quot;)
+path = op.getDirectory()+ op.getFileName()
+inputName = op.getFileName()
+inputDir = op.getDirectory()
+inputPath = inputDir + inputName
+
+if inputName[-4] == &quot;.&quot;:
+    inputPrefix = inputName[:-4]    # assumes that a suffix exists
+else:
+    inputPrefix = inputName
+
+
+inputImp = ImagePlus(inputPath)
+inputImp.show()
+ImageConverter(inputImp).convertToGray8()
+
+# The following line makes all the difference.
+inputIp = inputImp.getProcessor()
+forceGc()
+
+inputImp.close()
+forceGc()
+forceGc()
+
+
+and here is the output with an image of about 1 GB:
+
+Started minimal.py at Wed Dec 09 07:06:54 IST 2015
+memory before gc =  1037433016L
+memory after gc =  1042983208L
+memory before gc =  1058432336L
+memory after gc =  1044836632L
+memory before gc =  1044836632L
+memory after gc =  1041655776L
+
+## end offers run on &quot;fresh&quot; Fiji 
+
+Started minimal.py at Wed Dec 09 07:07:12 IST 2015
+memory before gc =  2055344376L
+memory after gc =  1044025032L
+memory before gc =  1056477256L
+memory after gc =  1042805472L
+memory before gc =  1042971816L
+memory after gc =  1036835368L
+
+## end of second run -- nothing open
+
+Wayne -- can you run this script and post the result?
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-bugs/attachments/20151209/4bd0e639/attachment.html">http://imagej.net/pipermail/imagej-bugs/attachments/20151209/4bd0e639/attachment.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001538.html">[ImageJ-bugs] [Bug 1203] memory leak with python script
+</A></li>
+	<LI>Next message: <A HREF="001540.html">[ImageJ-bugs] [Bug 1203] memory leak with python script
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1539">[ date ]</a>
+              <a href="thread.html#1539">[ thread ]</a>
+              <a href="subject.html#1539">[ subject ]</a>
+              <a href="author.html#1539">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-bugs">More information about the Imagej-bugs
+mailing list</a><br>
+</body></html>

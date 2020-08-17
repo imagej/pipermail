@@ -1,0 +1,76 @@
+<tt>
+Hi&nbsp;Johannes,&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Did&nbsp;you&nbsp;file&nbsp;a&nbsp;ticket&nbsp;for&nbsp;this&nbsp;bug?&nbsp;If&nbsp;not&nbsp;I&nbsp;can&nbsp;file&nbsp;one&nbsp;and&nbsp;reference&nbsp;this&nbsp;thread.&lt;br&gt;&lt;br&gt;&lt;div&nbsp;class=&quot;gmail_quote&quot;&gt;On&nbsp;Sat,&nbsp;Oct&nbsp;20,&nbsp;2012&nbsp;at&nbsp;5:36&nbsp;AM,&nbsp;Johannes&nbsp;Schindelin&nbsp;&lt;span&nbsp;dir=&quot;ltr&quot;&gt;&lt;&lt;a&nbsp;href=&quot;mailto:Johannes.Schindelin@gmx.de&quot;&nbsp;target=&quot;_blank&quot;&gt;Johannes.Schindelin@gmx.de&lt;/a&gt;&gt;&lt;/span&gt;&nbsp;wrote:&lt;br&gt;<br>
+&lt;blockquote&nbsp;class=&quot;gmail_quote&quot;&nbsp;style=&quot;margin:0&nbsp;0&nbsp;0&nbsp;.8ex;border-left:1px&nbsp;#ccc&nbsp;solid;padding-left:1ex&quot;&gt;Hi&nbsp;all,&lt;br&gt;<br>
+&lt;br&gt;<br>
+while&nbsp;playing&nbsp;around&nbsp;with&nbsp;ImgLib2,&nbsp;I&nbsp;realized&nbsp;that&nbsp;the&nbsp;imagej-tutorials&nbsp;do&lt;br&gt;<br>
+not&nbsp;work&nbsp;anymore.&nbsp;If&nbsp;you&nbsp;try&nbsp;to&nbsp;load&nbsp;and&nbsp;display&nbsp;a&nbsp;dataset,&nbsp;it&nbsp;gets&nbsp;loaded&lt;br&gt;<br>
+but&nbsp;not&nbsp;displayed.&lt;br&gt;<br>
+&lt;br&gt;<br>
+Now,&nbsp;I&nbsp;do&nbsp;not&nbsp;want&nbsp;to&nbsp;be&nbsp;a&nbsp;lame&nbsp;developer&nbsp;who&nbsp;just&nbsp;fires&nbsp;bug&nbsp;reports&nbsp;and&lt;br&gt;<br>
+forgets&nbsp;about&nbsp;them,&nbsp;so&nbsp;I&nbsp;investigated&nbsp;a&nbsp;little.&nbsp;The&nbsp;culprit&nbsp;seems&nbsp;to&nbsp;be&lt;br&gt;<br>
+the&nbsp;changes&nbsp;in&nbsp;the&nbsp;way&nbsp;UserInterfaces&nbsp;are&nbsp;instantiated.&nbsp;Earlier&nbsp;--&nbsp;when&lt;br&gt;<br>
+the&nbsp;tutorial&nbsp;was&nbsp;written&nbsp;--&nbsp;there&nbsp;was&nbsp;only&nbsp;one&nbsp;UserInterface&nbsp;and&nbsp;if&nbsp;you&lt;br&gt;<br>
+did&nbsp;not&nbsp;call&nbsp;createUI()&nbsp;on&nbsp;it&nbsp;(to&nbsp;show&nbsp;the&nbsp;main&nbsp;window)&nbsp;it&nbsp;still&nbsp;was&nbsp;able&lt;br&gt;<br>
+to&nbsp;show&nbsp;images&nbsp;with&nbsp;said&nbsp;UserInterface.&lt;br&gt;<br>
+&lt;br&gt;<br>
+In&nbsp;the&nbsp;meantime,&nbsp;we&nbsp;can&nbsp;show&nbsp;multiple&nbsp;user&nbsp;interfaces&nbsp;side&nbsp;by&nbsp;side,&nbsp;but&lt;br&gt;<br>
+that&nbsp;comes&nbsp;at&nbsp;a&nbsp;price:&nbsp;when&nbsp;looking&nbsp;for&nbsp;user&nbsp;interfaces&nbsp;to&nbsp;display&nbsp;images,&lt;br&gt;<br>
+the&nbsp;default&nbsp;one&nbsp;might&nbsp;not&nbsp;even&nbsp;be&nbsp;visible,&nbsp;resulting&nbsp;in&nbsp;--&nbsp;nothing.&lt;br&gt;<br>
+&lt;br&gt;<br>
+I&nbsp;have&nbsp;a&nbsp;proposed&nbsp;fix&nbsp;on&nbsp;the&nbsp;&#39;tutorials&#39;&nbsp;branch,&nbsp;where&nbsp;getVisibleUIs()&lt;br&gt;<br>
+falls&nbsp;back&nbsp;to&nbsp;the&nbsp;default&nbsp;UI&nbsp;if&nbsp;none&nbsp;was&nbsp;shown,&nbsp;but&nbsp;I&nbsp;have&nbsp;a&nbsp;hunch&nbsp;that&nbsp;we&lt;br&gt;<br>
+need&nbsp;a&nbsp;better&nbsp;solution&nbsp;where&nbsp;the&nbsp;default&nbsp;UI&nbsp;is&nbsp;the&nbsp;only&nbsp;visible&nbsp;UI&nbsp;in&nbsp;the&lt;br&gt;<br>
+beginning&nbsp;but&nbsp;as&nbsp;soon&nbsp;as&nbsp;createUI()&nbsp;has&nbsp;been&nbsp;called,&nbsp;the&nbsp;default&nbsp;UI&nbsp;is&nbsp;no&lt;br&gt;<br>
+longer&nbsp;being&nbsp;considered&nbsp;automatically&nbsp;visible.&lt;br&gt;<br>
+&lt;br&gt;<br>
+Hmm?&lt;br&gt;<br>
+&lt;br&gt;<br>
+Ciao,&lt;br&gt;<br>
+Dscho&lt;br&gt;<br>
+&lt;br&gt;<br>
+P.S.:&nbsp;there&nbsp;is&nbsp;a&nbsp;nasty&nbsp;issue&nbsp;with&nbsp;the&nbsp;{Bg,Fg}ColorButton&nbsp;when&nbsp;showing&nbsp;a&lt;br&gt;<br>
+stack&nbsp;without&nbsp;calling&nbsp;createUI()&nbsp;since&nbsp;it&nbsp;tries&nbsp;very,&nbsp;very,&nbsp;very&nbsp;hard&nbsp;to&lt;br&gt;<br>
+always&nbsp;update&nbsp;the&nbsp;button&nbsp;even&nbsp;if&nbsp;the&nbsp;main&nbsp;window&nbsp;was&nbsp;never&nbsp;shown.&nbsp;The&lt;br&gt;<br>
+stack&nbsp;trace&nbsp;looks&nbsp;like&nbsp;this:&lt;br&gt;<br>
+&lt;br&gt;<br>
+java.lang.IllegalArgumentException:&nbsp;There&nbsp;is&nbsp;no&nbsp;button&nbsp;associated&nbsp;with&nbsp;the&nbsp;specified&nbsp;tool&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;at&nbsp;imagej.ui.swing.SwingIconService$SwingIconDrawer.&lt;init&gt;(SwingIconService.java:86)&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;at&nbsp;imagej.ui.swing.SwingIconService.acquireDrawer(SwingIconService.java:68)&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;at&nbsp;imagej.core.tools.AbstractColorTool.acquireDrawer(AbstractColorTool.java:221)&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;at&nbsp;imagej.core.tools.AbstractColorTool.draw(AbstractColorTool.java:201)&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;at&nbsp;imagej.core.tools.AbstractColorTool.drawIcon(AbstractColorTool.java:170)&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;at&nbsp;imagej.core.tools.AbstractColorTool.onEvent(AbstractColorTool.java:195)&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;at&nbsp;sun.reflect.NativeMethodAccessorImpl.invoke0(Native&nbsp;Method)&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;at&nbsp;sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;at&nbsp;sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;at&nbsp;java.lang.reflect.Method.invoke(Method.java:616)&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;at&nbsp;imagej.event.DefaultEventService$ProxySubscriber.onEvent(DefaultEventService.java:226)&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;at&nbsp;imagej.event.DefaultEventService$ProxySubscriber.onEvent(DefaultEventService.java:201)&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;at&nbsp;org.bushe.swing.event.ThreadSafeEventService.publish(ThreadSafeEventService.java:971)&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;at&nbsp;imagej.event.DefaultEventBus.access$201(DefaultEventBus.java:61)&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;at&nbsp;imagej.event.DefaultEventBus$2.run(DefaultEventBus.java:226)&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;at&nbsp;java.awt.event.InvocationEvent.dispatch(InvocationEvent.java:226)&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;at&nbsp;java.awt.EventQueue.dispatchEventImpl(EventQueue.java:670)&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;at&nbsp;java.awt.EventQueue.access$400(EventQueue.java:96)&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;at&nbsp;java.awt.EventQueue$2.run(EventQueue.java:631)&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;at&nbsp;java.awt.EventQueue$2.run(EventQueue.java:629)&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;at&nbsp;java.security.AccessController.doPrivileged(Native&nbsp;Method)&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;at&nbsp;java.security.AccessControlContext$1.doIntersectionPrivilege(AccessControlContext.java:105)&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;at&nbsp;java.awt.EventQueue.dispatchEvent(EventQueue.java:640)&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;at&nbsp;java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:275)&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;at&nbsp;java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:200)&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;at&nbsp;java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:190)&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;at&nbsp;java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:185)&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;at&nbsp;java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:177)&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;at&nbsp;java.awt.EventDispatchThread.run(EventDispatchThread.java:138)&lt;br&gt;<br>
+&lt;br&gt;<br>
+I&nbsp;wonder&nbsp;whether&nbsp;it&nbsp;makes&nbsp;sense&nbsp;to&nbsp;instantiate&nbsp;the&nbsp;ToolsService&nbsp;at&nbsp;all&nbsp;if&lt;br&gt;<br>
+the&nbsp;main&nbsp;window&nbsp;was&nbsp;not&nbsp;even&nbsp;shown?&lt;br&gt;<br>
+&lt;br&gt;<br>
+_______________________________________________&lt;br&gt;<br>
+ImageJ-devel&nbsp;mailing&nbsp;list&lt;br&gt;<br>
+&lt;a&nbsp;href=&quot;mailto:ImageJ-devel@imagej.net&quot;&gt;ImageJ-devel@imagej.net&lt;/a&gt;&lt;br&gt;<br>
+&lt;a&nbsp;href=&quot;http://imagej.net/mailman/listinfo/imagej-devel&quot;&nbsp;target=&quot;_blank&quot;&gt;http://imagej.net/mailman/listinfo/imagej-devel&lt;/a&gt;&lt;br&gt;<br>
+&lt;/blockquote&gt;&lt;/div&gt;&lt;br&gt;&lt;/div&gt;<br>
+
+</tt>

@@ -1,0 +1,194 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [fiji-devel] Re:  New imglib2-algorithms-legacy
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20Re%3A%20%20New%20imglib2-algorithms-legacy&In-Reply-To=%3Calpine.DEB.1.00.1207101904070.32459%40s15462909.onlinehome-server.info%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001053.html">
+   <LINK REL="Next"  HREF="001055.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [fiji-devel] Re:  New imglib2-algorithms-legacy</H1>
+    <B>Johannes Schindelin</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20Re%3A%20%20New%20imglib2-algorithms-legacy&In-Reply-To=%3Calpine.DEB.1.00.1207101904070.32459%40s15462909.onlinehome-server.info%3E"
+       TITLE="[ImageJ-devel] [fiji-devel] Re:  New imglib2-algorithms-legacy">Johannes.Schindelin at gmx.de
+       </A><BR>
+    <I>Tue Jul 10 12:50:12 CDT 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001053.html">[ImageJ-devel] [fiji-devel] Re:  New imglib2-algorithms-legacy
+</A></li>
+        <LI>Next message: <A HREF="001055.html">[ImageJ-devel] [fiji-devel] Re:  New imglib2-algorithms-legacy
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1054">[ date ]</a>
+              <a href="thread.html#1054">[ thread ]</a>
+              <a href="subject.html#1054">[ subject ]</a>
+              <a href="author.html#1054">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Curtis,
+
+On Tue, 10 Jul 2012, Curtis Rueden wrote:
+
+&gt;<i> On Tue, Jul 10, 2012 at 11:21 AM, Johannes Schindelin
+</I>&lt;
+&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">Johannes.Schindelin at gmx.de</A>&gt; wrote:
+</I>&gt;<i> &gt; I will make a branch with a simple pom and will be on Skype later.
+</I>&gt;<i> &gt; Fair ennough?
+</I>&gt;<i> 
+</I>&gt;<i> I have done this for imglib2-algorithms-legacy and pushed to master.
+</I>
+Darn, you beat me to it! ;-)
+
+But that gives me more time to explain what it takes to make a new Maven
+project.
+
+All it really takes is a pom.xml file and a certain directory structure.
+Technically, you can override the default directory layout in the pom.xml,
+but why do so? It only breaks expectations and is more hassle than it is
+worth, really.
+
+So the directory structure is: you put your .java files under
+src/main/java/ and the other files you need to be included into
+src/main/resources/. Should you want to apply the best practices called
+&quot;regression tests&quot; or even &quot;test-driven development&quot;: your tests' .java
+files go to src/test/java/ and the non-.java files you might require
+unsurprisingly into src/test/resources/.
+
+So what does a pom.xml look like? This is a very simple example:
+
+	&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+	&lt;project xmlns=&quot;<A HREF="http://maven.apache.org/POM/4.0.0">http://maven.apache.org/POM/4.0.0</A>&quot;
+			xmlns:xsi=&quot;<A HREF="http://www.w3.org/2001/XMLSchema-instance">http://www.w3.org/2001/XMLSchema-instance</A>&quot;
+			xsi:schemaLocation=&quot;<A HREF="http://maven.apache.org/POM/4.0.0">http://maven.apache.org/POM/4.0.0</A>
+			<A HREF="http://maven.apache.org/xsd/maven-4.0.0.xsd">http://maven.apache.org/xsd/maven-4.0.0.xsd</A>&quot;&gt;
+		&lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+
+		&lt;groupId&gt;sc.fiji&lt;/groupId&gt;
+		&lt;artifactId&gt;my-uber-library&lt;/artifactId&gt;
+		&lt;version&gt;2.0.0-SNAPSHOT&lt;/version&gt;
+	&lt;/project&gt;
+
+The first 6 lines are of course just a way to say &quot;Hi, Maven? How are you
+today? This is what I would like you to do:&quot;.
+
+The only relevant parts are the groupId, which by convention is something
+like the inverted domain name (similar to the Java package convention),
+the name of the artifact to build (it will be put into target/, under the
+name &lt;artifactId&gt;-&lt;version&gt;.jar). And of course the version.
+
+Now, why did I bother so much with Mavenization of Fiji? The real reason
+is that Maven is not only a build tool but first and foremost a dependency
+management tool. Maven has so-called Maven repositories where it stores
+compiled artifacts. ImageJ2's Maven repository lives here:
+<A HREF="http://maven.imagej.net:8081/">http://maven.imagej.net:8081/</A> (most functions can be accessed via
+<A HREF="http://maven.imagej.net/">http://maven.imagej.net/</A> just as well). It is like Fiji's precompiled/
+directory, but done right.
+
+Next, for Maven to know what you are looking for, you typically have to
+add the dependencies into the pom.xml file. For example, every ImageJ 1.x
+plugin will depend on ImageJ 1.x. So let's add that (before the final
+&lt;/project&gt; line):
+
+	&lt;dependencies&gt;
+		&lt;dependency&gt;
+			&lt;groupId&gt;net.imagej&lt;/groupId&gt;
+			&lt;artifactId&gt;ij&lt;/artifactId&gt;
+			&lt;version&gt;1.45b&lt;/version&gt;
+		&lt;/dependency&gt;
+	&lt;/dependencies&gt;
+
+As you can see, dependencies are referenced under the same groupId,
+artifactId and version triplet (also known as GAV parameters) that you had
+to declare for the current project.
+
+For Maven to find the dependencies, it has to know about the location of
+the repositories. As you know, we are strong proponents of collaboration
+within the scientific community, so we started the scijava effort last
+hackathon in December. To this end, Curtis began the scijava &quot;super POM&quot;
+which is supposed to declare repositories we use (and other metadata as
+well, such as current artifact versions we provide). To benefit from this
+in your project, add this to your pom.xml:
+
+	&lt;parent&gt;
+		&lt;groupId&gt;org.scijava&lt;/groupId&gt;
+		&lt;artifactId&gt;pom-scijava&lt;/artifactId&gt;
+		&lt;version&gt;1.15&lt;/version&gt;
+	&lt;/parent&gt;
+
+	&lt;!-- NB: for project parent --&gt;
+	&lt;repositories&gt;
+		&lt;repository&gt;
+			&lt;id&gt;imagej.releases&lt;/id&gt;
+			&lt;url&gt;<A HREF="http://maven.imagej.net/content/repositories/releases&lt;/url">http://maven.imagej.net/content/repositories/releases&lt;/url</A>&gt;
+		&lt;/repository&gt;
+		&lt;repository&gt;
+			&lt;id&gt;imagej.snapshots&lt;/id&gt;
+			&lt;url&gt;<A HREF="http://maven.imagej.net/content/repositories/snapshots&lt;/url">http://maven.imagej.net/content/repositories/snapshots&lt;/url</A>&gt;
+		&lt;/repository&gt;
+	&lt;/repositories&gt;
+
+You will see that there are two different repository types: releases and
+snapshots. The snapshot versions are &quot;in-progress&quot; versions. If you
+declare a dependency with a &quot;-SNAPSHOT&quot; suffix in the version, Maven will
+look once a day for new artifacts of the same versions; otherwise, Maven
+will look whether it has that version already and not bother
+re-downloading.
+
+So what if you have multiple .jar files you want to build in the same
+project? Then these need to live in their own subdirectories and there
+needs to be a common parent POM, a so-called &quot;aggregator&quot; POM. For an
+example, look at Fiji's src-plugins/pom.xml. Basically, it is adding the
+&lt;packaging&gt;pom&lt;/packaging&gt; entry as well as a couple of subdirectory names
+to the &lt;modules&gt; section.
+
+There are many more things you can do with Maven, but chances are you will
+not need them.
+
+The simplicity of the pom.xml you need comes from the fact that Maven
+defines implicit defaults. It calls that &quot;convention over configuration&quot;.
+But since we are not converting projects (or at least since we are
+flexible enough to adapt), I would strongly recommend staying with the
+defaults as much as possible. It also makes your project more accessible,
+something that I think we excel at.
+
+Now, in the context of scijava, you will most likely never write a pom.xml
+from scratch. You will rather more likely edit an existing one, possibly
+after having copied it.
+
+Ciao,
+Dscho
+
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001053.html">[ImageJ-devel] [fiji-devel] Re:  New imglib2-algorithms-legacy
+</A></li>
+	<LI>Next message: <A HREF="001055.html">[ImageJ-devel] [fiji-devel] Re:  New imglib2-algorithms-legacy
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1054">[ date ]</a>
+              <a href="thread.html#1054">[ thread ]</a>
+              <a href="subject.html#1054">[ subject ]</a>
+              <a href="author.html#1054">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

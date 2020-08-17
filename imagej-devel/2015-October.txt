@@ -1,0 +1,1443 @@
+From hiner at wisc.edu  Thu Oct  1 08:43:35 2015
+From: hiner at wisc.edu (Mark Hiner)
+Date: Thu, 1 Oct 2015 08:43:35 -0500
+Subject: [ImageJ-devel] Question about ImageJ2 icon
+In-Reply-To: <560AAED8.2050703@imagescience.org>
+References: <560AAED8.2050703@imagescience.org>
+Message-ID: <CA+B=mGquAoHtqT0NqpCF1XgOhjrAoTb8v9WARee=M1E6rm=2RQ@mail.gmail.com>
+
+Hi Erik,
+
+> Was this created by you (as your name is mentioned there)?
+
+I didn't create the image, just uploaded the latest version after resizing
+it. It was created as part of LOCI's funded work on IJ2 though so I believe
+it is copyright Broad Institute and/or UW board of regents.
+
+As you noticed we do not have good licensing support at the moment for
+images on the wiki. Since it is the IJ2 logo right now we would want a
+permissive license that indicates where the image came from, i.e. attribution
+4.0 <http://creativecommons.org/licenses/by/4.0/>... so in your publication
+you would just need add an attribution blurb.
+
+Anyway I will look into adding file licenses to the wiki to make this more
+formal and provide licensing link templates, a la wikimedia
+<https://commons.wikimedia.org/wiki/Main_Page>. Thanks for bringing it up;
+good luck with the publication! :)
+
+Best,
+Mark
+
+On Tue, Sep 29, 2015 at 10:31 AM, Erik Meijering <meijering at imagescience.org
+> wrote:
+
+> Dear Mark,
+>
+> Just a quick question about the ImageJ2 icon:
+>
+> http://imagej.net/File:Imagej2-icon.png
+>
+> Was this created by you (as your name is mentioned there)?
+>
+> Do you know if it is in the public domain (can I use it freely)? I was
+> looking for a microscope icon that I could use in a publication (not as a
+> standalone image but embedded in a much more complicated figure).
+>
+> Thanks in advance for any help,
+>
+> Erik
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20151001/c481aa67/attachment.html>
+
+From cyril.mongis at googlemail.com  Thu Oct  1 09:56:41 2015
+From: cyril.mongis at googlemail.com (Mongis Cyril)
+Date: Thu, 1 Oct 2015 16:56:41 +0200
+Subject: [ImageJ-devel] EMBL Conference : Seeing is believing
+In-Reply-To: <CAJf7PRdqSC4F+UM4Lpidz04SqADT6Ym-F3OphkfHmNTKOcjLTA@mail.gmail.com>
+References: <CAJf7PRdqSC4F+UM4Lpidz04SqADT6Ym-F3OphkfHmNTKOcjLTA@mail.gmail.com>
+Message-ID: <CAJf7PRe8fW-vbbHgses-0nwr8b2pFg4haupYANjeSwANuUmSyQ@mail.gmail.com>
+
+Indeed, I will present a poster about ImageJFX. My Poster session is on
+Wednesday afternoon (144) so we can meet there. I would like to use this
+occasion to have some more inputs about the software. I will have a tablet
+to show some videos about the software. It's still not so fully functionnal
+so that's why I haven't released the code yet. I'm just waiting to have
+something more or less "solid" and clean. I often go through some big
+refactoring to follow more or less the ImageJ2 guidelines. But I guess I'll
+be able to release the code soon after the conference.
+
+Cheers and looking forward to see you guys,
+
+Cyril
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20151001/e04fcf05/attachment.html>
+
+From pietzsch at mpi-cbg.de  Thu Oct  1 12:41:43 2015
+From: pietzsch at mpi-cbg.de (Tobias Pietzsch)
+Date: Thu, 1 Oct 2015 19:41:43 +0200
+Subject: [ImageJ-devel] API-breaking change in SpimData and BigDataViewer
+	projects
+Message-ID: <44A7F072-C289-43CA-82A9-4BB43E66A083@mpi-cbg.de>
+
+Hi,
+
+very long email coming. Here is to quickly find out if you should bother reading it:
+I?m preparing an update to the spim-data and bigdataviewer-core projects, that might break your code if you are using BigDataViewer or SpimData APIs.
+If you are not using these APIs, then you can stop reading now -- nothing will change for users of the plugin.
+If you only use BDV as a visualization frontend, then most likely you will be not affected by the changes.
+If you wrote a BDV backend and/or SpimData ImgLoader, you WILL be affected. In the following I will describe how to fix your ImgLoaders.
+
+
+
+
+
+
+First some motivation, for why this API break is necessary:
+
+The basic idea of the API change is the following:
+So far, all BasicImgLoader<T> and derived interfaces have been generically typed on T, meaning that the ImgLoader would deliver images of type T for all timepoints and setups (angles, channels, etc).
+The new API moves the generic parameter one level deeper, to the setups. Now BasicImgLoader is not generic. It provides one BasicSetupImgLoader<T> for each setup.  T can be different for each setup.
+
+This will enable in the future to mix different types in one dataset. For example, in a multi-angle lightsheet dataset, raw you could have 16bit integer for the raw stacks of each angle, 32bit floating point for the multi-angle fusion and deconvolution result, and maybe 64 bit integers for some label fields that describe segmentation results etc. This could now all be stored in the same dataset.
+The introduction of this additional  BasicSetupImgLoader<T> interface level will also make it easy to merge datasets, where you combine in one dataset data from different sources (for example, raw data somewhere on a server, deconvolved data on a different sertver, segmentation result in local files, etc).
+
+
+
+
+Where is the code?
+
+The new API is implemented in the ?types? branch of projects
+https://github.com/bigdataviewer/spimdata and
+https://github.com/bigdataviewer/bigdataviewer-core
+
+In addition, I already fixed the following projects that are using the API:
+https://github.com/bigdataviewer/bigdataviewer-server
+https://github.com/bigdataviewer/bigdataviewer_fiji
+https://github.com/bigdataviewer/SPIM_Registration
+https://github.com/fiji/MaMuT
+
+Everything is on branch ?types?, with SNAPSHOT couplings between these projects.
+I plan to release it all in one go.
+
+
+
+
+What changed exactly?
+
+Basically, from a ImgLoader user perspective, instead of calling
+ViewId view = new ViewId( timepointId, setupId );
+imgloader.getImage( view );
+you will now call
+imgloader.getSetupImgLoader( setupId ).getImage( timepointId );
+
+There is one more change, which is unrelated (but I think this is a good time to put it in, while breaking API anyways).
+All  getImage() variants have additional optional parameter ImgLoaderHint... hints.
+This is used to pass hints to the ImgLoader implementations about how to best load the data. Currently, the only existing hint is ImgLoaderHints.LOAD_COMPLETELY. This is used in certain places in SPIM_Registration to tell BDV?s hdf5 ImgLoader that it should read the full image completely in one go (because this is faster than using a cached image when we already know that we will need to access every single pixel of the image). Of course, hints are just hints, and most ImgLoaders will just ignore them.
+
+ImgLoaders and SetupImgLoaders have been put into an interface hierarchy:
+
+BasicSetupImgLoader can give a T image for every timepoint.
+SetupImgLoader can additionally give a image converted to FloatType for every timepoint, and provide some metadata (this is required for SPIM_Reconstruction).
+BasicMultiResolutionSetupImgLoader has multiple resolutions of every T image for every timepoint.
+MultiResolutionSetupImgLoader provides both multi-resolution and float-converted data.
+ViewerSetupImgLoader is multi-resolution and provides additionally Volatile versions of each image (this is implemented by most bdv cached images)
+
+This hierarchy is paralleled by ImgLoaders:
+
+
+
+
+
+
+
+
+How can you fix your ImgLoader implementation?
+
+I tried to make that easy. The basic idea is the following:
+The old interface ImgLoader<T> (etc) is still available as LegacyImgLoader<T> (etc). You just use your old implementation and change "implements ImgLoader<T>" to "implements LegacyImgLoader<T>?.
+There is a LegacyImgLoaderWrapper<T> (etc) class that you can extends to wrap your (old) implementation as a ImgLoader conforming to the new API.
+More detailed instructions below.
+
+To test, get the ?types? branch of projects
+https://github.com/bigdataviewer/spimdata and
+https://github.com/bigdataviewer/bigdataviewer-core
+Add SNAPSHOT dependencies in your projects pom.xml:
+		<dependency>
+			<groupId>sc.fiji</groupId>
+			<artifactId>bigdataviewer-core</artifactId>
+			<version>1.2.3-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>sc.fiji</groupId>
+			<artifactId>spim_data</artifactId>
+			<version>1.0.0-beta-8-SNAPSHOT</version>
+		</dependency>
+and make the enforcer rules shut up about it:
+	<properties><enforcer.skip>true</enforcer.skip></properties>
+Now you should get compile errors...
+Fix them as indicated above, and detailed in the following.
+
+
+To adapt an "old" ImgLoader:
+
+Assume for example OldImageLoader
+
+1.) copy OldImageLoader to LegacyOldImageLoader
+
+2.) in LegacyOldImageLoader: change implements ImgLoader<...> to implements LegacyImgLoader<...>
+
+3.) Let OldImageLoader extends LegacyImgLoaderWrapper.
+	For each public constructor, just call super( new LegacyOldImageLoader( ... constructor parameters ... )
+	Remove the rest of the code.
+	This satisfies all requirements of the ImgLoader interface. If you need to expose additional public API from your OldImageLoader, you can forward to the LegacyOldImageLoader which is available as member variable legacyImgLoader.
+
+
+To adapt an "old" ViewerImgLoader:
+
+For example CatmaidImageLoader
+
+1.) copy CatmaidImageLoader to LegacyCatmaidImageLoader
+
+2.) in LegacyCatmaidImageLoader:
+
+2.1) change extends AbstractViewerImgLoader to extends AbstractLegacyViewerImgLoader:
+
+import bdv.AbstractViewerImgLoader;
+public class CatmaidImageLoader extends AbstractViewerImgLoader< ARGBType, VolatileARGBType >
+
+import bdv.spimdata.legacy.AbstractLegacyViewerImgLoader;
+public class LegacyCatmaidImageLoader extends AbstractLegacyViewerImgLoader< ARGBType, VolatileARGBType >
+
+2.2) if you use VolatileGlobalCellCache in your ImgLoader:
+VolatileGlobalCellCache no longer has generic parameters. The generic parameter moved to the per-image CellCache.
+Also VolatileGlobalCellCache is no longer constructed with an CacheArrayLoader. This also moved to the per-image CellCache.
+-> Remove generics from VolatileGlobalCellCache
+-> Add generic parameter to per-image CellCache
+-> remove CacheArrayLoader parameter fron VolatileGlobalCellCache constructor. Instead, store your CacheArrayLoader into a member variable and use it to construct per-image CellCache.
+
+Here are all the lines that needed to be changed in LegacyCatmaidImageLoader:
+
+	private final VolatileGlobalCellCache< VolatileIntArray > cache;
+	...
+		cache = new VolatileGlobalCellCache< VolatileIntArray >(
+			new CatmaidVolatileIntArrayLoader( urlFormat, tileWidth, tileHeight, zScales ), 1, 1, numScales, 10 );
+	...
+		final CellCache< VolatileIntArray > c = cache.new VolatileCellCache< VolatileIntArray >( view.getTimePointId(), view.getViewSetupId(), level, cacheHints, loader );
+	...
+	public VolatileGlobalCellCache< VolatileIntArray > getCache()
+
+And here is what they changed to:
+
+	private final VolatileGlobalCellCache cache;
+
+	private final CatmaidVolatileIntArrayLoader loader;
+	...
+		cache = new VolatileGlobalCellCache( 1, 1, numScales, 10 );
+		loader = new CatmaidVolatileIntArrayLoader( urlFormat, tileWidth, tileHeight, zScales );
+	...
+		final CellCache< VolatileIntArray > c = cache.new VolatileCellCache< VolatileIntArray >( view.getTimePointId(), view.getViewSetupId(), level, cacheHints, loader );
+	...
+	public VolatileGlobalCellCache getCache()
+
+3.) Let CatmaidImageLoader extend LegacyViewerImgLoaderWrapper< ARGBType, VolatileARGBType, LegacyCatmaidImageLoader >
+	For each public constructor, just call super( new LegacyCatmaidImageLoader( ... constructor parameters ... )
+	Remove the rest of the code.
+
+	The full CatmaidImageLoader looks like this:
+
+package bdv.img.catmaid;
+
+import net.imglib2.type.numeric.ARGBType;
+import net.imglib2.type.volatiles.VolatileARGBType;
+import bdv.spimdata.legacy.LegacyViewerImgLoaderWrapper;
+
+public class CatmaidImageLoader extends LegacyViewerImgLoaderWrapper< ARGBType, VolatileARGBType, LegacyCatmaidImageLoader >
+{
+	public CatmaidImageLoader(
+			final long width,
+			final long height,
+			final long depth,
+			final double zScale,
+			final int numScales,
+			final String urlFormat,
+			final int tileWidth,
+			final int tileHeight )
+	{
+		super( new LegacyCatmaidImageLoader( width, height, depth, zScale, numScales, urlFormat, tileWidth, tileHeight ) );
+	}
+}
+
+
+
+
+
+
+It would be cool if you could update your ImgLoaders as soon as possible. If there are any problems I?ll be happy to help. If your project is on github, I can also just fix it for you. Just let me know!
+I plan to merge the types branches of the above mentioned projects into the respective masters and release artifacts next Monday (5. October), and unless there are objections I would upload to Fiji updater next Friday (9. October).
+
+best regards,
+Tobias
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20151001/5d4debe9/attachment-0001.html>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: setupimgloaders.png
+Type: image/png
+Size: 18537 bytes
+Desc: not available
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20151001/5d4debe9/attachment-0002.png>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: imgloaders.png
+Type: image/png
+Size: 11683 bytes
+Desc: not available
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20151001/5d4debe9/attachment-0003.png>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20151001/5d4debe9/attachment-0001.pgp>
+
+From ctrueden at wisc.edu  Thu Oct  1 16:48:30 2015
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Thu, 1 Oct 2015 16:48:30 -0500
+Subject: [ImageJ-devel] EMBL Conference : Seeing is believing
+In-Reply-To: <CAJf7PRe8fW-vbbHgses-0nwr8b2pFg4haupYANjeSwANuUmSyQ@mail.gmail.com>
+References: <CAJf7PRdqSC4F+UM4Lpidz04SqADT6Ym-F3OphkfHmNTKOcjLTA@mail.gmail.com>
+	<CAJf7PRe8fW-vbbHgses-0nwr8b2pFg4haupYANjeSwANuUmSyQ@mail.gmail.com>
+Message-ID: <CADN69y=oX-jVpMCYNtBonHz7rr1qPwjfRJMRy_Ob7W9dFvDkfg@mail.gmail.com>
+
+Hi Cyril,
+
+> I would like to know if there will be some ImageJ/Fij
+> Developers/contributors attending the EMBL Conference "Seeing is
+> believing" in Heidelberg (Germany) on the October, 6th.
+
+No one from the core ImageJ development team is attending, but some members
+of the OME consortium (Simon Li, Gabriella Rustici (IDR) and Rafael Carazo
+(IDR)) will be there.
+
+> I will present a poster about ImageJFX.
+
+Great!
+
+> It's still not so fully functionnal so that's why I haven't released
+> the code yet. I'm just waiting to have something more or less "solid"
+> and clean.
+
+I'll continue to suggest that you release the code sooner rather than
+later. You want rapid iterations with feedback from others, to direct your
+development efforts. Otherwise you may spend too much time going in
+suboptimal directions.
+
+> I guess I'll be able to release the code soon after the conference.
+
+Looking forward to it.
+
+> since I live there, I can hook you up with the good bars :-D
+
+I really enjoyed Heidelberg and the EMBL when I visited a few years ago. I
+hope I can return some time soon!
+
+Regards,
+Curtis
+
+On Thu, Oct 1, 2015 at 9:56 AM, Mongis Cyril <cyril.mongis at googlemail.com>
+wrote:
+
+>
+> Indeed, I will present a poster about ImageJFX. My Poster session is on
+> Wednesday afternoon (144) so we can meet there. I would like to use this
+> occasion to have some more inputs about the software. I will have a tablet
+> to show some videos about the software. It's still not so fully functionnal
+> so that's why I haven't released the code yet. I'm just waiting to have
+> something more or less "solid" and clean. I often go through some big
+> refactoring to follow more or less the ImageJ2 guidelines. But I guess I'll
+> be able to release the code soon after the conference.
+>
+> Cheers and looking forward to see you guys,
+>
+> Cyril
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20151001/5a230c16/attachment.html>
+
+From saalfelds at janelia.hhmi.org  Thu Oct  1 22:52:24 2015
+From: saalfelds at janelia.hhmi.org (Saalfeld, Stephan)
+Date: Fri, 2 Oct 2015 03:52:24 +0000
+Subject: [ImageJ-devel] [fiji-devel] API-breaking change in SpimData and
+ BigDataViewer projects
+In-Reply-To: <44A7F072-C289-43CA-82A9-4BB43E66A083@mpi-cbg.de>
+References: <44A7F072-C289-43CA-82A9-4BB43E66A083@mpi-cbg.de>
+Message-ID: <1443757944.6472.4.camel@janelia.hhmi.org>
+
+Great!  Just in time for the hackathon next week.  We will miss you!
+
+Cheers,
+Stephan
+
+On Thu, 2015-10-01 at 19:41 +0200, Tobias Pietzsch wrote:
+> Hi,
+> 
+> 
+> very long email coming. Here is to quickly find out if you should
+> bother reading it:
+> I?m preparing an update to the spim-data and bigdataviewer-core
+> projects, that might break your code if you are using BigDataViewer or
+> SpimData APIs.
+> If you are not using these APIs, then you can stop reading now --
+> nothing will change for users of the plugin.
+> If you only use BDV as a visualization frontend, then most likely you
+> will be not affected by the changes.
+> If you wrote a BDV backend and/or SpimData ImgLoader, you WILL be
+> affected. In the following I will describe how to fix your ImgLoaders.
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> First some motivation, for why this API break is necessary:
+> 
+> 
+> The basic idea of the API change is the following:
+> So far, all BasicImgLoader<T> and derived interfaces have been
+> generically typed on T, meaning that the ImgLoader would deliver
+> images of type T for all timepoints and setups (angles, channels,
+> etc).
+> The new API moves the generic parameter one level deeper, to the
+> setups. Now BasicImgLoader is not generic. It provides one
+> BasicSetupImgLoader<T> for each setup.  T can be different for each
+> setup.
+> 
+> 
+> This will enable in the future to mix different types in one dataset.
+> For example, in a multi-angle lightsheet dataset, raw you could have
+> 16bit integer for the raw stacks of each angle, 32bit floating point
+> for the multi-angle fusion and deconvolution result, and maybe 64 bit
+> integers for some label fields that describe segmentation results etc.
+> This could now all be stored in the same dataset.
+> The introduction of this additional  BasicSetupImgLoader<T> interface
+> level will also make it easy to merge datasets, where you combine in
+> one dataset data from different sources (for example, raw data
+> somewhere on a server, deconvolved data on a different sertver,
+> segmentation result in local files, etc).
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> Where is the code?
+> 
+> 
+> The new API is implemented in the ?types? branch of projects
+> https://github.com/bigdataviewer/spimdata and
+> https://github.com/bigdataviewer/bigdataviewer-core
+> 
+> 
+> In addition, I already fixed the following projects that are using the
+> API:
+> https://github.com/bigdataviewer/bigdataviewer-server
+> https://github.com/bigdataviewer/bigdataviewer_fiji
+> https://github.com/bigdataviewer/SPIM_Registration
+> https://github.com/fiji/MaMuT
+> 
+> 
+> Everything is on branch ?types?, with SNAPSHOT couplings between these
+> projects.
+> I plan to release it all in one go.
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> What changed exactly?
+> 
+> 
+> Basically, from a ImgLoader user perspective, instead of calling
+> ViewId view = new ViewId( timepointId, setupId );
+> imgloader.getImage( view );
+> you will now call
+> imgloader.getSetupImgLoader( setupId ).getImage( timepointId );
+> 
+> 
+> There is one more change, which is unrelated (but I think this is a
+> good time to put it in, while breaking API anyways).
+> All  getImage() variants have additional optional parameter
+> ImgLoaderHint... hints.
+> This is used to pass hints to the ImgLoader implementations about how
+> to best load the data. Currently, the only existing hint
+> is ImgLoaderHints.LOAD_COMPLETELY. This is used in certain places in
+> SPIM_Registration to tell BDV?s hdf5 ImgLoader that it should read the
+> full image completely in one go (because this is faster than using a
+> cached image when we already know that we will need to access every
+> single pixel of the image). Of course, hints are just hints, and most
+> ImgLoaders will just ignore them.
+> 
+> 
+> ImgLoaders and SetupImgLoaders have been put into an interface
+> hierarchy:
+> 
+> BasicSetupImgLoader can give a T image for every timepoint.
+> SetupImgLoader can additionally give a image converted to FloatType
+> for every timepoint, and provide some metadata (this is required for
+> SPIM_Reconstruction).
+> BasicMultiResolutionSetupImgLoader has multiple resolutions of every T
+> image for every timepoint.
+> MultiResolutionSetupImgLoader provides both multi-resolution and
+> float-converted data.
+> ViewerSetupImgLoader is multi-resolution and provides additionally
+> Volatile versions of each image (this is implemented by most bdv
+> cached images)
+> 
+> 
+> This hierarchy is paralleled by ImgLoaders:
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> How can you fix your ImgLoader implementation?
+> 
+> 
+> I tried to make that easy. The basic idea is the following:
+> The old interface ImgLoader<T> (etc) is still available
+> as LegacyImgLoader<T> (etc). You just use your old implementation and
+> change "implements ImgLoader<T>" to "implements LegacyImgLoader<T>?.
+> There is a LegacyImgLoaderWrapper<T> (etc) class that you can extends
+> to wrap your (old) implementation as a ImgLoader conforming to the new
+> API.
+> More detailed instructions below.
+> 
+> 
+> To test, get the ?types? branch of projects
+> https://github.com/bigdataviewer/spimdata and
+> https://github.com/bigdataviewer/bigdataviewer-core
+> Add SNAPSHOT dependencies in your projects pom.xml:
+> <dependency>
+> <groupId>sc.fiji</groupId>
+> <artifactId>bigdataviewer-core</artifactId>
+> <version>1.2.3-SNAPSHOT</version>
+> </dependency>
+> <dependency>
+> <groupId>sc.fiji</groupId>
+> <artifactId>spim_data</artifactId>
+> <version>1.0.0-beta-8-SNAPSHOT</version>
+> </dependency>
+> and make the enforcer rules shut up about it:
+> <properties><enforcer.skip>true</enforcer.skip></properties>
+> Now you should get compile errors...
+> Fix them as indicated above, and detailed in the following.
+> 
+> 
+> 
+> 
+> To adapt an "old" ImgLoader:
+> 
+> 
+> Assume for example OldImageLoader
+> 
+> 
+> 1.) copy OldImageLoader to LegacyOldImageLoader
+> 
+> 
+> 2.) in LegacyOldImageLoader: change implements ImgLoader<...> to
+> implements LegacyImgLoader<...>
+> 
+> 
+> 3.) Let OldImageLoader extends LegacyImgLoaderWrapper.
+> For each public constructor, just call super( new
+> LegacyOldImageLoader( ... constructor parameters ... )
+> Remove the rest of the code.
+> This satisfies all requirements of the ImgLoader interface. If you
+> need to expose additional public API from your OldImageLoader, you can
+> forward to the LegacyOldImageLoader which is available as member
+> variable legacyImgLoader.
+> 
+> 
+> 
+> 
+> To adapt an "old" ViewerImgLoader:
+> 
+> 
+> For example CatmaidImageLoader
+> 
+> 
+> 1.) copy CatmaidImageLoader to LegacyCatmaidImageLoader
+> 
+> 
+> 2.) in LegacyCatmaidImageLoader:
+> 
+> 
+> 2.1) change extends AbstractViewerImgLoader to extends
+> AbstractLegacyViewerImgLoader:
+> 
+> 
+> import bdv.AbstractViewerImgLoader;
+> public class CatmaidImageLoader extends AbstractViewerImgLoader<
+> ARGBType, VolatileARGBType >
+> 
+> 
+> import bdv.spimdata.legacy.AbstractLegacyViewerImgLoader;
+> public class LegacyCatmaidImageLoader extends
+> AbstractLegacyViewerImgLoader< ARGBType, VolatileARGBType >
+> 
+> 
+> 2.2) if you use VolatileGlobalCellCache in your ImgLoader:
+> VolatileGlobalCellCache no longer has generic parameters. The generic
+> parameter moved to the per-image CellCache.
+> Also VolatileGlobalCellCache is no longer constructed with an
+> CacheArrayLoader. This also moved to the per-image CellCache.
+> -> Remove generics from VolatileGlobalCellCache
+> -> Add generic parameter to per-image CellCache
+> -> remove CacheArrayLoader parameter fron VolatileGlobalCellCache
+> constructor. Instead, store your CacheArrayLoader into a member
+> variable and use it to construct per-image CellCache.
+> 
+> 
+> Here are all the lines that needed to be changed in
+> LegacyCatmaidImageLoader:
+> 
+> 
+> private final VolatileGlobalCellCache< VolatileIntArray > cache;
+> ...
+> cache = new VolatileGlobalCellCache< VolatileIntArray >(
+> new CatmaidVolatileIntArrayLoader( urlFormat, tileWidth, tileHeight,
+> zScales ), 1, 1, numScales, 10 );
+> ...
+> final CellCache< VolatileIntArray > c = cache.new VolatileCellCache<
+> VolatileIntArray >( view.getTimePointId(), view.getViewSetupId(),
+> level, cacheHints, loader );
+> ...
+> public VolatileGlobalCellCache< VolatileIntArray > getCache()
+> 
+> 
+> And here is what they changed to:
+> 
+> 
+> private final VolatileGlobalCellCache cache;
+> 
+> 
+> private final CatmaidVolatileIntArrayLoader loader;
+> ...
+> cache = new VolatileGlobalCellCache( 1, 1, numScales, 10 );
+> loader = new CatmaidVolatileIntArrayLoader( urlFormat, tileWidth,
+> tileHeight, zScales );
+> ...
+> final CellCache< VolatileIntArray > c = cache.new VolatileCellCache<
+> VolatileIntArray >( view.getTimePointId(), view.getViewSetupId(),
+> level, cacheHints, loader );
+> ...
+> public VolatileGlobalCellCache getCache()
+> 
+> 
+> 3.) Let CatmaidImageLoader extend LegacyViewerImgLoaderWrapper<
+> ARGBType, VolatileARGBType, LegacyCatmaidImageLoader >
+> For each public constructor, just call super( new
+> LegacyCatmaidImageLoader( ... constructor parameters ... )
+> Remove the rest of the code.
+> 
+> 
+> The full CatmaidImageLoader looks like this:
+> 
+> 
+> package bdv.img.catmaid;
+> 
+> 
+> import net.imglib2.type.numeric.ARGBType;
+> import net.imglib2.type.volatiles.VolatileARGBType;
+> import bdv.spimdata.legacy.LegacyViewerImgLoaderWrapper;
+> 
+> 
+> public class CatmaidImageLoader extends LegacyViewerImgLoaderWrapper<
+> ARGBType, VolatileARGBType, LegacyCatmaidImageLoader >
+> {
+> public CatmaidImageLoader(
+> final long width,
+> final long height,
+> final long depth,
+> final double zScale,
+> final int numScales,
+> final String urlFormat,
+> final int tileWidth,
+> final int tileHeight )
+> {
+> super( new LegacyCatmaidImageLoader( width, height, depth, zScale,
+> numScales, urlFormat, tileWidth, tileHeight ) );
+> }
+> }
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> It would be cool if you could update your ImgLoaders as soon as
+> possible. If there are any problems I?ll be happy to help. If your
+> project is on github, I can also just fix it for you. Just let me
+> know!
+> I plan to merge the types branches of the above mentioned projects
+> into the respective masters and release artifacts next Monday (5.
+> October), and unless there are objections I would upload to Fiji
+> updater next Friday (9. October).
+> 
+> 
+> best regards,
+> Tobias
+> 
+> 
+> -- 
+> -- 
+> Please avoid top-posting, and please make sure to reply-to-all!
+>  
+> Mailing list web interface: http://groups.google.com/group/fiji-devel
+> 
+> --- 
+> You received this message because you are subscribed to the Google
+> Groups "Fiji-devel" group.
+> To unsubscribe from this group and stop receiving emails from it, send
+> an email to fiji-devel+unsubscribe at googlegroups.com.
+> For more options, visit https://groups.google.com/d/optout.
+
+
+From saalfelds at janelia.hhmi.org  Thu Oct  1 23:02:16 2015
+From: saalfelds at janelia.hhmi.org (Saalfeld, Stephan)
+Date: Fri, 2 Oct 2015 04:02:16 +0000
+Subject: [ImageJ-devel] [fiji-devel] API-breaking change in SpimData and
+ BigDataViewer projects
+In-Reply-To: <44A7F072-C289-43CA-82A9-4BB43E66A083@mpi-cbg.de>
+References: <44A7F072-C289-43CA-82A9-4BB43E66A083@mpi-cbg.de>
+Message-ID: <1443758535.6472.6.camel@janelia.hhmi.org>
+
+Great!  Just in time for the hackathon next week.  We will miss you!
+
+Cheers,
+Stephan
+
+On Thu, 2015-10-01 at 19:41 +0200, Tobias Pietzsch wrote:
+> Hi,
+> 
+> 
+> very long email coming. Here is to quickly find out if you should
+> bother reading it:
+> I?m preparing an update to the spim-data and bigdataviewer-core
+> projects, that might break your code if you are using BigDataViewer or
+> SpimData APIs.
+> If you are not using these APIs, then you can stop reading now --
+> nothing will change for users of the plugin.
+> If you only use BDV as a visualization frontend, then most likely you
+> will be not affected by the changes.
+> If you wrote a BDV backend and/or SpimData ImgLoader, you WILL be
+> affected. In the following I will describe how to fix your ImgLoaders.
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> First some motivation, for why this API break is necessary:
+> 
+> 
+> The basic idea of the API change is the following:
+> So far, all BasicImgLoader<T> and derived interfaces have been
+> generically typed on T, meaning that the ImgLoader would deliver
+> images of type T for all timepoints and setups (angles, channels,
+> etc).
+> The new API moves the generic parameter one level deeper, to the
+> setups. Now BasicImgLoader is not generic. It provides one
+> BasicSetupImgLoader<T> for each setup.  T can be different for each
+> setup.
+> 
+> 
+> This will enable in the future to mix different types in one dataset.
+> For example, in a multi-angle lightsheet dataset, raw you could have
+> 16bit integer for the raw stacks of each angle, 32bit floating point
+> for the multi-angle fusion and deconvolution result, and maybe 64 bit
+> integers for some label fields that describe segmentation results etc.
+> This could now all be stored in the same dataset.
+> The introduction of this additional  BasicSetupImgLoader<T> interface
+> level will also make it easy to merge datasets, where you combine in
+> one dataset data from different sources (for example, raw data
+> somewhere on a server, deconvolved data on a different sertver,
+> segmentation result in local files, etc).
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> Where is the code?
+> 
+> 
+> The new API is implemented in the ?types? branch of projects
+> https://github.com/bigdataviewer/spimdata and
+> https://github.com/bigdataviewer/bigdataviewer-core
+> 
+> 
+> In addition, I already fixed the following projects that are using the
+> API:
+> https://github.com/bigdataviewer/bigdataviewer-server
+> https://github.com/bigdataviewer/bigdataviewer_fiji
+> https://github.com/bigdataviewer/SPIM_Registration
+> https://github.com/fiji/MaMuT
+> 
+> 
+> Everything is on branch ?types?, with SNAPSHOT couplings between these
+> projects.
+> I plan to release it all in one go.
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> What changed exactly?
+> 
+> 
+> Basically, from a ImgLoader user perspective, instead of calling
+> ViewId view = new ViewId( timepointId, setupId );
+> imgloader.getImage( view );
+> you will now call
+> imgloader.getSetupImgLoader( setupId ).getImage( timepointId );
+> 
+> 
+> There is one more change, which is unrelated (but I think this is a
+> good time to put it in, while breaking API anyways).
+> All  getImage() variants have additional optional parameter
+> ImgLoaderHint... hints.
+> This is used to pass hints to the ImgLoader implementations about how
+> to best load the data. Currently, the only existing hint
+> is ImgLoaderHints.LOAD_COMPLETELY. This is used in certain places in
+> SPIM_Registration to tell BDV?s hdf5 ImgLoader that it should read the
+> full image completely in one go (because this is faster than using a
+> cached image when we already know that we will need to access every
+> single pixel of the image). Of course, hints are just hints, and most
+> ImgLoaders will just ignore them.
+> 
+> 
+> ImgLoaders and SetupImgLoaders have been put into an interface
+> hierarchy:
+> 
+> BasicSetupImgLoader can give a T image for every timepoint.
+> SetupImgLoader can additionally give a image converted to FloatType
+> for every timepoint, and provide some metadata (this is required for
+> SPIM_Reconstruction).
+> BasicMultiResolutionSetupImgLoader has multiple resolutions of every T
+> image for every timepoint.
+> MultiResolutionSetupImgLoader provides both multi-resolution and
+> float-converted data.
+> ViewerSetupImgLoader is multi-resolution and provides additionally
+> Volatile versions of each image (this is implemented by most bdv
+> cached images)
+> 
+> 
+> This hierarchy is paralleled by ImgLoaders:
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> How can you fix your ImgLoader implementation?
+> 
+> 
+> I tried to make that easy. The basic idea is the following:
+> The old interface ImgLoader<T> (etc) is still available
+> as LegacyImgLoader<T> (etc). You just use your old implementation and
+> change "implements ImgLoader<T>" to "implements LegacyImgLoader<T>?.
+> There is a LegacyImgLoaderWrapper<T> (etc) class that you can extends
+> to wrap your (old) implementation as a ImgLoader conforming to the new
+> API.
+> More detailed instructions below.
+> 
+> 
+> To test, get the ?types? branch of projects
+> https://github.com/bigdataviewer/spimdata and
+> https://github.com/bigdataviewer/bigdataviewer-core
+> Add SNAPSHOT dependencies in your projects pom.xml:
+> <dependency>
+> <groupId>sc.fiji</groupId>
+> <artifactId>bigdataviewer-core</artifactId>
+> <version>1.2.3-SNAPSHOT</version>
+> </dependency>
+> <dependency>
+> <groupId>sc.fiji</groupId>
+> <artifactId>spim_data</artifactId>
+> <version>1.0.0-beta-8-SNAPSHOT</version>
+> </dependency>
+> and make the enforcer rules shut up about it:
+> <properties><enforcer.skip>true</enforcer.skip></properties>
+> Now you should get compile errors...
+> Fix them as indicated above, and detailed in the following.
+> 
+> 
+> 
+> 
+> To adapt an "old" ImgLoader:
+> 
+> 
+> Assume for example OldImageLoader
+> 
+> 
+> 1.) copy OldImageLoader to LegacyOldImageLoader
+> 
+> 
+> 2.) in LegacyOldImageLoader: change implements ImgLoader<...> to
+> implements LegacyImgLoader<...>
+> 
+> 
+> 3.) Let OldImageLoader extends LegacyImgLoaderWrapper.
+> For each public constructor, just call super( new
+> LegacyOldImageLoader( ... constructor parameters ... )
+> Remove the rest of the code.
+> This satisfies all requirements of the ImgLoader interface. If you
+> need to expose additional public API from your OldImageLoader, you can
+> forward to the LegacyOldImageLoader which is available as member
+> variable legacyImgLoader.
+> 
+> 
+> 
+> 
+> To adapt an "old" ViewerImgLoader:
+> 
+> 
+> For example CatmaidImageLoader
+> 
+> 
+> 1.) copy CatmaidImageLoader to LegacyCatmaidImageLoader
+> 
+> 
+> 2.) in LegacyCatmaidImageLoader:
+> 
+> 
+> 2.1) change extends AbstractViewerImgLoader to extends
+> AbstractLegacyViewerImgLoader:
+> 
+> 
+> import bdv.AbstractViewerImgLoader;
+> public class CatmaidImageLoader extends AbstractViewerImgLoader<
+> ARGBType, VolatileARGBType >
+> 
+> 
+> import bdv.spimdata.legacy.AbstractLegacyViewerImgLoader;
+> public class LegacyCatmaidImageLoader extends
+> AbstractLegacyViewerImgLoader< ARGBType, VolatileARGBType >
+> 
+> 
+> 2.2) if you use VolatileGlobalCellCache in your ImgLoader:
+> VolatileGlobalCellCache no longer has generic parameters. The generic
+> parameter moved to the per-image CellCache.
+> Also VolatileGlobalCellCache is no longer constructed with an
+> CacheArrayLoader. This also moved to the per-image CellCache.
+> -> Remove generics from VolatileGlobalCellCache
+> -> Add generic parameter to per-image CellCache
+> -> remove CacheArrayLoader parameter fron VolatileGlobalCellCache
+> constructor. Instead, store your CacheArrayLoader into a member
+> variable and use it to construct per-image CellCache.
+> 
+> 
+> Here are all the lines that needed to be changed in
+> LegacyCatmaidImageLoader:
+> 
+> 
+> private final VolatileGlobalCellCache< VolatileIntArray > cache;
+> ...
+> cache = new VolatileGlobalCellCache< VolatileIntArray >(
+> new CatmaidVolatileIntArrayLoader( urlFormat, tileWidth, tileHeight,
+> zScales ), 1, 1, numScales, 10 );
+> ...
+> final CellCache< VolatileIntArray > c = cache.new VolatileCellCache<
+> VolatileIntArray >( view.getTimePointId(), view.getViewSetupId(),
+> level, cacheHints, loader );
+> ...
+> public VolatileGlobalCellCache< VolatileIntArray > getCache()
+> 
+> 
+> And here is what they changed to:
+> 
+> 
+> private final VolatileGlobalCellCache cache;
+> 
+> 
+> private final CatmaidVolatileIntArrayLoader loader;
+> ...
+> cache = new VolatileGlobalCellCache( 1, 1, numScales, 10 );
+> loader = new CatmaidVolatileIntArrayLoader( urlFormat, tileWidth,
+> tileHeight, zScales );
+> ...
+> final CellCache< VolatileIntArray > c = cache.new VolatileCellCache<
+> VolatileIntArray >( view.getTimePointId(), view.getViewSetupId(),
+> level, cacheHints, loader );
+> ...
+> public VolatileGlobalCellCache getCache()
+> 
+> 
+> 3.) Let CatmaidImageLoader extend LegacyViewerImgLoaderWrapper<
+> ARGBType, VolatileARGBType, LegacyCatmaidImageLoader >
+> For each public constructor, just call super( new
+> LegacyCatmaidImageLoader( ... constructor parameters ... )
+> Remove the rest of the code.
+> 
+> 
+> The full CatmaidImageLoader looks like this:
+> 
+> 
+> package bdv.img.catmaid;
+> 
+> 
+> import net.imglib2.type.numeric.ARGBType;
+> import net.imglib2.type.volatiles.VolatileARGBType;
+> import bdv.spimdata.legacy.LegacyViewerImgLoaderWrapper;
+> 
+> 
+> public class CatmaidImageLoader extends LegacyViewerImgLoaderWrapper<
+> ARGBType, VolatileARGBType, LegacyCatmaidImageLoader >
+> {
+> public CatmaidImageLoader(
+> final long width,
+> final long height,
+> final long depth,
+> final double zScale,
+> final int numScales,
+> final String urlFormat,
+> final int tileWidth,
+> final int tileHeight )
+> {
+> super( new LegacyCatmaidImageLoader( width, height, depth, zScale,
+> numScales, urlFormat, tileWidth, tileHeight ) );
+> }
+> }
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> It would be cool if you could update your ImgLoaders as soon as
+> possible. If there are any problems I?ll be happy to help. If your
+> project is on github, I can also just fix it for you. Just let me
+> know!
+> I plan to merge the types branches of the above mentioned projects
+> into the respective masters and release artifacts next Monday (5.
+> October), and unless there are objections I would upload to Fiji
+> updater next Friday (9. October).
+> 
+> 
+> best regards,
+> Tobias
+> 
+> 
+> -- 
+> -- 
+> Please avoid top-posting, and please make sure to reply-to-all!
+>  
+> Mailing list web interface: http://groups.google.com/group/fiji-devel
+> 
+> --- 
+> You received this message because you are subscribed to the Google
+> Groups "Fiji-devel" group.
+> To unsubscribe from this group and stop receiving emails from it, send
+> an email to fiji-devel+unsubscribe at googlegroups.com.
+> For more options, visit https://groups.google.com/d/optout.
+
+
+From ctrueden at wisc.edu  Mon Oct  5 12:50:05 2015
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Mon, 5 Oct 2015 12:50:05 -0500
+Subject: [ImageJ-devel] Displaying into Swing/JFrame
+In-Reply-To: <OFCECE5C84.653AA57C-ON87257EC0.0072B260-87257EC0.0073CA74@mck.us.ray.com>
+References: <OFCECE5C84.653AA57C-ON87257EC0.0072B260-87257EC0.0073CA74@mck.us.ray.com>
+Message-ID: <CADN69yk8bzDcyru+fu1Y3jZHodk4bhhCuPDnA-M6-1jxmnsacw@mail.gmail.com>
+
+Hi Andy,
+
+> I am trying to use ImageJ2 as a tool in a larger application which is
+> built using Swing windows.
+
+The ImageJ2 API is built to be UI agnostic, so you can use it with Swing,
+SWT, or any other widget toolkit of your choice.
+
+> If I use and IJ.ImageJ object it displays but not in my JFrame.
+
+The class ij.ImageJ is part of ImageJ1. More generally: package prefix ij
+corresponds to IJ1, whereas package prefixes net.imagej and org.scijava
+correspond to ImageJ2. The ImageJ1 classes are written to use Java AWT, and
+have many limitations when it comes to their use with other toolkits and
+environments.
+
+> My question:  Is there a message thread that covers this I can read?
+> Does someone have a sample app or suggestion they care to share?
+
+There is not a lot of explicit documentation about the structure yet. The
+closest is this page:
+
+* http://imagej.net/Modularity
+
+Which is not very fleshed out.
+
+> I would not mind just running the ImageJ app and having the output
+> sent to my JFrame, if this is an option already built in to ImageJ.
+
+If you are more specific about what you are trying to achieve, and can
+share some code, that would help in giving you more concrete suggestions
+about how to proceed.
+
+Regards,
+Curtis
+
+On Mon, Sep 14, 2015 at 4:04 PM, Andrew J Askey <AJAskey at raytheon.com>
+wrote:
+
+> Hi. I am trying to use ImageJ2 as a tool in a larger application which is
+> built using Swing windows.  I want to display the windows from ImageJ
+> inside of one of my application JFrame windows (could be some other
+> component if that works better).  I have had some luck creating an
+> ImageCanvas and adding to my layout.  This opens the ImagePlus object and
+> appears to read the mouse correctly.  But any drawing does not show up.  If
+> I use and IJ.ImageJ object it displays but not in my JFrame.  Funny thing
+> is that I can draw on my window frame and it shows up in the standard
+> ImageJ window (so reads/input are mapped correctly but writes/out are not).
+>
+> My question:  Is there a message thread that covers this I can read?  Does
+> someone have a sample app or suggestion they care to share?
+>
+> For a simpler approach, I would not mind just running the ImageJ app and
+> having the output sent to my JFrame, if this is an option already built in
+> to ImageJ.
+>
+> Thanks.
+>
+> *Andy Askey*
+> Software Engineer - RME
+> Intelligence, Information and Services
+> * Raytheon Company*
+> +1 720.858.4183   (office)
+> *AJAskey at raytheon.com* <AJAskey at raytheon.com>
+>
+> *RSpace Profile*
+> <http://rspace.app.ray.com/profiles/html/profileView.do?uid=72577>
+>
+>
+>
+> [image: Raytheon Sustainability]
+> *This message contains information that may be confidential and
+> privileged. Unless you are the addressee (or authorized to receive mail for
+> the addressee), you should not use, copy or disclose to anyone this message
+> or any information contained in this message. If you have received this
+> message in error, please so advise the sender by reply e-mail and delete
+> this message. Thank you for your cooperation.*
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20151005/a163f2fe/attachment-0001.html>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: image/gif
+Size: 4310 bytes
+Desc: not available
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20151005/a163f2fe/attachment-0002.gif>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: image/gif
+Size: 35128 bytes
+Desc: not available
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20151005/a163f2fe/attachment-0003.gif>
+
+From smogollion at yahoo.fr  Wed Oct  7 17:20:16 2015
+From: smogollion at yahoo.fr (Jean Ollion)
+Date: Thu, 8 Oct 2015 00:20:16 +0200
+Subject: [ImageJ-devel] time-lapse stabilization
+Message-ID: <CA+zNSK_5StDb0dRO9xuzVszgmzw-6WY1jEDJWvQiHiOazAgF1Q@mail.gmail.com>
+
+Hi everyone,
+I'm looking for a stabilization algorithm for 2D/3D time-lapse images, that
+can be used from java code. I only need to compute a translation.
+I wondered if there was one using ImgLib2 using the *Fourier Shift Theorem
+.*
+Thanks a lot,
+Jean
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20151008/b03a2d19/attachment.html>
+
+From preibisch at mpi-cbg.de  Thu Oct  8 13:02:12 2015
+From: preibisch at mpi-cbg.de (Stephan Preibisch)
+Date: Thu, 8 Oct 2015 20:02:12 +0200
+Subject: [ImageJ-devel] time-lapse stabilization
+In-Reply-To: <CA+zNSK_5StDb0dRO9xuzVszgmzw-6WY1jEDJWvQiHiOazAgF1Q@mail.gmail.com>
+References: <CA+zNSK_5StDb0dRO9xuzVszgmzw-6WY1jEDJWvQiHiOazAgF1Q@mail.gmail.com>
+Message-ID: <C8226D82-9720-4136-9D8F-F9FBA3793F44@mpi-cbg.de>
+
+Hi,
+
+it is still implemented in ImgLib1 (Stitching plugin) awaiting a porting to ImgLib2. The FFT routines are already there though.
+
+Do you maybe feel like doing it? :)
+
+All the best,
+Stephan
+
+> On 08 Oct 2015, at 00:20, Jean Ollion <smogollion at yahoo.fr> wrote:
+> 
+> Hi everyone, 
+> I'm looking for a stabilization algorithm for 2D/3D time-lapse images, that can be used from java code. I only need to compute a translation. 
+> I wondered if there was one using ImgLib2 using the Fourier Shift Theorem .
+> Thanks a lot, 
+> Jean
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20151008/65cfcdff/attachment.html>
+
+From smogollion at yahoo.fr  Fri Oct  9 05:02:05 2015
+From: smogollion at yahoo.fr (Jean Ollion)
+Date: Fri, 9 Oct 2015 12:02:05 +0200
+Subject: [ImageJ-devel] time-lapse stabilization
+In-Reply-To: <C8226D82-9720-4136-9D8F-F9FBA3793F44@mpi-cbg.de>
+References: <CA+zNSK_5StDb0dRO9xuzVszgmzw-6WY1jEDJWvQiHiOazAgF1Q@mail.gmail.com>
+	<C8226D82-9720-4136-9D8F-F9FBA3793F44@mpi-cbg.de>
+Message-ID: <CA+zNSK-w5PFaUrLrE8KV18s+bj2FEpr_-=1WAfh2=tDmTfmYVQ@mail.gmail.com>
+
+Hello Stephan,
+Yes I could do it.
+Could you tell me where I could find the library containing the FFT
+routines (it seems it is not in the imgLib2 package), if possible the maven
+artifact.
+And more generally where can I browse all the imgLib2-associated maven
+artifacts.
+Thank you,
+Jean
+
+2015-10-08 20:02 GMT+02:00 Stephan Preibisch <preibisch at mpi-cbg.de>:
+
+> Hi,
+>
+> it is still implemented in ImgLib1 (Stitching plugin) awaiting a porting
+> to ImgLib2. The FFT routines are already there though.
+>
+> Do you maybe feel like doing it? :)
+>
+> All the best,
+> Stephan
+>
+> On 08 Oct 2015, at 00:20, Jean Ollion <smogollion at yahoo.fr> wrote:
+>
+> Hi everyone,
+> I'm looking for a stabilization algorithm for 2D/3D time-lapse images,
+> that can be used from java code. I only need to compute a translation.
+> I wondered if there was one using ImgLib2 using the *Fourier Shift
+> Theorem .*
+> Thanks a lot,
+> Jean
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20151009/c0fde307/attachment.html>
+
+From ctrueden at wisc.edu  Fri Oct  9 09:40:48 2015
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Fri, 9 Oct 2015 09:40:48 -0500
+Subject: [ImageJ-devel] Retire the imagej-devel and fiji-devel lists?
+Message-ID: <CADN69ym1Y0SWToHTsckaS-uqR8vbW8Lb01k7jP2AVT9hU4P08Q@mail.gmail.com>
+
+Hello ImageJ and Fiji enthusiasts,
+
+As you all probably noticed, we now have a nice web forum for discussion of
+ImageJ and Fiji issues. It runs using Discourse, a very carefully designed
+tool for civil and effective discussion.
+
+The forum has many advantages over these mailing lists. As such, I propose
+these lists be closed in favor of the forum.
+
+Please see this forum post for rationale, discussion and voting:
+
+http://forum.imagej.net/t/shut-down-the-imagej-devel-and-fiji-devel-mailing-lists/141
+
+Regards,
+Curtis Rueden
+UW-Madison LOCI
+ImageJ2 project lead
+Fiji project maintainer
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20151009/bb1a1c66/attachment.html>
+
+From ctrueden at wisc.edu  Mon Oct 12 15:16:58 2015
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Mon, 12 Oct 2015 15:16:58 -0500
+Subject: [ImageJ-devel] time-lapse stabilization
+In-Reply-To: <CA+zNSK-w5PFaUrLrE8KV18s+bj2FEpr_-=1WAfh2=tDmTfmYVQ@mail.gmail.com>
+References: <CA+zNSK_5StDb0dRO9xuzVszgmzw-6WY1jEDJWvQiHiOazAgF1Q@mail.gmail.com>
+	<C8226D82-9720-4136-9D8F-F9FBA3793F44@mpi-cbg.de>
+	<CA+zNSK-w5PFaUrLrE8KV18s+bj2FEpr_-=1WAfh2=tDmTfmYVQ@mail.gmail.com>
+Message-ID: <CADN69ym7B-BB0Fj04B3w7AqbkOhYt63cOE+LakXUXo9je4DxHA@mail.gmail.com>
+
+For the archives:
+http://forum.imagej.net/t/imglib2-fft-algorithms-maven/148
+
+On Fri, Oct 9, 2015 at 5:02 AM, Jean Ollion <smogollion at yahoo.fr> wrote:
+
+> Hello Stephan,
+> Yes I could do it.
+> Could you tell me where I could find the library containing the FFT
+> routines (it seems it is not in the imgLib2 package), if possible the maven
+> artifact.
+> And more generally where can I browse all the imgLib2-associated maven
+> artifacts.
+> Thank you,
+> Jean
+>
+> 2015-10-08 20:02 GMT+02:00 Stephan Preibisch <preibisch at mpi-cbg.de>:
+>
+>> Hi,
+>>
+>> it is still implemented in ImgLib1 (Stitching plugin) awaiting a porting
+>> to ImgLib2. The FFT routines are already there though.
+>>
+>> Do you maybe feel like doing it? :)
+>>
+>> All the best,
+>> Stephan
+>>
+>> On 08 Oct 2015, at 00:20, Jean Ollion <smogollion at yahoo.fr> wrote:
+>>
+>> Hi everyone,
+>> I'm looking for a stabilization algorithm for 2D/3D time-lapse images,
+>> that can be used from java code. I only need to compute a translation.
+>> I wondered if there was one using ImgLib2 using the *Fourier Shift
+>> Theorem .*
+>> Thanks a lot,
+>> Jean
+>> _______________________________________________
+>> ImageJ-devel mailing list
+>> ImageJ-devel at imagej.net
+>> http://imagej.net/mailman/listinfo/imagej-devel
+>>
+>>
+>>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20151012/ff1a6f81/attachment.html>
+
+From ctrueden at wisc.edu  Wed Oct 14 13:48:44 2015
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Wed, 14 Oct 2015 13:48:44 -0500
+Subject: [ImageJ-devel] This list is closed. Please use the ImageJ Forum.
+Message-ID: <CADN69ym_j3iyzOR+3MDu6Av0iwPqaNevz6fJ6cFteb8yHJOHCA@mail.gmail.com>
+
+Hi everyone,
+
+The vote to close imagej-devel was an overwhelming majority. 25/26 people
+voted to close the imagej-devel list in favor of the new forum. One person
+voted to close fiji-devel but not imagej-devel, but did not speak up to
+start a discussion about it.
+
+For details, see:
+http://forum.imagej.net/t/shut-down-the-imagej-devel-and-fiji-devel-mailing-lists/141
+
+As such, this list is now closed! See you on the forum! :-)
+
+Regards,
+Curtis
+
+P.S. For those who still prefer mailing lists, the main ImageJ list is
+still open, and also available through Nabble. For links, see:
+http://imagej.net/Mailing_Lists
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20151014/e4c67f07/attachment.html>
+

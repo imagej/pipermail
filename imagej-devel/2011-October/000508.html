@@ -1,0 +1,131 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] IJ1 unit tests
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20IJ1%20unit%20tests&In-Reply-To=%3CB7626506-E526-4A77-ACE3-533133088C19%40nih.gov%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000506.html">
+   <LINK REL="Next"  HREF="000507.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] IJ1 unit tests</H1>
+    <B>Rasband, Wayne (NIH/NIMH) [E]</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20IJ1%20unit%20tests&In-Reply-To=%3CB7626506-E526-4A77-ACE3-533133088C19%40nih.gov%3E"
+       TITLE="[ImageJ-devel] IJ1 unit tests">rasbandw at mail.nih.gov
+       </A><BR>
+    <I>Sat Oct  8 14:28:24 CDT 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000506.html">[ImageJ-devel] IJ1 unit tests
+</A></li>
+        <LI>Next message: <A HREF="000507.html">[ImageJ-devel] IJ1 unit tests
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#508">[ date ]</a>
+              <a href="thread.html#508">[ thread ]</a>
+              <a href="subject.html#508">[ subject ]</a>
+              <a href="author.html#508">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Curtis,
+
+I am willing to try to figure out why the tests are failing. I thought I would start with the virtual stack tests so I converted VirtualStackTest.java to an ImageJ plugin (attached), but I can't get it to run because I can't find the files &quot;gray8-2x3-sub1.tif&quot; and &quot;gray8-2x3-sub2.tif&quot; on the imagejdev website and I don't know how to generate them.
+
+-wayne
+
+
+
+import ij.*;
+import ij.process.*;
+import ij.plugin.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+ 
+public class Unit_Tests implements PlugIn {
+
+	public void run(String arg) {
+		testGetProcessor();
+	}
+
+   public void testGetProcessor() {
+	String DATA_DIR = &quot;src/test/resources/data/&quot;;
+       // setup vstack
+        VirtualStack vs =new VirtualStack(2,3,null,DATA_DIR);
+        vs.addSlice(&quot;gray8-2x3-sub1.tif&quot;);
+        vs.addSlice(&quot;gray8-2x3-sub2.tif&quot;);
+        // test that it works
+        ImageProcessor proc;
+        // try valid entries and test returned data
+        proc =vs.getProcessor(1);
+        assertEquals(2,proc.getWidth());
+        assertEquals(3,proc.getHeight());
+        assertArrayEquals(new byte[]{0,40,0,40,120,-96},(byte[])proc.getPixels());
+        proc =vs.getProcessor(2);
+        assertEquals(2,proc.getWidth());
+        assertEquals(3,proc.getHeight());
+        assertArrayEquals(new byte[]{0,40,0,40,120,-96},(byte[])proc.getPixels());
+    }
+
+}
+
+
+
+
+
+
+On Oct 7, 2011, at 3:05 PM, Curtis Rueden wrote:
+
+&gt;<i> Hi Wayne et. al,
+</I>&gt;<i> 
+</I>&gt;<i> For quite some time now, we have had unit tests (written by Barry) for testing the behavior of IJ1. Unfortunately, they were originally written to compile against a patched version of IJ1 and we neglected to update them to work with IJ1 &quot;out of the box.&quot;
+</I>&gt;<i> 
+</I>&gt;<i> I have had a ticket about this situation (<A HREF="http://dev.imagejdev.org/trac/imagej/ticket/598">http://dev.imagejdev.org/trac/imagej/ticket/598</A>) for the past few months, but have only just now finally fixed the tests to work against various versions of IJ1 from 1.44 onwards.
+</I>&gt;<i> 
+</I>&gt;<i> I ran them against all development versions of 1.45 (a through q) and saved the result as a blog post:
+</I>&gt;<i>   <A HREF="http://imagejdev.org/2011/10/07/unit-tests-imagej-1x">http://imagejdev.org/2011/10/07/unit-tests-imagej-1x</A>
+</I>&gt;<i> 
+</I>&gt;<i> It looks like from 1.45a through 1.45q, a total of 7 code changes were introduced that result in test failures. These could be the result of bugfixes, or they could be new regressions. I wanted to let you know in case you were interested in pursuing these bugs, since I know how much you value backwards compatibility.
+</I>&gt;<i> 
+</I>&gt;<i> Instructions on running the tests yourself can be found here:
+</I>&gt;<i>   <A HREF="http://imagejdev.org/source-code#Running_ImageJ_1.x_unit_tests">http://imagejdev.org/source-code#Running_ImageJ_1.x_unit_tests</A>
+</I>&gt;<i> 
+</I>&gt;<i> My plan is to hook up the tests to Hudson (<A HREF="http://dev.imagejdev.org:8080/">http://dev.imagejdev.org:8080/</A>) and have it send an email whenever a new version of IJ1 is released with failing tests.
+</I>&gt;<i> 
+</I>&gt;<i> What do you think?
+</I>&gt;<i> 
+</I>&gt;<i> Regards,
+</I>&gt;<i> Curtis
+</I>&gt;<i> 
+</I>
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000506.html">[ImageJ-devel] IJ1 unit tests
+</A></li>
+	<LI>Next message: <A HREF="000507.html">[ImageJ-devel] IJ1 unit tests
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#508">[ date ]</a>
+              <a href="thread.html#508">[ thread ]</a>
+              <a href="subject.html#508">[ subject ]</a>
+              <a href="author.html#508">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

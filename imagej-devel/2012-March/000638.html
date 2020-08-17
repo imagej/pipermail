@@ -1,0 +1,127 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Questions about imglib2
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Questions%20about%20imglib2&In-Reply-To=%3C1331809520.4561.15.camel%40saalfeld-thinkpad%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000637.html">
+   <LINK REL="Next"  HREF="000639.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Questions about imglib2</H1>
+    <B>Stephan Saalfeld</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Questions%20about%20imglib2&In-Reply-To=%3C1331809520.4561.15.camel%40saalfeld-thinkpad%3E"
+       TITLE="[ImageJ-devel] Questions about imglib2">saalfeld at mpi-cbg.de
+       </A><BR>
+    <I>Thu Mar 15 06:05:20 CDT 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000637.html">[ImageJ-devel] Questions about imglib2
+</A></li>
+        <LI>Next message: <A HREF="000639.html">[ImageJ-devel] Questions about imglib2
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#638">[ date ]</a>
+              <a href="thread.html#638">[ thread ]</a>
+              <a href="subject.html#638">[ subject ]</a>
+              <a href="author.html#638">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Brian,
+
+&gt;<i> 1) How do I convert an net.imglib2.img.Img to a
+</I>&gt;<i> java.awt.image.BufferedImage?
+</I>&gt;<i> 
+</I>
+There is the interface ScreenImage which can return a BufferedImage
+
+<A HREF="http://fiji.sc/cgi-bin/gitweb.cgi?p=imglib.git;a=blob;f=imglib2/core/src/main/java/net/imglib2/display/ScreenImage.java">http://fiji.sc/cgi-bin/gitweb.cgi?p=imglib.git;a=blob;f=imglib2/core/src/main/java/net/imglib2/display/ScreenImage.java</A>
+
+implemented by ARGBScreenImage
+
+<A HREF="http://fiji.sc/cgi-bin/gitweb.cgi?p=imglib.git;a=blob;f=imglib2/core/src/main/java/net/imglib2/display/ARGBScreenImage.java">http://fiji.sc/cgi-bin/gitweb.cgi?p=imglib.git;a=blob;f=imglib2/core/src/main/java/net/imglib2/display/ARGBScreenImage.java</A>
+
+and UnsignedByteScreenImage
+
+<A HREF="http://fiji.sc/cgi-bin/gitweb.cgi?p=imglib.git;a=blob;f=imglib2/core/src/main/java/net/imglib2/display/UnsignedByteScreenImage.java">http://fiji.sc/cgi-bin/gitweb.cgi?p=imglib.git;a=blob;f=imglib2/core/src/main/java/net/imglib2/display/UnsignedByteScreenImage.java</A>
+
+.  Both are Img themselves, so writing into their pixels changes the
+content of the BufferedImage.  You can also map an arbitrary XY-plane of
+a RandomAccessibleInterval (Img is one) into such a screen image using
+either of the two Projectors:
+
+<A HREF="http://fiji.sc/cgi-bin/gitweb.cgi?p=imglib.git;a=blob;f=imglib2/core/src/main/java/net/imglib2/display/XYProjector.java">http://fiji.sc/cgi-bin/gitweb.cgi?p=imglib.git;a=blob;f=imglib2/core/src/main/java/net/imglib2/display/XYProjector.java</A>
+
+<A HREF="http://fiji.sc/cgi-bin/gitweb.cgi?p=imglib.git;a=blob;f=imglib2/core/src/main/java/net/imglib2/display/XYRandomAccessibleProjector.java">http://fiji.sc/cgi-bin/gitweb.cgi?p=imglib.git;a=blob;f=imglib2/core/src/main/java/net/imglib2/display/XYRandomAccessibleProjector.java</A>
+
+which includes type conversion from your source type into either ARGB or
+UnsignedByte using a Converter
+
+<A HREF="http://fiji.sc/cgi-bin/gitweb.cgi?p=imglib.git;a=blob;f=imglib2/core/src/main/java/net/imglib2/converter/Converter.java">http://fiji.sc/cgi-bin/gitweb.cgi?p=imglib.git;a=blob;f=imglib2/core/src/main/java/net/imglib2/converter/Converter.java</A>
+
+Default implementations are available, e.g.
+
+<A HREF="http://fiji.sc/cgi-bin/gitweb.cgi?p=imglib.git;a=blob;f=imglib2/core/src/main/java/net/imglib2/display/RealARGBConverter.java">http://fiji.sc/cgi-bin/gitweb.cgi?p=imglib.git;a=blob;f=imglib2/core/src/main/java/net/imglib2/display/RealARGBConverter.java</A>
+
+An example how to use it together with ImageJ is here:
+
+<A HREF="http://fiji.sc/cgi-bin/gitweb.cgi?p=imglib.git;a=blob;f=imglib2/tests/src/test/java/tests/OpenAndDisplayScreenImage.java;h=77a9dcffee790f6d202c3c730e7588b203a2def2;hb=HEAD">http://fiji.sc/cgi-bin/gitweb.cgi?p=imglib.git;a=blob;f=imglib2/tests/src/test/java/tests/OpenAndDisplayScreenImage.java;h=77a9dcffee790f6d202c3c730e7588b203a2def2;hb=HEAD</A>
+
+
+&gt;<i> 2) How do I write a net.imglib2.img.Img to disk as the usual formats
+</I>&gt;<i> (jpg, png, tiff) ? You have an ImgOpener but no ImgCloser err, I mean
+</I>&gt;<i> ImgWriter.
+</I>&gt;<i> 
+</I>
+Mark Hiner and Curtis Rueden are working on an ImageSaver:
+
+<A HREF="https://github.com/ctrueden/bioformats/blob/imglib-io/components/scifio/src/ome/scifio/img/ImgSaver.java">https://github.com/ctrueden/bioformats/blob/imglib-io/components/scifio/src/ome/scifio/img/ImgSaver.java</A>
+
+Until this is finished, you will have to write data otherwise.
+
+Best,
+Stephan
+
+
+
+</PRE>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000637.html">[ImageJ-devel] Questions about imglib2
+</A></li>
+	<LI>Next message: <A HREF="000639.html">[ImageJ-devel] Questions about imglib2
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#638">[ date ]</a>
+              <a href="thread.html#638">[ thread ]</a>
+              <a href="subject.html#638">[ subject ]</a>
+              <a href="author.html#638">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

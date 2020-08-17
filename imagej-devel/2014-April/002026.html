@@ -1,0 +1,222 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] (headless) command execution
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%28headless%29%20command%20execution&In-Reply-To=%3C20140414151648.GA17729%40informatik.uni-halle.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002020.html">
+   <LINK REL="Next"  HREF="002038.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] (headless) command execution</H1>
+    <B>Stefan Posch</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%28headless%29%20command%20execution&In-Reply-To=%3C20140414151648.GA17729%40informatik.uni-halle.de%3E"
+       TITLE="[ImageJ-devel] (headless) command execution">posch at informatik.uni-halle.de
+       </A><BR>
+    <I>Mon Apr 14 10:16:48 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002020.html">[ImageJ-devel] (headless) command execution
+</A></li>
+        <LI>Next message: <A HREF="002038.html">[ImageJ-devel] (headless) command execution
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2026">[ date ]</a>
+              <a href="thread.html#2026">[ thread ]</a>
+              <a href="subject.html#2026">[ subject ]</a>
+              <a href="author.html#2026">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Curtis,
+
+thanks for your reply, we are getting ahead, but still questions for running commands
+
+&gt;<i>    * The run() method of a module can assume that all required input
+</I>&gt;<i>    parameters have been filled (i.e., are non-null). And the corresponding
+</I>&gt;<i>    post-condition of run() is that all required output parameters are now
+</I>&gt;<i>    filled.
+</I>perfect, the same with us
+
+&gt;<i>    * The initialize() method of a module cannot necessarily assume
+</I>&gt;<i>    anything about the state of its parameters. As you pointed out, ImageJ2
+</I>&gt;<i>    has various commands right now that *do* assume certain parameters have
+</I>&gt;<i>    been filled via preprocessing. This works in practice (at least from
+</I>&gt;<i>    the ImageJ application), but is not particularly rigorous.
+</I>&gt;<i>    * Similarly, ImageJ2 has several commands which assume their
+</I>&gt;<i>    initializer has been called, but it is not stated as a formal
+</I>&gt;<i>    precondition. Most probably it makes sense to state that in the
+</I>&gt;<i>    javadoc, would you agree? In other words: if you aren't going to
+</I>&gt;<i>    include the InitPreprocessor in the preprocessing chain, you are still
+</I>&gt;<i>    somehow responsible for calling module.initialize() before calling
+</I>&gt;<i>    module.run(). Is that fair?
+</I>again: perfect
+
+&gt;<i>    So the main sticky point is what to do about initialize() requiring
+</I>&gt;<i>    certain parameters to be already filled. This is useful for dynamic
+</I>&gt;<i>    modules, but also just for computing defaults -- e.g., setting default
+</I>&gt;<i>    brightness/contrast min &amp; max values to the current display min max of
+</I>&gt;<i>    the input image. So it seems there are two &quot;layers&quot; of input
+</I>&gt;<i>    parameters: those needed before initialize() and those not needed for
+</I>&gt;<i>    it.
+</I>&gt;<i>    Maybe we need a way to formally flag these &quot;required before initialize&quot;
+</I>&gt;<i>    parameters in the annotation? What do you think? Would that help you?
+</I>This would be different from autoFill() ?
+
+Yes and no. 
+
+In a way it makes responsibilities clear, in so far I feel comfortable with it.
+
+However, it seems to me that there are (potentially very heavy) restrictions
+on the parameters which may be filled in advance (automaticcal and not by the user)
+in a sensible way. As far as I understand ij2 fills in parameters with what I think
+you called AutoFooPreprocessors, so active image and active display?
+I cannot come up with further ones. How would we fill in an int parameter
+without knowledge of its meaning/sematics?
+And even for images is only possible for commands with exactly one image or display.
+Obviously we could introduce a further flag for an image parameter to notify,
+that I what to be assigned the active image with. But this seems pretty specific.
+And probably not generic to be introduce to scijava but rather deferred to the
+&quot;application&quot;, e.g. imagej.
+And there might be aplications which call for more the two layers?
+
+Summing up, I am afraid that I do not have a cute idea.
+Of course I appreciate the functionality the set initial values or make the type
+of parameters depending on image features (like dimensionality, range of values).
+Still adding parameters seems awkward to be. Could we come by with &quot;only&quot; changing
+types of parameters. E.g. for DuplicateImage not add one parameter for each axes rather
+have one array parameter with its length determined by the dimensionality?
+And may be indicate via annotations, depending on which other parameter(s) the
+type of this parameter will change?
+
+Rather more question:
+Thinking of module and parameter intitalizers it seems to be that I get more unsure.
+Is it exactly to do processing between the two layers of parameters.
+And it is to add further parameters and set initial values to parameters?
+Are initial parameter values execulsively meant to serve as defaults for the
+user or is it required that some initial values are set (in order to properly
+run the command)?
+
+If so: would this mean that for running a command head less in a non interactive way
+makes the distiction of two layers is obsolete?
+
+&gt;<i>    One thing that may interest you is the recent ImageJ OPS announcement:
+</I>&gt;<i>       [1]<A HREF="http://developer.imagej.net/2014/04/04/announcing-imagej-ops">http://developer.imagej.net/2014/04/04/announcing-imagej-ops</A>
+</I>&gt;<i>    An Op is just an ImageJ command intended to be fully functional --
+</I>That sounds great ... 
+
+&gt;<i>   Hi Stefan,
+</I>&gt;<i>   Thanks. Rather than doing this:
+</I>&gt;<i>     CommandInfo testopInfo = new CommandInfo(IJTestOp.class.getName());
+</I>&gt;<i>     testopModule = (CommandModule) testopInfo.createModule();
+</I>&gt;<i>   I suggest instead:
+</I>&gt;<i>     CommandInfo testopInfo = commandService.getCommand(IJTestOp.class);
+</I>&gt;<i>     testopModule = (CommandModule)
+</I>&gt;<i>   moduleService.createModule(testopInfo);
+</I>
+the advise you gave works fine, however only for running a module for a given Command once.
+  (see attached source of RunTestOp.java, the zip is a tiny maven project ready to import to eclipse.
+   hopefully I do not forget the attachment again :-)
+
+  in short we have
+	CommandInfo testopInfo = commandService.getCommand(IJTestOp.class.getName());
+	CommandModule testopModule =  (CommandModule)moduleService.createModule( testopInfo);
+
+   set some parameters
+
+   run the service and init preprocessor on the module, then
+
+	testopModule.run(); 
+    or as an alternative
+	moduleService.run(testopModule, false);
+
+   running the init preprocessor gives
+-----
+Exception in thread &quot;main&quot; java.lang.IllegalStateException: Context already injected: org.scijava.AbstractContextual#context
+	at org.scijava.Context.inject(Context.java:293)
+	at imagej.command.CommandModule.initialize(CommandModule.java:144)
+	at imagej.module.process.InitPreprocessor.process(InitPreprocessor.java:61)
+	at mainroutine.RunTestOp.main(RunTestOp.java:62)
+------
+
+  Creating a new module for the same CommandInfo fixes the problem (line 60)
+
+  Is this intended, i.e. that the init preprocessor for a module may be run only once?
+  This would pose a serious problem to us:
+
+  What we want to do is essentially the following: 
+  The user selects a Command via the GUI and we create a Window displaying the input parameters. 
+  The user may change/supply these parameters and run the Command. 
+  Upon return a window displaying the results pops up.
+  However, the first window displaying the input parameters is still available, the user may
+  change one/some parameters an rerun the command.
+  This eases testing various parameter values or the same set of parameters on different
+  images without the need to repeatatly select an operator/command.
+
+  Have you further advise how we can accomplish this, i.e. reusing a command module?
+
+  BTW: I prefer to not set the parameters via the moduleService.run method, as the parameters
+       are set elsewhere (either by the user via a GUI configuring the operator/command e.g. from grappa,
+       or by parsing command line argument in case of the command line oprunner.
+       Additionaly I rather invoke the moduls run-method directly, as it seems to me that
+       via moduleservie a new thread is started, and at this point we like to have this under control.
+
+  it seems, that the init preprocessor assigns the service parameters of a Command,
+  not the Service preprocessor as I expected. Is the correct?
+  (Probably related to &quot;shadowing&quot; the Service and Context parameters of a Command)
+
+  BTW: what is the sematics of injecting a context (into a module?)
+
+&gt;<i>    So this is certainly inconsistent and confusing. Do you think that
+</I>&gt;<i>    Commands should also include service and context inputs when iterating
+</I>&gt;<i>    them? If so, we can try removing that exclusion and see what
+</I>&gt;<i>    explodes... ;-)
+</I>We would not need them rather hide the from the user.
+
+&gt;<i>    If you urgently need support for multiple simultaneous ImageJ contexts
+</I>&gt;<i>    created with the default constructor while ij-legacy is on the
+</I>&gt;<i>    classpath, and you want to try fixing the bug yourself, we would be
+</I>&gt;<i>    happy to elaborate further so that you can give it a shot.
+</I>no, we are hapy with one, just have to get hold of it (and use it in a static way)
+
+Again, thanks again
+
+best regards   Stefan
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: ij2-test.zip
+Type: application/zip
+Size: 6707 bytes
+Desc: not available
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140414/404854fe/attachment.zip">http://imagej.net/pipermail/imagej-devel/attachments/20140414/404854fe/attachment.zip</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002020.html">[ImageJ-devel] (headless) command execution
+</A></li>
+	<LI>Next message: <A HREF="002038.html">[ImageJ-devel] (headless) command execution
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2026">[ date ]</a>
+              <a href="thread.html#2026">[ thread ]</a>
+              <a href="subject.html#2026">[ subject ]</a>
+              <a href="author.html#2026">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,194 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [fiji-devel] Imglib2: using threadpools in core	algorithms
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20Imglib2%3A%20using%20threadpools%20in%20core%0A%09algorithms&In-Reply-To=%3CCAHLFyjd4EU7vNoOz_kWRjmn-WW9ExCyxVq%3Dk%3D0Y34y-QMfOXHQ%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001841.html">
+   <LINK REL="Next"  HREF="001847.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [fiji-devel] Imglib2: using threadpools in core	algorithms</H1>
+    <B>Lee Kamentsky</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20Imglib2%3A%20using%20threadpools%20in%20core%0A%09algorithms&In-Reply-To=%3CCAHLFyjd4EU7vNoOz_kWRjmn-WW9ExCyxVq%3Dk%3D0Y34y-QMfOXHQ%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] [fiji-devel] Imglib2: using threadpools in core	algorithms">leek at broadinstitute.org
+       </A><BR>
+    <I>Fri Dec  6 12:13:42 CST 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001841.html">[ImageJ-devel] [fiji-devel] Imglib2: using threadpools in core	algorithms
+</A></li>
+        <LI>Next message: <A HREF="001847.html">[ImageJ-devel] [fiji-devel] Imglib2: using threadpools in core	algorithms
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1848">[ date ]</a>
+              <a href="thread.html#1848">[ thread ]</a>
+              <a href="subject.html#1848">[ subject ]</a>
+              <a href="author.html#1848">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+Nice catch, Tobias
+On Fri, Dec 6, 2013 at 10:10 AM, Tobias Pietzsch &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pietzsch at mpi-cbg.de</A>&gt;wrote:
+
+&gt;<i> Hi,
+</I>&gt;<i>
+</I>&gt;<i> Problem: Did anyone think about the possibility of deadlocks?
+</I>&gt;<i>
+</I>&gt;<i> Lets take the scenario that Lee mentioned. We enqueue a lot of tasks that
+</I>&gt;<i> each trigger computation of a set of features for an image each.
+</I>&gt;<i> Probably the features can be computed in parallel, so basically what a
+</I>&gt;<i> single task does is: create subtasks, submit to ExecutorService, then block
+</I>&gt;<i> until they complete.
+</I>&gt;<i> The subtask for a single feature of a single image might again create
+</I>&gt;<i> subtasks for parts of the image and block until they complete.
+</I>&gt;<i> This may easily lead to the situation that all threads in the
+</I>&gt;<i> ExecutorService block because they wait for subtasks that are not executed
+</I>&gt;<i> because all threads block&#8230; Right?
+</I>&gt;<i>
+</I>&gt;<i>  They block AND are idle for no good reason - doubly bad.
+</I>
+So unfortunately, in my opinion that rules out both ExecutorService and SJC
+&gt;<i> ThreadService (unless heavily modified).
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> How to solve this? The perfect solution is ForkJoin from
+</I>&gt;<i> java.util.concurrent,
+</I>&gt;<i> <A HREF="http://docs.oracle.com/javase/tutorial/essential/concurrency/forkjoin.html">http://docs.oracle.com/javase/tutorial/essential/concurrency/forkjoin.html</A>
+</I>&gt;<i> Unfortunately this was introduced only in Java 7 and thats a problem
+</I>&gt;<i> because we want to be 1.6 compatible.
+</I>&gt;<i>
+</I>
+There have been recent attempts to solve this in  Python (e.g.
+<A HREF="http://greenlet.readthedocs.org/en/latest/">http://greenlet.readthedocs.org/en/latest/</A>). If you have a language with
+lightweight pseudo-stacks and pseudo-threads, it's easy to just swap
+&quot;stacks&quot; when you hit one of the blocking states and trade for a task
+that's unblocked. For Java and C, true stacks are big (1MB) and the
+swapping is not so good.
+
+One semi-elegant solution is for the service to check whether the thread
+requesting redemption of a future is a worker thread. If so, the function
+that blocks just takes some work to be done off of the work queue, choosing
+the work queued by its thread and completes it. An idle thread is also
+allowed to take stuff off of this queue. So you need to attach thread
+identity to the objects being enqueued. There's no downside to making a
+worker thread complete the items queued by itself - the work has probably
+been queued  up optimally at a higher level.
+
+&gt;<i>
+</I>&gt;<i> So what should we do?
+</I>&gt;<i> There seems to be the option of using the Fork/Join framework from jdk1.6
+</I>&gt;<i> <A HREF="http://homes.cs.washington.edu/~djg/teachingMaterials/grossmanSPAC_forkJoinFramework.html#installation.">http://homes.cs.washington.edu/~djg/teachingMaterials/grossmanSPAC_forkJoinFramework.html#installation.</A> If
+</I>&gt;<i> I understand correctly, this is the exact implementation as used in jdk1.7.
+</I>&gt;<i> The other option is to reinvent that particular wheel in scijava-common or
+</I>&gt;<i> imglib2.
+</I>&gt;<i>
+</I>&gt;<i> best regards,
+</I>&gt;<i> Tobias
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On Dec 6, 2013, at 2:27 PM, Lee Kamentsky &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">leek at broadinstitute.org</A>&gt; wrote:
+</I>&gt;<i>
+</I>&gt;<i> Hi all,
+</I>&gt;<i>
+</I>&gt;<i> On Fri, Dec 6, 2013 at 3:29 AM, Jean-Yves Tinevez &lt;
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">jean-yves.tinevez at pasteur.fr</A>&gt; wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> Hi all
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Each frame of a movie can be processed concurrently: I generate a task
+</I>&gt;&gt;<i> for each frame, and can feed this task to any interface we are discussing
+</I>&gt;&gt;<i> right now. For this, I do not need to know how many threads are allocated
+</I>&gt;&gt;<i> to the service: it will decide how to process the tasks I generated.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> By there are many algorithms in imglib2 that can process a single image
+</I>&gt;&gt;<i> in a multithreaded way, by splitting it into small pieces. For instance,
+</I>&gt;&gt;<i> you can compute the Gauss convolution on 2 threads, and it will split the
+</I>&gt;&gt;<i> source image in 2. For this, the algorithm needs to have some info on the
+</I>&gt;&gt;<i> &quot;multitasking resources&quot; available right? If you have 24 workers, and that
+</I>&gt;&gt;<i> each worker receives one frame to segment, the segmenter needs to know it
+</I>&gt;&gt;<i> is unwise to split the source image over several extra workers. No?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> How is this achieved in real world applications?
+</I>&gt;&gt;<i>
+</I>&gt;<i> I think we're in a lucky sweet spot where the size of our data is big and
+</I>&gt;<i> the number of processors is small. I think you want to amortize the cost of
+</I>&gt;<i> enqueueing the work, thread signaling and thread context switching over a
+</I>&gt;<i> pretty big chunk of data - and that's operating-system and
+</I>&gt;<i> processor-specific in my experience, so it's best to benchmark. If I
+</I>&gt;<i> remember correctly, as an example, Ilastik 0.5 breaks its images into
+</I>&gt;<i> chunks of 10K pixels and runs perhaps 100 filters on each, plus a
+</I>&gt;<i> random-forest evaluation. In that case, the large-grain operation makes the
+</I>&gt;<i> optimization question pretty moot since the computation is so expensive
+</I>&gt;<i> (and doing the chunking at the top level might be a good design choice).
+</I>&gt;<i>
+</I>&gt;<i> It would be kind of cool if the service could give you an idea of the cost
+</I>&gt;<i> of running one future and of the size of the thread pool. This is
+</I>&gt;<i> notoriously difficult to measure, but a rough cut might be to find the
+</I>&gt;<i> minimum time from enqueing a future until its execution and multiply that
+</I>&gt;<i> by 2. If you knew the cost of running your algorithm on N pixels, you could
+</I>&gt;<i> figure out how to slice it. It would also be kind of cool if your imglib
+</I>&gt;<i> data container (or some helper class that encapsulated this expertise)
+</I>&gt;<i> could give you a collection of iterators appropriate for the cost of your
+</I>&gt;<i> operation and the thread service it would be run on.
+</I>&gt;<i>
+</I>&gt;&gt;<i> best
+</I>&gt;&gt;<i> jy
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> --
+</I>&gt;&gt;<i> --
+</I>&gt;&gt;<i> Please avoid top-posting, and please make sure to reply-to-all!
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Mailing list web interface: <A HREF="http://groups.google.com/group/fiji-devel">http://groups.google.com/group/fiji-devel</A>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> ---
+</I>&gt;&gt;<i> You received this message because you are subscribed to the Google Groups
+</I>&gt;&gt;<i> &quot;Fiji-devel&quot; group.
+</I>&gt;&gt;<i> To unsubscribe from this group and stop receiving emails from it, send an
+</I>&gt;&gt;<i> email to <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">fiji-devel+unsubscribe at googlegroups.com.</A>
+</I>&gt;&gt;<i> For more options, visit <A HREF="https://groups.google.com/groups/opt_out.">https://groups.google.com/groups/opt_out.</A>
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20131206/a45f608d/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20131206/a45f608d/attachment.html</A>&gt;
+</PRE>
+
+
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001841.html">[ImageJ-devel] [fiji-devel] Imglib2: using threadpools in core	algorithms
+</A></li>
+	<LI>Next message: <A HREF="001847.html">[ImageJ-devel] [fiji-devel] Imglib2: using threadpools in core	algorithms
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1848">[ date ]</a>
+              <a href="thread.html#1848">[ thread ]</a>
+              <a href="subject.html#1848">[ subject ]</a>
+              <a href="author.html#1848">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,105 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] creating io.scif.img.ImgOpener currently fails in Fiji
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20creating%20io.scif.img.ImgOpener%20currently%20fails%0A%20in%20Fiji&In-Reply-To=%3Calpine.DEB.1.00.1408220849150.990%40s15462909.onlinehome-server.info%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002203.html">
+   <LINK REL="Next"  HREF="002205.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] creating io.scif.img.ImgOpener currently fails in Fiji</H1>
+    <B>Johannes Schindelin</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20creating%20io.scif.img.ImgOpener%20currently%20fails%0A%20in%20Fiji&In-Reply-To=%3Calpine.DEB.1.00.1408220849150.990%40s15462909.onlinehome-server.info%3E"
+       TITLE="[ImageJ-devel] creating io.scif.img.ImgOpener currently fails in Fiji">Johannes.Schindelin at gmx.de
+       </A><BR>
+    <I>Fri Aug 22 02:04:47 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002203.html">[ImageJ-devel] creating io.scif.img.ImgOpener currently fails in	Fiji
+</A></li>
+        <LI>Next message: <A HREF="002205.html">[ImageJ-devel] [fiji-devel] creating io.scif.img.ImgOpener	currently fails in Fiji
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2204">[ date ]</a>
+              <a href="thread.html#2204">[ thread ]</a>
+              <a href="subject.html#2204">[ subject ]</a>
+              <a href="author.html#2204">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Tobias,
+
+On Fri, 22 Aug 2014, Tobias Pietzsch wrote:
+
+&gt;<i> Currently
+</I>&gt;<i> new io.scif.img.ImgOpener();
+</I>&gt;<i> fails with
+</I>&gt;<i> java.lang.IllegalArgumentException: Invalid service: net.imagej.legacy.LegacyAppEventService
+</I>
+Yep, the explanation is very easy:
+
+&gt;<i> [...]
+</I>&gt;<i> Caused by: java.lang.UnsupportedOperationException: Cannot instantiate more than one DefaultLegacyService
+</I>&gt;<i> [...]
+</I>
+There is already a context, including a legacy service. Unfortunately, the
+best way to get at this context from an *ImageJ 1.x plugin* that I could
+come up with is:
+
+	import org.scijava.Context;
+
+	...
+
+	final Context context = (Context)
+		IJ.runPlugIn(Context.class.getName(), &quot;&quot;);
+	final ImgOpener opener = new ImgOpener(context);
+
+(There is no way to make that more convenient without letting SCIFIO
+depend on ImageJ 1.x, which is of course a big no-no).
+
+Of course, you could also turn your plugin into an ImageJ2 plugin -- which
+is handled properly in Fiji thanks to Fiji Just Being ImageJ2 -- and then
+it would become as easy as:
+
+		@Parameter
+		private IOService io;
+
+		...
+			// use the IOService (which lets SCIFIO handle
+			// things) to open your dataset
+
+Ciao,
+Johannes
+
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002203.html">[ImageJ-devel] creating io.scif.img.ImgOpener currently fails in	Fiji
+</A></li>
+	<LI>Next message: <A HREF="002205.html">[ImageJ-devel] [fiji-devel] creating io.scif.img.ImgOpener	currently fails in Fiji
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2204">[ date ]</a>
+              <a href="thread.html#2204">[ thread ]</a>
+              <a href="subject.html#2204">[ subject ]</a>
+              <a href="author.html#2204">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

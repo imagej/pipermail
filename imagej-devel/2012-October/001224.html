@@ -1,0 +1,136 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Bug in ImageJ2 ?
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Bug%20in%20ImageJ2%20%3F&In-Reply-To=%3CCADN69ymtDepMfhmfKvSKCO7%3Dodgr4FTH341SERbf817%2B9w8ETw%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="001225.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Bug in ImageJ2 ?</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Bug%20in%20ImageJ2%20%3F&In-Reply-To=%3CCADN69ymtDepMfhmfKvSKCO7%3Dodgr4FTH341SERbf817%2B9w8ETw%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Bug in ImageJ2 ?">ctrueden at wisc.edu
+       </A><BR>
+    <I>Thu Oct  4 17:14:19 CDT 2012</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="001225.html">[ImageJ-devel] Bug in ImageJ2 ?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1224">[ date ]</a>
+              <a href="thread.html#1224">[ thread ]</a>
+              <a href="subject.html#1224">[ subject ]</a>
+              <a href="author.html#1224">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Michael,
+
+&gt;<i> The getPOM method does not work in the plugin/eclipse environment that
+</I>&gt;<i> is used by KNIME. I think this might be related to some OSGI stuff
+</I>&gt;<i> having separate class loaders for each plugin...
+</I>
+After much research and experimentation, I believe I have fixed this bug:
+    <A HREF="https://github.com/imagej/imagej/commit/66b4e29e">https://github.com/imagej/imagej/commit/66b4e29e</A>
+
+I also made several other improvements to ImageJ2's base directory
+detection:
+    <A HREF="https://github.com/imagej/imagej/compare/66b4e29ede81...ca49a734d5cc">https://github.com/imagej/imagej/compare/66b4e29ede81...ca49a734d5cc</A>
+
+Using the latest ij-core-2.0.0-SNAPSHOT.jar in place of KNIP's bundled
+ij-core-2.0.0-beta4.jar, the problem is fixed on my system, and the ImageJ2
+nodes appear as expected now.
+
+Please let me know if you have any other issues.
+
+Regards,
+Curtis
+
+P.S. Special thanks to Christian for helping me set up my KNIME+KNIP
+development environment!
+
+
+On Thu, Sep 20, 2012 at 1:43 PM, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt; wrote:
+
+&gt;<i> Hi Michael,
+</I>&gt;<i>
+</I>&gt;<i> Sorry to hear that the POM version detection is not working for KNIME. If
+</I>&gt;<i> the problem is *only* with the deprecated static VERSION, we plan to
+</I>&gt;<i> eliminate that soon anyway. But if the ImageJ#getVersion() method always
+</I>&gt;<i> returns null, that is a bad thing and we will need to fix it.
+</I>&gt;<i>
+</I>&gt;<i> To debug this, I would need to set up a KNIP developer environment on my
+</I>&gt;<i> machine here so that I can reproduce and debug the issue. Are there
+</I>&gt;<i> instructions for doing that online?
+</I>&gt;<i>
+</I>&gt;<i> Thanks,
+</I>&gt;<i> Curtis
+</I>&gt;<i>
+</I>&gt;<i> P.S. Please CC imagej-devel on replies. Sometimes other developers may
+</I>&gt;<i> reply more quickly than I do, so it may save you time.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On Mon, Sep 17, 2012 at 2:15 AM, Michael Zinsmaier &lt;
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">michael.zinsmaier at gmx.de</A>&gt; wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i>  Hi Curtis,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> thanks for your reply and the explenation. Unfortunately I have already a
+</I>&gt;&gt;<i> new issue. We tried to migrate the KNIME Image Extension
+</I>&gt;&gt;<i> to the beta 4 version of ImageJ and we have some problems with the
+</I>&gt;&gt;<i> introduced integration of the POM file. The getPOM method
+</I>&gt;&gt;<i> does not work in the plugin/eclipse environment that is used by KNIME I
+</I>&gt;&gt;<i> think this might be related to some OSGI stuff having separate
+</I>&gt;&gt;<i> class loaders for each plugin...
+</I>&gt;&gt;<i> In any case getPOM does not find the POM file although it is packed into
+</I>&gt;&gt;<i> the ImageJ jar file. Especially the static loading of the version number
+</I>&gt;&gt;<i> causes therefore some problems for us.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>     /** @deprecated Use {@link ImageJ#getVersion()} instead. */
+</I>&gt;&gt;<i>     @Deprecated
+</I>&gt;&gt;<i>     public static final String VERSION = POM.getPOM(ImageJ.class,
+</I>&gt;&gt;<i> &quot;net.imagej&quot;, &quot;ij-core&quot;).getVersion();
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Do you have an idea how this could be resolved?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Best regards,
+</I>&gt;&gt;<i> Michael
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20121004/9591b9a7/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20121004/9591b9a7/attachment.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="001225.html">[ImageJ-devel] Bug in ImageJ2 ?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1224">[ date ]</a>
+              <a href="thread.html#1224">[ thread ]</a>
+              <a href="subject.html#1224">[ subject ]</a>
+              <a href="author.html#1224">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,123 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Display lifecycle
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Display%20lifecycle&In-Reply-To=%3C4e664dd6.c3c1e00a.7bfb.1402%40mx.google.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000475.html">
+   <LINK REL="Next"  HREF="000478.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Display lifecycle</H1>
+    <B>Lee Kamentsky</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Display%20lifecycle&In-Reply-To=%3C4e664dd6.c3c1e00a.7bfb.1402%40mx.google.com%3E"
+       TITLE="[ImageJ-devel] Display lifecycle">leek at broadinstitute.org
+       </A><BR>
+    <I>Tue Sep  6 11:44:04 CDT 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000475.html">[ImageJ-devel] Display lifecycle
+</A></li>
+        <LI>Next message: <A HREF="000478.html">[ImageJ-devel] Macros and scripting in Imagej 2.0
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#476">[ date ]</a>
+              <a href="thread.html#476">[ thread ]</a>
+              <a href="subject.html#476">[ subject ]</a>
+              <a href="author.html#476">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Close to the same mistake is replicated in AbstractSwingUI (it probably 
+works, but the cast is dangerous). The code that references 
+SwingDisplayWindow in SwingDisplayPanel was added by me today and should 
+be removed by Grant. If DisplayWindow has a close() method, then you can 
+add a getWindow() method to DisplayPanel so you can get the 
+DisplayWindow in a uniform fashion and close it.
+
+IMHO SwingDisplayWindow should be abstract and you should derive SDI and 
+MDI versions in the respective packages.
+
+On 9/6/2011 12:34 PM, Curtis Rueden wrote:
+&gt;<i> Hi Grant,
+</I>&gt;<i>
+</I>&gt;<i>     And SwingDisplayWindow should actually be in the Swing-SDI package.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Just a heads up: SwingDisplayWindow is referenced in AbstractSwingUI 
+</I>&gt;<i> as well as SwingDisplayPanel, both of which are in the 
+</I>&gt;<i> ij-ui-swing-base package. It looks like it would be non-trivial to 
+</I>&gt;<i> migrate that class into the ij-ui-swing-sdi project.
+</I>&gt;<i>
+</I>&gt;<i> -Curtis
+</I>&gt;<i>
+</I>&gt;<i> On Tue, Sep 6, 2011 at 10:30 AM, Grant B. Harris &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">gharris at mbl.edu</A> 
+</I>&gt;<i> &lt;mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">gharris at mbl.edu</A>&gt;&gt; wrote:
+</I>&gt;<i>
+</I>&gt;<i>     Lee --
+</I>&gt;<i>
+</I>&gt;<i>     You have caught an oversight on my part... DisplayWindow should
+</I>&gt;<i>     have a close() method.
+</I>&gt;<i>     And SwingDisplayWindow should actually be in the Swing-SDI package.
+</I>&gt;<i>
+</I>&gt;<i>     So, I added a close() method to DisplayWindow and implemented it
+</I>&gt;<i>     in the SDI and MDI packages.
+</I>&gt;<i>
+</I>&gt;<i>     Let me know if this doesn't take care of the problem.
+</I>&gt;<i>
+</I>&gt;<i>     Grant B. Harris
+</I>&gt;<i>     ---------------------------------------------------------
+</I>&gt;<i>     Scientific Informatics Analyst, Cellular Dynamics Program
+</I>&gt;<i>     Marine Biological Laboratory, Woods Hole, Mass. 02543
+</I>&gt;<i>     <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">gharris at mbl.edu</A>  &lt;mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">gharris at mbl.edu</A>&gt;
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>     On 9/6/2011 10:00 AM, Lee Kamentsky wrote:
+</I>&gt;&gt;<i>     Hi Curtis / ImageJ dev. I've gotten CellProfiler to run ImageJ 2
+</I>&gt;&gt;<i>     plugins with images. I assume that any Display parameter contains
+</I>&gt;&gt;<i>     an image with possible overlay and that input Display parameters
+</I>&gt;&gt;<i>     will be modified by the time they are output. The picture below
+</I>&gt;&gt;<i>     is the result of running one of the IJ2 shadow commands in
+</I>&gt;&gt;<i>     CellProfiler.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>     I have to fix what looks like a bug in SwingDisplayPanel. In
+</I>&gt;&gt;<i>     &quot;close&quot;, it assumes that its direct parent is the
+</I>&gt;&gt;<i>     SwingDisplayWindow and apparently that's no longer the case. I'd
+</I>&gt;&gt;<i>     just like to do this.window.dispose() there. The patch file for
+</I>&gt;&gt;<i>     the change is attached, I'll probably just commit it but you guys
+</I>&gt;&gt;<i>     should review briefly.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>     --Lee
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>     (snip)
+</I>&gt;<i>
+</I>&gt;<i>
+</I>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20110906/4cffa30c/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20110906/4cffa30c/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000475.html">[ImageJ-devel] Display lifecycle
+</A></li>
+	<LI>Next message: <A HREF="000478.html">[ImageJ-devel] Macros and scripting in Imagej 2.0
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#476">[ date ]</a>
+              <a href="thread.html#476">[ thread ]</a>
+              <a href="subject.html#476">[ subject ]</a>
+              <a href="author.html#476">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

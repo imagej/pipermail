@@ -1,0 +1,134 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] ImgLib2 dimensionality
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImgLib2%20dimensionality&In-Reply-To=%3C50EF31EE.3000707%40wisc.edu%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001352.html">
+   <LINK REL="Next"  HREF="001354.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] ImgLib2 dimensionality</H1>
+    <B>Aivar Grislis</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImgLib2%20dimensionality&In-Reply-To=%3C50EF31EE.3000707%40wisc.edu%3E"
+       TITLE="[ImageJ-devel] ImgLib2 dimensionality">grislis at wisc.edu
+       </A><BR>
+    <I>Thu Jan 10 15:26:06 CST 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001352.html">[ImageJ-devel] A vary late follow-up on &quot;Nice to get connected!&quot; - and add. info re BioFormats GitHub issue
+</A></li>
+        <LI>Next message: <A HREF="001354.html">[ImageJ-devel] What about this huge Java security issue?? How do we keep ImageJ users both safe and satisfied with a Java platform?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1353">[ date ]</a>
+              <a href="thread.html#1353">[ thread ]</a>
+              <a href="subject.html#1353">[ subject ]</a>
+              <a href="author.html#1353">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I was looking at the dimensional code in net.imglib2.meta.Axes. This is 
+an enum of known, named AxisTypes such as X, Y, Z..., has the capacity 
+for CustomAxisTypes, and some sort of characterization of these 
+dimensions with 'isXY()' and 'isSpatial()'.  (Perhaps we could replace 
+these latter with some kind of EnumSet of DimensionTypes, such as XY, 
+SPATIAL, etc. for the discussion that follows.)
+
+It might be useful to have a concept of a COINCIDENTAL type.  This sort 
+of dimension represents different aspects of the same 
+pixel/voxel/doxel.  It's as if you look at it with red glasses, blue 
+glasses, etc.  Effectively this is the same as non-spatial/-temporal 
+since all of the default AxisTypes besides XYZT would be coincidental.  
+But with this you can specify if a new CustomAxisType should be 
+coincidental or not.  For example, if you wrote a plugin that works on 
+an image in 5D that is a series of 4D (XYZT) images, the dimension that 
+represents the series of images is not coincidental (and not spatial or 
+temporal either).
+
+Another useful concept would be whether a dimension is DISCRETE (or 
+NON_INTERPOLABLE?).   This sort of image would be analogous to a table 
+of height/weight/shoe size per individual (pixel).  This works only 
+because it happens you can express all three measurements as floating 
+point.  Anyway, the point is these measurements are totally independent, 
+the order is arbitrary, and it never would make any sense to combine 
+them somehow or interpolate between them.  I've been working on a FLIM 
+fitting plugin and using such images as my output, where the 
+measurements are a set of fitted lifetime parameters, for example A1, 
+T1, A2, T2, Z, all doubles.  It's the equivalent of five separate images 
+in one and could just be refactored as such. [*]
+
+My motivating concern was that if were to introduce such a DISCRETE 
+DimensionType most existing plugins or algorithms will not do anything 
+useful (other than simple things like copying, etc.).  In fact they will 
+most likely clobber my discrete dimension.
+
+What if an algorithm could somehow declare via annotation what sorts of 
+dimensions it was interested in?  Without such an annotation the default 
+would be to get all of the non-discrete dimensions, and the caller 
+splits the image into sub images across discrete dimensions and 
+processes them successively.  Then existing algorithms could do useful 
+work on my discrete image.  Other algorithms that understand the meaning 
+of this discrete dimension information could declare an interest in it 
+and get the whole thing.
+
+This could be a very useful mechanism in other instances.  In general 
+lets say an algorithm could specify dimension types or specific 
+dimensions of interest and the caller splits the image into sub images 
+across the remaining dimensions.  Then the algorithm gets a cursor that 
+iterates only on the dimensions of interest.  They could set the cursor 
+position within these dimensions or just iterate through the whole thing.
+
+Another use case might be to split up arbitrary images into XY slices 
+for 2D-processing algorithms. On the input side, my FLIM fitting 
+algorithm could declare an interest in the LIFETIME AxisType only and 
+get called pixel by pixel with a lifetime dimension cursor to process a 
+whole image that has unknown dimensions.
+
+For another example, the early ImgLib1 sample Floyd-Steinberg dithering 
+algorithm could process only non-COINCIDENTAL dimensions. This would 
+avoid distributing errors from the red channel to the blue channel, for 
+instance; they would be dithered one by one.
+
+Hope this makes sense!  There's a lot of hand-waving here at present, 
+particularly how this dimensional interest would be specified.
+
+Thanks for reading,
+
+Aivar Grislis
+
+([*] Another alternative would be my creating a custom 
+FittedLifetimeType or some kind of generic TupleType)
+
+
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001352.html">[ImageJ-devel] A vary late follow-up on &quot;Nice to get connected!&quot; - and add. info re BioFormats GitHub issue
+</A></li>
+	<LI>Next message: <A HREF="001354.html">[ImageJ-devel] What about this huge Java security issue?? How do we keep ImageJ users both safe and satisfied with a Java platform?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1353">[ date ]</a>
+              <a href="thread.html#1353">[ thread ]</a>
+              <a href="subject.html#1353">[ subject ]</a>
+              <a href="author.html#1353">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

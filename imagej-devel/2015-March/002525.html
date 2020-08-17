@@ -1,0 +1,143 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] SemVer policies for ImageJ2 and Fiji
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20SemVer%20policies%20for%20ImageJ2%20and%20Fiji&In-Reply-To=%3CCA%2BB%3DmGpd89frZoOvjHoQ98xvGU2x_3Bb_R65pnuf362oRYpNaw%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002523.html">
+   <LINK REL="Next"  HREF="002526.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] SemVer policies for ImageJ2 and Fiji</H1>
+    <B>Mark Hiner</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20SemVer%20policies%20for%20ImageJ2%20and%20Fiji&In-Reply-To=%3CCA%2BB%3DmGpd89frZoOvjHoQ98xvGU2x_3Bb_R65pnuf362oRYpNaw%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] SemVer policies for ImageJ2 and Fiji">hiner at wisc.edu
+       </A><BR>
+    <I>Fri Mar 27 10:00:39 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002523.html">[ImageJ-devel] SemVer policies for ImageJ2 and Fiji
+</A></li>
+        <LI>Next message: <A HREF="002526.html">[ImageJ-devel] SemVer policies for ImageJ2 and Fiji
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2525">[ date ]</a>
+              <a href="thread.html#2525">[ thread ]</a>
+              <a href="subject.html#2525">[ subject ]</a>
+              <a href="author.html#2525">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Stephan,
+
+&gt;<i>`unintended' behavior (what's that in the first place)
+</I>
+For example, if I have class Foo with method add(int, int) that behaves as
+one might expect, except for the following edge case: Foo.add(0, -1) = 256.
+That is unintended behavior. If I fix my implementation so that Foo.add(0,
+-1) = -1 I have changed behavior but not the traditional definition of
+public API[1,2]. Thus this change is within the scope of the PATCH version
+of SemVer.
+
+&gt;<i>A strict definition of the public API would classify a bug-fix that
+</I>changes the output of a method
+&gt;<i>from wrong to correct as a break, i.e. MAJOR upgrade.
+</I>
+&gt;<i> and thanks to the SemVer policy to roll PATCH on MINOR (1.1.5 &gt; 1.2.0)
+</I>
+Just to make sure we're on the same page - when you say &quot;changes the
+output&quot;, I assume you mean &quot;changes the behavior but not the API - i.e.
+return type is unchanged&quot; because SemVer already requires bug fixes that
+change API to be MAJOR version bumps.
+
+In that case, I think it would be cleaner to just eliminate the PATCH
+number - because every bug fix necessarily changes behavior, right? So with
+this scheme, MAJOR increases = &quot;existing behavior has changed&quot;, and MINOR
+increases = &quot;new behavior is available&quot;.
+
+Some problems with creating this versioning scheme:
+1. MAJOR versions will increase rapidly. This is aesthetic, but one that
+people can react very negatively to - and can certainly be confusing if
+people don't expect MAJOR version bumps to cover bug fixes.
+2. It's one more thing for external developers to learn. We can't just say
+&quot;we use SemVer&quot;.
+3. Since this is an internal versioning scheme, it may not be easy to
+compare our versions with external project versions that use SemVer.
+4. There will be false negatives for MAJOR version compatibility
+comparisons (instead of what could be considered false positives with
+SemVer)
+
+Unfortunately, #1 above alone makes it very unlikely that we would want to
+adopt this use of version numbers. But what you're trying to do here -
+ensure compatibility - is fantastic and something that would be great to
+have.
+
+So let's take a step back and look at what guarantees we do and do not have
+right now:
+
++ We have reproducible builds (release couplings, which requires -some-
+versioning scheme to be used)
++ We have API compatibility (SemVer)
+
+- We do not have strict behavior compatibility
+- We do not have dependency compatibility
+
+Behavior and dependency compatibility are very closely related - if they
+were covered by a versioning scheme, we could automatically answer the
+question &quot;is it safe to drop in version X to replace version Y?&quot;.
+
+However, I do not think we should conflate these concerns with SemVer.
+Instead, two potential options would be:
+
+1) Continue to use SemVer, accept its limitations, be content with
+reproducibility.
+2) Create a separate versioning scheme that covers behavior and dependency
+compatibility. Use it in tandem with SemVer.
+
+If anyone can think of other examples of versioned guarantees that would be
+useful to have, or counter-examples to any claims made here - please share!
+
+Also, please let me know if any of this is confusing and/or additional
+examples would be useful.
+
+Thanks again for the continued discussion,
+Mark
+
+[1]
+<A HREF="http://en.wikipedia.org/wiki/Application_programming_interface#API_in_object-oriented_languages">http://en.wikipedia.org/wiki/Application_programming_interface#API_in_object-oriented_languages</A>
+[2]
+<A HREF="http://stackoverflow.com/questions/2954372/difference-between-spi-and-api">http://stackoverflow.com/questions/2954372/difference-between-spi-and-api</A>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20150327/ce507ca1/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20150327/ce507ca1/attachment-0001.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002523.html">[ImageJ-devel] SemVer policies for ImageJ2 and Fiji
+</A></li>
+	<LI>Next message: <A HREF="002526.html">[ImageJ-devel] SemVer policies for ImageJ2 and Fiji
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2525">[ date ]</a>
+              <a href="thread.html#2525">[ thread ]</a>
+              <a href="subject.html#2525">[ subject ]</a>
+              <a href="author.html#2525">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

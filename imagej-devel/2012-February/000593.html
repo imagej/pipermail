@@ -1,0 +1,152 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Maven 3 support
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Maven%203%20support&In-Reply-To=%3CCADN69yn1eD-heEG__8Eaiohj9B0fJkHu162_v9rVEiyrUDi%2BOA%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000592.html">
+   <LINK REL="Next"  HREF="000594.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Maven 3 support</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Maven%203%20support&In-Reply-To=%3CCADN69yn1eD-heEG__8Eaiohj9B0fJkHu162_v9rVEiyrUDi%2BOA%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Maven 3 support">ctrueden at wisc.edu
+       </A><BR>
+    <I>Tue Feb 28 11:13:52 CST 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000592.html">[ImageJ-devel] Maven 3 support
+</A></li>
+        <LI>Next message: <A HREF="000594.html">[ImageJ-devel] Maven 3 support
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#593">[ date ]</a>
+              <a href="thread.html#593">[ thread ]</a>
+              <a href="subject.html#593">[ subject ]</a>
+              <a href="author.html#593">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Dscho,
+
+And sure enough, they don't, because Maven 3 no longer accepts the wagon
+&gt;<i> extension in its current form.
+</I>&gt;<i>
+</I>
+I tested your change on my local system with Maven 3.0.4, but unfortunately
+it breaks the build:
+
+[ERROR] Failed to execute goal
+org.apache.maven.plugins:maven-deploy-plugin:2.7:deploy (default-deploy) on
+project pom-ij-base: Failed to deploy artifacts/metadata: No connector
+available to access repository imagej.snapshots (dav:
+<A HREF="http://maven.imagej.net/content/repositories/snapshots">http://maven.imagej.net/content/repositories/snapshots</A>) of type default
+using the available factories WagonRepositoryConnectorFactory -&gt; [Help 1]
+
+However, on my system with the wagon-webdav extension still in place, the
+deploy works fine. So our experiences are not in line here; Maven 3 +
+wagon-webdav works for me. Could there be some other cause to the problems
+you're seeing?
+
+Since Maven 2.2.1 is the current Maven 2 version and even if I do not know
+&gt;<i> what version m2e bundles, it seems to compile fine in my m2e
+</I>&gt;<i> installation, so I assume it is newer than 2.0.9.
+</I>&gt;<i>
+</I>
+I agree that we do not need to support Maven 2.0.x. If our builds work with
+Maven 2.2.x and 3.0.x, then I am happy. (Actually, I am happy even if we
+require Maven 3, although there are some arguments not to limit ourselves
+that way.)
+
+P.S.: I needed to install Eclipse for all three Operating Systems
+&gt;<i> supported by Fiji so I can make sure that the changes I intend to make on
+</I>&gt;<i> SwingOutputWindow do not break existing functionality (as I am on Linux, I
+</I>&gt;<i> always get these crappy scrollbars, and I verified that the same happens
+</I>&gt;<i> on Windows, but not on MacOSX, so I guess that some overly specific
+</I>&gt;<i> dimensioning code is responsible that assumes a bit too much).
+</I>&gt;<i>
+</I>
+The crappy scroll bars have been a continuing nuisance. I think it may be a
+bug in JHotDraw. See also:
+
+<A HREF="https://github.com/imagej/imagej/blob/master/ui/awt-swing/swing/ui-base/src/main/java/imagej/ui/swing/display/JHotDrawImageCanvas.java#L294">https://github.com/imagej/imagej/blob/master/ui/awt-swing/swing/ui-base/src/main/java/imagej/ui/swing/display/JHotDrawImageCanvas.java#L294</A>
+
+I certainly agree that this hack of &quot;+5 in both dimensions&quot; is overly
+specific. If you have a better idea, that's great.
+
+Regards,
+Curtis
+
+
+On Mon, Feb 27, 2012 at 7:16 PM, Johannes Schindelin &lt;
+<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">Johannes.Schindelin at gmx.de</A>&gt; wrote:
+
+&gt;<i> Hi all,
+</I>&gt;<i>
+</I>&gt;<i> unfortunately, I updated the instructions on <A HREF="http://developer.imagej.net/">http://developer.imagej.net/</A>
+</I>&gt;<i> on how to install Eclipse a bit prematurely: I was so happy that Eclipse
+</I>&gt;<i> IDE for Java Developers already brought its own Maven plugin that I
+</I>&gt;<i> edited the text to say that we prefer that version. Without checking that
+</I>&gt;<i> things actually compile.
+</I>&gt;<i>
+</I>&gt;<i> And sure enough, they don't, because Maven 3 no longer accepts the wagon
+</I>&gt;<i> extension in its current form.
+</I>&gt;<i>
+</I>&gt;<i> Now, a little research shows that somebody official _claims_ that starting
+</I>&gt;<i> with Maven 2.0.9, specifying that wagon extension for WebDAV is not at all
+</I>&gt;<i> necessary, it should be active by default.
+</I>&gt;<i>
+</I>&gt;<i> Since Maven 2.2.1 is the current Maven 2 version and even if I do not know
+</I>&gt;<i> what version m2e bundles, it seems to compile fine in my m2e
+</I>&gt;<i> installation, so I assume it is newer than 2.0.9.
+</I>&gt;<i>
+</I>&gt;<i> The only thing I am worried about: WebDAV is needed for deploying, too.
+</I>&gt;<i> And I have no idea how to test that (not without risking the heavens to
+</I>&gt;<i> break open and the archangels to hunt me down).
+</I>&gt;<i>
+</I>&gt;<i> So I'd like your help: could you test this commit?
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> <A HREF="https://github.com/imagej/imagej/commit/2c755b58032c2f74d1a336c80166deedfb86e5e2">https://github.com/imagej/imagej/commit/2c755b58032c2f74d1a336c80166deedfb86e5e2</A>
+</I>&gt;<i>
+</I>&gt;<i> (I guess that I implictly mean you, Curtis ;-)
+</I>&gt;<i>
+</I>&gt;<i> Ciao,
+</I>&gt;<i> Dscho
+</I>&gt;<i>
+</I>&gt;<i> P.S.: I needed to install Eclipse for all three Operating Systems
+</I>&gt;<i> supported by Fiji so I can make sure that the changes I intend to make on
+</I>&gt;<i> SwingOutputWindow do not break existing functionality (as I am on Linux, I
+</I>&gt;<i> always get these crappy scrollbars, and I verified that the same happens
+</I>&gt;<i> on Windows, but not on MacOSX, so I guess that some overly specific
+</I>&gt;<i> dimensioning code is responsible that assumes a bit too much).
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20120228/ad6c161b/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20120228/ad6c161b/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000592.html">[ImageJ-devel] Maven 3 support
+</A></li>
+	<LI>Next message: <A HREF="000594.html">[ImageJ-devel] Maven 3 support
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#593">[ date ]</a>
+              <a href="thread.html#593">[ thread ]</a>
+              <a href="subject.html#593">[ subject ]</a>
+              <a href="author.html#593">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

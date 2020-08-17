@@ -1,0 +1,119 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Questions about recent I/O and drag and drop work
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Questions%20about%20recent%20I/O%20and%20drag%20and%20drop%20work&In-Reply-To=%3CCADN69ymGxOfatYNFCiPnimGG22J6WkjDX75FxUk2YT_rmZW2yQ%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001471.html">
+   <LINK REL="Next"  HREF="001474.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Questions about recent I/O and drag and drop work</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Questions%20about%20recent%20I/O%20and%20drag%20and%20drop%20work&In-Reply-To=%3CCADN69ymGxOfatYNFCiPnimGG22J6WkjDX75FxUk2YT_rmZW2yQ%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Questions about recent I/O and drag and drop work">ctrueden at wisc.edu
+       </A><BR>
+    <I>Thu Apr 18 21:32:35 CDT 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001471.html">[ImageJ-devel] [ImageJ] #1553: Make it easier for non-core-IJ2 developers to respond to tickets
+</A></li>
+        <LI>Next message: <A HREF="001474.html">[ImageJ-devel] [icy] Re: .MRXS files in ICY
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1472">[ date ]</a>
+              <a href="thread.html#1472">[ thread ]</a>
+              <a href="subject.html#1472">[ subject ]</a>
+              <a href="author.html#1472">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi everyone (mostly core ImageJ2 and SCIFIO developers),
+
+I recently completed some work to make drag-and-drop extensible:
+    <A HREF="https://github.com/imagej/imagej/commit/9f20b3ec">https://github.com/imagej/imagej/commit/9f20b3ec</A>
+
+It is now possible to define a new DragAndDropHandler plugin for dealing
+with an arbitrary MIME type and/or Java class, which is pretty nice.
+
+Further, since then I have done a little bit more work on supporting
+various text formats:
+    <A HREF="https://github.com/imagej/imagej/commit/a34d1b2e">https://github.com/imagej/imagej/commit/a34d1b2e</A>
+    <A HREF="https://github.com/imagej/imagej/commit/cb6e8b76">https://github.com/imagej/imagej/commit/cb6e8b76</A>
+
+There is now a TextFormat plugin type, for providing extensibility in
+dealing with text documents in various markup languages such as Markdown.
+
+Also, the IOService now has a generic &quot;Object load(File)&quot; method that is
+intended for use by the ImageJ UI's File Open command (which now resides in
+the OpenFile class).
+
+However, doing all this has led me to the conclusion that the drag-and-drop
+work is a little mis-structured. Dragging and dropping *any* files onto
+ImageJ should, if there is no higher priority DnD handler available, just
+call IOService#load(File) on them, since it is intended to be the
+high-level entry point. Of course, we can also provide higher priority
+handlers to do things like apply a LUT to the image onto which it was
+dragged. But the fallback case should be &quot;just open the file as though it
+had been chosen via File Open.&quot; We want to avoid a scenario where
+drag-and-drop of a file works, but File Open does not.
+
+If so, this means getting rid of ImageFileDragAndDropHandler,
+ScriptFileDragAndDropHandler and part of LUTFileDragAndDropHandler in favor
+of a single DefaultFileDragAndDropHandler which calls IOService#load on the
+files. (We would still need the LUTFileDragAndDropHandler, but only to
+handle the case where a LUT was dragged onto an image display specifically.)
+
+However, if we go that route, extensibility of IOService#load must then be
+solved in a similar fashion. We should have a new IOHandler, which provides
+handling of Files (and maybe other data sources such as URLs?) of various
+types. At first glance, this may seem dangerously close to reinventing
+SCIFIO again... but the difference is that SCIFIO only handles image data.
+The IOHandler would be simpler than SCIFIO, but also more general, allowing
+total extension of IOService#load (and hence the File Open command).
+
+In the case of scripts, some reconciliation with the scripting framework
+will be necessary, because right now, the Script Editor is not a Display.
+That is, there is no type of Java object that IOService#load can return
+when opening a script that results in a Script Editor window popping up to
+display/edit it. But I believe this can be addressed.
+
+Thoughts? Agree, disagree?
+
+Regards,
+Curtis
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20130418/29542de9/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20130418/29542de9/attachment.html</A>&gt;
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001471.html">[ImageJ-devel] [ImageJ] #1553: Make it easier for non-core-IJ2 developers to respond to tickets
+</A></li>
+	<LI>Next message: <A HREF="001474.html">[ImageJ-devel] [icy] Re: .MRXS files in ICY
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1472">[ date ]</a>
+              <a href="thread.html#1472">[ thread ]</a>
+              <a href="subject.html#1472">[ subject ]</a>
+              <a href="author.html#1472">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

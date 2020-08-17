@@ -1,0 +1,133 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] imagej-loader / dlopen args
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20imagej-loader%20/%20dlopen%20args&In-Reply-To=%3CCAHLFyjcMye1WNfmhVkC8HJ%3DH4Sw4oQ92s0jHZg5Yghw7udB8MA%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002490.html">
+   <LINK REL="Next"  HREF="002492.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] imagej-loader / dlopen args</H1>
+    <B>Lee Kamentsky</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20imagej-loader%20/%20dlopen%20args&In-Reply-To=%3CCAHLFyjcMye1WNfmhVkC8HJ%3DH4Sw4oQ92s0jHZg5Yghw7udB8MA%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] imagej-loader / dlopen args">leek at broadinstitute.org
+       </A><BR>
+    <I>Wed Mar 18 15:29:26 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002490.html">[ImageJ-devel] imagej-loader / dlopen args
+</A></li>
+        <LI>Next message: <A HREF="002492.html">[ImageJ-devel] imagej-loader / dlopen args
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2491">[ date ]</a>
+              <a href="thread.html#2491">[ thread ]</a>
+              <a href="subject.html#2491">[ subject ]</a>
+              <a href="author.html#2491">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Thanks,
+
+On Wed, Mar 18, 2015 at 4:32 PM, Johannes Schindelin &lt;
+<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">johannes.schindelin at gmx.de</A>&gt; wrote:
+
+&gt;<i> Hi Lee,
+</I>&gt;<i>
+</I>&gt;<i> On 2015-03-18 14:47, Lee Kamentsky wrote:
+</I>&gt;<i>
+</I>&gt;<i>  I'm programming &quot;monkey see, monkey do&quot; style. I have very little idea
+</I>&gt;&gt;<i> what
+</I>&gt;&gt;<i> I'm doing, trying to replicate the logic for mac loading dylibs in
+</I>&gt;&gt;<i> imagej-loader.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I've gotten pretty far, but at the end, I'm seeing the error,
+</I>&gt;&gt;<i> &quot;JavaNativeFoundation: GetGlobalVM: JNI_GetCreatedJavaVMs() failed to get
+</I>&gt;&gt;<i> any VM&quot; when I start an AWT app.
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Do you expect a JVM to be running already? If not, you should [create one](
+</I>&gt;<i> <A HREF="https://github.com/imagej/imagej-launcher/blob/">https://github.com/imagej/imagej-launcher/blob/</A>
+</I>&gt;<i> 3e061521a/src/main/c/ImageJ.c#L307-L322).
+</I>&gt;<i>
+</I>&gt;<i>  I am guessing that this is why you dlopened libjli here
+</I>&gt;&gt;<i> &lt;<A HREF="https://github.com/imagej/imagej-launcher/blob/master/">https://github.com/imagej/imagej-launcher/blob/master/</A>
+</I>&gt;&gt;<i> src/main/c/ImageJ.c#L264&gt;.
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Heh, I have to admit that I did not remember at all why I did that.
+</I>&gt;<i> Happily, even I learned to write kick-ass commit messages, and I also
+</I>&gt;<i> learned the awesomeness of the `Blame` button on GitHub:
+</I>&gt;<i> <A HREF="https://github.com/imagej/imagej-launcher/blame/master/">https://github.com/imagej/imagej-launcher/blame/master/</A>
+</I>&gt;<i> src/main/c/ImageJ.c#L264 (I vaguely remember writing that commit message
+</I>&gt;<i> after spending something between twenty and thirty super-focused hours on
+</I>&gt;<i> hunting down this bug, that was not really fun, that one hunt).
+</I>&gt;<i>
+</I>&gt;<i>  I do the same, but (so far) with Python's ctypes.CDLL. That doesn't let
+</I>&gt;&gt;<i> you
+</I>&gt;&gt;<i> specify RTLD_LAZY as a dlopen mode. So, I think that's the big difference
+</I>&gt;&gt;<i> between how you do things and how I do them. My first question is whether
+</I>&gt;&gt;<i> RTLD_LAZY is needed as the mode. My second question is why you needed to
+</I>&gt;&gt;<i> load libjli.dylib in the first place and, if you might grant me a third
+</I>&gt;&gt;<i> wish, my third question is whether you've seen this error before.
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> The JLI library is only needed for forward compatibility, so that MacOSX
+</I>&gt;<i> does not annoy the user by a &quot;Do you want to install Java 6?&quot; popup.
+</I>&gt;<i>
+</I>&gt;<i> And yes, I have seen an error like that before, but only when trying to
+</I>&gt;<i> attach to a running JVM from within Matlab (Matlab's very own GUI is
+</I>&gt;<i> written in Java... so there is already a JVM running in a Matlab instance
+</I>&gt;<i> although it is a bit tricky to get at it under certain circumstances, but
+</I>&gt;<i> it is impossible to run two Oracle JVMs in the same process in any case).
+</I>&gt;<i>
+</I>&gt;<i>  Thanks in advance, Mr. Wizard.
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Sorry, oh ye mighty Python God, I fear my input was not really helpful to
+</I>&gt;<i> your cause. But maybe you have a project for me to clone, with instructions
+</I>&gt;<i> that might let this poor Python pilgrim reproduce the issue?
+</I>&gt;<i>
+</I>&gt;<i> Ciao,
+</I>&gt;<i> Dscho
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20150318/c50c0eff/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20150318/c50c0eff/attachment.html</A>&gt;
+</PRE>
+
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002490.html">[ImageJ-devel] imagej-loader / dlopen args
+</A></li>
+	<LI>Next message: <A HREF="002492.html">[ImageJ-devel] imagej-loader / dlopen args
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2491">[ date ]</a>
+              <a href="thread.html#2491">[ thread ]</a>
+              <a href="subject.html#2491">[ subject ]</a>
+              <a href="author.html#2491">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

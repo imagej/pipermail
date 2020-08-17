@@ -1,0 +1,155 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] About memory usage with Fiji/JVM
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20About%20memory%20usage%20with%20Fiji/JVM&In-Reply-To=%3CCA%2BB%3DmGrsX_Bco5hhWBFysMQG2oW7h%3DeUs27AaUef5h4c3ZvyMw%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002475.html">
+   <LINK REL="Next"  HREF="002477.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] About memory usage with Fiji/JVM</H1>
+    <B>Mark Hiner</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20About%20memory%20usage%20with%20Fiji/JVM&In-Reply-To=%3CCA%2BB%3DmGrsX_Bco5hhWBFysMQG2oW7h%3DeUs27AaUef5h4c3ZvyMw%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] About memory usage with Fiji/JVM">hiner at wisc.edu
+       </A><BR>
+    <I>Fri Mar 13 13:43:01 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002475.html">[ImageJ-devel] Imagej-launcher build woes
+</A></li>
+        <LI>Next message: <A HREF="002477.html">[ImageJ-devel] About memory usage with Fiji/JVM
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2476">[ date ]</a>
+              <a href="thread.html#2476">[ thread ]</a>
+              <a href="subject.html#2476">[ subject ]</a>
+              <a href="author.html#2476">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Hadrien,
+
+&gt;<i>My hypothesis is that when loading an image, Fiji/SCIFIO look at free
+</I>&gt;<i>memory in the system but not in the JVM. Is that possible ?
+</I>
+Yes, this is almost certainly what's happening. Unfortunately I am not
+aware of a way to differentiate between memory that is still in use, and
+memory that just hasn't been deallocated.
+
+By default in these situations SCIFIO will look at the available memory,
+see that there's not enough to open the dataset and open it virtually. Note
+that it actually would be possible to open the full dataset - as the memory
+allocation approached the JVM's limit, it would automatically be released.
+
+Right now this can be worked around programmatically by specifying a PLANAR
+or ARRAY[1] ImgMode in the SCIFIOConfig[2]. The Bio-Formats importer lets
+you specify whether the image should be opened virtually or not. The only
+other option is to click the status bar to force garbage collection.
+
+We also have plans to improve the SCIFIO importer[3] to expose these
+settings in the UI. Ultimately the hope is that virtual (cell) images will
+incur minimal performance penalties though[4], making this issue moot.
+
+Thanks!
+- Mark
+
+[1]
+<A HREF="https://github.com/scifio/scifio/blob/scifio-0.21.1/src/main/java/io/scif/config/SCIFIOConfig.java#L124">https://github.com/scifio/scifio/blob/scifio-0.21.1/src/main/java/io/scif/config/SCIFIOConfig.java#L124</A>
+[2]
+<A HREF="https://github.com/scifio/scifio/blob/scifio-0.21.1/src/main/java/io/scif/config/SCIFIOConfig.java#L370-373">https://github.com/scifio/scifio/blob/scifio-0.21.1/src/main/java/io/scif/config/SCIFIOConfig.java#L370-373</A>
+[3] <A HREF="https://github.com/imagej/imagej-plugins-commands/issues/4">https://github.com/imagej/imagej-plugins-commands/issues/4</A>
+[4] <A HREF="https://github.com/scifio/scifio/issues/201">https://github.com/scifio/scifio/issues/201</A>
+
+
+On Mon, Jan 26, 2015 at 5:57 AM, Hadrien Mary &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">hadrien.mary at gmail.com</A>&gt;
+wrote:
+
+&gt;<i> Hi,
+</I>&gt;<i>
+</I>&gt;<i> New SCIFIO I/O system in Fiji/IJ2 automatically detects wether virtual
+</I>&gt;<i> stack is needed according to system memory available and image size
+</I>&gt;<i> (if I understood correctly).
+</I>&gt;<i>
+</I>&gt;<i> Virtual stack is fine but it always better to work without when you
+</I>&gt;<i> can. For example working with timelapse stacks, sliding time is much
+</I>&gt;<i> faster when image is not a virtual stack (and it makes sense since RAM
+</I>&gt;<i> memory access is much faster than hard drive memory access...).
+</I>&gt;<i>
+</I>&gt;<i> Saying that I noticed something: when I close a big image (no virtual
+</I>&gt;<i> stack because moving time slider is fast), java does not release
+</I>&gt;<i> memory to system (and it's a normal behaviour according to this
+</I>&gt;<i>
+</I>&gt;<i> <A HREF="http://stackoverflow.com/questions/22912063/automatically-release-unused-memory-in-imagej-fiji">http://stackoverflow.com/questions/22912063/automatically-release-unused-memory-in-imagej-fiji</A>
+</I>&gt;<i> ).
+</I>&gt;<i> Now when I load the same kind of image (same size), the JVM should use
+</I>&gt;<i> the free memory released by the previously closed image isn't it ? I
+</I>&gt;<i> have the feeling that it does not because, when I move the time slider
+</I>&gt;<i> on the second image, it's very slow....
+</I>&gt;<i>
+</I>&gt;<i> Some numbers:
+</I>&gt;<i>
+</I>&gt;<i> - image size : 4.6GB
+</I>&gt;<i> - Fiji memory after start : 0.3GB
+</I>&gt;<i> - Fiji memory after loading first image: 6.9GiB
+</I>&gt;<i> - Fiji memory after closing first image: 6.9GiB
+</I>&gt;<i> - Fiji memory after loading second image: 6.9GiB
+</I>&gt;<i>
+</I>&gt;<i> My hypothesis is that when loading an image, Fiji/SCIFIO look at free
+</I>&gt;<i> memory in the system but not in the JVM. Is that possible ? Did you
+</I>&gt;<i> already noticed that ?
+</I>&gt;<i>
+</I>&gt;<i> PS: I have attached to this mail some properties of my system.
+</I>&gt;<i>
+</I>&gt;<i> Best,
+</I>&gt;<i>
+</I>&gt;<i> --
+</I>&gt;<i> Hadrien Mary
+</I>&gt;<i>
+</I>&gt;<i> Ph.D student in Biology
+</I>&gt;<i> Tournier-Gachet Team
+</I>&gt;<i> CNRS - LBCMCP - UMR 5088
+</I>&gt;<i>
+</I>&gt;<i> Universit&#233; de Toulouse - B&#226;t. 4R3B1
+</I>&gt;<i> 118, route de Narbonne - 31062 Toulouse
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20150313/c629d59d/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20150313/c629d59d/attachment.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002475.html">[ImageJ-devel] Imagej-launcher build woes
+</A></li>
+	<LI>Next message: <A HREF="002477.html">[ImageJ-devel] About memory usage with Fiji/JVM
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2476">[ date ]</a>
+              <a href="thread.html#2476">[ thread ]</a>
+              <a href="subject.html#2476">[ subject ]</a>
+              <a href="author.html#2476">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,337 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] ImgLib2 dimensionality
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImgLib2%20dimensionality&In-Reply-To=%3C50FD728F.7010203%40uni-konstanz.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001374.html">
+   <LINK REL="Next"  HREF="001376.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] ImgLib2 dimensionality</H1>
+    <B>Christian Dietz</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImgLib2%20dimensionality&In-Reply-To=%3C50FD728F.7010203%40uni-konstanz.de%3E"
+       TITLE="[ImageJ-devel] ImgLib2 dimensionality">christian.dietz at uni-konstanz.de
+       </A><BR>
+    <I>Mon Jan 21 10:53:35 CST 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001374.html">[ImageJ-devel] opening a tif file from a resource
+</A></li>
+        <LI>Next message: <A HREF="001376.html">[ImageJ-devel] strange behaviour using calibration object.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1375">[ date ]</a>
+              <a href="thread.html#1375">[ thread ]</a>
+              <a href="subject.html#1375">[ subject ]</a>
+              <a href="author.html#1375">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Aivar,
+
+some months ago we had a similar discussion with Barry and Curtis (see 
+below). Sorry for not posting this on the mailing list.
+ From our (KNIME) point of view, an algorithm, which is implemented in 
+ImgLib2, shouldn't know about any Axes / Axes Names.
+The algorithm just knows on which number of dimensions (2-d, 3-d, ... 
+n-D)  it could run. ImgLib2 Views can be used to pre-process the 
+algorithm input (e.g. 2D Slices of an 3-D Img).
+For Example: You have a 4-dimensional Image and you want to process it 
+plane-wise (2D, also possible in 3-D ... n-D just in the example: 2D). 
+In KNIME we use a Component called &quot;Dim Selection&quot; in the GUI where a 
+user selects e.g. X and Y to define the planes of interest. All other 
+dimensions are used to iterate over the x-y-planes (e.g. if t=2, c=3 
+then we iterate over 6 x-y-planes). After we determined the indices of 
+the X-Y Axes of our incoming Image (using the Axes in ImgPlus) we 
+internally create several (nested) ImgLib2 Views using Views.interval, 
+Views.translate etc pp. The resulting views are passed to the algorithm 
+as a RandomAccessible, RandomAccessibleInterval or (if necessary) an 
+ImgView/ImgPlusView (wrapping a RandomAccessibleInterval).
+
+Using Views we don't restrict the algorithms such that they only work on 
+dedicated dimensions. In fact, any user-selection of dimensions can be 
+used to create a View (as long as the algorithms can handle the number 
+of dimensions of the resulting view). We suggested a general &quot;Dimension 
+Selection&quot; Service for ImageJ2, but unfortunately we didn't find the 
+time yet to implement it.
+
+Looking forward for replies ;)
+
+Martin, Michael Z. and Christian
+
+
+-------- Original Message --------
+Subject: 	Re: Processing sub-intervals in ImageJ-Plugins
+Date: 	Thu, 31 May 2012 09:06:30 +0200
+From: 	Martin Horn &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">Martin.Horn at uni-konstanz.de</A>&gt;
+To: 	<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">bdezonia at gmail.com</A>
+CC: 	Christian Dietz &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">christian.dietz at uni-konstanz.de</A>&gt;, 
+<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">michael.zinsmaier at gmx.de</A>, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt;
+
+
+
+Hi Barry,
+
+maybe my last Mail was a bit hasty and we reordered our thoughts a bit
+;o) Sorry for that. So forget about the part of &quot;processing very large
+image objects&quot;. But the comments on the Normalize plugin (or rather the
+Auto Contrast plugins) are still true. To be clear, let me explain
+again, what we wanted to address by means of the &quot;AutoContrast&quot;-plugin:
+
+The AutoContrast plugin first calculates a histogram and then applies a
+normalization function determined from the histogram to each pixel. Now,
+this histogram, e.g. can be determined on various pixel-(sub)sets of the
+image in a n-dimensional image object: one can calculate the histogram
+for all pixels, one do it for each XY-plane individually, one can to it
+for each XT-plane (if T existent), one can do it for each XYC-cube, if
+we consider a 5-dim image with XYCT, and so on (the same is true, e.g.
+for Thresholding, CCA, ... . Hence, there are various way how to handle
+n-dim data properly (depending on the algorithm itself, whether it can
+handle only 2D, 3D or nD data). Certainly, one can define that each
+plugin has to care about how to handle nD data in a appropriate way by
+itself. Thats fine, actually. But what would be desirable is maybe the
+existence of some convenience-tools to simplify the n-D data handling
+(e.g. think of a service which ask the user to select the dimensions to
+operate on and whose to iterate; or maybe a component in a dialog and
+some helper classes, ...). This would for example make the
+AutoContrast-implementation more general and hardcoded things like
+&quot;axes.getLabel()==&quot;Channel&quot; (line207) (the user decides, what a channel
+is) or the question &quot;how to handle RGB images&quot; (line 156) would be
+lapsed. Currently the AutoContrast-plugin only processes a nD-image on
+the whole.
+
+Maybe we can give you an example how we handle it (which is certainly
+not perfect, but illustrates the idea somehow):
+
+Given: Image in 5D (XYCZT).
+Let's assume an algorithm is applicable only in 2D (Maybe find edges) or
+the results differ if we use 2D or 3D representation of an image
+(AutoContrast, Thresholding etc), as mentioned above.
+In any case the user may select what his process planes are by selecting
+the labels of this planes (e.g. XY, XT, XC, CT, etc., could also be a
+N-Dimensional selection, depending on the algorithm). The algorithm then
+is applied to any selected plane separately. This is possible as we use
+the Operation concept which we defined together with you guys in
+Dresden. For the given 5d input we create a proper output (e.g. a 5D
+BitType image in the case of Thresholding) and then we create several
+views depending on the dimension selection of the user on the input and
+the output. The algorithm is called as we provide it as well the input
+as the output container before hands. Remember we do not duplicate
+memory or something as we use Views on the input and output data (e.g.
+one plane).
+
+
+We hope, we could express ourself more clear.
+
+Thanks a lot!
+
+Best,
+
+Christian and Martin
+
+
+On 05/30/2012 05:07 PM, Barry DeZonia wrote:
+&gt;<i> Hi Martin,
+</I>&gt;<i>
+</I>&gt;<i> PointSets might help you with this problem. The net.imglib2.ops.pointset
+</I>&gt;<i> package defines a set of PointSets that can be used to represent a
+</I>&gt;<i> subset of an n-dimensional dataset. For instance you can define a point
+</I>&gt;<i> set as a plane in 3d space (XYT). You iterate the PointSet to pull out
+</I>&gt;<i> each coordinate within it and use that coordinate for your computations.
+</I>&gt;<i> Then you can relocate the plane of interest via pointset.setAnchor() and
+</I>&gt;<i> changing the time component of the plane origin. This would allow code
+</I>&gt;<i> to iterate planes of a bigger space.
+</I>&gt;<i>
+</I>&gt;<i> PointSets are a general construct that allow arbitrarily defined regions
+</I>&gt;<i> to be iterated and &quot;slid&quot; over a n-dimensional space. Views might work
+</I>&gt;<i> in this instance too. I'm not sure. But in your example of a big image
+</I>&gt;<i> the PointSet could be an arbitrarily small region within it that is
+</I>&gt;<i> repeatedly slid between calculation steps. In OPS the sliding is done by
+</I>&gt;<i> the various classes in net.imglib2.ops.input. For instance a
+</I>&gt;<i> PointSetInputIterator.
+</I>&gt;<i>
+</I>&gt;<i> I may not be understanding your problem here though. I'm not sure how a
+</I>&gt;<i> normalizer plugin or contrast adjuster plugin exceeds the problem you
+</I>&gt;<i> mentioned of arbitrary subregion iteration. Can you be more specific?
+</I>&gt;<i> What general operation or general plugin do you envision? Hopefully my
+</I>&gt;<i> response here has not been off target. Let me know if there is more to
+</I>&gt;<i> the problem that I am missing.
+</I>&gt;<i>
+</I>&gt;<i> Regards,
+</I>&gt;<i>
+</I>&gt;<i> Barry
+</I>&gt;<i>
+</I>&gt;<i> On Wed, May 30, 2012 at 8:03 AM, Martin Horn
+</I>&gt;<i> &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">Martin.Horn at uni-konstanz.de</A>  &lt;mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">Martin.Horn at uni-konstanz.de</A>&gt;&gt; wrote:
+</I>&gt;<i>
+</I>&gt;<i>     Hi Curtis and Barry,
+</I>&gt;<i>
+</I>&gt;<i>     we, Christian, Michael and I, are currently discussing how to better
+</I>&gt;<i>     realize something we call &quot;dimension selection&quot; especially in
+</I>&gt;<i>     conjunction with the integration of ImageJ plugins. Imagine a video
+</I>&gt;<i>     which you want to normalize. You can either do it for the whole
+</I>&gt;<i>     image object or you can normalize for instance each plane
+</I>&gt;<i>     individually (even without copying the planes). So far, in some of
+</I>&gt;<i>     our KNIME nodes we introduced a special dialog component (&quot;dimension
+</I>&gt;<i>     selection&quot;) allowing the user to specify how to proceed in a
+</I>&gt;<i>     particular case.
+</I>&gt;<i>
+</I>&gt;<i>     Do you already thought of this kind of things? How are you planing
+</I>&gt;<i>     to handle this issue for instance in a &quot;Normalizer/Contrast Enhancer
+</I>&gt;<i>     plugin&quot;?
+</I>&gt;<i>
+</I>&gt;<i>     This issue is probably also related to the problem of processing
+</I>&gt;<i>     very large image objects, which don't fit into the memory. In those
+</I>&gt;<i>     cases only sub-intervals of an image can be processed at once but
+</I>&gt;<i>     the result should still be regarded as one image object.
+</I>&gt;<i>
+</I>&gt;<i>     Certainly, each plugin can take care of this by its own. But one may
+</I>&gt;<i>     also think of a dedicated kind of ImageJPlugin which is e.g.
+</I>&gt;<i>     similarly defined as a net.imglib2.ops.__UnaryOperation.
+</I>&gt;<i>
+</I>&gt;<i>     What are your ideas??
+</I>&gt;<i>
+</I>&gt;<i>     Thanks a lot!
+</I>&gt;<i>
+</I>&gt;<i>     Best,
+</I>&gt;<i>
+</I>&gt;<i>     Martin
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>     --
+</I>&gt;<i>     Martin Horn
+</I>&gt;<i>     Nycomed Chair for Bioinformatics
+</I>&gt;<i>     and Information Mining
+</I>&gt;<i>     University of Konstanz
+</I>&gt;<i>
+</I>&gt;<i>     fax: +49 (0)7531 88-5132 &lt;tel:%2B49%20%280%297531%2088-5132&gt;
+</I>&gt;<i>     phone: +49 (0)7531 88-5017 &lt;tel:%2B49%20%280%297531%2088-5017&gt;
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>
+-- 
+Martin Horn
+Nycomed Chair for Bioinformatics
+and Information Mining
+University of Konstanz
+
+fax: +49 (0)7531 88-5132
+phone: +49 (0)7531 88-5017
+
+
+
+
+*From: *Aivar Grislis &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">grislis at wisc.edu</A> &lt;mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">grislis at wisc.edu</A>&gt;&gt;
+*Subject: **[ImageJ-devel] ImgLib2 dimensionality*
+*Date: *January 10, 2013 10:26:06 PM GMT+01:00
+*To: *<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">imagej-devel at imagej.net</A> &lt;mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">imagej-devel at imagej.net</A>&gt;
+
+I was looking at the dimensional code in net.imglib2.meta.Axes. This is 
+an enum of known, named AxisTypes such as X, Y, Z..., has the capacity 
+for CustomAxisTypes, and some sort of characterization of these 
+dimensions with 'isXY()' and 'isSpatial()'.  (Perhaps we could replace 
+these latter with some kind of EnumSet of DimensionTypes, such as XY, 
+SPATIAL, etc. for the discussion that follows.)
+
+It might be useful to have a concept of a COINCIDENTAL type.  This sort 
+of dimension represents different aspects of the same pixel/voxel/doxel. 
+  It's as if you look at it with red glasses, blue glasses, etc. 
+  Effectively this is the same as non-spatial/-temporal since all of the 
+default AxisTypes besides XYZT would be coincidental.  But with this you 
+can specify if a new CustomAxisType should be coincidental or not.  For 
+example, if you wrote a plugin that works on an image in 5D that is a 
+series of 4D (XYZT) images, the dimension that represents the series of 
+images is not coincidental (and not spatial or temporal either).
+
+Another useful concept would be whether a dimension is DISCRETE (or 
+NON_INTERPOLABLE?).   This sort of image would be analogous to a table 
+of height/weight/shoe size per individual (pixel).  This works only 
+because it happens you can express all three measurements as floating 
+point.  Anyway, the point is these measurements are totally independent, 
+the order is arbitrary, and it never would make any sense to combine 
+them somehow or interpolate between them.  I've been working on a FLIM 
+fitting plugin and using such images as my output, where the 
+measurements are a set of fitted lifetime parameters, for example A1, 
+T1, A2, T2, Z, all doubles.  It's the equivalent of five separate images 
+in one and could just be refactored as such. [*]
+
+My motivating concern was that if were to introduce such a DISCRETE 
+DimensionType most existing plugins or algorithms will not do anything 
+useful (other than simple things like copying, etc.).  In fact they will 
+most likely clobber my discrete dimension.
+
+What if an algorithm could somehow declare via annotation what sorts of 
+dimensions it was interested in?  Without such an annotation the default 
+would be to get all of the non-discrete dimensions, and the caller 
+splits the image into sub images across discrete dimensions and 
+processes them successively.  Then existing algorithms could do useful 
+work on my discrete image.  Other algorithms that understand the meaning 
+of this discrete dimension information could declare an interest in it 
+and get the whole thing.
+
+This could be a very useful mechanism in other instances.  In general 
+lets say an algorithm could specify dimension types or specific 
+dimensions of interest and the caller splits the image into sub images 
+across the remaining dimensions.  Then the algorithm gets a cursor that 
+iterates only on the dimensions of interest.  They could set the cursor 
+position within these dimensions or just iterate through the whole thing.
+
+Another use case might be to split up arbitrary images into XY slices 
+for 2D-processing algorithms. On the input side, my FLIM fitting 
+algorithm could declare an interest in the LIFETIME AxisType only and 
+get called pixel by pixel with a lifetime dimension cursor to process a 
+whole image that has unknown dimensions.
+
+For another example, the early ImgLib1 sample Floyd-Steinberg dithering 
+algorithm could process only non-COINCIDENTAL dimensions. This would 
+avoid distributing errors from the red channel to the blue channel, for 
+instance; they would be dithered one by one.
+
+Hope this makes sense!  There's a lot of hand-waving here at present, 
+particularly how this dimensional interest would be specified.
+
+Thanks for reading,
+
+Aivar Grislis
+
+([*] Another alternative would be my creating a custom 
+FittedLifetimeType or some kind of generic TupleType)
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20130121/bbc226d8/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20130121/bbc226d8/attachment-0001.html</A>&gt;
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001374.html">[ImageJ-devel] opening a tif file from a resource
+</A></li>
+	<LI>Next message: <A HREF="001376.html">[ImageJ-devel] strange behaviour using calibration object.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1375">[ date ]</a>
+              <a href="thread.html#1375">[ thread ]</a>
+              <a href="subject.html#1375">[ subject ]</a>
+              <a href="author.html#1375">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

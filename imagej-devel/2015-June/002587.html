@@ -1,0 +1,135 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] imagej-ops : outputop-service branch
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20imagej-ops%20%3A%20outputop-service%20branch&In-Reply-To=%3CD6107033-0756-4FBE-8CBE-BD6004F79E01%40gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002586.html">
+   <LINK REL="Next"  HREF="002590.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] imagej-ops : outputop-service branch</H1>
+    <B>Jay Warrick</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20imagej-ops%20%3A%20outputop-service%20branch&In-Reply-To=%3CD6107033-0756-4FBE-8CBE-BD6004F79E01%40gmail.com%3E"
+       TITLE="[ImageJ-devel] imagej-ops : outputop-service branch">jay.w.warrick at gmail.com
+       </A><BR>
+    <I>Sat Jun 13 03:29:39 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002586.html">[ImageJ-devel] RegionOfInterest vs Region
+</A></li>
+        <LI>Next message: <A HREF="002590.html">[ImageJ-devel] imagej-ops : outputop-service branch
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2587">[ date ]</a>
+              <a href="thread.html#2587">[ thread ]</a>
+              <a href="subject.html#2587">[ subject ]</a>
+              <a href="author.html#2587">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi All,
+
+I chatted with Curtis Rueden a bit today about trying this developmental feature extraction stuff out. He said I should note any successes or challenges as it might help your progress. He suggested potentially to post on the pull request but it seemed a bit long for there.
+
+First of all, fantastic stuff. You are bringing so much quantitative power to the fingertips of a lot of individuals like myself. Thank you! Secondly, sorry if I'm using anything inappropriately in the rundown below but this is my best shot at trying to give you some feedback on my attempt to use your code. Also, I totally realize things are still in flux so I didn't necessarily have expectations that all this stuff would work immediately for me.
+
+As of what was synced to the imagej-ops : outputop-service branch tonight, I was able to successfully get measures from a `FirstOrderStatFeatureSet` for a set of `LabelRegion`s that I got from a `Img&lt;UnsignedByteType&gt;` using `ConnectedComponents` (from latest ImgLib2-algorithm SNAPSHOT but just temporarily copied to its own class local for this test) and apply them to an `Img&lt;UnsignedShortType&gt;` using `Regions.sample(myLabelRegion, myImg)`. I think I did most of these tests using connected components detected using a 4-connected structuring element (if that matters at all).
+
+I ran into an issue with the `GeometricFeatureSet` where I got a 
+`````
+java.lang.ArrayIndexOutOfBoundsException: -1
+	java.util.ArrayList.elementData(ArrayList.java:400)
+	java.util.ArrayList.remove(ArrayList.java:477)
+	net.imagej.ops.geometric.polygon.DefaultConvexHullOp.run(DefaultConvexHullOp.java:127)
+`````
+All my regions are quite sizeable (all between 1000 and 6000 pixels, see end of email) so I'm not sure why this would happen. I'm basically doing the following for this test using the same regions as I used with the `FirstOrderStatFeatureSet`
+
+`````
+GeometricFeatureSet opGeometric = ij.op().op(GeometricFeatureSet.class, LabelRegion.class);
+List&lt;Pair&lt;String, DoubleType&gt;&gt; results = opGeometric.getFeatureList(Regions.iterable(myLabelRegion));
+`````
+
+I'm also having a problem with `Haralick2DFeatureSet` using those same `LabelRegion`s.
+`````
+java.lang.ArrayIndexOutOfBoundsException: -1
+	net.imglib2.roi.labeling.LabelRegion.dimension(LabelRegion.java:459)
+	net.imglib2.AbstractWrappedInterval.dimension(AbstractWrappedInterval.java:59)
+	net.imagej.ops.features.haralick.helper.CooccurrenceMatrix2D.run(CooccurrenceMatrix2D.java:119)
+`````
+I'm testing the `Haralick2DFeatureSet` as follows...
+````
+Haralick2DFeatureSet&lt;UnsignedShortType&gt; opHaralick2DHor = ij.op(Haralick2DFeatureSet.class, (IterableInterval&lt;UnsignedShortType&gt;) image, 8d, 1d, &quot;HORIZONTAL&quot;);
+List&lt;Pair&lt;String, DoubleType&gt;&gt; results = opHaralick2DHor.getFeatureList(Regions.sample(myLabelRegion, image));
+`````
+
+The `HistogramFeatureSet` appears to work. I think I don't have my image adjusted right to see appropriate values in the histogram output though as I seem to get all 0's. I assumed the &quot;number of bins&quot; parameter would autoscale the data according to the image type (e.g., UnsignedShortType image scaled to fit in 256 levels/bins) but I can see why that was likely a bad assumption.
+
+The `ImageMomentsFeatureSet` seems to work fine.
+
+I got the following error trying to use the `Zernike` feature set...
+`````
+java.lang.NumberFormatException
+	java.math.BigDecimal.&lt;init&gt;(BigDecimal.java:470)
+	java.math.BigDecimal.&lt;init&gt;(BigDecimal.java:739)
+	java.math.BigDecimal.valueOf(BigDecimal.java:1069)
+	net.imagej.types.BigComplex.setReal(BigComplex.java:225)
+	net.imagej.ops.features.zernike.ZernikeComputer.normalize(ZernikeComputer.java:193)
+	net.imagej.ops.features.zernike.ZernikeComputer.fastZernikeComputation(ZernikeComputer.java:151)
+`````
+I'm using it as follows on the 8-bit mask image
+`````
+ZernikeFeatureSet&lt;UnsignedByteType&gt; opZernike = ij.op().op(ZernikeFeatureSet.class, (IterableInterval&lt;UnsignedByteType&gt;) mask, true, true, 1, 3);
+List&lt;Pair&lt;String, DoubleType&gt;&gt; results = opZernike.getFeatureList(Regions.sample(myLabelRegion, mask));
+`````
+
+I figured, in case I'm doing a bunch of things wrong, it would be easier for you to just have the data I'm using to see if you get the same issues using your own code. The images that I'm using are here...
+
+ <A HREF="https://drive.google.com/folderview?id=0BzopfqjGpdu8flBNTHdjXzN2eUJhR1NCNmNTbHJ5T3RNVDJRbmdwVnJiYnI0Nk43ZXp3QzA&amp;usp=sharing">https://drive.google.com/folderview?id=0BzopfqjGpdu8flBNTHdjXzN2eUJhR1NCNmNTbHJ5T3RNVDJRbmdwVnJiYnI0Nk43ZXp3QzA&amp;usp=sharing</A> &lt;<A HREF="https://drive.google.com/folderview?id=0BzopfqjGpdu8flBNTHdjXzN2eUJhR1NCNmNTbHJ5T3RNVDJRbmdwVnJiYnI0Nk43ZXp3QzA&amp;usp=sharing">https://drive.google.com/folderview?id=0BzopfqjGpdu8flBNTHdjXzN2eUJhR1NCNmNTbHJ5T3RNVDJRbmdwVnJiYnI0Nk43ZXp3QzA&amp;usp=sharing</A>&gt;
+
+The folder includes a small txt output of only the label regions that I'm analyzing (their pixel areas and centers of mass), given I am not using all labeled objects that come from the connected components analysis. Lastly, my label indices start at 0 if you are looking to match up output from ConnectedComponents with this.
+
+If you have any feedback on where I might be doing things wrong, please let me know.
+
+Thanks!
+
+Jay
+
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20150613/9a100d49/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20150613/9a100d49/attachment.html</A>&gt;
+</PRE>
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002586.html">[ImageJ-devel] RegionOfInterest vs Region
+</A></li>
+	<LI>Next message: <A HREF="002590.html">[ImageJ-devel] imagej-ops : outputop-service branch
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2587">[ date ]</a>
+              <a href="thread.html#2587">[ thread ]</a>
+              <a href="subject.html#2587">[ subject ]</a>
+              <a href="author.html#2587">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,337 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] EuclideanSpace and imagej.display.Display
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20EuclideanSpace%20and%20imagej.display.Display&In-Reply-To=%3C4f18816b.89bc340a.328e.1558%40mx.google.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000565.html">
+   <LINK REL="Next"  HREF="000567.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] EuclideanSpace and imagej.display.Display</H1>
+    <B>Lee Kamentsky</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20EuclideanSpace%20and%20imagej.display.Display&In-Reply-To=%3C4f18816b.89bc340a.328e.1558%40mx.google.com%3E"
+       TITLE="[ImageJ-devel] EuclideanSpace and imagej.display.Display">leek at broadinstitute.org
+       </A><BR>
+    <I>Thu Jan 19 14:47:36 CST 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000565.html">[ImageJ-devel] EuclideanSpace and imagej.display.Display
+</A></li>
+        <LI>Next message: <A HREF="000567.html">[ImageJ-devel] frame grabber interface ?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#566">[ date ]</a>
+              <a href="thread.html#566">[ thread ]</a>
+              <a href="subject.html#566">[ subject ]</a>
+              <a href="author.html#566">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Pretty impressive progress - I'm hoping that it's easier to make coding 
+choices with a more comprehensive model of the N-D space. Generally, 
+thanks for following through. The only specific point I have is that you 
+are probably right about the difficulties posed by the nature of the 
+spectral dimension. I can't think of a clean way to handle both kinds of 
+spectral &quot;positions&quot; in a unified way, so perhaps indexes and reference 
+to the channel labels is the best that can be done.
+
+Thanks,
+--Lee
+
+On 1/19/2012 3:33 PM, Curtis Rueden wrote:
+&gt;<i> Hi Lee,
+</I>&gt;<i>
+</I>&gt;<i>     I'm running into a number of problems with overlays that are
+</I>&gt;<i>     caused by the fact that the EuclideanSpace is now defined on the
+</I>&gt;<i>     Dataset and not on the Display used to composite datasets and
+</I>&gt;<i>     overlays. There are more than a few issues:
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Over the past few weeks, and during the Dresden hackathon, I finally 
+</I>&gt;<i> found time to pursue a lot of these issues, and have made changes to 
+</I>&gt;<i> the codebase to improve the data/display hierarchy.
+</I>&gt;<i>
+</I>&gt;<i>   * The ImageDisplay interface now implements CalibratedInterval,
+</I>&gt;<i>     which extends not only EuclideanSpace but also Interval. Further,
+</I>&gt;<i>     unlike Data objects, ImageDisplay now also implements
+</I>&gt;<i>     PositionableByAxis (which extends Localizable and Positionable).
+</I>&gt;<i>     So an ImageDisplay always has a current position in the
+</I>&gt;<i>     N-dimensional structure, and can report what that is.
+</I>&gt;<i>   * Data objects (Datasets and Overlays) now implement
+</I>&gt;<i>     CalibratedInterval, but not PositionableByAxis, since it makes no
+</I>&gt;<i>     sense to ask a Data object what its current position is.
+</I>&gt;<i>   * However, the DataView object, which wraps a Data and provides
+</I>&gt;<i>     visualization-specific metadata about how that Data is currently
+</I>&gt;<i>     being visualized, *does* implement PositionableByAxis.
+</I>&gt;<i>   * An ImageDisplay is still a collection of DataViews as before, but
+</I>&gt;<i>     uses the CombinedInterval class to combine the N-dimensional
+</I>&gt;<i>     spaces of its constituent views into a single aggregate space.
+</I>&gt;<i>
+</I>&gt;<i> Hopefully these changes are along the lines of what we discussed when 
+</I>&gt;<i> I visited Broad all those months ago.
+</I>&gt;<i>
+</I>&gt;<i>       * Trac issue ImageJ 558 - the user takes a Z-stack, multichannel
+</I>&gt;<i>         image and thresholds it to get a BinaryMaskOverlay and
+</I>&gt;<i>         associated ROI. The ROI is properly defined in a 4-dimensional
+</I>&gt;<i>         space. However, when displayed, a single X/Y plane should be
+</I>&gt;<i>         sampled and displayed, but there is no mechanism to retrieve
+</I>&gt;<i>         the plane being displayed or the color display mode. The code
+</I>&gt;<i>         iterates through the entire stack and that's what causes it to
+</I>&gt;<i>         update slowly.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> I haven't had time to examine this issue in much detail, but the fix 
+</I>&gt;<i> you implemented long ago seems fine for the time being.
+</I>&gt;<i>
+</I>&gt;<i>       * Datasets have axes which capture the metadata of what a
+</I>&gt;<i>         particular dimension means. Overlays don't have that.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> As mentioned above, things have now been unified so that all Data 
+</I>&gt;<i> objects (including both Datasets and Overlays) are N-dimensional with 
+</I>&gt;<i> axes, by extending the CalibratedInterval interface, which in turn 
+</I>&gt;<i> extends Interval and CalibratedSpace (which extends EuclideanSpace).
+</I>&gt;<i>
+</I>&gt;<i>       * Channels are really categorical, not ordinal - there's no
+</I>&gt;<i>         reason the red channel is zero, the green is one and the blue
+</I>&gt;<i>         is two and, with a channel-stack, the DAPI channel in one
+</I>&gt;<i>         image might be the PI channel in a second. You can properly
+</I>&gt;<i>         relate one channel to the other through metadata, but overlays
+</I>&gt;<i>         don't have that.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> I think channels are sometimes categorical, and sometimes ordinal. For 
+</I>&gt;<i> example, a hyperspectral dataset that provides 32 channels ranging 
+</I>&gt;<i> from 400 nm through 550 nm sampled every 5 nm would be a continuous 
+</I>&gt;<i> domain, similar to other dimensions. But if you have two 
+</I>&gt;<i> channels---one transmitted channel captured using a grayscale camera, 
+</I>&gt;<i> and another channel detected from fluorescence caused by laser 
+</I>&gt;<i> scanning---those are definitely categorical.
+</I>&gt;<i>
+</I>&gt;<i> Still, ultimately, they become ordinal in that you must provide an 
+</I>&gt;<i> index for each channel. That doesn't mean you should assume continuity 
+</I>&gt;<i> though, of course.
+</I>&gt;<i>
+</I>&gt;<i>       * You might want to composite datasets - take two images and
+</I>&gt;<i>         place them adjacently. What happens if they have different
+</I>&gt;<i>         axes? What happens if they have different channel layouts?
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> In general, some math needs to happen. The new CombinedInterval 
+</I>&gt;<i> &lt;<A HREF="http://fiji.sc/cgi-bin/gitweb.cgi?p=imagej2/.git;a=blob;f=core/data/src/main/java/imagej/data/CombinedInterval.java;h=24aec4a1305a28aaead11709733ef96e677a1672;hb=refs/heads/svn/trunk">http://fiji.sc/cgi-bin/gitweb.cgi?p=imagej2/.git;a=blob;f=core/data/src/main/java/imagej/data/CombinedInterval.java;h=24aec4a1305a28aaead11709733ef96e677a1672;hb=refs/heads/svn/trunk</A>&gt; 
+</I>&gt;<i> class handles the union of multiple CalibratedInterval objects, fairly 
+</I>&gt;<i> naively at the moment, but with the potential to improve the logic as 
+</I>&gt;<i> you suggest in the future. We are also planning to tap into Unidata's 
+</I>&gt;<i> Ucar Units &lt;<A HREF="https://github.com/ctrueden/ucar-units">https://github.com/ctrueden/ucar-units</A>&gt; project to assist 
+</I>&gt;<i> with this.
+</I>&gt;<i>
+</I>&gt;<i>     So, what I'm thinking is the following:
+</I>&gt;<i>
+</I>&gt;<i>       * A display represents the EuclideanSpace that's used to
+</I>&gt;<i>         composite overlays and datasets.  Think of the display as a
+</I>&gt;<i>         big N-dimensional container and the overlays and datasets
+</I>&gt;<i>         float inside that container.
+</I>&gt;<i>           o The display has a set of axes that are the union of all of
+</I>&gt;<i>             the axes that appear in the view data objects.
+</I>&gt;<i>           o There are two behaviors for a view object that does not
+</I>&gt;<i>             have an axis in the space. Perhaps the user selects the
+</I>&gt;<i>             behavior?:
+</I>&gt;<i>               + The value in space outside of a single plane defined
+</I>&gt;<i>                 by a coordinate location along the axis is nan or null.
+</I>&gt;<i>               + The value in space along the missing axis is the same
+</I>&gt;<i>                 at all locations along that axis.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Yes, this is as we discussed at Broad a few months back. It is really 
+</I>&gt;<i> working now! :-)
+</I>&gt;<i>
+</I>&gt;<i> Currently, if a constituent DataView lacks an axis from the aggregate 
+</I>&gt;<i> space, the value for that axis can be specified explicitly, and 
+</I>&gt;<i> defaults to 0 otherwise. So, for example, all Overlays currently have 
+</I>&gt;<i> the X and Y axes, and no other axes. Embedding a rectangle overlay in 
+</I>&gt;<i> a 4D dataset (with, say, XYZT) causes that rectangle to be visible at 
+</I>&gt;<i> Z=0, T=0, and no other Z and T positions, unless the 
+</I>&gt;<i> DataView.setPosition(long, AxisType) method is used to override a 
+</I>&gt;<i> different position for that dimension.
+</I>&gt;<i>
+</I>&gt;<i> In the future, we could enable the user to specify an alternative 
+</I>&gt;<i> behavior as you suggest, such that the overlay becomes visible at 
+</I>&gt;<i> *all* positions of that axis. But for now it is always a constant value.
+</I>&gt;<i>
+</I>&gt;<i>       * A display window holds the information about what plane is
+</I>&gt;<i>         being displayed and how the channels are composited.
+</I>&gt;<i>           o The views are asked to display according to the plane
+</I>&gt;<i>             information. A plane is an interval where the min=max for
+</I>&gt;<i>             all dimensions but X and Y. The views could construct
+</I>&gt;<i>             appropriate projectors based on the interval. The display
+</I>&gt;<i>             window should also control the channel compositing
+</I>&gt;<i>             information and the views should reference the display
+</I>&gt;<i>             window's compositing information instead of maintaining
+</I>&gt;<i>             their own copies.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Right, as things stand now, the ImageDisplay tracks its current 
+</I>&gt;<i> position (i.e., it implements PositionableByAxis) and the DisplayPanel 
+</I>&gt;<i> provides the GUI that actually presents the information onscreen. 
+</I>&gt;<i> However, one vital remaining task is to finish decoupling these two 
+</I>&gt;<i> classes. Currently there is still some unfortunate coupling between 
+</I>&gt;<i> ImageDisplay, ImageCanvas, DisplayPanel and DisplayWindow, which needs 
+</I>&gt;<i> to change. The ImageDisplay and DataViews should be completely 
+</I>&gt;<i> UI-agnostic, with the active user interface components subscribing to 
+</I>&gt;<i> display events and updating themselves accordingly. This will help 
+</I>&gt;<i> eliminate some problematic sections of code, particularly 
+</I>&gt;<i> SwingDatasetView and SwingOverlayView, which are discouraged to use in 
+</I>&gt;<i> ImageJ plugins due to their Swing-specific nature.
+</I>&gt;<i>
+</I>&gt;<i>       * Perhaps there is a SpatialDataObject or perhaps the DataObject
+</I>&gt;<i>         is always spatial. In any case, the axis information and
+</I>&gt;<i>         channel metadata should be pushed up the inheritance hierarchy
+</I>&gt;<i>         so that Overlay has a first-class representation of that and
+</I>&gt;<i>         operations that generate overlays from datasets copy the
+</I>&gt;<i>         information to the overlays they create.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> We went the route of &quot;data objects are always spatial.&quot; And yeah, a 
+</I>&gt;<i> lot of functionality was pushed up into AbstractData, AbstractDataView 
+</I>&gt;<i> and AbstractImageDisplay. Hopefully this will reduce the amount of 
+</I>&gt;<i> dataset- and overlay-specific code throughout the system.
+</I>&gt;<i>
+</I>&gt;<i>       * There is a spectral dimension, but the channel axis doesn't
+</I>&gt;<i>         capture that. Channels are categorical and should have names
+</I>&gt;<i>         so they can be matched in the same way that axes are matched.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> It is a good point that we should add some support for categorical 
+</I>&gt;<i> dimensions in general. It is not enough to have calibrations; it 
+</I>&gt;<i> should be possible to label each axis position individually. This is 
+</I>&gt;<i> useful for a variety of reasons. We will need to revisit this idea 
+</I>&gt;<i> later, when time permits.
+</I>&gt;<i>
+</I>&gt;<i>     It's some work to refactor these things, but as the code base
+</I>&gt;<i>     grows and becomes more entrenched it will become increasingly
+</I>&gt;<i>     difficult to refactor, so we should do it sooner rather than
+</I>&gt;<i>     later. I don't think this is much coding at this point and if you
+</I>&gt;<i>     look at the code, there are places where this organization
+</I>&gt;<i>     clarifies some things.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> The coding work has been nontrivial, but certainly doable. There is 
+</I>&gt;<i> more left to do as well, but I think we are in reasonable shape.
+</I>&gt;<i>
+</I>&gt;<i> Thanks very much for your comments! I really appreciate how much 
+</I>&gt;<i> thought and effort you have put into the ImageJ design over the past year.
+</I>&gt;<i>
+</I>&gt;<i> Regards,
+</I>&gt;<i> Curtis
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On Fri, Jun 3, 2011 at 1:44 PM, Lee Kamentsky &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">leek at broadinstitute.org</A> 
+</I>&gt;<i> &lt;mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">leek at broadinstitute.org</A>&gt;&gt; wrote:
+</I>&gt;<i>
+</I>&gt;<i>     I'm running into a number of problems with overlays that are
+</I>&gt;<i>     caused by the fact that the EuclideanSpace is now defined on the
+</I>&gt;<i>     Dataset and not on the Display used to composite datasets and
+</I>&gt;<i>     overlays. There are more than a few issues:
+</I>&gt;<i>
+</I>&gt;<i>       * Trac issue ImageJ 558 - the user takes a Z-stack, multichannel
+</I>&gt;<i>         image and thresholds it to get a BinaryMaskOverlay and
+</I>&gt;<i>         associated ROI. The ROI is properly defined in a 4-dimensional
+</I>&gt;<i>         space. However, when displayed, a single X/Y plane should be
+</I>&gt;<i>         sampled and displayed, but there is no mechanism to retrieve
+</I>&gt;<i>         the plane being displayed or the color display mode. The code
+</I>&gt;<i>         iterates through the entire stack and that's what causes it to
+</I>&gt;<i>         update slowly.
+</I>&gt;<i>
+</I>&gt;<i>       * Datasets have axes which capture the metadata of what a
+</I>&gt;<i>         particular dimension means. Overlays don't have that.
+</I>&gt;<i>       * Channels are really categorical, not ordinal - there's no
+</I>&gt;<i>         reason the red channel is zero, the green is one and the blue
+</I>&gt;<i>         is two and, with a channel-stack, the DAPI channel in one
+</I>&gt;<i>         image might be the PI channel in a second. You can properly
+</I>&gt;<i>         relate one channel to the other through metadata, but overlays
+</I>&gt;<i>         don't have that.
+</I>&gt;<i>       * You might want to composite datasets - take two images and
+</I>&gt;<i>         place them adjacently. What happens if they have different
+</I>&gt;<i>         axes? What happens if they have different channel layouts?
+</I>&gt;<i>
+</I>&gt;<i>     So, what I'm thinking is the following:
+</I>&gt;<i>
+</I>&gt;<i>       * A display represents the EuclideanSpace that's used to
+</I>&gt;<i>         composite overlays and datasets.  Think of the display as a
+</I>&gt;<i>         big N-dimensional container and the overlays and datasets
+</I>&gt;<i>         float inside that container.
+</I>&gt;<i>           o The display has a set of axes that are the union of all of
+</I>&gt;<i>             the axes that appear in the view data objects.
+</I>&gt;<i>           o There are two behaviors for a view object that does not
+</I>&gt;<i>             have an axis in the space. Perhaps the user selects the
+</I>&gt;<i>             behavior?:
+</I>&gt;<i>               + The value in space outside of a single plane defined
+</I>&gt;<i>                 by a coordinate location along the axis is nan or null.
+</I>&gt;<i>               + The value in space along the missing axis is the same
+</I>&gt;<i>                 at all locations along that axis.
+</I>&gt;<i>       * A display window holds the information about what plane is
+</I>&gt;<i>         being displayed and how the channels are composited.
+</I>&gt;<i>           o The views are asked to display according to the plane
+</I>&gt;<i>             information. A plane is an interval where the min=max for
+</I>&gt;<i>             all dimensions but X and Y. The views could construct
+</I>&gt;<i>             appropriate projectors based on the interval. The display
+</I>&gt;<i>             window should also control the channel compositing
+</I>&gt;<i>             information and the views should reference the display
+</I>&gt;<i>             window's compositing information instead of maintaining
+</I>&gt;<i>             their own copies.
+</I>&gt;<i>       * Perhaps there is a SpatialDataObject or perhaps the DataObject
+</I>&gt;<i>         is always spatial. In any case, the axis information and
+</I>&gt;<i>         channel metadata should be pushed up the inheritance hierarchy
+</I>&gt;<i>         so that Overlay has a first-class representation of that and
+</I>&gt;<i>         operations that generate overlays from datasets copy the
+</I>&gt;<i>         information to the overlays they create.
+</I>&gt;<i>       * There is a spectral dimension, but the channel axis doesn't
+</I>&gt;<i>         capture that. Channels are categorical and should have names
+</I>&gt;<i>         so they can be matched in the same way that axes are matched.
+</I>&gt;<i>
+</I>&gt;<i>     It's some work to refactor these things, but as the code base
+</I>&gt;<i>     grows and becomes more entrenched it will become increasingly
+</I>&gt;<i>     difficult to refactor, so we should do it sooner rather than
+</I>&gt;<i>     later. I don't think this is much coding at this point and if you
+</I>&gt;<i>     look at the code, there are places where this organization
+</I>&gt;<i>     clarifies some things.
+</I>&gt;<i>
+</I>&gt;<i>     --Lee
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20120119/f5566a30/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20120119/f5566a30/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000565.html">[ImageJ-devel] EuclideanSpace and imagej.display.Display
+</A></li>
+	<LI>Next message: <A HREF="000567.html">[ImageJ-devel] frame grabber interface ?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#566">[ date ]</a>
+              <a href="thread.html#566">[ thread ]</a>
+              <a href="subject.html#566">[ subject ]</a>
+              <a href="author.html#566">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

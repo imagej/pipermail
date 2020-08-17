@@ -1,0 +1,142 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] built ins
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20built%20ins&In-Reply-To=%3CCADN69y%3Dz7D0f2L5EL%3D1YuqJ%3D6cqQiQw1MQq3oZg6KWfH9F2duA%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002608.html">
+   <LINK REL="Next"  HREF="002611.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] built ins</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20built%20ins&In-Reply-To=%3CCADN69y%3Dz7D0f2L5EL%3D1YuqJ%3D6cqQiQw1MQq3oZg6KWfH9F2duA%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] built ins">ctrueden at wisc.edu
+       </A><BR>
+    <I>Mon Jun 29 13:49:06 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002608.html">[ImageJ-devel] built ins
+</A></li>
+        <LI>Next message: <A HREF="002611.html">[ImageJ-devel] built ins
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2609">[ date ]</a>
+              <a href="thread.html#2609">[ thread ]</a>
+              <a href="subject.html#2609">[ subject ]</a>
+              <a href="author.html#2609">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Brian,
+
+&gt;<i> Is there documentation anywhere on how to update the built-ins after
+</I>&gt;<i> updating the signature of an op??
+</I>
+Not yet. We can make a wiki page. The other thing missing is a top-level
+&quot;built-ins completeness test&quot; to make sure that all built-ins are actually
+present and being tested for. (Right now, each unit tests covers a specific
+op name, but there is no test that verifies all op names are being tested.)
+
+Due to limitations in generic type matching (as described at
+<A HREF="https://github.com/imagej/imagej-ops/issues/19">https://github.com/imagej/imagej-ops/issues/19</A>), we were not able to fully
+automate generation of the built-in methods. So unfortunately they must be
+added manually. But there is a significant unit testing infrastructure that
+tries hard to verify everything matches.
+
+Here's a quick rundown:
+
+1A) If you add a new concrete op implementation for an existing op name,
+then the existing built-in test method will pick it up.
+
+1B) Or if the implementation corresponds to a new name foo, you can add the
+completeness test by adding a new testFoo() method to the appropriate
+namespace test class (e.g., MathNamespaceTest for math, LogicNamespaceTest
+for logic, or GlobalNamespaceTest for methods in the OpService itself).
+
+2) The unit test will notice that your new op does not have corresponding
+built-in method signature(s), and spit out a detailed error message
+suggesting the method bodies to be added. The method bodies are pretty
+close to correct except for they are missing generic parameters. So you
+must tweak the argument types by hand to make the generics match the fields
+of the concrete op implementation.
+
+3) Then just paste the method body into the appropriate namespace class
+(e.g., MathNamespace for math, LogicNamespace for logic, or OpService and
+DefaultOpService for global. Then the relevant completeness test should
+pass again.
+
+4) If multiple ops have clashing signatures, you can make a single built-in
+method with an @OpMethod annotation the specifies multiple concrete op
+classes in its &quot;ops&quot; attribute. Method parameters and return type must then
+use the most common compatible superclass of all involved ops.
+
+Let me know if any of that needs clarification; happy to elaborate further,
+and point out specific examples as needed.
+
+Regards,
+Curtis
+
+On Mon, Jun 29, 2015 at 9:21 AM, Brian Northan &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">bnorthan at gmail.com</A>&gt; wrote:
+
+&gt;<i> Hi everyone
+</I>&gt;<i>
+</I>&gt;<i> Just noticed that built-ins were added recently.
+</I>&gt;<i>
+</I>&gt;<i> <A HREF="https://github.com/imagej/imagej-ops/pull/145">https://github.com/imagej/imagej-ops/pull/145</A>
+</I>&gt;<i>
+</I>&gt;<i> Is there documentation anywhere on how to update the built-ins after
+</I>&gt;<i> updating the signature of an op??
+</I>&gt;<i>
+</I>&gt;<i> Mainly I'm wondering if there is any scripts or automated code generation
+</I>&gt;<i> steps to perform??
+</I>&gt;<i>
+</I>&gt;<i> If it is just a matter of updating the signatures manually I can figure
+</I>&gt;<i> out how to do that.  Just want to make I don't miss an automated step I
+</I>&gt;<i> should be running.
+</I>&gt;<i>
+</I>&gt;<i> Thanks
+</I>&gt;<i>
+</I>&gt;<i> Brian
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20150629/fa09cd15/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20150629/fa09cd15/attachment.html</A>&gt;
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002608.html">[ImageJ-devel] built ins
+</A></li>
+	<LI>Next message: <A HREF="002611.html">[ImageJ-devel] built ins
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2609">[ date ]</a>
+              <a href="thread.html#2609">[ thread ]</a>
+              <a href="subject.html#2609">[ subject ]</a>
+              <a href="author.html#2609">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

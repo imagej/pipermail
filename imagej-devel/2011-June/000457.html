@@ -1,0 +1,117 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] EventBus issues.
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20EventBus%20issues.&In-Reply-To=%3C4e037a0c.6948340a.7d12.26c8%40mx.google.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000456.html">
+   <LINK REL="Next"  HREF="000458.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] EventBus issues.</H1>
+    <B>Lee Kamentsky</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20EventBus%20issues.&In-Reply-To=%3C4e037a0c.6948340a.7d12.26c8%40mx.google.com%3E"
+       TITLE="[ImageJ-devel] EventBus issues.">leek at broadinstitute.org
+       </A><BR>
+    <I>Thu Jun 23 12:38:18 CDT 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000456.html">[ImageJ-devel] EventBus issues.
+</A></li>
+        <LI>Next message: <A HREF="000458.html">[ImageJ-devel] EventBus issues.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#457">[ date ]</a>
+              <a href="thread.html#457">[ thread ]</a>
+              <a href="subject.html#457">[ subject ]</a>
+              <a href="author.html#457">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>IMHO - if you depend on order for events, there's a good chance you're 
+not doing something right. If you depend on order, I'm guessing that a 
+direct function call is the appropriate solution or that you are not 
+properly modeling what is really happening.
+
+I'm guessing that this has to do with the overlay manager - that you've 
+received an overlay created/deleted event and you don't know whether 
+it's in the overlay manager or not. There are two different events here:
+* an overlay object was created or deleted
+* the overlay manager added or removed an overlay
+so, the code that is experiencing difficulty should respond to the 
+appropriate event. If you have a user interface that shows the overlays 
+in the manager, it's the second event that you want. If I guessed wrong, 
+perhaps it follows the same pattern?
+
+--Lee
+
+On 6/23/2011 12:58 PM, Grant B. Harris wrote:
+&gt;<i> Ooops... My bad.  I thought we were using 1.2... We are already using 
+</I>&gt;<i> 1.4.  But we need to change Events framework.  I'll take a stab at it 
+</I>&gt;<i> today.
+</I>&gt;<i> -- Grant
+</I>&gt;<i>
+</I>&gt;<i> On 6/23/2011 12:55 PM, Grant B. Harris wrote:
+</I>&gt;&gt;<i> I think EventBus can serve us well, but I have run into a serious 
+</I>&gt;&gt;<i> issue that demands that we move from EventBus version 1.2 to 1.4.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Because &quot;subscribers are called in the order in which they 
+</I>&gt;&gt;<i> subscribed&quot;, we cannot use the EventBus (1.2) in ways that we need.  
+</I>&gt;&gt;<i> If I have a class which is watching things (say a ROI Manager or the 
+</I>&gt;&gt;<i> Window menu list of open displays) it's behavior depends on when it 
+</I>&gt;&gt;<i> was subscribed.  I've been working on this for a week and I have not 
+</I>&gt;&gt;<i> found a way to manage this.  Fortunately I discovered that as of 
+</I>&gt;&gt;<i> version 1.3 there is a PrioritizedEventSubscriber  
+</I>&gt;&gt;<i> (<A HREF="http://www.jarvana.com/jarvana/view/org/bushe/eventbus/1.3/eventbus-1.3-javadoc.jar!/org/bushe/swing/event/Prioritized.html">http://www.jarvana.com/jarvana/view/org/bushe/eventbus/1.3/eventbus-1.3-javadoc.jar!/org/bushe/swing/event/Prioritized.html</A>)  
+</I>&gt;&gt;<i> I think this is just what we need.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> (Using this priority mechanism may also eliminate the need for the 
+</I>&gt;&gt;<i> ObjectsUpdatedEvent that I added last week.)
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> EventBus version 1.4 is here: 
+</I>&gt;&gt;<i> <A HREF="http://mvnrepository.com/artifact/org.bushe/eventbus/1.4">http://mvnrepository.com/artifact/org.bushe/eventbus/1.4</A>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> We will need to change the Events framework a bit to add Prioritized 
+</I>&gt;&gt;<i> Event Subscription, but otherwise I don't think it will require any 
+</I>&gt;&gt;<i> refactoring except for the subscribers that need to set priority.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> -- Grant
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagejdev.org</A>
+</I>&gt;&gt;<i> <A HREF="http://imagejdev.org/mailman/listinfo/imagej-devel">http://imagejdev.org/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagejdev.org</A>
+</I>&gt;<i> <A HREF="http://imagejdev.org/mailman/listinfo/imagej-devel">http://imagejdev.org/mailman/listinfo/imagej-devel</A>
+</I>
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000456.html">[ImageJ-devel] EventBus issues.
+</A></li>
+	<LI>Next message: <A HREF="000458.html">[ImageJ-devel] EventBus issues.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#457">[ date ]</a>
+              <a href="thread.html#457">[ thread ]</a>
+              <a href="subject.html#457">[ subject ]</a>
+              <a href="author.html#457">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

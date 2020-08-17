@@ -1,0 +1,280 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Nice to get connected!
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Nice%20to%20get%20connected%21&In-Reply-To=%3CCADN69y%3Dpg4o2cKL9qADrkRNpov9cL5tor2f-dRy_AR0HX4woAg%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001274.html">
+   <LINK REL="Next"  HREF="001276.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Nice to get connected!</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Nice%20to%20get%20connected%21&In-Reply-To=%3CCADN69y%3Dpg4o2cKL9qADrkRNpov9cL5tor2f-dRy_AR0HX4woAg%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Nice to get connected!">ctrueden at wisc.edu
+       </A><BR>
+    <I>Tue Nov 13 16:54:23 CST 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001274.html">[ImageJ-devel] Problems prting plugIn to ImageJ2
+</A></li>
+        <LI>Next message: <A HREF="001276.html">[ImageJ-devel] Eclipse / Maven: Download Sources
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1275">[ date ]</a>
+              <a href="thread.html#1275">[ thread ]</a>
+              <a href="subject.html#1275">[ subject ]</a>
+              <a href="author.html#1275">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Vito,
+
+Good seeing you at the ImageJ conference, and my sincere apologies for
+taking so long to reply to your questions. To give you an idea of how busy
+things have been, I have had a total of 10 minutes coding time on ImageJ2
+since returning from the conference!
+
+&gt;<i> The idea is to copycat the ImageJ (or fiji or any ImageJexecutable as
+</I>&gt;<i> we call it) folder in the analysis tab in ZEN
+</I>
+Great, I think this integration will be very nice for ZEN users.
+
+&gt;<i> Question 1: while the majority of executable functions are macros
+</I>&gt;<i> (*.txt, *.ijm etc), I have included also jar and class files. I guess,
+</I>&gt;<i> however, it is much safer to allow only macros, i.e. request the users
+</I>&gt;<i> package the desired functions into macros. A jar may be missing a run
+</I>&gt;<i> entry of something similar, so who needs jars anyhow in this list. Can
+</I>&gt;<i> you comment on that?
+</I>
+Since Fiji has a &quot;--run&quot; flag for launching a particular plugin, why not
+use that? I think it makes sense to allow any ImageJ code to be run, as
+long as supporting it is not overly burdensome.
+
+If you have any users asking for this functionality, perhaps you could ask
+them directly what they need?
+
+&gt;<i> Question 2: we scan the &quot;usual suspects&quot; in the system (program files,
+</I>&gt;<i> desktop etc) for possible ImageJexecutables. I would not mind at all
+</I>&gt;<i> to limit it to ImageJ20 . but I guess this would be too assuming and
+</I>&gt;<i> aggressive. What do you suggest?
+</I>
+IMO it is too early to limit support to only ImageJ2. I think it makes
+sense to support at least Fiji with ImageJ1 (the Fiji launcher has more
+features than the vanilla ImageJ one), if not also vanilla ImageJ
+installations.
+
+As for scanning the system, that is fine, but you could also require the
+user to configure the desired path in an options dialog somewhere. Most
+users will be very happy to do this once, if it means a working ImageJ
+integration as a reward. It gives the user more control over which ImageJ
+gets used, and makes your job easier since there is less harm done if your
+detection algorithm fails.
+
+&gt;<i> Question 3: in ImageJ (1.46r) we check explicitely if LOCI has been
+</I>&gt;<i> installed - because without it , multidimensional image shuttling is
+</I>&gt;<i> not possible. Do we need to check in ImageJ2.0 (and, if you can answer
+</I>&gt;<i> this question) and in Fiji. If we need to check, any descrete way to
+</I>&gt;<i> do it? Fiji keeps track of versions... May looking for *LOCI*.jar?
+</I>
+Fiji ships with Bio-Formats. ImageJ2 currently ships with only SCIFIO (the
+core of Bio-Formats) for licensing reasons. Zeiss file formats (LSM, ZVI,
+etc.) are not supported in SCIFIO core, only in Bio-Formats.
+
+For the time being, one easy way to check is to look for
+plugins/loci_tools.jar or plugins/loci_plugins.jar in the installation. You
+can tell which version by looking in the JAR manifest, if that matters to
+you.
+
+&gt;<i> Question 4: how to assure syncronicity of commands? The macros that do
+</I>&gt;<i> something useful, have a form send image from ZEN to ImageJ process it
+</I>&gt;<i> send the resulting image from ImageJ to ZEN
+</I>
+My initial thought would be to instruct ImageJ to run not just the
+requested macro, but an appended version of it that invokes some sort of
+callback mechanism upon conclusion. I haven't experimented in detail, but
+perhaps emitting something to stdout when the macro/script/plugin concludes
+would be sufficient. Then ZEN could block until it receives that callback.
+At worst, you could poll a temporary file (or use the OS's notification
+API), though there is likely a cleaner option.
+
+&gt;<i> Question 5: I would very much appreciate your help. i.e. hints, as
+</I>&gt;<i> regards getting the communication run the other direction as well i.e.
+</I>&gt;<i> from ImageJ to ZEN), I remember the original TCP/IP layer - the code
+</I>&gt;<i> looked so simple and elegant. ZEN can communicate on TCP/IP and
+</I>&gt;<i> letting macros both side of the river communicate with each other via
+</I>&gt;<i> socket comm layer would be the simplest for the user. I understand it
+</I>&gt;<i> was security concerns that caused the abrupt change. I would like to
+</I>&gt;<i> hear about them (after all, my PayPal account runs on TCPIP as well)
+</I>
+I am likely to blame for this debacle, since I believe Wayne got the idea
+of the socket listener from me and my VisBio application (which suffers
+from the same security problems). The issue is not with TCP/IP itself of
+course, but rather how it was being used.
+
+When ImageJ opened its socket listener, there was no security to limit
+incoming connections to only other instances of ImageJ, or only processes
+of the same user, or even only processes from localhost! So someone (even
+remotely) could control another user's already-running ImageJ instance by
+launching macros &amp; scripts which would then run with the permissions of
+that user.
+
+Conversely, the RMI-based OtherInstance intentionally only allows
+connections from another ImageJ running as the same user.
+
+For further details, see Johannes's original commit [1].
+
+Regarding how to get two-way communication working, I think pipes and files
+are simple and proven ways to go. To use pipes, you might need to initially
+launch ImageJ from ZEN (not sure how to get a handle on its stdout if the
+user launched it externally). But to use files there is no such
+restriction. Just make sure every piece of code (macro, plugin, whatever)
+you ask ImageJ to execute ends by appending some information to a temporary
+file, which ZEN either polls or receives notifications about (via e.g. the
+FindFirstChangeNotification function [2]).
+
+Perhaps ImageJ could be improved in the future to make this sort of two-way
+communication easier. If you have any suggestions along those lines, feel
+free to suggest on the ImageJ mailing list [3].
+
+HTH,
+Curtis
+
+[1]
+<A HREF="https://github.com/fiji/ImageJA/commit/06848874d990aeea2a0ad1df75311e9ca51b00dc">https://github.com/fiji/ImageJA/commit/06848874d990aeea2a0ad1df75311e9ca51b00dc</A>
+[2]
+<A HREF="http://msdn.microsoft.com/en-us/library/windows/desktop/aa364417(v=vs.85">http://msdn.microsoft.com/en-us/library/windows/desktop/aa364417(v=vs.85</A>).aspx
+[3] <A HREF="http://imagej.nih.gov/ij/list.html">http://imagej.nih.gov/ij/list.html</A>
+
+
+On Fri, Oct 26, 2012 at 3:50 AM, Vito Smolej &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">vito.smolej at zeiss.com</A>&gt; wrote:
+
+&gt;<i>
+</I>&gt;<i> Hi Curtis:
+</I>&gt;<i>
+</I>&gt;<i>  Thank you first for your cooperative attitude! Much appreciated.
+</I>&gt;<i>
+</I>&gt;<i> So right away I'll bombard you with a few simple questions, regarding the
+</I>&gt;<i> ImageJ plugin for ZEN. The idea is to copycat the ImageJ (or fiji or any
+</I>&gt;<i> ImageJexecutable as we call it) folder in the analysis tab in ZEN like this
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> the leave nodes are always something that gets executed in ImageJ,
+</I>&gt;<i> possibly requiring activeImage input and/or producing activeImage output
+</I>&gt;<i> (input and output properties of the local function nodes tree).
+</I>&gt;<i>
+</I>&gt;<i> *Question 1: *while the majority of executable functions are macros
+</I>&gt;<i> (*.txt, *.ijm etc), I have included also jar and class files. I guess,
+</I>&gt;<i> however, it is much safer to allow only macros, i.e. request the users
+</I>&gt;<i> package the desired functions into macros. A jar may be missing a run entry
+</I>&gt;<i> of something similar, so who needs jars anyhow in this list. Can you
+</I>&gt;<i> comment on that?
+</I>&gt;<i>
+</I>&gt;<i> *Question 2: *we scan the &quot;usual suspects&quot; in the system (program files,
+</I>&gt;<i> desktop etc) for possible ImageJexecutables. I would not mind at all to
+</I>&gt;<i> limit it to ImageJ20 . but I guess this would be too assuming and
+</I>&gt;<i> aggressive. What do you suggest?
+</I>&gt;<i>
+</I>&gt;<i> *Question 3: *in ImageJ (1.46r) we check explicitely if LOCI has been
+</I>&gt;<i> installed - because without it , multidimensional image shuttling is not
+</I>&gt;<i> possible. Do we need to check in ImageJ2.0 (and, if you can answer this
+</I>&gt;<i> question) and in Fiji. If we need to check, any descrete way to do it? Fiji
+</I>&gt;<i> keeps track of versions... May looking for *LOCI*.jar?
+</I>&gt;<i>
+</I>&gt;<i> *Question 4:* how to assure syncronicity of commands? The macros that do
+</I>&gt;<i> something useful, have a form
+</I>&gt;<i>
+</I>&gt;<i>    - send image from ZEN to ImageJ
+</I>&gt;<i>    - process it
+</I>&gt;<i>    - send the resulting image from ImageJ to ZEN
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> We got again and again  tons of &quot;save as&quot; dialogs before realizing that
+</I>&gt;<i> saveAs in the third line may occur before the &quot;process it&quot; in the second
+</I>&gt;<i> creates its output. he Identical problem with &quot;unique instance&quot; listener -
+</I>&gt;<i> if the exe file has not yet started all the threads, the new call  for
+</I>&gt;<i> ImageJexecutable will just spawn another instance into the system.
+</I>&gt;<i>
+</I>&gt;<i> *Question 5: *I would very much appreciate your help. i.e. hints, as
+</I>&gt;<i> regards getting the communication run the other direction as well i.e. from
+</I>&gt;<i> ImageJ to ZEN), I remember the original TCP/IP layer - the code  looked so
+</I>&gt;<i> simple and elegant. ZEN can communicate on TCP/IP and letting macros both
+</I>&gt;<i> side of the river communicate with each other via socket comm layer would
+</I>&gt;<i> be the simplest for the user. I understand it was security concerns that
+</I>&gt;<i> caused the abrupt change. I would like to hear about them (after all, my
+</I>&gt;<i> PayPal account runs on TCPIP as well)
+</I>&gt;<i>
+</I>&gt;<i> Now, maybe you yourself would have a question or two (g). Please feel free
+</I>&gt;<i> to ask. And thank you in advance.
+</I>&gt;<i>
+</I>&gt;<i> Regards
+</I>&gt;<i>
+</I>&gt;<i> Vito.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> _________________________________________________
+</I>&gt;<i> Carl Zeiss Microscopy GmbH
+</I>&gt;<i> Gesch&#228;ftsbereich BioSciences / BioSciences Division
+</I>&gt;<i> Imaging Software M&#252;nchen
+</I>&gt;<i> Vorentwicklung / Advanced Development
+</I>&gt;<i>
+</I>&gt;<i> P r o f . D r . V i t o S m o l e j
+</I>&gt;<i>
+</I>&gt;<i> Kistlerhofstrasse 75, 81379 M&#252;nchen
+</I>&gt;<i> Telefon/ Phone: +49 89 90 9000-306
+</I>&gt;<i> Fax: +49 89 90 9000-555
+</I>&gt;<i> mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">smolej at zeiss.de</A>
+</I>&gt;<i> www.zeiss.com/microscopy
+</I>&gt;<i>
+</I>&gt;<i> _________________________________________________
+</I>&gt;<i>
+</I>&gt;<i> Carl Zeiss Microscopy GmbH
+</I>&gt;<i> Vorsitzender des Aufsichtsrates: Dr. Michael Kaschke
+</I>&gt;<i> Gesch&#228;ftsf&#252;hrung: Dr. Ulrich Simon, Wilhelm N&#246;rthemann, Dr. Bernhard
+</I>&gt;<i> Ohnesorge, Dr. Frank Stietz
+</I>&gt;<i> Sitz der Gesellschaft: 07740 Jena, Deutschland
+</I>&gt;<i> Amtsgericht Jena, HRB 210.536, USt-IdNr: DE 814 503 774
+</I>&gt;<i>
+</I>&gt;<i> ----------------------------------------
+</I>&gt;<i> This message is intended for a particular addressee only and may contain
+</I>&gt;<i> business or company secrets. If you have received this email in error,
+</I>&gt;<i> please contact the sender and delete the message immediately. Any use of
+</I>&gt;<i> this email, including saving, publishing, copying, replication or
+</I>&gt;<i> forwarding of the message or the contents is not permitted.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20121113/dbd1bf42/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20121113/dbd1bf42/attachment.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001274.html">[ImageJ-devel] Problems prting plugIn to ImageJ2
+</A></li>
+	<LI>Next message: <A HREF="001276.html">[ImageJ-devel] Eclipse / Maven: Download Sources
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1275">[ date ]</a>
+              <a href="thread.html#1275">[ thread ]</a>
+              <a href="subject.html#1275">[ subject ]</a>
+              <a href="author.html#1275">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

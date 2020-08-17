@@ -1,0 +1,131 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] strange behaviour using calibration object.
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20strange%20behaviour%20using%20calibration%20object.&In-Reply-To=%3C3C7514B7E7E76C499962737F8BE1358A0132233D%40SCOMP0936.wurnet.nl%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001378.html">
+   <LINK REL="Next"  HREF="001380.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] strange behaviour using calibration object.</H1>
+    <B>Polder, Gerrit</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20strange%20behaviour%20using%20calibration%20object.&In-Reply-To=%3C3C7514B7E7E76C499962737F8BE1358A0132233D%40SCOMP0936.wurnet.nl%3E"
+       TITLE="[ImageJ-devel] strange behaviour using calibration object.">gerrit.polder at wur.nl
+       </A><BR>
+    <I>Mon Jan 28 15:41:58 CST 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001378.html">[ImageJ-devel] strange behaviour using calibration object.
+</A></li>
+        <LI>Next message: <A HREF="001380.html">[ImageJ-devel] strange behaviour using calibration object.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1379">[ date ]</a>
+              <a href="thread.html#1379">[ thread ]</a>
+              <a href="subject.html#1379">[ subject ]</a>
+              <a href="author.html#1379">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Wayne,
+
+thanks, the thing is I have a separate class cal, it's a class I wrote myself.
+This class implements the getCalibration functions which returns a Calibration object, in which I filled w,h and the unit.
+So I can imagine that you can't compile it. I did show this on the last developer conference, maybe you remember it.
+This class detects a blue area in the image and decodes the qrcode within this area and does a calibration based on a black disk with holes.
+The number of holes determines the size of the disk. I'm currently making a separate plugin for this calibration and decode.
+The idea is that the plugin gives a new image with only the blue area, the decoded qrcode as title and calibrated according to the disk.
+This way this information can be used in other plugins. I don't see other ways to get this information from the plugin. 
+Or I need to return a resultstable which is little bit of overkill in my opinion.
+
+I don't see why IJ.log(&quot;1-&gt; &quot;+cal.getCalibration() + &quot; - &quot; + cal.getCalibration().scaled()); works,
+and overlay_im.setCalibration(cal.getCalibration()); not.
+Even more since it worked properly last week ????
+The only thing which was changed is the Fiji update this morning, I believe ij1.47h to 1.47i, along with other libraries.
+
+In the mean time I found another problem, I have implemented the run(ImageProcessor ip) in my plugin.
+I do a ip.setroi(roi of blue region) at the end and after running the plugin this roi was set on the input image.
+It is very handy to have this information for further processing of the input image.
+This behavior also stopped working this morning, the roi now is set to the whole image.
+
+Is there a way to downgrade Fiji, in order to test this with 1.47h?
+
+is Barry DeZonia right, does this question better fit on the regular list?
+
+I'm a little bit confused,
+thanks,
+Gerrit.
+
+
+
+On 28 jan. 2013, at 21:12, &quot;Rasband, Wayne (NIH/NIMH) [E]&quot; &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">rasbandw at mail.nih.gov</A>&gt; wrote:
+
+&gt;<i> On Jan 28, 2013, at 8:52 AM, Polder, Gerrit wrote:
+</I>&gt;<i> 
+</I>&gt;&gt;<i> Since today my calibration software doesn't work anymore.
+</I>&gt;&gt;<i> After a little bit of debugging it looks like setCalibration in ImagePlus doesn't set the calibration.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> this code:
+</I>&gt;&gt;<i>       ImagePlus overlay_im = new Duplicator().run(imp);
+</I>&gt;&gt;<i>       IJ.log(&quot;1-&gt; &quot;+cal.getCalibration() + &quot; - &quot; + cal.getCalibration().scaled());
+</I>&gt;&gt;<i>       overlay_im.setCalibration(cal.getCalibration());
+</I>&gt;&gt;<i>       IJ.log(&quot;2-&gt; &quot; + overlay_im.getCalibration()+ &quot; - &quot; + overlay_im.getCalibration().scaled());
+</I>&gt;&gt;<i> produces this output:
+</I>&gt;&gt;<i> 1-&gt; w=0.19120458891013384, h=0.19120458891013384, d=1.0, unit=mm, f=20, nc=null, table=null, vunit=Gray Value - true
+</I>&gt;&gt;<i> 2-&gt; w=1.0, h=1.0, d=1.0, unit=pixel, f=20, nc=null, table=null, vunit=Gray Value - false
+</I>&gt;<i> 
+</I>&gt;<i> Your code does not compile but this version works as expected:
+</I>&gt;<i> 
+</I>&gt;<i>   ImagePlus imp = IJ.getImage();
+</I>&gt;<i>   ImagePlus imp2 = new Duplicator().run(imp);
+</I>&gt;<i>   IJ.log(&quot;1-&gt; &quot;+imp.getCalibration() + &quot; - &quot; + imp.getCalibration().scaled());
+</I>&gt;<i>   IJ.log(&quot;2-&gt; &quot; + imp2.getCalibration()+ &quot; - &quot; + imp2.getCalibration().scaled());
+</I>&gt;<i> 
+</I>&gt;<i> This is the output:
+</I>&gt;<i> 
+</I>&gt;<i> 1-&gt; w=0.02, h=0.02, d=0.02, unit=mm, f=20, nc=null, table=null, vunit=Gray Value - true
+</I>&gt;<i> 2-&gt; w=0.02, h=0.02, d=0.02, unit=mm, f=20, nc=null, table=null, vunit=Gray Value - true
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> -wayne
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>
+
+
+
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001378.html">[ImageJ-devel] strange behaviour using calibration object.
+</A></li>
+	<LI>Next message: <A HREF="001380.html">[ImageJ-devel] strange behaviour using calibration object.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1379">[ date ]</a>
+              <a href="thread.html#1379">[ thread ]</a>
+              <a href="subject.html#1379">[ subject ]</a>
+              <a href="author.html#1379">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

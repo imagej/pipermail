@@ -1,0 +1,220 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] scijava-common newbie question
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20scijava-common%20newbie%20question&In-Reply-To=%3CCADN69ymoZ3zOBeep0J40MTLcV8h7-7edyJ8zp0%3DR7HSwDRNV-w%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001909.html">
+   <LINK REL="Next"  HREF="001912.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] scijava-common newbie question</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20scijava-common%20newbie%20question&In-Reply-To=%3CCADN69ymoZ3zOBeep0J40MTLcV8h7-7edyJ8zp0%3DR7HSwDRNV-w%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] scijava-common newbie question">ctrueden at wisc.edu
+       </A><BR>
+    <I>Mon Jan 13 11:43:54 CST 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001909.html">[ImageJ-devel] Getting green channel image when splitting channels
+</A></li>
+        <LI>Next message: <A HREF="001912.html">[ImageJ-devel] ImageJ2 Question
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1910">[ date ]</a>
+              <a href="thread.html#1910">[ thread ]</a>
+              <a href="subject.html#1910">[ subject ]</a>
+              <a href="author.html#1910">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Tobias,
+
+&gt;<i> Thus, it would be nice to have some user feedback on progress and
+</I>&gt;<i> warnings etc. If the code is called from an IJ1 plugin, this should be
+</I>&gt;<i> directed to IJ.log and the IJ progressbar. If the code is called from
+</I>&gt;<i> other code, it should be directed to stdout. Currently I'm using my
+</I>&gt;<i> own ProgressListener interface and IJ /  sysout implementations.
+</I>&gt;<i> However this seems like the textbook example for LogService, so I
+</I>&gt;<i> would like to replace my crooked reinvented wheel by a shiny new
+</I>&gt;<i> scijava one :-)
+</I>
+First, some comments on the current status:
+
+Personally, I am not 100% satisfied with the SciJava services relating to
+this area. There are two -- LogService and StatusService -- which were sort
+of modeled after the IJ1 user interface.
+
+LogService -- Log service is for application-level logging, for
+programmers, debugging, etc. Not user facing.
+
+The idea of &quot;logging&quot; is well established in software engineering. Though
+not universal, the five most common standard levels are ERROR, WARN, INFO,
+DEBUG and TRACE. Well, and NONE for nothing, of course. Most of the logging
+libraries like logback, log4j, and hence SLF4J (a logging facade) support
+those levels. You would think that SLF4J should already solve our logging
+woes and be sufficient, since it is a level of indirection allowing you to
+plug in whatever logging library you want. However, the dependency on
+slf4j-api is burdensome to downstream code. So to avoid that, SciJava
+implements its own LogService, which is a service of the context. We have
+an SLF4JLogService implementation, but by default we actually use a simple
+stderr one. That way, everyone can have what they want with it.
+
+StatusService -- For user-facing status update messages.
+
+ImageJ1 has the status bar, so to replicate that in ImageJ2 of course we
+needed a service to report such events. For now, the StatusService provides
+the same capabilities as IJ1: a message and a progress bar expressed as a
+fraction.
+
+The current thinking is to expand the StatusService into a TaskService or
+similar, which lets you registers tasks, with each task having a progress
+expressed as a fraction. And tasks could potentially be recursive, having
+subtasks with their own progress. I think this model would map much better
+to many existing complex operations -- e.g., the Fiji stitching plugins.
+
+&gt;<i> 1) A lot of the code lives in static methods. The correct (and only)
+</I>&gt;<i> way to get the LogService in there is as a method parameter, right?
+</I>
+Are you asking how to obtain a LogService for use in the BigDataViewer?
+
+The key is to have a Context. Once you have that, you can say:
+
+   LogService log = context.getService(LogService.class);
+
+There is also the @Parameter injection mechanism. You can write:
+
+   @Parameter
+   private LogService log;
+
+As an instance field of your class. Then, inject the context into an
+instance of your class:
+
+   context.inject(myBigDataViewer);
+
+Ultimately, you must either pass a Context and/or LogService in to the
+BigDataViewer somehow (via the constructor is a good DI mechanism), or else
+have each BigDataViewer create its own internal context.
+
+Alternately, with the StderrLogService implementation specifically, it does
+not actually require a Context. That is, you can just say &quot;new
+StderrLogService();&quot; and use it context free. That way, you could code the
+BDV to take an *optional* LogService in the constructor, and pass a &quot;new
+StderrLogService();&quot; in the case of a noargs constructor.
+
+&gt;<i> 2) Where do I instantiate the service? Probably in the respective IJ1
+</I>&gt;<i> plugin, somthing like this: new Context(IJ1LogService.class) in the
+</I>&gt;<i> constructor, and then context.inject(this) to fill a @Parameter
+</I>&gt;<i> annotated LogService field. Is that about right?
+</I>
+I guess I'd have to look at your code, to understand better what you are
+trying to do. It is rather silly to construct a SciJava Context solely for
+the purpose of extracting a particular LogService instance from it. The
+idea is that Contexts should be a bit larger in scope than that; ImageJ2
+itself has a context when it starts up, and ImageJ2 plugins can tap in to
+that context. They should almost never need to create new ones.
+
+For ImageJ1 plugins running in Fiji, note that Fiji does actually create an
+ImageJ2 context internally upon startup. You could probably tap into that,
+although we are still hammering out details of exactly how ImageJ1 and
+ImageJ2 should interact in many respects. Johannes is better equipped than
+me to comment on the current status and planned directions of the legacy
+layer.
+
+&gt;<i> 3) Is there something like a ProgressService which could be
+</I>&gt;<i> implemented to set the IJ1 progressbar? (I had a quick look but
+</I>&gt;<i> couldn't find one)
+</I>
+The StatusService serves that purpose for the IJ2 progress bar. And as I
+explained above, we are planning to move into the more general idea of a
+TaskService which will cover the status bar and more (sort of like
+Eclipse's Tasks pane -- and VisBio had this too, actually!).
+
+But ATM those status events are not intercepted and published to ImageJ1 at
+all.
+
+My core question is: is BigDataViewer targeting ImageJ1? ImageJ2? Both? Or
+you're looking for advice on the best direction to go here -- pros, cons,
+etc.?
+
+Regards,
+Curtis
+
+
+On Tue, Dec 24, 2013 at 8:47 AM, Tobias Pietzsch &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pietzsch at mpi-cbg.de</A>&gt;wrote:
+
+&gt;<i> Hi,
+</I>&gt;<i>
+</I>&gt;<i> after browsing around a bit in SCJ and IJ2 examples, I would like to apply
+</I>&gt;<i> some of it in my BigDataViewer plugin. Before I do it all wrong, I thought
+</I>&gt;<i> I ask for advice on best practices&#8230;
+</I>&gt;<i>
+</I>&gt;<i> My first application scenario is the following:
+</I>&gt;<i> I have some code that exports from various sources to BigDataViewer's hdf5
+</I>&gt;<i> based file format. There is stuff that can go wrong, and usually the export
+</I>&gt;<i> takes some time. Thus, it would be nice to have some user feedback on
+</I>&gt;<i> progress and warnings etc. If the code is called from an IJ1 plugin, this
+</I>&gt;<i> should be directed to IJ.log and the IJ progressbar. If the code is called
+</I>&gt;<i> from other code, it should be directed to stdout. Currently I'm using my
+</I>&gt;<i> own ProgressListener interface and IJ /  sysout implementations.
+</I>&gt;<i> However this seems like the textbook example for LogService, so I would
+</I>&gt;<i> like to replace my crooked reinvented wheel by a shiny new scijava one :-)
+</I>&gt;<i>
+</I>&gt;<i> I'm a bit unclear on how to do it exactly:
+</I>&gt;<i> 1) A lot of the code lives in static methods. The correct (and only) way
+</I>&gt;<i> to get the LogService in there is as a method parameter, right?
+</I>&gt;<i> 2) Where do I instantiate the service? Probably in the respective IJ1
+</I>&gt;<i> plugin, somthing like this:
+</I>&gt;<i>     new Context(IJ1LogService.class) in the constructor, and then
+</I>&gt;<i>     context.inject(this) to fill a @Parameter annotated LogService field.
+</I>&gt;<i>     Is that about right?
+</I>&gt;<i> 3) Is there something like a ProgressService which could be implemented to
+</I>&gt;<i> set the IJ1 progressbar? (I had a quick look but couldn't find one)
+</I>&gt;<i>
+</I>&gt;<i> thanks a lot for any pointers,
+</I>&gt;<i> Tobias
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140113/97a98bfb/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20140113/97a98bfb/attachment.html</A>&gt;
+</PRE>
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001909.html">[ImageJ-devel] Getting green channel image when splitting channels
+</A></li>
+	<LI>Next message: <A HREF="001912.html">[ImageJ-devel] ImageJ2 Question
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1910">[ date ]</a>
+              <a href="thread.html#1910">[ thread ]</a>
+              <a href="subject.html#1910">[ subject ]</a>
+              <a href="author.html#1910">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

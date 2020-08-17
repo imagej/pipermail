@@ -1,0 +1,164 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Macros and scripting in Imagej 2.0
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Macros%20and%20scripting%20in%20Imagej%202.0&In-Reply-To=%3C4E68F8ED.8050704%40mbl.edu%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000481.html">
+   <LINK REL="Next"  HREF="000483.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Macros and scripting in Imagej 2.0</H1>
+    <B>Grant B. Harris</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Macros%20and%20scripting%20in%20Imagej%202.0&In-Reply-To=%3C4E68F8ED.8050704%40mbl.edu%3E"
+       TITLE="[ImageJ-devel] Macros and scripting in Imagej 2.0">gharris at mbl.edu
+       </A><BR>
+    <I>Thu Sep  8 12:18:37 CDT 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000481.html">[ImageJ-devel] Macros and scripting in Imagej 2.0
+</A></li>
+        <LI>Next message: <A HREF="000483.html">[ImageJ-devel] Macros and scripting in Imagej 2.0
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#482">[ date ]</a>
+              <a href="thread.html#482">[ thread ]</a>
+              <a href="subject.html#482">[ subject ]</a>
+              <a href="author.html#482">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>There are a number of different issues around 'Scripting'...
+
+-- A &quot;Default&quot; IJ2 Scripting Language
+
+I think when we speak of a script, we are referring to a 'high-level', 
+domain-specific  language that makes it easy/ier to do image 
+processing.  The ImageJ Macro language is certainly such a thing; so 
+perhaps the question is whether it provides a good starting point for IJ2.
+
+Since existing IJ1 Macros will continue to function through the Legacy 
+layer,
+we could 'migrate' the IJ1 Macro language to BeanShell with some changes 
+that make it consonant with Java/C; that way users of IJ1 macros would 
+only need to understand the changes, but would otherwise find it familiar.
+
+-- Script Execution
+
+The real value of the Java 6 ScriptingEngine is that it provides 
+execution polyglotinousness.  ;-0
+So plugins/modules written in any suppported language can be easily used 
+by a naive user.
+
+-- 'Macro' Recording
+
+The ability to record events (macros) is useful for:
+     - creating a sequence of actions that the user just wants to 
+repeat.  In this case, the language used for the encoding is not 
+important, as long as it works.
+     - creating code that is the basis for a script or program that they 
+want to write.  In this case, the user wants a choice of the language 
+for the code that results from the recording.
+
+-- Development Tools
+
+     - Interactive Interpreter provides:
+         - single stepping
+         - keeping states and evaluating incrementally
+
+     The interpretted scripting languages have interactive consoles that 
+can be embedded in an application. (e.g. BeanShell and Jython have an 
+interactive console, Clojure has its REPL.)
+
+     - Code Editor provides
+         - syntax highlighting
+         - code completion
+         - refactoring
+
+     An editor may be integrated with an interactive console, allowing 
+one or more lines to be selected and interpretted/executed.
+
+     - Debugger might provide:
+         - single stepping
+         - setting breakpoints
+         - state inspector of objects and variables
+         - setting watches
+
+     Jython has a debugging framework 
+(<A HREF="http://www.jython.org/docs/library/bdb.html">http://www.jython.org/docs/library/bdb.html</A>) and there are a variety of 
+debugging tools that we might possible incorportate.
+
+What development tools can we realisticly provide?  At some point a 
+developer may be better served by an IDE.  Eclipse and NetBeans have 
+plugins for most of the languages of consequence.
+
+-- Grant
+
+
+On 9/7/2011 5:54 PM, Johannes Schindelin wrote:
+&gt;<i> Hi Grant,
+</I>&gt;<i>
+</I>&gt;<i> On Wed, 7 Sep 2011, Grant B. Harris wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> -- Scripting Languages
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Our plan is to use the scripting engine in Java 6 (JSR-223 Scripting for
+</I>&gt;&gt;<i> the Java Platform).  This enables us to be
+</I>&gt;&gt;<i> polyglotic/language-agnostic... Jython, Closure, JavaScript, etc.
+</I>&gt;<i> That's all good and well, but (correct me where I am wrong) JSR-223 does
+</I>&gt;<i> not support
+</I>&gt;<i>
+</I>&gt;<i> 	- single stepping
+</I>&gt;<i> 	- setting breakpoints
+</I>&gt;<i> 	- keeping states and evaluating incrementally
+</I>&gt;<i> 	- syntax highlighting
+</I>&gt;<i>
+</I>&gt;<i> All of these are required for development. (We do not support any single
+</I>&gt;<i> stepping nor similar in the Fiji Script Editor yet, but that is something
+</I>&gt;<i> we need to fix).
+</I>&gt;<i>
+</I>&gt;&gt;<i> As mentioned in the chat, BeanShell is interesting for the fact that it
+</I>&gt;&gt;<i> is syntactically very similar to the ImageJ Macro language - The Macro
+</I>&gt;&gt;<i> Language is a DSL (domain specific language) for image processing and
+</I>&gt;&gt;<i> manipulating the ImageJ environment.  &quot;Porting&quot; it to Beanshell (as
+</I>&gt;&gt;<i> suggested by Dscho) sounds like a good idea.
+</I>&gt;<i> But it is not at all without problems. The most urgent problem is that the
+</I>&gt;<i> macro language has this quite surprising feature that you can assign
+</I>&gt;<i> variables thusly:
+</I>&gt;<i>
+</I>&gt;<i> 	getDimensions(width, height, depth, channels, frames);
+</I>&gt;<i>
+</I>&gt;<i> That is so out of line with C/Java like languages that it is impossible to
+</I>&gt;<i> support in Beanshell. I am currently looking into hacking the Beanshell
+</I>&gt;<i> interpreter to work around such problems, but it is hard.
+</I>&gt;<i>
+</I>&gt;<i> Ciao,
+</I>&gt;<i> Dscho
+</I>&gt;<i>
+</I>
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000481.html">[ImageJ-devel] Macros and scripting in Imagej 2.0
+</A></li>
+	<LI>Next message: <A HREF="000483.html">[ImageJ-devel] Macros and scripting in Imagej 2.0
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#482">[ date ]</a>
+              <a href="thread.html#482">[ thread ]</a>
+              <a href="subject.html#482">[ subject ]</a>
+              <a href="author.html#482">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

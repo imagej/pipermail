@@ -1,0 +1,126 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [fiji-devel] slow opening of tif files using scifio-based ImgOpener
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20slow%20opening%20of%20tif%20files%20using%0A%20scifio-based%20ImgOpener&In-Reply-To=%3Calpine.DEB.1.00.1303021823390.3794%40s15462909.onlinehome-server.info%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="001434.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [fiji-devel] slow opening of tif files using scifio-based ImgOpener</H1>
+    <B>Johannes Schindelin</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20slow%20opening%20of%20tif%20files%20using%0A%20scifio-based%20ImgOpener&In-Reply-To=%3Calpine.DEB.1.00.1303021823390.3794%40s15462909.onlinehome-server.info%3E"
+       TITLE="[ImageJ-devel] [fiji-devel] slow opening of tif files using scifio-based ImgOpener">Johannes.Schindelin at gmx.de
+       </A><BR>
+    <I>Sat Mar  2 19:58:36 CST 2013</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="001434.html">[ImageJ-devel] [fiji-devel] slow opening of tif files using scifio-based ImgOpener
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1433">[ date ]</a>
+              <a href="thread.html#1433">[ thread ]</a>
+              <a href="subject.html#1433">[ subject ]</a>
+              <a href="author.html#1433">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Tobias,
+
+On Thu, 7 Feb 2013, Tobias Pietzsch wrote:
+
+&gt;<i> Ok, I tried the things you suggested as well as the setGroupFiles( false
+</I>&gt;<i> ) suggested by Lee.
+</I>
+I finally have some promising results to show. After writing a
+light-weight profile based on the ideas of OProfile, but backed by
+Javassist (hence it neither requires operating system support nor a
+special Java agent or other start-up parameters to the Java virtual
+machine), I could find a couple of bottlenecks, even if it seems that the
+most important bottleneck I found was obtaining thread-specific CPU tick
+counts (i.e. the profiling code itself that I subsequently replaced by
+global ticks, not as precise, but way lower impact).
+
+I performed all timings as best of 5 runs (which is a more meaningful
+value than the Median), 50 tif images, 10,000 other tif files in same
+directory. My current state can be found in the 'master' branch of
+<A HREF="git://github.com/dscho/TifBenchmark.">git://github.com/dscho/TifBenchmark.</A>
+
+The most surprising finding was that copying from planes into the
+ArrayContainer contributed substantially to the execution time. Using a
+PlanarContainer speeded that up.
+
+Another speed-up (and nice simplification of the code) was to use
+ByteBuffer instead of hand-coded byte array to float array. After
+switching off profiling, it turned out not to be that much of an
+improvement, though it does shave off about 200 milliseconds; given that
+the reference we try to reach is only ~120ms it might be an important
+improvement, still.
+
+You can find this change (not yet cleaned up) in the 'performance' branch
+of <A HREF="git://github.com/imagej/bioformats.">git://github.com/imagej/bioformats.</A> I will work more on this branch.
+
+Together with setGroupFiles(false), I achieved a dramatic speed-up. The
+time is now dominated by createReader which initializes the Reader for
+every slice, which in turn creates a new OMEXMLMetadata (taking a whopping
+17 milliseconds every single time).
+
+This change is in the 'performance' branch of
+<A HREF="git://github.com/imagej/imglib.">git://github.com/imagej/imglib.</A> I will work more also on this branch.
+
+ArrayContainer (i.e. Tobias' original benchmark):	best of 5: 4,922 ms
+ByteBuffer, ArrayContainer:				best of 5: 4,838 ms
+PlanarContainer:					best of 5: 4,736 ms
+ByteBuffer, PlanarContainer:				best of 5: 4,540 ms
+PlanarContainer, setGroupFiles(true):			best of 5: 1,832 ms
+ByteBuffer, PlanarContainer, setGroupFiles(true):	best of 5: 1,629 ms
+ImageJ 1.x:						best of 5: 113 ms
+
+Down from a 44x slower code to 14x slower. Still nothing to laugh about,
+but an improvement.
+
+Ciao,
+Johannes
+
+P.S.: just to illustrate the impact on execution time by the profiling
+code itself: the ImageJ 1.x test runs 2ms longer (115ms instead of 113ms),
+the best ImgOpener runs 3,523ms instead of 1,629ms, more than double as
+long! Even when instrumenting the code but switching off the profiling
+(i.e. every method still has to test one public static boolean and then a
+local variable just before returning), the time was still 1,839ms, i.e.
+200ms slower. If you switch on thread-specific tick counting via the
+ThreadMXBean, ImageJ 1.x goes up to 568ms, and the best ImgOpener
+benchmark goes up to more than 100 seconds(!).
+
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="001434.html">[ImageJ-devel] [fiji-devel] slow opening of tif files using scifio-based ImgOpener
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1433">[ date ]</a>
+              <a href="thread.html#1433">[ thread ]</a>
+              <a href="subject.html#1433">[ subject ]</a>
+              <a href="author.html#1433">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,172 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Questions about imglib2
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Questions%20about%20imglib2&In-Reply-To=%3CCADN69y%3DJ%2B89HMRLwpSmcZ80%2BjBGPv%3DT0JEUiQgO7p2-j7-8qKQ%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000879.html">
+   <LINK REL="Next"  HREF="000883.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Questions about imglib2</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Questions%20about%20imglib2&In-Reply-To=%3CCADN69y%3DJ%2B89HMRLwpSmcZ80%2BjBGPv%3DT0JEUiQgO7p2-j7-8qKQ%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Questions about imglib2">ctrueden at wisc.edu
+       </A><BR>
+    <I>Thu Apr 19 16:01:40 CDT 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000879.html">[ImageJ-devel] HeadlessImageDisplay
+</A></li>
+        <LI>Next message: <A HREF="000883.html">[ImageJ-devel] Questions about imglib2
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#882">[ date ]</a>
+              <a href="thread.html#882">[ thread ]</a>
+              <a href="subject.html#882">[ subject ]</a>
+              <a href="author.html#882">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Stephan,
+
+Thanks for your reply about AWT in ImgLib2, and sorry my reply here is so
+long delayed.
+
+
+&gt;<i> If dependency on AWT in imglib2-core is not wanted, then we should move
+</I>&gt;<i> the entire display package into a new sub-project imglib2-awt.  However,
+</I>&gt;<i> the sole purpose ScreenImage interface being to return an awt Image it
+</I>&gt;<i> cannot be stripped from AWT dependency.
+</I>&gt;<i>
+</I>
+It is not yet clear to me whether we should fully isolate the AWT
+references in imglib2 core. We may indeed want to do so at some point, but
+it is certainly not urgent.
+
+The main design issue we are facing in ImageJ2 is that we need a concrete,
+UI-agnostic DatasetView implementation that keeps a CompositeXYProjector
+object internally. Right now we are keeping an ARGBScreenImage internally
+too, but doing so introduces an indirect AWT dependency, which we have
+worked hard to avoid.
+
+Latest code is on the lee_headless-ctr branch here:
+
+<A HREF="https://github.com/imagej/imagej/blob/lee_headless-ctr/core/data/src/main/java/imagej/data/display/DefaultDatasetView.java">https://github.com/imagej/imagej/blob/lee_headless-ctr/core/data/src/main/java/imagej/data/display/DefaultDatasetView.java</A>
+
+Probably the easiest way to avoid this issue will be to generalize the
+&quot;screenImage&quot; variable away from an ARGBScreenImage specifically and just
+use IterableInterval&lt;ARGBType&gt; instead.
+
+So, the only real potential reason to migrate ARGBScreenImage into a
+separate imglib2-awt project would be if it causes problems when targeting
+other platforms, such as compiling for Dalvik (i.e., Android). But at the
+moment, anticipating any such issues is mere speculation&#8212;we shouldn't worry
+much until we try it and then we can address any actual problems one by one.
+
+
+&gt;<i> The display package in its current for is all about generating an AWT
+</I>&gt;<i> image.  Do you have an alternative display in mind?  Is there any code?
+</I>&gt;<i>
+</I>
+I think the current ScreenImage implementation is good. We may want to
+rename it to &quot;AWTScreenImage&quot; though if we want its function to be
+unambiguous.
+
+We may also eventually need to create additional ScreenImage-like
+interfaces for other styles of image objects. It would probably be OK for
+them to live in the respective UI-specific packages of ImageJ2, though.
+
+For example, Apache Pivot has its own Image hierarchy, including a bitmap
+Picture class:
+
+<A HREF="http://pivot.apache.org/2.0.1/docs/api/org/apache/pivot/wtk/media/Picture.html">http://pivot.apache.org/2.0.1/docs/api/org/apache/pivot/wtk/media/Picture.html</A>
+
+And on Android, we would probably need a Bitmap object:
+    <A HREF="http://developer.android.com/reference/android/graphics/Bitmap.html">http://developer.android.com/reference/android/graphics/Bitmap.html</A>
+
+All of this is doable at some later date!
+
+Regards,
+Curtis
+
+P.S. Another reason to fully isolate AWT from imglib2 core is that it is
+already so close to being AWT-free. Only five classes currently include any
+AWT references:
+
+src/main/java/net/imglib2/display/ARGBScreenImage.java
+src/main/java/net/imglib2/display/ScreenImage.java
+src/main/java/net/imglib2/display/UnsignedByteScreenImage.java
+src/main/java/net/imglib2/outofbounds/OutOfBoundsMirrorFactory.java
+src/main/java/net/imglib2/sampler/special/OrthoSliceCursor.java
+
+Of course, the first three are just the aforementioned ScreenImage stuff.
+And the other two don't actually use AWT at all&#8212;they just reference
+java.awt.Image in the javadoc.
+
+
+On Thu, Mar 15, 2012 at 8:18 AM, Stephan Saalfeld &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">saalfeld at mpi-cbg.de</A>&gt;wrote:
+
+&gt;<i>
+</I>&gt;<i> &gt; Note that we need to extract all code referencing AWT into a new
+</I>&gt;<i> component
+</I>&gt;<i> &gt; and confine AWT's use to that component. So we might need to either move
+</I>&gt;<i> &gt; ScreenImage out to, say, imglib2-awt or strip it from all mentions of
+</I>&gt;<i> &gt; AWT's classes and interfaces.
+</I>&gt;<i> &gt;
+</I>&gt;<i>
+</I>&gt;<i> If dependency on AWT in imglib2-core is not wanted, then we should move
+</I>&gt;<i> the entire display package into a new sub-project imglib2-awt.  However,
+</I>&gt;<i> the sole purpose ScreenImage interface being to return an awt Image it
+</I>&gt;<i> cannot be stripped from AWT dependency.
+</I>&gt;<i>
+</I>&gt;<i> The display package in its current for is all about generating an AWT
+</I>&gt;<i> image.  Do you have an alternative display in mind?  Is there any code?
+</I>&gt;<i>
+</I>&gt;<i> Thanks and best,
+</I>&gt;<i> Stephan
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20120419/5773d74f/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20120419/5773d74f/attachment.html</A>&gt;
+</PRE>
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000879.html">[ImageJ-devel] HeadlessImageDisplay
+</A></li>
+	<LI>Next message: <A HREF="000883.html">[ImageJ-devel] Questions about imglib2
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#882">[ date ]</a>
+              <a href="thread.html#882">[ thread ]</a>
+              <a href="subject.html#882">[ subject ]</a>
+              <a href="author.html#882">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

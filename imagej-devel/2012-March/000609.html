@@ -1,0 +1,146 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [IMGLIB] moved algorithm and stats packages out	of imglib2-core
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5BIMGLIB%5D%20moved%20algorithm%20and%20stats%20packages%20out%0A%09of%20imglib2-core&In-Reply-To=%3CCADN69y%3DxYZHX5crrLqB58w_4--oH1TL8-sUfoW%2BLSQctCY3PyQ%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000607.html">
+   <LINK REL="Next"  HREF="000608.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [IMGLIB] moved algorithm and stats packages out	of imglib2-core</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5BIMGLIB%5D%20moved%20algorithm%20and%20stats%20packages%20out%0A%09of%20imglib2-core&In-Reply-To=%3CCADN69y%3DxYZHX5crrLqB58w_4--oH1TL8-sUfoW%2BLSQctCY3PyQ%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] [IMGLIB] moved algorithm and stats packages out	of imglib2-core">ctrueden at wisc.edu
+       </A><BR>
+    <I>Thu Mar  1 11:54:59 CST 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000607.html">[ImageJ-devel] [IMGLIB] moved algorithm and stats packages out	of imglib2-core
+</A></li>
+        <LI>Next message: <A HREF="000608.html">[ImageJ-devel] Jenkins build is back to normal : ImageJ #2788
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#609">[ date ]</a>
+              <a href="thread.html#609">[ thread ]</a>
+              <a href="subject.html#609">[ subject ]</a>
+              <a href="author.html#609">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Tobias et. al,
+
+If you could do the split, Curtis, that would be great.
+&gt;<i>
+</I>
+I have pushed changes to the ImgLib repository that split
+imglib2-algorithms into two halves:
+1) imglib2-algorithms
+2) imglib2-algorithms-gpl
+
+For details, see:
+  <A HREF="https://github.com/imagej/imglib/commit/0bf737ca">https://github.com/imagej/imglib/commit/0bf737ca</A>
+
+The net.imglib2.algorithm interfaces live in imglib2-algorithms, as do most
+of the current algorithms. This project is licensed under BSD.
+
+The imglib2-algorithms-gpl project contains the GPL-licensed algorithms,
+and has dependencies on mpicbg and mines-jtk.
+
+With this change, the ImageJ2 build is now working again (see
+<A HREF="http://jenkins.imagej.net/">http://jenkins.imagej.net/</A>).
+
+It may be that some of the algorithms in imglib2-algorithms should be moved
+to imglib2-algorithms-gpl, to match the wishes of the authors. Currently,
+only the fft and transformation packages reside in imglib2-algorithms-gpl.
+All the others currently belong to imglib2-algorithms:
+  * componenttree
+  * floydsteinberg
+  * function
+  * gauss
+  * integral
+  * kdtree
+  * labeling
+  * stats
+
+[ACTION ITEM] For the above packages, if the relevant author(s) would
+prefer a GPL license, let me know and I will happily move them into
+imglib2-algorithms-gpl. (The only one ImageJ2 currently needs to stay BSD
+is stats.)
+
+Secondly, since the project structure was changing anyway, I took the
+opportunity to improve the names of the POM projects:
+  <A HREF="https://github.com/imagej/imglib/commit/23bf5218">https://github.com/imagej/imglib/commit/23bf5218</A>
+
+[ACTION ITEM] I recommend deleting your existing ImgLib Eclipse projects
+(with &quot;Delete project contents on disk&quot; unchecked), and reimporting using
+File &gt; Import &gt; Existing Maven Projects. This will give you the latest
+project structure.
+
+Hopefully this will be the last structural change before we release an
+ImgLib2 beta.
+
+Thanks,
+Curtis
+
+
+On Thu, Mar 1, 2012 at 4:39 AM, Tobias Pietzsch &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pietzsch at mpi-cbg.de</A>&gt; wrote:
+
+&gt;<i> Hi all,
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On 02/29/2012 09:30 PM, Curtis Rueden wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> 2) Split imglib2-algorithms into multiple components:
+</I>&gt;&gt;<i> imglib2-algorithms-bsd and imglib2-algorithms-gpl, for example. Then we
+</I>&gt;&gt;<i> can include imglib2-algorithms-bsd as a dependency for ImageJ2.
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> This is the option I would prefer.
+</I>&gt;<i> If you could do the split, Curtis, that would be great.
+</I>&gt;<i>
+</I>&gt;<i> I do not think that the definition for &quot;core&quot; should be &quot;everything
+</I>&gt;<i> needed by ImageJ2&quot;. I don't see a problem with splitting ImageJ2
+</I>&gt;<i> dependencies.
+</I>&gt;<i>
+</I>&gt;<i> I don't have a problem with having Histogram in the core, either.
+</I>&gt;<i> But then it should not implement the Algorithm interface (I don't
+</I>&gt;<i> get the point of the Algorithm interface, to be honest).  Equally
+</I>&gt;<i> important: it should not _feel_ like an algorithm, rather it should
+</I>&gt;<i> _be_ the histogram.  I.e., Histogram should not have an getHistogram()
+</I>&gt;<i> that returns an int[] array which represents the histogram.  Rather,
+</I>&gt;<i> Histogram itself should represent the histogram.  For example, it could
+</I>&gt;<i> implement RandomAccessibleInterval&lt; IntType &gt; to achieve that, and the
+</I>&gt;<i> histogram could be computed in the constructor.
+</I>&gt;<i>
+</I>&gt;<i> best regards,
+</I>&gt;<i> Tobias
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20120301/f1313af3/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20120301/f1313af3/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000607.html">[ImageJ-devel] [IMGLIB] moved algorithm and stats packages out	of imglib2-core
+</A></li>
+	<LI>Next message: <A HREF="000608.html">[ImageJ-devel] Jenkins build is back to normal : ImageJ #2788
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#609">[ date ]</a>
+              <a href="thread.html#609">[ thread ]</a>
+              <a href="subject.html#609">[ subject ]</a>
+              <a href="author.html#609">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

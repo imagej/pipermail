@@ -1,0 +1,389 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Masking @Parameter from GUI harvesting ?
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Masking%20%40Parameter%20from%20GUI%20harvesting%20%3F&In-Reply-To=%3CCADN69y%3DG%2B1aVwWwaNdZdKCEweJJFCgA4TSX5mJ6asj00hAYUrQ%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002685.html">
+   <LINK REL="Next"  HREF="002672.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Masking @Parameter from GUI harvesting ?</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Masking%20%40Parameter%20from%20GUI%20harvesting%20%3F&In-Reply-To=%3CCADN69y%3DG%2B1aVwWwaNdZdKCEweJJFCgA4TSX5mJ6asj00hAYUrQ%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Masking @Parameter from GUI harvesting ?">ctrueden at wisc.edu
+       </A><BR>
+    <I>Thu Aug 27 13:54:22 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002685.html">[ImageJ-devel] Masking @Parameter from GUI harvesting ?
+</A></li>
+        <LI>Next message: <A HREF="002672.html">[ImageJ-devel] update site
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2686">[ date ]</a>
+              <a href="thread.html#2686">[ thread ]</a>
+              <a href="subject.html#2686">[ subject ]</a>
+              <a href="author.html#2686">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Adrian,
+
+&gt;<i> Some parameters do not affect the preview, but preview() is called
+</I>&gt;<i> nevertheless. Can we avoid calculating a new preview in this case ? Of
+</I>&gt;<i> course we can check inside the preview() body, before performing the
+</I>&gt;<i> actual calculation, whether any of the relevant parameters have
+</I>&gt;<i> changed.
+</I>
+Checking inside preview() is the approach I favor in general, because your
+constraints on what triggers a preview recomputation could be based on
+anything.
+
+That said, perhaps it would make sense to make the really common case easy:
+add a flag &quot;boolean preview&quot; to the @Parameter annotation (and
+corresponding ModuleItem#isPreviewed() method). I filed an issue:
+
+<A HREF="https://github.com/scijava/scijava-common/issues/184">https://github.com/scijava/scijava-common/issues/184</A>
+
+&gt;<i> If I want a parameter to be strictly positive (so I can divide by it
+</I>&gt;<i> without checking for zero), it appears that I need to specify a small
+</I>&gt;<i> non-negative number explicitely in the min=&quot;&quot; annotation:
+</I>
+More generally, it would be nice if you could annotate min and/or max as an
+exclusive bound rather than an inclusive one. This would solve your
+non-zero problem. Issue filed:
+
+<A HREF="https://github.com/scijava/scijava-common/issues/183">https://github.com/scijava/scijava-common/issues/183</A>
+
+Regards,
+Curtis
+
+On Thu, Aug 27, 2015 at 10:35 AM, Adrian Daerr &lt;
+<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">adrian.daerr at univ-paris-diderot.fr</A>&gt; wrote:
+
+&gt;<i> Hi Curtis,
+</I>&gt;<i>
+</I>&gt;<i> Thanks for the explanations on how parameters are resolved.
+</I>&gt;<i>
+</I>&gt;<i> We could add a way to mark parameters which are not desired to be
+</I>&gt;&gt;<i> shown in the dialog box. What is your use case for a parameter you
+</I>&gt;&gt;<i> want to have in the script, but never shown to the user in cases
+</I>&gt;&gt;<i> where it is still null?
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Upon reflection I don't see when this would be needed. I
+</I>&gt;<i> misinterpreted the behaviour of the UI harvester in the case of a
+</I>&gt;<i> net.imagej.overlay.RectangleOverlay, which was being properly
+</I>&gt;<i> populated but which caused a strangely useless selector to appear in
+</I>&gt;<i> the dialog (the selector seemed empty or possibly contained one empty
+</I>&gt;<i> String). Of course the selector is really only usefull if there were
+</I>&gt;<i> several RectangleOverlays to chose from, and they had meaningful
+</I>&gt;<i> labels. In the case only one selection is defined one could just drop
+</I>&gt;<i> the selector from the dialog. But I thought (should have checked) that
+</I>&gt;<i> the UI would try to ask for a RectangleOverlay if none were found.
+</I>&gt;<i> This is not the case: when there is no RectangleOverlay at all the
+</I>&gt;<i> plugin fails just as in the absence of an image, which is what I want
+</I>&gt;<i> (the user can then define a selection as usual and call the plugin
+</I>&gt;<i> again). No need for any new annotation here.
+</I>&gt;<i>
+</I>&gt;<i> 2) A net.imagej.overlay.RectangleOverlay parameter, although properly
+</I>&gt;&gt;&gt;<i> populated, provoques an Exception after the execution of the command.
+</I>&gt;&gt;&gt;<i> (more details and stacktraces below)
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> As I mentioned in the other thread: try with Overlay instead? We
+</I>&gt;&gt;<i> could certainly make it autofill parameters with specific Overlay
+</I>&gt;&gt;<i> subclasses too&#8212;just need to confirm first that that is indeed your
+</I>&gt;&gt;<i> problem.
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> No need, the OverlayService.getSelectionBounds() you mention in the
+</I>&gt;<i> other thread behaves just fine.
+</I>&gt;<i>
+</I>&gt;<i> 3) When a new preview is triggered, and that preview modifies numeric
+</I>&gt;&gt;&gt;<i> parameters, then the numeric values visible in the gui dialog are
+</I>&gt;&gt;&gt;<i> updated except for the NumericField on which input has triggered the
+</I>&gt;&gt;&gt;<i> call to preview().
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> It is a programming error for the preview() function to modify
+</I>&gt;&gt;<i> parameter values. Use callbacks instead, which occur before
+</I>&gt;&gt;<i> preview() is called [1].
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Ok, makes sense.
+</I>&gt;<i>
+</I>&gt;<i> 4) It would be nice if a parameter could have a label even if
+</I>&gt;&gt;&gt;<i> ItemVisibility is MESSAGE
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Fixed [2].
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Great, thanks a lot!
+</I>&gt;<i>
+</I>&gt;<i> I have two new small comments (not sure they qualify as feature requests
+</I>&gt;<i> as I'm not sure they're necessarily good ideas):
+</I>&gt;<i>
+</I>&gt;<i> 5) Some parameters do not affect the preview, but preview() is called
+</I>&gt;<i> nevertheless. Can we avoid calculating a new preview in this case ? Of
+</I>&gt;<i> course we can check inside the preview() body, before performing the
+</I>&gt;<i> actual calculation, whether any of the relevant parameters have
+</I>&gt;<i> changed. A second possibility would be to introduce a new @Parameter
+</I>&gt;<i> annotation to disable the preview() callback. A third way would be
+</I>&gt;<i> to modify the framework to skip the preview() call on parameters which
+</I>&gt;<i> register their own callback. It would be this callback's
+</I>&gt;<i> responsibility to invoque preview() if desired. One could then easily
+</I>&gt;<i> register an empty callback function on parameters for which preview()
+</I>&gt;<i> should not be invoqued. The only drawback I see is that plugin authors
+</I>&gt;<i> may not expect the fact that registering an explicit callback by
+</I>&gt;<i> annotation unregisters/disables the preview callback. On the other
+</I>&gt;<i> hand widgets such as Buttons which rely on their callback seem already
+</I>&gt;<i> excluded from preview() invocation. One advantage is that the
+</I>&gt;<i> programmer decides at which point in the callback, if at all,
+</I>&gt;<i> preview() gets called, as opposed to the current situation where the
+</I>&gt;<i> order is fixed: the specific callback is invoqued before preview().
+</I>&gt;<i>
+</I>&gt;<i> 6) Really a minor detail: If I want a parameter to be strictly
+</I>&gt;<i> positive (so I can divide by it without checking for zero), it appears
+</I>&gt;<i> that I need to specify a small non-negative number explicitely in the
+</I>&gt;<i> min=&quot;&quot; annotation:
+</I>&gt;<i>
+</I>&gt;<i> @Parameter(min = &quot;1e-300&quot;) private double capillary_length;
+</I>&gt;<i>
+</I>&gt;<i> I cannot specify Double.MIN_VALUE because the 'min' attribute requires
+</I>&gt;<i> a String, nor Double.toString(Double.MIN_VALUE) as it is not a
+</I>&gt;<i> constant to the compiler. If the constraint of positivity is
+</I>&gt;<i> sufficiently common to warrant a small hack, one could allow e.g.
+</I>&gt;<i> &quot;epsilon&quot; or &quot;positive&quot; as special value for the annotation 'min' that
+</I>&gt;<i> would be translated to &lt;T&gt;.MIN_VALUE
+</I>&gt;<i>
+</I>&gt;<i> cheers,
+</I>&gt;<i> Adrian
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On Mon, 24 Aug 2015 15:31:07 -0500
+</I>&gt;<i>  Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt; wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> Hi Adrian,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> 1) How does one prevent a @Parameter from showing up in the harvesting
+</I>&gt;&gt;&gt;<i> GUI dialog, in the manner of a '@Parameter LogService log'? (more
+</I>&gt;&gt;&gt;<i> below)
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Parameters which are resolved before the input harvester dialog pops up
+</I>&gt;&gt;<i> will not show up.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> They get resolved by the various preprocessors in the preprocessing chain,
+</I>&gt;&gt;<i> which is applied before the module is actually run. The InputHarvester --
+</I>&gt;&gt;<i> which is what pops the dialog box -- is (IIRC) the final preprocessing
+</I>&gt;&gt;<i> step
+</I>&gt;&gt;<i> before run happens.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> We could add a way to mark parameters which are not desired to be shown in
+</I>&gt;&gt;<i> the dialog box. What is your use case for a parameter you want to have in
+</I>&gt;&gt;<i> the script, but never shown to the user in cases where it is still null?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> 2) A net.imagej.overlay.RectangleOverlay parameter, although properly
+</I>&gt;&gt;&gt;<i> populated, provoques an Exception after the execution of the command.
+</I>&gt;&gt;&gt;<i> (more details and stacktraces below)
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> As I mentioned in the other thread: try with Overlay instead? We could
+</I>&gt;&gt;<i> certainly make it autofill parameters with specific Overlay subclasses
+</I>&gt;&gt;<i> too&#8212;just need to confirm first that that is indeed your problem.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> 3) When a new preview is triggered, and that preview modifies numeric
+</I>&gt;&gt;&gt;<i> parameters, then the numeric values visible in the gui dialog are
+</I>&gt;&gt;&gt;<i> updated except for the NumericField on which input has triggered the
+</I>&gt;&gt;&gt;<i> call to preview().
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> It is a programming error for the preview() function to modify parameter
+</I>&gt;&gt;<i> values. Use callbacks instead, which occur before preview() is called [1].
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> 4) It would be nice if a parameter could have a label even if
+</I>&gt;&gt;&gt;<i> ItemVisibility is MESSAGE
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Fixed [2].
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Regards,
+</I>&gt;&gt;<i> Curtis
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> [1]
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> <A HREF="https://github.com/scijava/scijava-common/blob/scijava-common-2.44.2/src/main/java/org/scijava/widget/DefaultWidgetModel.java#L167-L169">https://github.com/scijava/scijava-common/blob/scijava-common-2.44.2/src/main/java/org/scijava/widget/DefaultWidgetModel.java#L167-L169</A>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> [2]
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> <A HREF="https://github.com/scijava/scijava-ui-swing/commit/84c30c045bf3327a424f499f1f2fe867b0d9375e">https://github.com/scijava/scijava-ui-swing/commit/84c30c045bf3327a424f499f1f2fe867b0d9375e</A>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> On Sun, Aug 23, 2015 at 6:44 AM, Adrian Daerr &lt;
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">adrian.daerr at univ-paris-diderot.fr</A>&gt; wrote:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Dear ImageJ developers,
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> As I slowly learn more about IJ2 @Plugins, I have one question and three
+</I>&gt;&gt;&gt;<i> minor comments that I would like to submit to you.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> 1) How does one prevent a @Parameter from showing up in the harvesting
+</I>&gt;&gt;&gt;<i> GUI dialog, in the manner of a '@Parameter LogService log'? (more below)
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> 2) A net.imagej.overlay.RectangleOverlay parameter, although properly
+</I>&gt;&gt;&gt;<i> populated, provoques an Exception after the execution of the command.
+</I>&gt;&gt;&gt;<i> (more details and stacktraces below)
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> 3) When a new preview is triggered, and that preview modifies numeric
+</I>&gt;&gt;&gt;<i> parameters, then the numeric values visible in the gui dialog are
+</I>&gt;&gt;&gt;<i> updated except for the NumericField on which input has triggered the
+</I>&gt;&gt;&gt;<i> call to preview().
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> 4) It would be nice if a parameter could have a label even if
+</I>&gt;&gt;&gt;<i> ItemVisibility is MESSAGE:
+</I>&gt;&gt;&gt;<i>   @Parameter(persist = false,
+</I>&gt;&gt;&gt;<i>              visibility = org.scijava.ItemVisibility.MESSAGE,
+</I>&gt;&gt;&gt;<i>              label = &quot;Current foo value&quot;)
+</I>&gt;&gt;&gt;<i>     private double foo = 0;
+</I>&gt;&gt;&gt;<i> (currently, at least on my box, the label is not shown in this case)
+</I>&gt;&gt;&gt;<i> Obviously a workaround is to build a String with label+foo instead.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> cheers,
+</I>&gt;&gt;&gt;<i> Adrian
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> ad 1)
+</I>&gt;&gt;&gt;<i> How to prevent a @Parameter from showing up in the harvesting GUI
+</I>&gt;&gt;&gt;<i> dialog? Some seem to be masked by default (ImagePlus, LogService), but
+</I>&gt;&gt;&gt;<i> I did not find the appropriate annotation to make the parameter roi in
+</I>&gt;&gt;&gt;<i> the following not show up, although it is already properly populated
+</I>&gt;&gt;&gt;<i> by the rectangular selection of the active image ? There is no
+</I>&gt;&gt;&gt;<i> meaningful thing I can do with the associated selector in the dialog.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>     @Parameter private ImagePlus imp;
+</I>&gt;&gt;&gt;<i>     @Parameter private RectangleOverlay roi;
+</I>&gt;&gt;&gt;<i>     @Parameter private double a;
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> ad 2)
+</I>&gt;&gt;&gt;<i> A net.imagej.overlay.RectangleOverlay parameter
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>   @Parameter private RectangleOverlay roi;
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> is properly populated when the Command is invoqued on an active image
+</I>&gt;&gt;&gt;<i> containing a rectangular selection. However it provoques an Exception
+</I>&gt;&gt;&gt;<i> after the execution of the command, when either the
+</I>&gt;&gt;&gt;<i> DefaultPrefService, or the Recorder if a persist=false attribute is
+</I>&gt;&gt;&gt;<i> added, apparently tries to record a 'null' value for an option. The
+</I>&gt;&gt;&gt;<i> two stacktraces are
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>   [ERROR] Module threw exception
+</I>&gt;&gt;&gt;<i>   java.lang.NullPointerException
+</I>&gt;&gt;&gt;<i>         at
+</I>&gt;&gt;&gt;<i> java.util.prefs.AbstractPreferences.put(AbstractPreferences.java:224)
+</I>&gt;&gt;&gt;<i>         at
+</I>&gt;&gt;&gt;<i> org.scijava.prefs.DefaultPrefService.put(DefaultPrefService.java:183)
+</I>&gt;&gt;&gt;<i>         at
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> org.scijava.module.DefaultModuleService.save(DefaultModuleService.java:278)
+</I>&gt;&gt;&gt;<i>         at
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> org.scijava.module.process.SaveInputsPreprocessor.saveValue(SaveInputsPreprocessor.java:74)
+</I>&gt;&gt;&gt;<i>         at
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> org.scijava.module.process.SaveInputsPreprocessor.process(SaveInputsPreprocessor.java:65)
+</I>&gt;&gt;&gt;<i>         at
+</I>&gt;&gt;&gt;<i> org.scijava.module.ModuleRunner.preProcess(ModuleRunner.java:104)
+</I>&gt;&gt;&gt;<i>         at org.scijava.module.ModuleRunner.run(ModuleRunner.java:156)
+</I>&gt;&gt;&gt;<i>         at org.scijava.module.ModuleRunner.call(ModuleRunner.java:126)
+</I>&gt;&gt;&gt;<i>         at org.scijava.module.ModuleRunner.call(ModuleRunner.java:65)
+</I>&gt;&gt;&gt;<i>         at
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> org.scijava.thread.DefaultThreadService$2.call(DefaultThreadService.java:191)
+</I>&gt;&gt;&gt;<i>         at
+</I>&gt;&gt;&gt;<i> java.util.concurrent.FutureTask$Sync.innerRun(FutureTask.java:303)
+</I>&gt;&gt;&gt;<i>         at java.util.concurrent.FutureTask.run(FutureTask.java:138)
+</I>&gt;&gt;&gt;<i>         at
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> java.util.concurrent.ThreadPoolExecutor$Worker.runTask(ThreadPoolExecutor.java:886)
+</I>&gt;&gt;&gt;<i>         at
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:908)
+</I>&gt;&gt;&gt;<i>         at java.lang.Thread.run(Thread.java:662)
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>   [ERROR] Module threw exception
+</I>&gt;&gt;&gt;<i>   java.lang.NullPointerException
+</I>&gt;&gt;&gt;<i>         at ij.plugin.frame.Recorder.addQuotes(Recorder.java:612)
+</I>&gt;&gt;&gt;<i>         at ij.plugin.frame.Recorder.recordOption(Recorder.java:362)
+</I>&gt;&gt;&gt;<i>         at net.imagej.legacy.IJ1Helper.recordOption(IJ1Helper.java:467)
+</I>&gt;&gt;&gt;<i>         at
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> net.imagej.legacy.plugin.MacroRecorderPostprocessor.process(MacroRecorderPostprocessor.java:70)
+</I>&gt;&gt;&gt;<i>         at
+</I>&gt;&gt;&gt;<i> org.scijava.module.ModuleRunner.postProcess(ModuleRunner.java:116)
+</I>&gt;&gt;&gt;<i>         at org.scijava.module.ModuleRunner.run(ModuleRunner.java:176)
+</I>&gt;&gt;&gt;<i>         at org.scijava.module.ModuleRunner.call(ModuleRunner.java:126)
+</I>&gt;&gt;&gt;<i>         at org.scijava.module.ModuleRunner.call(ModuleRunner.java:65)
+</I>&gt;&gt;&gt;<i>         at
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> org.scijava.thread.DefaultThreadService$2.call(DefaultThreadService.java:191)
+</I>&gt;&gt;&gt;<i>         at
+</I>&gt;&gt;&gt;<i> java.util.concurrent.FutureTask$Sync.innerRun(FutureTask.java:303)
+</I>&gt;&gt;&gt;<i>         at java.util.concurrent.FutureTask.run(FutureTask.java:138)
+</I>&gt;&gt;&gt;<i>         at
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> java.util.concurrent.ThreadPoolExecutor$Worker.runTask(ThreadPoolExecutor.java:886)
+</I>&gt;&gt;&gt;<i>         at
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:908)
+</I>&gt;&gt;&gt;<i>         at java.lang.Thread.run(Thread.java:662)
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;<i> --
+</I>&gt;<i> <A HREF="http://www.msc.univ-paris-diderot.fr/~daerr/">http://www.msc.univ-paris-diderot.fr/~daerr/</A>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20150827/2437d645/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20150827/2437d645/attachment-0001.html</A>&gt;
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002685.html">[ImageJ-devel] Masking @Parameter from GUI harvesting ?
+</A></li>
+	<LI>Next message: <A HREF="002672.html">[ImageJ-devel] update site
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2686">[ date ]</a>
+              <a href="thread.html#2686">[ thread ]</a>
+              <a href="subject.html#2686">[ subject ]</a>
+              <a href="author.html#2686">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

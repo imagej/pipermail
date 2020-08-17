@@ -1,0 +1,151 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Git vs. Subversion
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Git%20vs.%20Subversion&In-Reply-To=%3CAANLkTinqAHJze2N53DqyxnQvGtLi9EPprU59T3_RWuBw%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000152.html">
+   <LINK REL="Next"  HREF="000154.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Git vs. Subversion</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Git%20vs.%20Subversion&In-Reply-To=%3CAANLkTinqAHJze2N53DqyxnQvGtLi9EPprU59T3_RWuBw%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Git vs. Subversion">ctrueden at wisc.edu
+       </A><BR>
+    <I>Wed Sep  1 16:47:39 CDT 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000152.html">[ImageJ-devel] Headlessness
+</A></li>
+        <LI>Next message: <A HREF="000154.html">[ImageJ-devel] Git vs. Subversion
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#153">[ date ]</a>
+              <a href="thread.html#153">[ thread ]</a>
+              <a href="subject.html#153">[ subject ]</a>
+              <a href="author.html#153">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi everyone,
+
+Over the past few months, we have been using Git for source control of the
+ImageJ2 effort. However, for a number of reasons, I would like to migrate
+the repository to Subversion instead. I am soliciting feedback from anyone
+who has a preference one way or the other, as well as input on the issues
+below, so that we can reach a consensus as a group.
+
+1) Git support on Windows is weak compared to SVN
+
+Our current Git workflow on Windows is to install msysGit, optionally
+TortoiseGit (which requires msysGit), as well as Putty/Pageant, for proper
+handling of SSH keys. And we're still struggling to make this configuration
+work. Conversely, for SVN, we install TortoiseSVN, add the user through the
+Trac administrative interface, they type their password the first time they
+perform a commit, and it is cached thereafter. Security-wise this is
+probably inferior, but it is much easier to set up.
+
+2) Git support in NetBeans is weak compared to SVN
+
+NetBeans interfaces with Git through the NBGit plugin, which is only
+partially implemented. For example, I could not figure out how to switch
+branches using NBGit. Conversely, NetBeans has full built-in support for
+SVN. TortoiseGit provides an alternative GUI-based solution, but is
+unfortunately several times slower than command line Git.
+
+3) Git allows dangerous operations like rewriting history and deleting
+branches
+
+In some ways this is great, and it's a pain that Subversion doesn't.
+However, there is a certain security in knowing that no matter what you do
+in SVN, you can always backtrack. For example, the other day I accidentally
+deleted the old ijx branch containing Grant's original refactoring work, and
+did not realize it until later. In this case it is not catastrophic, but it
+scares me that users can so easily delete big chunks of the repository. Even
+if it is possible to undo, I simply do not know enough about Git to know how
+to do so, or even necessarily realize such a thing has happened.
+
+4) Git does not allow partial tree checkouts of the repository
+
+With SVN you can checkout a subtree of the repository, allowing you to place
+a large number of modules off the root, and instruct people to check out and
+build only what they want (and Maven makes this especially easy). AFAIK you
+cannot do this with a single Git repository, but would need one Git
+repository per module instead&#8212;which then complicates checking out the entire
+umbrella of projects instead. I know submodules are a partial solution, but
+they have their own problems as well.
+
+5) Git uses non-linear versioning, making it more difficult to refer to
+development builds
+
+The fact that every checkout of Subversion is linear and has a monotonically
+increasing number is exceedingly useful for stamping builds. With Git, AFAIK
+you can't easily do this. An article at
+<A HREF="https://wincent.com/blog/automatic-deployment-numbering-in-git">https://wincent.com/blog/automatic-deployment-numbering-in-git</A> discusses a
+possible workaround, but it is deployment-based. We want the revision number
+to match a particular snapshot of code, so that external developers can
+easily check out that particular revision and get source code that matches
+the build in question.
+
+6) Git is harder to understand and use than SVN
+
+Apologies in advance if this statement starts a flame-war. However, I've
+witnessed the vast majority of developers with whom I've interacted struggle
+with Git's learning curve compared to SVN. In particular, I am personally
+frustrated with the complication of local branches vs. remote ones. And I
+know that the choice of Git has been a barrier to adoption for Grant as
+well&#8212;as mentioned above, Git's GUI tools, especially on Windows, are not as
+polished as they are for SVN.
+
+7) Our development server&#8212;Ubuntu, serving Git code using Gitosis&#8212;produces
+mysterious (but seemingly harmless?) error messages; e.g.:
+
+<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">curtis at rook</A>:~/code/LOCI/imagej$ git pull
+error: ssh died of signal 13
+Already up-to-date.
+
+It's probably a minor issue, but I haven't been able to find a solution via
+web searches.
+
+8) Git does not integrate with Trac as well as SVN does
+
+This is also a minor point, since the Git-Trac integration is actually quite
+nice. However, there are a number of issues (documented at
+<A HREF="http://trac-hacks.org/wiki/GitPlugin">http://trac-hacks.org/wiki/GitPlugin</A>)&lt;<A HREF="http://trac-hacks.org/wiki/GitPlugin%29">http://trac-hacks.org/wiki/GitPlugin%29</A>&gt;&#8212;in
+particular, performance (#746) and branch display issues (#2633).
+
+In conclusion, I am frankly frustrated with Git, and feel SVN would be an
+easier choice for both our own development team as well as the larger ImageJ
+community. However, I welcome discussion, as there are certainly downsides
+to switching away from Git.
+
+-Curtis
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20100901/4bd7c9f2/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20100901/4bd7c9f2/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000152.html">[ImageJ-devel] Headlessness
+</A></li>
+	<LI>Next message: <A HREF="000154.html">[ImageJ-devel] Git vs. Subversion
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#153">[ date ]</a>
+              <a href="thread.html#153">[ thread ]</a>
+              <a href="subject.html#153">[ subject ]</a>
+              <a href="author.html#153">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,3250 @@
+From adrian.daerr at univ-paris-diderot.fr  Tue Sep  1 13:41:30 2015
+From: adrian.daerr at univ-paris-diderot.fr (Adrian Daerr)
+Date: Tue, 01 Sep 2015 20:41:30 +0200
+Subject: [ImageJ-devel] Status and API of ROIs in ImageJ2 ?
+In-Reply-To: <CADN69ymvzGSZqFs=JShxA+3iD=FYCk+V38MeTqaLqpf8ybawKw@mail.gmail.com>
+References: <55CF1F05.3050904@univ-paris-diderot.fr>
+	<web-159675194@univ-paris7.fr> <web-159791302@univ-paris7.fr>
+	<CADN69ymvzGSZqFs=JShxA+3iD=FYCk+V38MeTqaLqpf8ybawKw@mail.gmail.com>
+Message-ID: <web-160192998@univ-paris7.fr>
+
+Hi Curtis, hi all,
+
+> If all you care about is the bounding box of the active selection, 
+> you can just do it the same way as the ImageJ2 CropImageJ command:
+> by calling OverlayService.getSelectionBounds. Then you would
+> avoid some of the current weirdness associated with Overlay
+> parameters.
+
+This was working fine with a programmatically added rectangular 
+overlay/selection, but when I call getSelectionBounds on an image with 
+an interactively created rectangular selection it returns the whole 
+image dimension. It does not seem to be aware of the ROI. Below is a 
+MVCE to reproduce. After compiling and placing it in the plugins 
+folder, I start imagej, create a new image, draw a rectangular 
+selection using ImageJ's leftmost tool and then invoque the plugin. It 
+logs the following to the console:
+
+[WARNING] ====> Roi class = ij.gui.Roi
+[WARNING] ====> RECTANGLE: Roi[Rectangle, x=100, y=163, width=196, 
+height=112]
+[INFO] image: plugin:class net.imagej.display.DefaultImageDisplay: 
+type=interface net.imagej.display.DataView, name=Untitled, 
+objects={net.imagej.display.DefaultDatasetView at 757dbeaf, 
+net.imagej.display.DefaultOverlayView at 2198a037}
+[INFO] region: +0.0 +0.0, 559.0 x 559.0
+
+I expected the region in the last line (that obtained through 
+OverlayService.getSelectionBounds) to coincide with the Roi mentionned 
+in the WARNING.
+
+The CropImage command you mentionned does not do anything either 
+before calling getSelectionBounds, and cropping works fine. Do you 
+understand what is going on ?
+
+Cheers,
+Adrian
+
+
+import net.imagej.display.ImageDisplay;
+import net.imagej.display.OverlayService;
+
+import org.scijava.command.Command;
+import org.scijava.log.LogService;
+import org.scijava.plugin.Parameter;
+import org.scijava.plugin.Plugin;
+import org.scijava.util.RealRect;
+
+@Plugin(type = Command.class, menuPath = "Plugins>Foo_Bar")
+public class Foo_Bar implements Command {
+
+     @Parameter
+     private ImageDisplay display;
+
+     @Parameter
+     private OverlayService overlayService;
+
+     @Parameter
+     private LogService log;
+
+     @Override
+     public void run() {
+         RealRect r = overlayService.getSelectionBounds(display);
+         log.info("image: "+display);
+         log.info("region: +" + r.x + " +" +  r.y
+                  + ", " +  r.width + " x " + r.height);
+     }
+}
+
+
+
+
+On Mon, 24 Aug 2015 16:22:15 -0500
+  Curtis Rueden <ctrueden at wisc.edu> wrote:
+> Hi Adrian,
+> 
+> Glad to hear you found a working solution!
+> 
+> The short answer about ROIs is that they have not been a focus of 
+>ImageJ2
+> or ImgLib2 development in recent years. Support for labelings 
+>(highly
+> related to ROIs) was rewritten this January [1], but a rewrite of 
+>the core
+> ImgLib2 ROI library [2] is still pending. And there is a substantial
+> pending redesign of the ImageJ Common data model planned as well -- 
+>though
+> it is unlikely anyone will work on it this year.
+> 
+> At this juncture, the most effective balance for most plugin 
+>developers is
+> probably to use parameterized commands and/or scripts, but with the 
+>ImageJ1
+> data structures (ij.ImagePlus, etc.) -- unless you need access to a 
+>new
+> capability that ImageJ2 + ImgLib2 make possible (>5D images, very 
+>large
+> image planes, very large numbers of image planes, dynamically 
+>generated
+> images, images stored in places besides disk, cell-based image 
+>caching,
+> image types beyond uint8/uint16/float32, etc.).
+> 
+> That said, your feedback is very much appreciated.
+> 
+> And some issues will be ironed out in the next couple of weeks as we 
+>revamp
+> the tutorials for the upcoming ImageJ conference.
+> 
+>> The easiest way to give a plugin a (rectangular) roi is to ... just
+>> declare a net.imagej.overlay.RectangularOverlay as an input 
+>>parameter.
+>> It is properly populated by the origin and extent of a rectangular
+>> selection drawn on the active image.
+> 
+> If all you care about is the bounding box of the active selection, 
+>you can
+> just do it the same way as the ImageJ2 CropImageJ command: by 
+>calling
+> OverlayService.getSelectionBounds [3]. Then you would avoid some of 
+>the
+> current weirdness associated with Overlay parameters.
+> 
+>> If I launch the default UI, then the ROI will not show, but the 
+>>plugin
+>> can launch. If on the other hand I launch the "swing" UI as in the
+>> tutorial, I do see the ROI
+> 
+> Yes, that tutorial was written when the ImageJ2 Swing UI was still 
+>the
+> default. It is not tested/working with the Legacy UI (which is now 
+>the
+> default). I will try to remedy that very soon.
+> 
+>> (not until I call Image>Adjust>Brightness/Contrast..., but that's a
+>> minor detail),
+> 
+> Yes, that annoying bug has been around for quite a while. Many 
+>things that
+> refresh the display will do, such as pressing + then - to zoom 
+>in/out.
+> 
+>> but now the invocation of the plugin at the end of main() will throw 
+>>a
+>> MethodCallException with the stackTrace pasted below. How can the
+>> choice of a UI make the plugin execution fail ?
+> ...
+>> Caused by: java.lang.NullPointerException
+>>         at Goutte_pendante.initTitle(Goutte_pendante.java:94)
+> 
+> In 2014, we made a conscious decision to support the ImageJ 1.x 
+>classes
+> _only_ from the legacy UI. You cannot use them from the Swing UI. In 
+>your
+> case: the ActiveImagePlusPreprocessor cannot set the active 
+>ImagePlus
+> because WindowManager.getCurrentImage() returns null [4], because no 
+>ImageJ
+> 1.x user interface exists. So it stays null and then your 
+>initializer
+> throws the NPE.
+> 
+> Regards,
+> Curtis
+> 
+> [1]
+> https://github.com/imglib/imglib2-roi/tree/imglib2-roi-0.3.2/src/main/java/net/imglib2/labeling
+> 
+> [2] https://github.com/imglib/imglib2-roi
+> 
+> [3]
+> https://github.com/imagej/imagej-plugins-commands/blob/imagej-plugins-commands-0.5.1/src/main/java/net/imagej/plugins/commands/imglib/CropImage.java#L104
+> 
+> [4]
+> https://github.com/imagej/imagej-legacy/blob/imagej-legacy-0.17.1/src/main/java/net/imagej/legacy/plugin/ActiveImagePlusPreprocessor.java#L49-L52
+> 
+> 
+> On Sun, Aug 23, 2015 at 6:30 AM, Adrian Daerr <
+> adrian.daerr at univ-paris-diderot.fr> wrote:
+> 
+>> Hello,
+>>
+>> While I am still interested in answers concerning the 
+>>status/API/roadmap
+>> for ROIs and overlays beyond what's on http://imagej.net/ROIs, I 
+>>have
+>> solved the problem at hand which was keeping me from making 
+>>progress, so I
+>> post the (rather obvious, once I found the net.imagej.overlay 
+>>package)
+>> solution here for the record and to close this thread.
+>>
+>> The easiest way to give a plugin a (rectangular) roi is to ...
+>> just declare a net.imagej.overlay.RectangularOverlay as an input
+>> parameter. It is properly populated by the origin and extent of a
+>> rectangular selection drawn on the active image.
+>>
+>> cheers,
+>> Adrian
+>>
+>>
+>> On Wed, 19 Aug 2015 17:10:06 +0200
+>>
+>>  "Adrian Daerr" <adrian.daerr at univ-paris-diderot.fr> wrote:
+>>
+>>>
+>>> Dear ImageJ developers,
+>>>
+>>> I have included code from the AddROIs tutorial into the main()
+>>> method of my plugin (for the moment essentially one of Curtis'
+>>> commands-with-preview example), to select a Rectangle before
+>>> calling the plugin. The source is available here:
+>>>
+>>> https://gitlab.com/pendant-drop/pendant-drop
+>>> (in Goutte_pendante.java)
+>>>
+>>> If I launch the default UI, then the ROI will not show, but the
+>>> plugin can launch. If on the other hand I launch the "swing" UI
+>>> as in the tutorial, I do see the ROI (not until I call
+>>> Image>Adjust>Brightness/Contrast..., but that's a minor detail),
+>>> but now the invocation of the plugin at the end of main() will
+>>> throw a MethodCallException with the stackTrace pasted below. How
+>>> can the choice of a UI make the plugin execution fail ?
+>>>
+>>> Is there any other way that main can set a ROI on a loaded image
+>>> that the plugin, which still uses an ImagePlus as input
+>>> parameter, will see when calling imp.getProcessor().getRoi() ?
+>>>
+>>> TIA
+>>> Adrian
+>>>
+>>>
+>>> $> mvn package
+>>> $> fiji --class-path target/pendant_drop-2.0.0-SNAPSHOT.jar
+>>> Goutte_pendante.class
+>>> [INFO] Overriding About Pendant Drop; identifier:
+>>> command:About_Pendant_Drop; jar:
+>>> file:/home/adrian/Programmes/plugins_ImageJ_src/Traitement_Gouttes/target/pendant_drop-2.0.0-SNAPSHOT.jar
+>>> [INFO] Overriding Pendant Drop; identifier: command:Goutte_pendante; 
+>>>jar:
+>>> file:/home/adrian/Programmes/plugins_ImageJ_src/Traitement_Gouttes/target/pendant_drop-2.0.0-SNAPSHOT.jar
+>>> [INFO] Populating metadata
+>>> [INFO] Populating metadata
+>>> [INFO] Found 10 JHotDraw adapters.
+>>> org.scijava.module.MethodCallException: Error executing method:
+>>> Goutte_pendante#initTitle
+>>>         at org.scijava.module.MethodRef.execute(MethodRef.java:73)
+>>>         at
+>>> org.scijava.module.AbstractModuleItem.initialize(AbstractModuleItem.java:199)
+>>>         at
+>>> org.scijava.module.AbstractModule.initialize(AbstractModule.java:86)
+>>>         at
+>>> org.scijava.command.CommandModule.initialize(CommandModule.java:147)
+>>>         at
+>>> org.scijava.module.process.InitPreprocessor.process(InitPreprocessor.java:60)
+>>>         at
+>>> org.scijava.module.ModuleRunner.preProcess(ModuleRunner.java:104)
+>>>         at 
+>>>org.scijava.module.ModuleRunner.run(ModuleRunner.java:156)
+>>>         at 
+>>>org.scijava.module.ModuleRunner.call(ModuleRunner.java:126)
+>>>         at 
+>>>org.scijava.module.ModuleRunner.call(ModuleRunner.java:65)
+>>>         at
+>>> org.scijava.thread.DefaultThreadService$2.call(DefaultThreadService.java:191)
+>>>         at
+>>> java.util.concurrent.FutureTask$Sync.innerRun(FutureTask.java:303)
+>>>         at java.util.concurrent.FutureTask.run(FutureTask.java:138)
+>>>         at
+>>> java.util.concurrent.ThreadPoolExecutor$Worker.runTask(ThreadPoolExecutor.java:886)
+>>>         at
+>>> java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:908)
+>>>         at java.lang.Thread.run(Thread.java:662)
+>>> Caused by: java.lang.reflect.InvocationTargetException
+>>>         at sun.reflect.NativeMethodAccessorImpl.invoke0(Native 
+>>>Method)
+>>>         at
+>>> sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:39)
+>>>         at
+>>> sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:25)
+>>>         at java.lang.reflect.Method.invoke(Method.java:597)
+>>>         at org.scijava.module.MethodRef.execute(MethodRef.java:69)
+>>>         ... 14 more
+>>> Caused by: java.lang.NullPointerException
+>>>         at Goutte_pendante.initTitle(Goutte_pendante.java:94)
+>>>         ... 19 more
+>>> [ERROR] Module threw exception
+>>> java.lang.NullPointerException
+>>>         at Goutte_pendante.cancel(Goutte_pendante.java:87)
+>>>         at
+>>> org.scijava.command.CommandModule.cancel(CommandModule.java:140)
+>>>         at
+>>> org.scijava.module.ModuleRunner.cleanupAndBroadcastCancelation(ModuleRunner.java:189)
+>>>         at 
+>>>org.scijava.module.ModuleRunner.run(ModuleRunner.java:161)
+>>>         at 
+>>>org.scijava.module.ModuleRunner.call(ModuleRunner.java:126)
+>>>         at 
+>>>org.scijava.module.ModuleRunner.call(ModuleRunner.java:65)
+>>>         at
+>>> org.scijava.thread.DefaultThreadService$2.call(DefaultThreadService.java:191)
+>>>         at
+>>> java.util.concurrent.FutureTask$Sync.innerRun(FutureTask.java:303)
+>>>         at java.util.concurrent.FutureTask.run(FutureTask.java:138)
+>>>         at
+>>> java.util.concurrent.ThreadPoolExecutor$Worker.runTask(ThreadPoolExecutor.java:886)
+>>>         at
+>>> java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:908)
+>>>         at java.lang.Thread.run(Thread.java:662)
+>>>
+>>>
+>>>
+>>> On Sat, 15 Aug 2015 13:14:13 +0200
+>>>  Adrian Daerr <adrian.daerr at univ-paris-diderot.fr> wrote:
+>>>
+>>>> Hello,
+>>>>
+>>>> I am seizing a major rewrite of a plugin as an opportunity to switch
+>>>> from ImageJ1 to ImageJ2, also to avoid concurrency issues[*], and 
+>>>>now
+>>>> lots of questions come up. Some concern the way ROIs are handled. 
+>>>>What
+>>>> has happened in this regard since
+>>>>   http://imagej.net/ROIs
+>>>> was last updated ?
+>>>>
+>>>> [*] cf discussion on the ImageJ list archived at
+>>>>
+>>>> http://imagej.1557.x6.nabble.com/ExtendedPlugInFilter-GenericDialog-and-synchronization-td5013333.html
+>>>>
+>>>> Here are two concrete questions:
+>>>>
+>>>> 1) My plugin relies on a rectangular ROI being drawn on the image to
+>>>> know which area to include in the computation. How do I draw this 
+>>>>ROI
+>>>> once I have loaded the image as a dataset in the main() method that 
+>>>>is
+>>>> used for testing purposes ?
+>>>>
+>>>> public static void main(final String... args) throws Exception {
+>>>>     final String testImagePath = "testImage.jpg";
+>>>>
+>>>>     // Launch ImageJ as usual.
+>>>>     final ImageJ ij = net.imagej.Main.launch(args);
+>>>>
+>>>>     // Open test image.
+>>>>     final Dataset dataset = ij.dataset().open(testImagePath);
+>>>>
+>>>>     // display the dataset
+>>>>     ij.ui().show(dataset);
+>>>>
+>>>>     // create rectangular ROI
+>>>>     //imp.setRoi(120,60,340,420);// How to do this on a dataset ?
+>>>>
+>>>>     // Launch the "Foo_Bar" command.
+>>>>     ij.command().run(Foo_Bar.class, true);
+>>>> }
+>>>>
+>>>> (alternatively, how would I generate a new dataset, or I guess 
+>>>>something
+>>>> like a "View" in ImageJ2 terminology, of the ROI sub-image of the 
+>>>>original
+>>>> dataset ? I could then substitute the original dataset with this 
+>>>>sub-image
+>>>> and have the plugin operate on the whole image by default)
+>>>>
+>>>> 2) The plugin preview generates overlays using java.awt.geom.Path2D,
+>>>> java.awt.geom.Area and java.awt.Shape, which are then converted via
+>>>> ij.gui.ShapeRoi() and ij.gui.Overlay(), assembled with 
+>>>>overlay.add(),
+>>>> and drawn using imp.setOverlay(). Is there a new IJ2-way to do this
+>>>> (especially since the cited web page (rightly) insists on separation
+>>>> of selection and visualisation shapes) ?
+>>>>
+>>>> TIA,
+>>>> Adrian
+>>>>
+>>>> _______________________________________________
+>>>> ImageJ-devel mailing list
+>>>> ImageJ-devel at imagej.net
+>>>> http://imagej.net/mailman/listinfo/imagej-devel
+>>>>
+>>>
+>>> --
+>>> http://www.msc.univ-paris-diderot.fr/~daerr/
+>>>
+>>> _______________________________________________
+>>> ImageJ-devel mailing list
+>>> ImageJ-devel at imagej.net
+>>> http://imagej.net/mailman/listinfo/imagej-devel
+>>>
+>>
+>> --
+>> http://www.msc.univ-paris-diderot.fr/~daerr/
+>>
+>> _______________________________________________
+>> ImageJ-devel mailing list
+>> ImageJ-devel at imagej.net
+>> http://imagej.net/mailman/listinfo/imagej-devel
+>>
+
+-- 
+http://www.msc.univ-paris-diderot.fr/~daerr/
+
+
+From s.helfrich at fz-juelich.de  Fri Sep  4 05:23:22 2015
+From: s.helfrich at fz-juelich.de (Stefan Helfrich)
+Date: Fri, 4 Sep 2015 12:23:22 +0200
+Subject: [ImageJ-devel] Disable automatic showing of command output
+Message-ID: <55E9711A.3020108@fz-juelich.de>
+
+Hey everyone,
+
+I am wondering if it is possible to disable the automatic showing of a
+Dataset output when running a Command through the CommandService. I
+couldn't find any documentation on that behaviour.
+
+All the best,
+Stefan
+
+--
+Stefan Helfrich, M.Sc.
+
+Institut f?r Bio- und Geowissenschaften
+IBG-1: Biotechnologie
+AG Modellierung und Simulation
+
+Forschungszentrum J?lich GmbH
+52425 J?lich
+
+Tel.: +49 2461 61-9068
+WWW: http://www.fz-juelich.de/ibg/ibg-1/modsim
+
+
+
+------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------
+Forschungszentrum Juelich GmbH
+52425 Juelich
+Sitz der Gesellschaft: Juelich
+Eingetragen im Handelsregister des Amtsgerichts Dueren Nr. HR B 3498
+Vorsitzender des Aufsichtsrats: MinDir Dr. Karl Eugen Huthmacher
+Geschaeftsfuehrung: Prof. Dr.-Ing. Wolfgang Marquardt (Vorsitzender),
+Karsten Beneke (stellv. Vorsitzender), Prof. Dr.-Ing. Harald Bolt,
+Prof. Dr. Sebastian M. Schmidt
+------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------
+
+
+
+From adrian.daerr at univ-paris-diderot.fr  Fri Sep  4 14:29:46 2015
+From: adrian.daerr at univ-paris-diderot.fr (Adrian Daerr)
+Date: Fri, 04 Sep 2015 21:29:46 +0200
+Subject: [ImageJ-devel] Status and API of ROIs in ImageJ2 ?
+In-Reply-To: <web-160192998@univ-paris7.fr>
+References: <55CF1F05.3050904@univ-paris-diderot.fr>
+	<web-159675194@univ-paris7.fr> <web-159791302@univ-paris7.fr>
+	<CADN69ymvzGSZqFs=JShxA+3iD=FYCk+V38MeTqaLqpf8ybawKw@mail.gmail.com>
+	<web-160192998@univ-paris7.fr>
+Message-ID: <web-160379365@univ-paris7.fr>
+
+Hi Curtis,
+
+OverlayService.getSelectionBounds seems to behave stranger yet. Take 
+the Foo_Bar test plugin source from my previous post, compile it and 
+place it in ImageJ's plugins directory. Start ImageJ, create a new 
+image (say 400x400 8bpp), draw a rectangular selection inside and 
+invoke Foo_Bar: as reported in my last mail it will report a 
+ getSelectionBounds of 399x399 instead of the expected dimension of 
+the rectangular selection. Now crop the image to the rectangular 
+selection via Image->Crop, and invoke Foo_Bar again. It will report 
+the same getSelectionBounds (width 399, height 399) although the 
+active image is now strictly smaller. It's as if the ImageDisplay 
+parameter was getting populated by the image before cropping (and of 
+course still without rectangular selection).
+
+How is one supposed to use OverlayService.getSelectionBounds ?
+What are those WARNINGs printed upon plugin invokation ?
+
+[WARNING] ====> Roi class = ij.gui.Roi
+[WARNING] ====> RECTANGLE: Roi[Rectangle, x=76, y=92, width=209, 
+height=160]
+
+cheers,
+Adrian
+
+
+On Tue, 01 Sep 2015 20:41:30 +0200
+  "Adrian Daerr" <adrian.daerr at univ-paris-diderot.fr> wrote:
+> Hi Curtis, hi all,
+> 
+>> If all you care about is the bounding box of the active selection, 
+>> you can just do it the same way as the ImageJ2 CropImageJ command:
+>> by calling OverlayService.getSelectionBounds. Then you would
+>> avoid some of the current weirdness associated with Overlay
+>> parameters.
+> 
+> This was working fine with a programmatically added rectangular 
+>overlay/selection, but when I call getSelectionBounds on an image 
+>with an interactively created rectangular selection it returns the 
+>whole image dimension. It does not seem to be aware of the ROI. Below 
+>is a MVCE to reproduce. After compiling and placing it in the plugins 
+>folder, I start imagej, create a new image, draw a rectangular 
+>selection using ImageJ's leftmost tool and then invoque the plugin. 
+>It logs the following to the console:
+> 
+> [WARNING] ====> Roi class = ij.gui.Roi
+> [WARNING] ====> RECTANGLE: Roi[Rectangle, x=100, y=163, width=196, 
+>height=112]
+> [INFO] image: plugin:class net.imagej.display.DefaultImageDisplay: 
+>type=interface net.imagej.display.DataView, name=Untitled, 
+>objects={net.imagej.display.DefaultDatasetView at 757dbeaf, 
+>net.imagej.display.DefaultOverlayView at 2198a037}
+> [INFO] region: +0.0 +0.0, 559.0 x 559.0
+> 
+> I expected the region in the last line (that obtained through 
+>OverlayService.getSelectionBounds) to coincide with the Roi 
+>mentionned in the WARNING.
+> 
+> The CropImage command you mentionned does not do anything either 
+>before calling getSelectionBounds, and cropping works fine. Do you 
+>understand what is going on ?
+> 
+> Cheers,
+> Adrian
+> 
+> 
+> import net.imagej.display.ImageDisplay;
+> import net.imagej.display.OverlayService;
+> 
+> import org.scijava.command.Command;
+> import org.scijava.log.LogService;
+> import org.scijava.plugin.Parameter;
+> import org.scijava.plugin.Plugin;
+> import org.scijava.util.RealRect;
+> 
+> @Plugin(type = Command.class, menuPath = "Plugins>Foo_Bar")
+> public class Foo_Bar implements Command {
+> 
+>     @Parameter
+>     private ImageDisplay display;
+> 
+>     @Parameter
+>     private OverlayService overlayService;
+> 
+>     @Parameter
+>     private LogService log;
+> 
+>     @Override
+>     public void run() {
+>         RealRect r = overlayService.getSelectionBounds(display);
+>         log.info("image: "+display);
+>         log.info("region: +" + r.x + " +" +  r.y
+>                  + ", " +  r.width + " x " + r.height);
+>     }
+> }
+> 
+> 
+> 
+> 
+> On Mon, 24 Aug 2015 16:22:15 -0500
+>  Curtis Rueden <ctrueden at wisc.edu> wrote:
+>> Hi Adrian,
+>> 
+>> Glad to hear you found a working solution!
+>> 
+>> The short answer about ROIs is that they have not been a focus of 
+>>ImageJ2
+>> or ImgLib2 development in recent years. Support for labelings 
+>>(highly
+>> related to ROIs) was rewritten this January [1], but a rewrite of 
+>>the core
+>> ImgLib2 ROI library [2] is still pending. And there is a substantial
+>> pending redesign of the ImageJ Common data model planned as well -- 
+>>though
+>> it is unlikely anyone will work on it this year.
+>> 
+>> At this juncture, the most effective balance for most plugin 
+>>developers is
+>> probably to use parameterized commands and/or scripts, but with the 
+>>ImageJ1
+>> data structures (ij.ImagePlus, etc.) -- unless you need access to a 
+>>new
+>> capability that ImageJ2 + ImgLib2 make possible (>5D images, very 
+>>large
+>> image planes, very large numbers of image planes, dynamically 
+>>generated
+>> images, images stored in places besides disk, cell-based image 
+>>caching,
+>> image types beyond uint8/uint16/float32, etc.).
+>> 
+>> That said, your feedback is very much appreciated.
+>> 
+>> And some issues will be ironed out in the next couple of weeks as we 
+>>revamp
+>> the tutorials for the upcoming ImageJ conference.
+>> 
+>>> The easiest way to give a plugin a (rectangular) roi is to ... just
+>>> declare a net.imagej.overlay.RectangularOverlay as an input 
+>>>parameter.
+>>> It is properly populated by the origin and extent of a rectangular
+>>> selection drawn on the active image.
+>> 
+>> If all you care about is the bounding box of the active selection, 
+>>you can
+>> just do it the same way as the ImageJ2 CropImageJ command: by 
+>>calling
+>> OverlayService.getSelectionBounds [3]. Then you would avoid some of 
+>>the
+>> current weirdness associated with Overlay parameters.
+>> 
+>>> If I launch the default UI, then the ROI will not show, but the 
+>>>plugin
+>>> can launch. If on the other hand I launch the "swing" UI as in the
+>>> tutorial, I do see the ROI
+>> 
+>> Yes, that tutorial was written when the ImageJ2 Swing UI was still 
+>>the
+>> default. It is not tested/working with the Legacy UI (which is now 
+>>the
+>> default). I will try to remedy that very soon.
+>> 
+>>> (not until I call Image>Adjust>Brightness/Contrast..., but that's a
+>>> minor detail),
+>> 
+>> Yes, that annoying bug has been around for quite a while. Many 
+>>things that
+>> refresh the display will do, such as pressing + then - to zoom 
+>>in/out.
+>> 
+>>> but now the invocation of the plugin at the end of main() will throw 
+>>>a
+>>> MethodCallException with the stackTrace pasted below. How can the
+>>> choice of a UI make the plugin execution fail ?
+>> ...
+>>> Caused by: java.lang.NullPointerException
+>>>         at Goutte_pendante.initTitle(Goutte_pendante.java:94)
+>> 
+>> In 2014, we made a conscious decision to support the ImageJ 1.x 
+>>classes
+>> _only_ from the legacy UI. You cannot use them from the Swing UI. In 
+>>your
+>> case: the ActiveImagePlusPreprocessor cannot set the active 
+>>ImagePlus
+>> because WindowManager.getCurrentImage() returns null [4], because no 
+>>ImageJ
+>> 1.x user interface exists. So it stays null and then your 
+>>initializer
+>> throws the NPE.
+>> 
+>> Regards,
+>> Curtis
+>> 
+>> [1]
+>> https://github.com/imglib/imglib2-roi/tree/imglib2-roi-0.3.2/src/main/java/net/imglib2/labeling
+>> 
+>> [2] https://github.com/imglib/imglib2-roi
+>> 
+>> [3]
+>> https://github.com/imagej/imagej-plugins-commands/blob/imagej-plugins-commands-0.5.1/src/main/java/net/imagej/plugins/commands/imglib/CropImage.java#L104
+>> 
+>> [4]
+>> https://github.com/imagej/imagej-legacy/blob/imagej-legacy-0.17.1/src/main/java/net/imagej/legacy/plugin/ActiveImagePlusPreprocessor.java#L49-L52
+>> 
+>> 
+>> On Sun, Aug 23, 2015 at 6:30 AM, Adrian Daerr <
+>> adrian.daerr at univ-paris-diderot.fr> wrote:
+>> 
+>>> Hello,
+>>>
+>>> While I am still interested in answers concerning the 
+>>>status/API/roadmap
+>>> for ROIs and overlays beyond what's on http://imagej.net/ROIs, I 
+>>>have
+>>> solved the problem at hand which was keeping me from making 
+>>>progress, so I
+>>> post the (rather obvious, once I found the net.imagej.overlay 
+>>>package)
+>>> solution here for the record and to close this thread.
+>>>
+>>> The easiest way to give a plugin a (rectangular) roi is to ...
+>>> just declare a net.imagej.overlay.RectangularOverlay as an input
+>>> parameter. It is properly populated by the origin and extent of a
+>>> rectangular selection drawn on the active image.
+>>>
+>>> cheers,
+>>> Adrian
+>>>
+>>>
+>>> On Wed, 19 Aug 2015 17:10:06 +0200
+>>>
+>>>  "Adrian Daerr" <adrian.daerr at univ-paris-diderot.fr> wrote:
+>>>
+>>>>
+>>>> Dear ImageJ developers,
+>>>>
+>>>> I have included code from the AddROIs tutorial into the main()
+>>>> method of my plugin (for the moment essentially one of Curtis'
+>>>> commands-with-preview example), to select a Rectangle before
+>>>> calling the plugin. The source is available here:
+>>>>
+>>>> https://gitlab.com/pendant-drop/pendant-drop
+>>>> (in Goutte_pendante.java)
+>>>>
+>>>> If I launch the default UI, then the ROI will not show, but the
+>>>> plugin can launch. If on the other hand I launch the "swing" UI
+>>>> as in the tutorial, I do see the ROI (not until I call
+>>>> Image>Adjust>Brightness/Contrast..., but that's a minor detail),
+>>>> but now the invocation of the plugin at the end of main() will
+>>>> throw a MethodCallException with the stackTrace pasted below. How
+>>>> can the choice of a UI make the plugin execution fail ?
+>>>>
+>>>> Is there any other way that main can set a ROI on a loaded image
+>>>> that the plugin, which still uses an ImagePlus as input
+>>>> parameter, will see when calling imp.getProcessor().getRoi() ?
+>>>>
+>>>> TIA
+>>>> Adrian
+>>>>
+>>>>
+>>>> $> mvn package
+>>>> $> fiji --class-path target/pendant_drop-2.0.0-SNAPSHOT.jar
+>>>> Goutte_pendante.class
+>>>> [INFO] Overriding About Pendant Drop; identifier:
+>>>> command:About_Pendant_Drop; jar:
+>>>> file:/home/adrian/Programmes/plugins_ImageJ_src/Traitement_Gouttes/target/pendant_drop-2.0.0-SNAPSHOT.jar
+>>>> [INFO] Overriding Pendant Drop; identifier: command:Goutte_pendante; 
+>>>>jar:
+>>>> file:/home/adrian/Programmes/plugins_ImageJ_src/Traitement_Gouttes/target/pendant_drop-2.0.0-SNAPSHOT.jar
+>>>> [INFO] Populating metadata
+>>>> [INFO] Populating metadata
+>>>> [INFO] Found 10 JHotDraw adapters.
+>>>> org.scijava.module.MethodCallException: Error executing method:
+>>>> Goutte_pendante#initTitle
+>>>>         at org.scijava.module.MethodRef.execute(MethodRef.java:73)
+>>>>         at
+>>>> org.scijava.module.AbstractModuleItem.initialize(AbstractModuleItem.java:199)
+>>>>         at
+>>>> org.scijava.module.AbstractModule.initialize(AbstractModule.java:86)
+>>>>         at
+>>>> org.scijava.command.CommandModule.initialize(CommandModule.java:147)
+>>>>         at
+>>>> org.scijava.module.process.InitPreprocessor.process(InitPreprocessor.java:60)
+>>>>         at
+>>>> org.scijava.module.ModuleRunner.preProcess(ModuleRunner.java:104)
+>>>>         at 
+>>>>org.scijava.module.ModuleRunner.run(ModuleRunner.java:156)
+>>>>         at 
+>>>>org.scijava.module.ModuleRunner.call(ModuleRunner.java:126)
+>>>>         at 
+>>>>org.scijava.module.ModuleRunner.call(ModuleRunner.java:65)
+>>>>         at
+>>>> org.scijava.thread.DefaultThreadService$2.call(DefaultThreadService.java:191)
+>>>>         at
+>>>> java.util.concurrent.FutureTask$Sync.innerRun(FutureTask.java:303)
+>>>>         at java.util.concurrent.FutureTask.run(FutureTask.java:138)
+>>>>         at
+>>>> java.util.concurrent.ThreadPoolExecutor$Worker.runTask(ThreadPoolExecutor.java:886)
+>>>>         at
+>>>> java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:908)
+>>>>         at java.lang.Thread.run(Thread.java:662)
+>>>> Caused by: java.lang.reflect.InvocationTargetException
+>>>>         at sun.reflect.NativeMethodAccessorImpl.invoke0(Native 
+>>>>Method)
+>>>>         at
+>>>> sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:39)
+>>>>         at
+>>>> sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:25)
+>>>>         at java.lang.reflect.Method.invoke(Method.java:597)
+>>>>         at org.scijava.module.MethodRef.execute(MethodRef.java:69)
+>>>>         ... 14 more
+>>>> Caused by: java.lang.NullPointerException
+>>>>         at Goutte_pendante.initTitle(Goutte_pendante.java:94)
+>>>>         ... 19 more
+>>>> [ERROR] Module threw exception
+>>>> java.lang.NullPointerException
+>>>>         at Goutte_pendante.cancel(Goutte_pendante.java:87)
+>>>>         at
+>>>> org.scijava.command.CommandModule.cancel(CommandModule.java:140)
+>>>>         at
+>>>> org.scijava.module.ModuleRunner.cleanupAndBroadcastCancelation(ModuleRunner.java:189)
+>>>>         at 
+>>>>org.scijava.module.ModuleRunner.run(ModuleRunner.java:161)
+>>>>         at 
+>>>>org.scijava.module.ModuleRunner.call(ModuleRunner.java:126)
+>>>>         at 
+>>>>org.scijava.module.ModuleRunner.call(ModuleRunner.java:65)
+>>>>         at
+>>>> org.scijava.thread.DefaultThreadService$2.call(DefaultThreadService.java:191)
+>>>>         at
+>>>> java.util.concurrent.FutureTask$Sync.innerRun(FutureTask.java:303)
+>>>>         at java.util.concurrent.FutureTask.run(FutureTask.java:138)
+>>>>         at
+>>>> java.util.concurrent.ThreadPoolExecutor$Worker.runTask(ThreadPoolExecutor.java:886)
+>>>>         at
+>>>> java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:908)
+>>>>         at java.lang.Thread.run(Thread.java:662)
+>>>>
+>>>>
+>>>>
+>>>> On Sat, 15 Aug 2015 13:14:13 +0200
+>>>>  Adrian Daerr <adrian.daerr at univ-paris-diderot.fr> wrote:
+>>>>
+>>>>> Hello,
+>>>>>
+>>>>> I am seizing a major rewrite of a plugin as an opportunity to switch
+>>>>> from ImageJ1 to ImageJ2, also to avoid concurrency issues[*], and 
+>>>>>now
+>>>>> lots of questions come up. Some concern the way ROIs are handled. 
+>>>>>What
+>>>>> has happened in this regard since
+>>>>>   http://imagej.net/ROIs
+>>>>> was last updated ?
+>>>>>
+>>>>> [*] cf discussion on the ImageJ list archived at
+>>>>>
+>>>>> http://imagej.1557.x6.nabble.com/ExtendedPlugInFilter-GenericDialog-and-synchronization-td5013333.html
+>>>>>
+>>>>> Here are two concrete questions:
+>>>>>
+>>>>> 1) My plugin relies on a rectangular ROI being drawn on the image to
+>>>>> know which area to include in the computation. How do I draw this 
+>>>>>ROI
+>>>>> once I have loaded the image as a dataset in the main() method that 
+>>>>>is
+>>>>> used for testing purposes ?
+>>>>>
+>>>>> public static void main(final String... args) throws Exception {
+>>>>>     final String testImagePath = "testImage.jpg";
+>>>>>
+>>>>>     // Launch ImageJ as usual.
+>>>>>     final ImageJ ij = net.imagej.Main.launch(args);
+>>>>>
+>>>>>     // Open test image.
+>>>>>     final Dataset dataset = ij.dataset().open(testImagePath);
+>>>>>
+>>>>>     // display the dataset
+>>>>>     ij.ui().show(dataset);
+>>>>>
+>>>>>     // create rectangular ROI
+>>>>>     //imp.setRoi(120,60,340,420);// How to do this on a dataset ?
+>>>>>
+>>>>>     // Launch the "Foo_Bar" command.
+>>>>>     ij.command().run(Foo_Bar.class, true);
+>>>>> }
+>>>>>
+>>>>> (alternatively, how would I generate a new dataset, or I guess 
+>>>>>something
+>>>>> like a "View" in ImageJ2 terminology, of the ROI sub-image of the 
+>>>>>original
+>>>>> dataset ? I could then substitute the original dataset with this 
+>>>>>sub-image
+>>>>> and have the plugin operate on the whole image by default)
+>>>>>
+>>>>> 2) The plugin preview generates overlays using java.awt.geom.Path2D,
+>>>>> java.awt.geom.Area and java.awt.Shape, which are then converted via
+>>>>> ij.gui.ShapeRoi() and ij.gui.Overlay(), assembled with 
+>>>>>overlay.add(),
+>>>>> and drawn using imp.setOverlay(). Is there a new IJ2-way to do this
+>>>>> (especially since the cited web page (rightly) insists on separation
+>>>>> of selection and visualisation shapes) ?
+>>>>>
+>>>>> TIA,
+>>>>> Adrian
+>>>>>
+>>>>> _______________________________________________
+>>>>> ImageJ-devel mailing list
+>>>>> ImageJ-devel at imagej.net
+>>>>> http://imagej.net/mailman/listinfo/imagej-devel
+>>>>>
+>>>>
+>>>> --
+>>>> http://www.msc.univ-paris-diderot.fr/~daerr/
+>>>>
+>>>> _______________________________________________
+>>>> ImageJ-devel mailing list
+>>>> ImageJ-devel at imagej.net
+>>>> http://imagej.net/mailman/listinfo/imagej-devel
+>>>>
+>>>
+>>> --
+>>> http://www.msc.univ-paris-diderot.fr/~daerr/
+>>>
+>>> _______________________________________________
+>>> ImageJ-devel mailing list
+>>> ImageJ-devel at imagej.net
+>>> http://imagej.net/mailman/listinfo/imagej-devel
+>>>
+> 
+> -- 
+> http://www.msc.univ-paris-diderot.fr/~daerr/
+
+-- 
+http://www.msc.univ-paris-diderot.fr/~daerr/
+
+
+From rhaase at mpi-cbg.de  Tue Sep  8 09:11:22 2015
+From: rhaase at mpi-cbg.de (Robert Haase)
+Date: Tue, 8 Sep 2015 16:11:22 +0200
+Subject: [ImageJ-devel] Qeustion regarding labeling and regions of interest
+	in imglib2
+Message-ID: <55EEEC8A.8010008@mpi-cbg.de>
+
+Hi All,
+
+I'm quite new in developing imagej-plugins using imglib2. I ran in some 
+issues working with Labeling and Regions in imglib2. Hopefully, somebody 
+of you can help me. This is what I would like to do:
+
+I have an image(Plus) where pixel values correspond to the desired 
+labeling. Thus, all pixels with value 1 belong to label 1, all pixels 
+with value 2 belong to label 2 and so on. Labelled regions cannot 
+overlap. Now, I would like to create an ImgLabeling from the given 
+ImagePlus to manage the corresponding regions of interest in imglib2 and 
+to do the analysis using this library.
+I was able to create some functions which appear to do the 
+transformation, however, the results are not fully understandable for 
+me. On bottom of this email you find "minimal" example code (which runs 
+fine in eclipse set up for ImageJ-development) which creates a 
+labelmap-ImagePlus, transforms it into ImgLabeling and displays binary 
+images corresponding to the regions. However, when I input a label with 
+100 pixels, the corresponding output region may or may not have the same 
+number of pixels. So the output of the program is:
+
+Number of input pixels in label 0: 9400
+Number of input pixels in label 1: 100
+Number of input pixels in label 2: 200
+Number of input pixels in label 3: 300
+Number of input pixels in label 4: 0
+Number of out pixels in region: 10000
+Number of out pixels in region: 600
+Number of out pixels in region: 500
+Number of out pixels in region: 300
+
+As you can see, the number of read-in pixels is not equal to the number 
+of pixels which are positive afterwards in the corresponding region. The 
+program visualises the images as well. The mistake in the result is 
+obvious. My mistake in the code is not that obvious to me.
+
+I guess, I interpret the meaning of regions and/or labels wrong. 
+Hopefully somebody of you may point me in the right direction to do the 
+above mentioned transformation properly.
+
+Thanks a lot in advance!
+Robert
+
+LabelingExample.java ----------------------------
+
+
+import ij.ImagePlus;
+import ij.gui.NewImage;
+import ij.process.ImageProcessor;
+
+import java.awt.Rectangle;
+import java.io.IOException;
+import java.util.Set;
+
+import net.imglib2.Cursor;
+import net.imglib2.RandomAccess;
+import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.img.Img;
+import net.imglib2.img.array.ArrayImgs;
+import net.imglib2.img.display.imagej.ImageJFunctions;
+import net.imglib2.roi.labeling.ImgLabeling;
+import net.imglib2.roi.labeling.LabelRegion;
+import net.imglib2.roi.labeling.LabelRegionCursor;
+import net.imglib2.roi.labeling.LabelRegions;
+import net.imglib2.roi.labeling.LabelingType;
+import net.imglib2.type.logic.BitType;
+import net.imglib2.type.logic.BoolType;
+import net.imglib2.type.numeric.integer.IntType;
+import net.imglib2.type.numeric.real.FloatType;
+
+public class LabelingExample {
+     LabelingExample()
+     {
+         new ij.ImageJ();
+
+         //Create and show a simple test image, 100x100
+         ImagePlus imp = createTestImage();
+         imp.show();
+
+         //Create an ImgLabeling from the ImagePlus
+         ImgLabeling<Integer, IntType> labeling = 
+getIntIntImgLabellingFromLabelMapImagePlus(imp);
+
+         //Read out regions and labelNames
+         LabelRegions<Integer> regions = new 
+LabelRegions<Integer>(labeling);
+         Set<Integer> labelNames = labeling.getMapping().getLabels();
+
+         //Visualise the labels as binary images.
+         for (Integer labelName : labelNames )
+         {
+             LabelRegion<Integer> lr = regions.getLabelRegion(labelName);
+             ImageJFunctions.show(labelRegionToBinaryImage(lr, 
+(Img<IntType>)labeling.getIndexImg()));
+         }
+     }
+
+     //Create an image with three labels (+background)
+     //The three labels have an area of 100, 200 and 300.
+     private ImagePlus createTestImage()
+     {
+         ImagePlus imp = NewImage.createByteImage("Test iamge", 100, 
+100, 1, NewImage.FILL_BLACK);
+         ImageProcessor ip = imp.getProcessor();
+         ip.setRoi(new Rectangle(10, 10, 10, 10));
+         ip.setColor(1);
+         ip.fill();
+         ip.setRoi(new Rectangle(20, 20, 10, 20));
+         ip.setColor(2);
+         ip.fill();
+         ip.setRoi(new Rectangle(40, 40, 10, 30));
+         ip.setColor(3);
+         ip.fill();
+
+         return imp;
+     }
+
+     //Transform an ImagePlus to a Labeling Imp. The original pixel 
+value should be the label afterwards.
+     public static ImgLabeling<Integer, IntType> 
+getIntIntImgLabellingFromLabelMapImagePlus(ImagePlus labelMap)
+     {
+         final RandomAccessibleInterval< IntType > img = 
+ImageJFunctions.wrapNumeric(labelMap);
+         Img< FloatType > img2 = ImageJFunctions.convertFloat(labelMap);
+         final long[] dims = new long[ img.numDimensions() ];
+
+         ImgLabeling< Integer, IntType > labeling = new ImgLabeling< 
+Integer, IntType >( img );
+
+         Cursor<LabelingType<Integer>> labelCursor = labeling.cursor();
+         RandomAccess<FloatType> imageRA = img2.randomAccess();
+
+         // Go through the whole image again and again for every single 
+label, until no more label is found.
+         // If you know a more efficient way to do this, tell me...
+         int currentLabel = 0;
+         boolean anythingFound = true;
+         while (anythingFound)
+         {
+             anythingFound = false;
+             labelCursor.reset();
+
+             //Go through the whole image and add every pixel, that 
+belongs to the currently processed label
+             int count = 0;
+             while (labelCursor.hasNext())
+             {
+                 LabelingType<Integer> element = labelCursor.next();
+                 imageRA.setPosition(labelCursor);
+
+                 int i = (int)(imageRA.get().get());
+                 if (i == currentLabel)
+                 {
+                     element.add(i);
+                     anythingFound = true;
+                     count ++;
+                 }
+             }
+             System.out.println("Number of input pixels in label " + 
+currentLabel + ": " + count);
+             currentLabel++;
+         }
+         ImageJFunctions.show(labeling.getIndexImg());
+         return labeling;
+     }
+
+     //Transform a Region to a binary image, which can be displayed
+     public static < T, F > Img<BitType> 
+labelRegionToBinaryImage(LabelRegion<T> region, Img<F> img)
+     {
+         final long[] pos = new long[ img.numDimensions() ];
+         final long[] dims = new long[ img.numDimensions() ];
+         img.dimensions( dims );
+
+         final Img< BitType > newImage = ArrayImgs.bits( dims );
+
+         RandomAccess<BitType> imageRA = newImage.randomAccess();
+         LabelRegionCursor regionCursor = region.cursor();
+
+         int count = 0;
+         while (regionCursor.hasNext())
+         {
+             //Read yes/no from region
+             BoolType regionElement = regionCursor.next();
+             regionCursor.localize(pos);
+             imageRA.setPosition(pos);
+             BitType imageElement = imageRA.get();
+
+             //Draw binary image pixel by pixel
+             if (regionElement.get())
+             {
+                 count++;
+                 imageElement.set(true);
+             }
+             else
+             {
+                 imageElement.set(false);
+             }
+         }
+         System.out.println("Number of output pixels in region: " + count);
+         return newImage;
+     }
+
+
+
+     //Just to run it
+     public static void main(final String... args) throws IOException
+     {
+         new LabelingExample();
+     }
+}
+
+
+
+
+-- 
+Robert Haase
+Bio-Image informatics, Scientific Computing Facility
+
+Max Planck Institute CBG
+Pfotenhauer Str. 108, 01307 Dresden
+room: 106 (s)
+phone: +49 351 210 2972
+fax:   +49 351 210 1689
+
+
+
+From chaumont at pasteur.fr  Tue Sep  8 09:52:27 2015
+From: chaumont at pasteur.fr (Fabrice de Chaumont)
+Date: Tue, 8 Sep 2015 16:52:27 +0200
+Subject: [ImageJ-devel] JEX
+In-Reply-To: <76f09031111e9.53561d3d@wiscmail.wisc.edu>
+References: <F3963F7B-B5D8-4549-A26A-B774571A7DEA@wisc.edu>
+	<8DCE1A3A-F03D-4129-8ACB-716491ECC054@wisc.edu>
+	<CADN69y=kkztqdEXWPyAmf-nEOgS5wipmUr-FGqXceYxtOwJ1Ow@mail.gmail.com>
+	<76f09031111e9.53561d3d@wiscmail.wisc.edu>
+Message-ID: <CA+vj2i02-AyjbTHPE91+XS3yh4Sic0CxbV4CmkUmzH21aWp+iw@mail.gmail.com>
+
+Hi !
+
+Thank you again for this conference !!
+It was a great event, I was amazed by the quality of the talks !
+And the keynotes of Curtis were super-cool ! (I can't beleive you made each
+of them in less than 1 day !!) very efficient !
+
+We've been around Madison, the place is extra !
+
+I wish you a very productive hackathon !
+
+Best and hope to see you soon !
+
+Fabrice
+
+
+2014-04-22 14:41 GMT+02:00 Kevin W Eliceiri <eliceiri at wisc.edu>:
+
+> this is great guys, glad to seek
+>
+> On 04/17/14, Curtis Rueden  wrote:
+> > Hi Jay & Erwin,
+> >
+> > > Erwin and I are exploring the idea of a new version of JEX that would
+> > > itself be a plugin of ImageJ.
+> >
+> >
+> > That would be fantastic.
+> >
+> > > There are a few different ways this could be developed... Either as
+> > > part of the imagej managed code base (i.e. a package within a current
+> > > ImageJ2 project or as its own maven project that is updated and
+> > > managed like the rest of the ImageJ2 suite of projects like ij-app,
+> > > ij-core, etc.) or as a completely separate project that we jarify and
+> > > allow users to put into the plugin folder of ImageJ afterward.
+> >
+> >
+> >
+> > The model we are targeting is "one Git repository per JAR file" with
+> each being a Maven module with its own version. We have already completed
+> this transition with the Fiji project [1], and ImageJ2 will be completely
+> structured that way soon as well. This approach has many advantages:
+> >
+> >
+> > 1) Stable release version couplings between components, so that if an
+> upstream component changes, downstream components are not affected/broken
+> until they intentionally upgrade to the newer version.
+> >
+> >
+> > 2) Independent versioning of each component. When a bug is fixed in a
+> particular component, we just release a new version of that component. No
+> need to cut vacuous releases of the entire collection of ImageJ2 JARs.
+> >
+> >
+> > 3) Easier and less intimidating to contribute to an individual plugin:
+> just fork that one repo, push your changes and file a PR. No need to clone
+> an all-encompassing fiji.git or imagej.git repository.
+> >
+> >
+> > Further, in the Fiji project, each module is now what we call an
+> "external plugin" that lives in its own repository, either in the
+> github.com/fiji(http://github.com/fiji) namespace, or in some cases [2,
+> 3] in the plugin developer&#39;s personal space (doesn&#39;t matter that
+> much).
+> >
+> >
+> > ImageJ2 and Fiji support multiple update sites [4]. There is a core
+> ImageJ2 update site [5], a core Fiji update site [6], and many others as
+> well [7]. JEX would be a perfect fit for its own update site, giving you
+> full control over every aspect of your releases while leveraging the power
+> of ImageJ2 for deployment to your users.
+> >
+> >
+> > In short: I would suggest creating a personal update site for JEX and
+> serving your releases from there. That way, anyone using ImageJ2 or Fiji
+> can install JEX simply by checking a box. For details, see:
+> >
+> >
+> > http://fiji.sc/How_to_set_up_and_populate_an_update_site
+> >
+> >
+> >
+> > And as you know I would certainly advise structuring JEX as a Maven
+> project, though it is not required. Here is a template you can use as a
+> starting point:
+> >
+> >
+> > https://github.com/imagej/minimal-ij1-plugin
+> >
+> >
+> > Very happy to answer any questions our issues you have on your journey.
+> :-)
+> >
+> >
+> > Regards,
+> > Curtis
+> >
+> >
+> > [1] https://github.com/fiji
+> > [2] https://github.com/tferr/ASA
+> >
+> > [3] git://repo.or.cz/trakem2.git(http://repo.or.cz/trakem2.git)
+> > [4] http://fiji.sc/Update_Sites
+> > [5] http://update.imagej.net/
+> > [6] http://fiji.sc/update/
+> > [7] http://fiji.sc/List_of_update_sites
+> >
+> >
+> >
+> > On Thu, Apr 17, 2014 at 9:41 AM, Jay Warrick <warrick at wisc.edu(javascript:main.compose()>
+> wrote:
+> >
+> > > Sorry to clog your inbox. Evidently this didn&#39;t send last night
+> and it got sent without closing the email...
+> > >
+> > > Any ideas or suggestions on a development approach would be welcome.
+> You have sold me/us on your approach to application development. We want to
+> integrate ourselves the best way possible but don&#39;t want to bring the
+> project down by being less professional in our coding abilities and
+> practices. We&#39;ll do our best but I&#39;m not sure we&#39;ll ever be
+> able to be on par with the rest of you guys :-)
+> > >
+> > >
+> > > I look forward to hearing from you. Thanks,
+> > >
+> > >
+> > > Jay (and Erwin)
+> > >
+> > >
+> > > Begin forwarded message:
+> > >
+> > >
+> > > > From: Jay Warrick <warrick at wisc.edu(javascript:main.compose()>
+> > > >
+> > > > Subject: JEX
+> > > >
+> > > > Date: April 17, 2014 at 9:35:04 AM CDT
+> > > >
+> > > > To: Curtis Rueden <ctrueden at wisc.edu(javascript:main.compose()>
+> > > >
+> > > >
+> > > > Hi Curtis,
+> > > >
+> > > > Erwin and I are exploring the idea of a new version of JEX that
+> would itself be a plugin of ImageJ.
+> > > >
+> > > >
+> > > > There are a few different ways this could be developed... Either as
+> part of the imagej managed code base (i.e. a package within a current
+> ImageJ2 project or as its own maven project that is updated and managed
+> like the rest of the ImageJ2 suite of projects like ij-app, ij-core, etc.)
+> or as a completely separate project that we jarify and allow users to put
+> into the plugin folder of ImageJ afterward. What might you recommend? We
+> don&#39;t want to impose or muddy up your architecture but also really like
+> the idea of being well-integrated with your current lifecycle management
+> schemes (i.e. maven dependancies, compiling, versioning, and updating of
+> jars (Jenkins etc).
+> > > >
+> > > >
+> > > >
+> > > >
+> > > >
+> > > >
+> > > >
+> > >
+> > >
+> > >
+> > >
+> > >
+>
+> --
+> Kevin W. Eliceiri
+> Director, Laboratory for Optical and Computational Instrumentation (LOCI)
+> Departments Cell and Molecular Biology and Biomedical Engineering
+> Affiliate Principal Investigator, Morgridge Institute for Research (MIR)
+> Room 271 Animal Sciences, 1675 Observatory Drive, Madison, WI 53706
+> Phone: 608-263-6288
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+
+
+
+-- 
+Fabrice de Chaumont
+Institut Pasteur
+Bioimage Analysis Unit
+http://icy.bioimageanalysis.org/
+CNRS UMR 3691
+25, rue du docteur Roux - 75724 Paris Cedex 15 - France
+
+T?l: +33 (0)1 45 68 86 90
+Fax: +33 (0)1 40 61 33 30
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150908/f9485ec8/attachment.html>
+
+From pietzsch at mpi-cbg.de  Wed Sep  9 14:21:19 2015
+From: pietzsch at mpi-cbg.de (Tobias Pietzsch)
+Date: Wed, 9 Sep 2015 14:21:19 -0500
+Subject: [ImageJ-devel] Qeustion regarding labeling and regions of
+	interest in imglib2
+In-Reply-To: <55EEEC8A.8010008@mpi-cbg.de>
+References: <55EEEC8A.8010008@mpi-cbg.de>
+Message-ID: <DCC84763-D854-427A-9459-D19047526C14@mpi-cbg.de>
+
+Hi Robert,
+
+the problem is the following:
+In the ImgLabeling constructor
+	public ImgLabeling( final RandomAccessibleInterval< I > img )
+the img you pass is used to store the labels at each pixel.
+(The way that works is that integers are mapped to sets of labels that occur. If you have labels of type String, i.e., a ImgLabeling<String,IntType>,
+then depending on which labels and combinations of labels actually occur in your labeling, the mapping might be something like
+ 0 -> {}
+ 1 -> {"A"}
+ 2 -> {"B"}
+ 3 -> {"B","C"}
+etc...
+The mapping is build, as you add labels to pixels.)
+
+The assumption is that initially the labeling is empty, that is all zeros in the backing image, and the mapping just comprising 0 -> {}.
+In your example, you passed the labelMap as the backing image. This is not zeroed.
+
+One way to make your example work is to simply use a new, empty backing image, and then set the labels from the labelMap like you did.
+Replace this:
+		final RandomAccessibleInterval< IntType > img = ImageJFunctions.wrapNumeric( labelMap );
+		Img< FloatType > img2 = ImageJFunctions.convertFloat( labelMap );
+		final long[] dims = new long[ img.numDimensions() ];
+		ImgLabeling< Integer, IntType > labeling = new ImgLabeling< Integer, IntType >( img );
+by this:
+		final Img< FloatType > img2 = ImageJFunctions.convertFloat( labelMap );
+		final Dimensions dims = img2;
+		final IntType t = new IntType();
+		final RandomAccessibleInterval< IntType > img = Util.getArrayOrCellImgFactory( dims, t ).create( dims, t );
+		final ImgLabeling< Integer, IntType > labeling = new ImgLabeling< Integer, IntType >( img );
+Then it works.
+
+
+For transfering the labeling you do not have to loop over all the labels. you could just do this:
+	final Cursor< LabelingType< Integer > > labelCursor = Views.flatIterable( labeling ).cursor();
+	for ( final UnsignedByteType input : Views.flatIterable( ImageJFunctions.wrapByte( labelMap ) ) )
+	{
+		final LabelingType< Integer > element = labelCursor.next();
+		if ( input.get() != 0 )
+			element.add( input.get() );
+	}
+(This assumes that in labelMap the value 0 means ?no label?).
+
+
+In principle, if your labelMap has values 0, 1, 2, ... without big gaps, and 0 means ?no label? you could just use it directly as backing image and produce a fitting LabelingMapping, like
+ 0 -> {}
+ 1 -> {1}
+ 2 -> {2}
+ 3 -> {3}
+etc yourself. But that involves diving much deeper into the details, basically reading through the code of ImgLabeling and LabelingMapping.
+I would recommend above solution for now.
+
+best regards,
+Tobias
+
+On 08 Sep 2015, at 09:11, Robert Haase <rhaase at mpi-cbg.de> wrote:
+
+> Hi All,
+> 
+> I'm quite new in developing imagej-plugins using imglib2. I ran in some issues working with Labeling and Regions in imglib2. Hopefully, somebody of you can help me. This is what I would like to do:
+> 
+> I have an image(Plus) where pixel values correspond to the desired labeling. Thus, all pixels with value 1 belong to label 1, all pixels with value 2 belong to label 2 and so on. Labelled regions cannot overlap. Now, I would like to create an ImgLabeling from the given ImagePlus to manage the corresponding regions of interest in imglib2 and to do the analysis using this library.
+> I was able to create some functions which appear to do the transformation, however, the results are not fully understandable for me. On bottom of this email you find "minimal" example code (which runs fine in eclipse set up for ImageJ-development) which creates a labelmap-ImagePlus, transforms it into ImgLabeling and displays binary images corresponding to the regions. However, when I input a label with 100 pixels, the corresponding output region may or may not have the same number of pixels. So the output of the program is:
+> 
+> Number of input pixels in label 0: 9400
+> Number of input pixels in label 1: 100
+> Number of input pixels in label 2: 200
+> Number of input pixels in label 3: 300
+> Number of input pixels in label 4: 0
+> Number of out pixels in region: 10000
+> Number of out pixels in region: 600
+> Number of out pixels in region: 500
+> Number of out pixels in region: 300
+> 
+> As you can see, the number of read-in pixels is not equal to the number of pixels which are positive afterwards in the corresponding region. The program visualises the images as well. The mistake in the result is obvious. My mistake in the code is not that obvious to me.
+> 
+> I guess, I interpret the meaning of regions and/or labels wrong. Hopefully somebody of you may point me in the right direction to do the above mentioned transformation properly.
+> 
+> Thanks a lot in advance!
+> Robert
+> 
+> LabelingExample.java ----------------------------
+> 
+> 
+> import ij.ImagePlus;
+> import ij.gui.NewImage;
+> import ij.process.ImageProcessor;
+> 
+> import java.awt.Rectangle;
+> import java.io.IOException;
+> import java.util.Set;
+> 
+> import net.imglib2.Cursor;
+> import net.imglib2.RandomAccess;
+> import net.imglib2.RandomAccessibleInterval;
+> import net.imglib2.img.Img;
+> import net.imglib2.img.array.ArrayImgs;
+> import net.imglib2.img.display.imagej.ImageJFunctions;
+> import net.imglib2.roi.labeling.ImgLabeling;
+> import net.imglib2.roi.labeling.LabelRegion;
+> import net.imglib2.roi.labeling.LabelRegionCursor;
+> import net.imglib2.roi.labeling.LabelRegions;
+> import net.imglib2.roi.labeling.LabelingType;
+> import net.imglib2.type.logic.BitType;
+> import net.imglib2.type.logic.BoolType;
+> import net.imglib2.type.numeric.integer.IntType;
+> import net.imglib2.type.numeric.real.FloatType;
+> 
+> public class LabelingExample {
+>    LabelingExample()
+>    {
+>        new ij.ImageJ();
+> 
+>        //Create and show a simple test image, 100x100
+>        ImagePlus imp = createTestImage();
+>        imp.show();
+> 
+>        //Create an ImgLabeling from the ImagePlus
+>        ImgLabeling<Integer, IntType> labeling = getIntIntImgLabellingFromLabelMapImagePlus(imp);
+> 
+>        //Read out regions and labelNames
+>        LabelRegions<Integer> regions = new LabelRegions<Integer>(labeling);
+>        Set<Integer> labelNames = labeling.getMapping().getLabels();
+> 
+>        //Visualise the labels as binary images.
+>        for (Integer labelName : labelNames )
+>        {
+>            LabelRegion<Integer> lr = regions.getLabelRegion(labelName);
+>            ImageJFunctions.show(labelRegionToBinaryImage(lr, (Img<IntType>)labeling.getIndexImg()));
+>        }
+>    }
+> 
+>    //Create an image with three labels (+background)
+>    //The three labels have an area of 100, 200 and 300.
+>    private ImagePlus createTestImage()
+>    {
+>        ImagePlus imp = NewImage.createByteImage("Test iamge", 100, 100, 1, NewImage.FILL_BLACK);
+>        ImageProcessor ip = imp.getProcessor();
+>        ip.setRoi(new Rectangle(10, 10, 10, 10));
+>        ip.setColor(1);
+>        ip.fill();
+>        ip.setRoi(new Rectangle(20, 20, 10, 20));
+>        ip.setColor(2);
+>        ip.fill();
+>        ip.setRoi(new Rectangle(40, 40, 10, 30));
+>        ip.setColor(3);
+>        ip.fill();
+> 
+>        return imp;
+>    }
+> 
+>    //Transform an ImagePlus to a Labeling Imp. The original pixel value should be the label afterwards.
+>    public static ImgLabeling<Integer, IntType> getIntIntImgLabellingFromLabelMapImagePlus(ImagePlus labelMap)
+>    {
+>        final RandomAccessibleInterval< IntType > img = ImageJFunctions.wrapNumeric(labelMap);
+>        Img< FloatType > img2 = ImageJFunctions.convertFloat(labelMap);
+>        final long[] dims = new long[ img.numDimensions() ];
+> 
+>        ImgLabeling< Integer, IntType > labeling = new ImgLabeling< Integer, IntType >( img );
+> 
+>        Cursor<LabelingType<Integer>> labelCursor = labeling.cursor();
+>        RandomAccess<FloatType> imageRA = img2.randomAccess();
+> 
+>        // Go through the whole image again and again for every single label, until no more label is found.
+>        // If you know a more efficient way to do this, tell me...
+>        int currentLabel = 0;
+>        boolean anythingFound = true;
+>        while (anythingFound)
+>        {
+>            anythingFound = false;
+>            labelCursor.reset();
+> 
+>            //Go through the whole image and add every pixel, that belongs to the currently processed label
+>            int count = 0;
+>            while (labelCursor.hasNext())
+>            {
+>                LabelingType<Integer> element = labelCursor.next();
+>                imageRA.setPosition(labelCursor);
+> 
+>                int i = (int)(imageRA.get().get());
+>                if (i == currentLabel)
+>                {
+>                    element.add(i);
+>                    anythingFound = true;
+>                    count ++;
+>                }
+>            }
+>            System.out.println("Number of input pixels in label " + currentLabel + ": " + count);
+>            currentLabel++;
+>        }
+>        ImageJFunctions.show(labeling.getIndexImg());
+>        return labeling;
+>    }
+> 
+>    //Transform a Region to a binary image, which can be displayed
+>    public static < T, F > Img<BitType> labelRegionToBinaryImage(LabelRegion<T> region, Img<F> img)
+>    {
+>        final long[] pos = new long[ img.numDimensions() ];
+>        final long[] dims = new long[ img.numDimensions() ];
+>        img.dimensions( dims );
+> 
+>        final Img< BitType > newImage = ArrayImgs.bits( dims );
+> 
+>        RandomAccess<BitType> imageRA = newImage.randomAccess();
+>        LabelRegionCursor regionCursor = region.cursor();
+> 
+>        int count = 0;
+>        while (regionCursor.hasNext())
+>        {
+>            //Read yes/no from region
+>            BoolType regionElement = regionCursor.next();
+>            regionCursor.localize(pos);
+>            imageRA.setPosition(pos);
+>            BitType imageElement = imageRA.get();
+> 
+>            //Draw binary image pixel by pixel
+>            if (regionElement.get())
+>            {
+>                count++;
+>                imageElement.set(true);
+>            }
+>            else
+>            {
+>                imageElement.set(false);
+>            }
+>        }
+>        System.out.println("Number of output pixels in region: " + count);
+>        return newImage;
+>    }
+> 
+> 
+> 
+>    //Just to run it
+>    public static void main(final String... args) throws IOException
+>    {
+>        new LabelingExample();
+>    }
+> }
+> 
+> 
+> 
+> 
+> --
+> Robert Haase
+> Bio-Image informatics, Scientific Computing Facility
+> 
+> Max Planck Institute CBG
+> Pfotenhauer Str. 108, 01307 Dresden
+> room: 106 (s)
+> phone: +49 351 210 2972
+> fax:   +49 351 210 1689
+> 
+> 
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150909/f5a9d76b/attachment-0001.html>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150909/f5a9d76b/attachment-0001.pgp>
+
+From rhaase at mpi-cbg.de  Thu Sep 10 03:11:38 2015
+From: rhaase at mpi-cbg.de (Robert Haase)
+Date: Thu, 10 Sep 2015 10:11:38 +0200
+Subject: [ImageJ-devel] Qeustion regarding labeling and regions of
+ interest in imglib2
+In-Reply-To: <DCC84763-D854-427A-9459-D19047526C14@mpi-cbg.de>
+References: <55EEEC8A.8010008@mpi-cbg.de>
+	<DCC84763-D854-427A-9459-D19047526C14@mpi-cbg.de>
+Message-ID: <55F13B3A.6040507@mpi-cbg.de>
+
+Hi Tobias,
+
+thanks a lot for the help. Actually, the presented for-loop only worked 
+for byte images, but the needed change is not too complicated.
+
+Just in case, somebody out there has a similar issue, the final solution is:
+
+//Transform an ImagePlus to an ImpLabeling. The original pixel value 
+should be the label afterwards.
+     public static ImgLabeling<Integer, IntType> 
+getIntIntImgLabellingFromLabelMapImagePlus(ImagePlus labelMap)
+     {
+         final Img< FloatType > img2 = ImageJFunctions.wrapFloat( 
+labelMap );
+         final Dimensions dims = img2;
+         final IntType t = new IntType();
+         final RandomAccessibleInterval< IntType > img = 
+Util.getArrayOrCellImgFactory( dims, t ).create( dims, t );
+         final ImgLabeling< Integer, IntType > labeling = new 
+ImgLabeling< Integer, IntType >( img );
+
+         final Cursor< LabelingType< Integer > > labelCursor = 
+Views.flatIterable( labeling ).cursor();
+
+         for ( final FloatType input : Views.flatIterable( img2 ) )
+         {
+             final LabelingType< Integer > element = labelCursor.next();
+             if ( input.get() != 0 )
+                 element.add( (int)input.get() );
+         }
+
+         return labeling;
+     }
+
+So, thanks again!
+
+Best,
+Robert
+
+Am 9/9/15 um 9:21 PM schrieb Tobias Pietzsch:
+> Hi Robert,
+>
+> the problem is the following:
+> In the ImgLabeling constructor
+> public ImgLabeling( final RandomAccessibleInterval< I > img )
+> the img you pass is used to store the labels at each pixel.
+> (The way that works is that integers are mapped to sets of labels that 
+> occur. If you have labels of type String, i.e., a 
+> ImgLabeling<String,IntType>,
+> then depending on which labels and combinations of labels actually 
+> occur in your labeling, the mapping might be something like
+>  0 -> {}
+>  1 -> {"A"}
+>  2 -> {"B"}
+>  3 -> {"B","C"}
+> etc...
+> The mapping is build, as you add labels to pixels.)
+>
+> The assumption is that initially the labeling is empty, that is all 
+> zeros in the backing image, and the mapping just comprising 0 -> {}.
+> In your example, you passed the labelMap as the backing image. This is 
+> not zeroed.
+>
+> One way to make your example work is to simply use a new, empty 
+> backing image, and then set the labels from the labelMap like you did.
+> Replace this:
+> final RandomAccessibleInterval< IntType > img = 
+> ImageJFunctions.wrapNumeric( labelMap );
+> Img< FloatType > img2 = ImageJFunctions.convertFloat( labelMap );
+> final long[] dims = new long[ img.numDimensions() ];
+> ImgLabeling< Integer, IntType > labeling = new ImgLabeling< Integer, 
+> IntType >( img );
+> by this:
+> final Img< FloatType > img2 = ImageJFunctions.convertFloat( labelMap );
+> final Dimensions dims = img2;
+> final IntType t = new IntType();
+> final RandomAccessibleInterval< IntType > img = 
+> Util.getArrayOrCellImgFactory( dims, t ).create( dims, t );
+> final ImgLabeling< Integer, IntType > labeling = new ImgLabeling< 
+> Integer, IntType >( img );
+> Then it works.
+>
+>
+> For transfering the labeling you do not have to loop over all the 
+> labels. you could just do this:
+> final Cursor< LabelingType< Integer > > labelCursor = 
+> Views.flatIterable( labeling ).cursor();
+> for ( final UnsignedByteType input : Views.flatIterable( 
+> ImageJFunctions.wrapByte( labelMap ) ) )
+> {
+> final LabelingType< Integer > element = labelCursor.next();
+> if ( input.get() != 0 )
+> element.add( input.get() );
+> }
+> (This assumes that in labelMap the value 0 means ?no label?).
+>
+>
+> In principle, if your labelMap has values 0, 1, 2, ... without big 
+> gaps, and 0 means ?no label? you could just use it directly as backing 
+> image and produce a fitting LabelingMapping, like
+>  0 -> {}
+>  1 -> {1}
+>  2 -> {2}
+>  3 -> {3}
+> etc yourself. But that involves diving much deeper into the details, 
+> basically reading through the code of ImgLabeling and LabelingMapping.
+> I would recommend above solution for now.
+>
+> best regards,
+> Tobias
+>
+> On 08 Sep 2015, at 09:11, Robert Haase <rhaase at mpi-cbg.de 
+> <mailto:rhaase at mpi-cbg.de>> wrote:
+>
+>> Hi All,
+>>
+>> I'm quite new in developing imagej-plugins using imglib2. I ran in 
+>> some issues working with Labeling and Regions in imglib2. Hopefully, 
+>> somebody of you can help me. This is what I would like to do:
+>>
+>> I have an image(Plus) where pixel values correspond to the desired 
+>> labeling. Thus, all pixels with value 1 belong to label 1, all pixels 
+>> with value 2 belong to label 2 and so on. Labelled regions cannot 
+>> overlap. Now, I would like to create an ImgLabeling from the given 
+>> ImagePlus to manage the corresponding regions of interest in imglib2 
+>> and to do the analysis using this library.
+>> I was able to create some functions which appear to do the 
+>> transformation, however, the results are not fully understandable for 
+>> me. On bottom of this email you find "minimal" example code (which 
+>> runs fine in eclipse set up for ImageJ-development) which creates a 
+>> labelmap-ImagePlus, transforms it into ImgLabeling and displays 
+>> binary images corresponding to the regions. However, when I input a 
+>> label with 100 pixels, the corresponding output region may or may not 
+>> have the same number of pixels. So the output of the program is:
+>>
+>> Number of input pixels in label 0: 9400
+>> Number of input pixels in label 1: 100
+>> Number of input pixels in label 2: 200
+>> Number of input pixels in label 3: 300
+>> Number of input pixels in label 4: 0
+>> Number of out pixels in region: 10000
+>> Number of out pixels in region: 600
+>> Number of out pixels in region: 500
+>> Number of out pixels in region: 300
+>>
+>> As you can see, the number of read-in pixels is not equal to the 
+>> number of pixels which are positive afterwards in the corresponding 
+>> region. The program visualises the images as well. The mistake in the 
+>> result is obvious. My mistake in the code is not that obvious to me.
+>>
+>> I guess, I interpret the meaning of regions and/or labels wrong. 
+>> Hopefully somebody of you may point me in the right direction to do 
+>> the above mentioned transformation properly.
+>>
+>> Thanks a lot in advance!
+>> Robert
+>>
+>> LabelingExample.java ----------------------------
+>>
+>>
+>> import ij.ImagePlus;
+>> import ij.gui.NewImage;
+>> import ij.process.ImageProcessor;
+>>
+>> import java.awt.Rectangle;
+>> import java.io.IOException;
+>> import java.util.Set;
+>>
+>> import net.imglib2.Cursor;
+>> import net.imglib2.RandomAccess;
+>> import net.imglib2.RandomAccessibleInterval;
+>> import net.imglib2.img.Img;
+>> import net.imglib2.img.array.ArrayImgs;
+>> import net.imglib2.img.display.imagej.ImageJFunctions;
+>> import net.imglib2.roi.labeling.ImgLabeling;
+>> import net.imglib2.roi.labeling.LabelRegion;
+>> import net.imglib2.roi.labeling.LabelRegionCursor;
+>> import net.imglib2.roi.labeling.LabelRegions;
+>> import net.imglib2.roi.labeling.LabelingType;
+>> import net.imglib2.type.logic.BitType;
+>> import net.imglib2.type.logic.BoolType;
+>> import net.imglib2.type.numeric.integer.IntType;
+>> import net.imglib2.type.numeric.real.FloatType;
+>>
+>> public class LabelingExample {
+>>    LabelingExample()
+>>    {
+>>        new ij.ImageJ();
+>>
+>>        //Create and show a simple test image, 100x100
+>>        ImagePlus imp = createTestImage();
+>>        imp.show();
+>>
+>>        //Create an ImgLabeling from the ImagePlus
+>>        ImgLabeling<Integer, IntType> labeling = 
+>> getIntIntImgLabellingFromLabelMapImagePlus(imp);
+>>
+>>        //Read out regions and labelNames
+>>        LabelRegions<Integer> regions = new 
+>> LabelRegions<Integer>(labeling);
+>>        Set<Integer> labelNames = labeling.getMapping().getLabels();
+>>
+>>        //Visualise the labels as binary images.
+>>        for (Integer labelName : labelNames )
+>>        {
+>>            LabelRegion<Integer> lr = regions.getLabelRegion(labelName);
+>>            ImageJFunctions.show(labelRegionToBinaryImage(lr, 
+>> (Img<IntType>)labeling.getIndexImg()));
+>>        }
+>>    }
+>>
+>>    //Create an image with three labels (+background)
+>>    //The three labels have an area of 100, 200 and 300.
+>>    private ImagePlus createTestImage()
+>>    {
+>>        ImagePlus imp = NewImage.createByteImage("Test iamge", 100, 
+>> 100, 1, NewImage.FILL_BLACK);
+>>        ImageProcessor ip = imp.getProcessor();
+>>        ip.setRoi(new Rectangle(10, 10, 10, 10));
+>>        ip.setColor(1);
+>>        ip.fill();
+>>        ip.setRoi(new Rectangle(20, 20, 10, 20));
+>>        ip.setColor(2);
+>>        ip.fill();
+>>        ip.setRoi(new Rectangle(40, 40, 10, 30));
+>>        ip.setColor(3);
+>>        ip.fill();
+>>
+>>        return imp;
+>>    }
+>>
+>>    //Transform an ImagePlus to a Labeling Imp. The original pixel 
+>> value should be the label afterwards.
+>>    public static ImgLabeling<Integer, IntType> 
+>> getIntIntImgLabellingFromLabelMapImagePlus(ImagePlus labelMap)
+>>    {
+>>        final RandomAccessibleInterval< IntType > img = 
+>> ImageJFunctions.wrapNumeric(labelMap);
+>>        Img< FloatType > img2 = ImageJFunctions.convertFloat(labelMap);
+>>        final long[] dims = new long[ img.numDimensions() ];
+>>
+>>        ImgLabeling< Integer, IntType > labeling = new ImgLabeling< 
+>> Integer, IntType >( img );
+>>
+>>        Cursor<LabelingType<Integer>> labelCursor = labeling.cursor();
+>>        RandomAccess<FloatType> imageRA = img2.randomAccess();
+>>
+>>        // Go through the whole image again and again for every single 
+>> label, until no more label is found.
+>>        // If you know a more efficient way to do this, tell me...
+>>        int currentLabel = 0;
+>>        boolean anythingFound = true;
+>>        while (anythingFound)
+>>        {
+>>            anythingFound = false;
+>>            labelCursor.reset();
+>>
+>>            //Go through the whole image and add every pixel, that 
+>> belongs to the currently processed label
+>>            int count = 0;
+>>            while (labelCursor.hasNext())
+>>            {
+>>                LabelingType<Integer> element = labelCursor.next();
+>>                imageRA.setPosition(labelCursor);
+>>
+>>                int i = (int)(imageRA.get().get());
+>>                if (i == currentLabel)
+>>                {
+>>                    element.add(i);
+>>                    anythingFound = true;
+>>                    count ++;
+>>                }
+>>            }
+>>            System.out.println("Number of input pixels in label " + 
+>> currentLabel + ": " + count);
+>>            currentLabel++;
+>>        }
+>>        ImageJFunctions.show(labeling.getIndexImg());
+>>        return labeling;
+>>    }
+>>
+>>    //Transform a Region to a binary image, which can be displayed
+>>    public static < T, F > Img<BitType> 
+>> labelRegionToBinaryImage(LabelRegion<T> region, Img<F> img)
+>>    {
+>>        final long[] pos = new long[ img.numDimensions() ];
+>>        final long[] dims = new long[ img.numDimensions() ];
+>>        img.dimensions( dims );
+>>
+>>        final Img< BitType > newImage = ArrayImgs.bits( dims );
+>>
+>>        RandomAccess<BitType> imageRA = newImage.randomAccess();
+>>        LabelRegionCursor regionCursor = region.cursor();
+>>
+>>        int count = 0;
+>>        while (regionCursor.hasNext())
+>>        {
+>>            //Read yes/no from region
+>>            BoolType regionElement = regionCursor.next();
+>>            regionCursor.localize(pos);
+>>            imageRA.setPosition(pos);
+>>            BitType imageElement = imageRA.get();
+>>
+>>            //Draw binary image pixel by pixel
+>>            if (regionElement.get())
+>>            {
+>>                count++;
+>>                imageElement.set(true);
+>>            }
+>>            else
+>>            {
+>>                imageElement.set(false);
+>>            }
+>>        }
+>>        System.out.println("Number of output pixels in region: " + count);
+>>        return newImage;
+>>    }
+>>
+>>
+>>
+>>    //Just to run it
+>>    public static void main(final String... args) throws IOException
+>>    {
+>>        new LabelingExample();
+>>    }
+>> }
+>>
+>>
+>>
+>>
+>> -- 
+>> Robert Haase
+>> Bio-Image informatics, Scientific Computing Facility
+>>
+>> Max Planck Institute CBG
+>> Pfotenhauer Str. 108, 01307 Dresden
+>> room: 106 (s)
+>> phone: +49 351 210 2972
+>> fax:   +49 351 210 1689
+>>
+>>
+>> _______________________________________________
+>> ImageJ-devel mailing list
+>> ImageJ-devel at imagej.net <mailto:ImageJ-devel at imagej.net>
+>> http://imagej.net/mailman/listinfo/imagej-devel
+>
+
+-- 
+Robert Haase
+Bio-Image informatics, Scientific Computing Facility
+
+Max Planck Institute CBG
+Pfotenhauer Str. 108, 01307 Dresden
+room: 106 (s)
+phone: +49 351 210 2972
+fax:   +49 351 210 1689
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150910/fc115410/attachment-0001.html>
+
+From AJAskey at raytheon.com  Mon Sep 14 16:04:44 2015
+From: AJAskey at raytheon.com (Andrew J Askey)
+Date: Mon, 14 Sep 2015 16:04:44 -0500
+Subject: [ImageJ-devel] Displaying into Swing/JFrame
+Message-ID: <OFCECE5C84.653AA57C-ON87257EC0.0072B260-87257EC0.0073CA74@mck.us.ray.com>
+
+Hi. I am trying to use ImageJ2 as a tool in a larger application which is 
+built using Swing windows.  I want to display the windows from ImageJ 
+inside of one of my application JFrame windows (could be some other 
+component if that works better).  I have had some luck creating an 
+ImageCanvas and adding to my layout.  This opens the ImagePlus object and 
+appears to read the mouse correctly.  But any drawing does not show up. If 
+I use and IJ.ImageJ object it displays but not in my JFrame.  Funny thing 
+is that I can draw on my window frame and it shows up in the standard 
+ImageJ window (so reads/input are mapped correctly but writes/out are 
+not).
+
+My question:  Is there a message thread that covers this I can read?  Does 
+someone have a sample app or suggestion they care to share? 
+
+For a simpler approach, I would not mind just running the ImageJ app and 
+having the output sent to my JFrame, if this is an option already built in 
+to ImageJ.
+
+Thanks.
+Andy Askey
+Software Engineer - RME
+Intelligence, Information and Services
+Raytheon Company
++1 720.858.4183   (office)
+AJAskey at raytheon.com
+RSpace Profile
+
+
+
+
+This message contains information that may be confidential and privileged. 
+Unless you are the addressee (or authorized to receive mail for the 
+addressee), you should not use, copy or disclose to anyone this message or 
+any information contained in this message. If you have received this 
+message in error, please so advise the sender by reply e-mail and delete 
+this message. Thank you for your cooperation.
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150914/b2ae36f4/attachment-0001.html>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: image/gif
+Size: 35128 bytes
+Desc: not available
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150914/b2ae36f4/attachment-0002.gif>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: image/gif
+Size: 4310 bytes
+Desc: not available
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150914/b2ae36f4/attachment-0003.gif>
+
+From ctrueden at wisc.edu  Mon Sep 21 16:29:44 2015
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Mon, 21 Sep 2015 16:29:44 -0500
+Subject: [ImageJ-devel] ImageJ Discourse Forum
+Message-ID: <CADN69ynTvJffJUJNLzENzQnqHGQC50UofdXY7tGc-oQXoEdn9Q@mail.gmail.com>
+
+Hi everyone,
+
+We have set up a web-based forum for ImageJ:
+
+    http://forum.imagej.net/
+
+It is driven by Discourse [1], an awesome project designed by one of the
+founders of StackOverflow, and utilizing some of the same concepts.
+
+I personally have disliked forums in the past, which is one reason we
+resisted setting one up for so long. However, Discourse overcomes many
+historical problems of forums?it is really a quantum leap forward for
+facilitating effective and civil discussion.
+
+We invite the community to check it out, and let us know what you think!
+
+If it works sufficiently well, it could consolidate and replace the
+imagej-devel and fiji-devel mailing lists.
+
+Regards,
+Curtis Rueden
+ImageJ2 lead developer
+Fiji maintainer
+UW-Madison LOCI
+
+[1] http://www.discourse.org/
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150921/4af6eb42/attachment.html>
+
+From ctrueden at wisc.edu  Thu Sep 24 12:04:51 2015
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Thu, 24 Sep 2015 12:04:51 -0500
+Subject: [ImageJ-devel] Status and API of ROIs in ImageJ2 ?
+In-Reply-To: <web-160379365@univ-paris7.fr>
+References: <55CF1F05.3050904@univ-paris-diderot.fr>
+	<web-159675194@univ-paris7.fr> <web-159791302@univ-paris7.fr>
+	<CADN69ymvzGSZqFs=JShxA+3iD=FYCk+V38MeTqaLqpf8ybawKw@mail.gmail.com>
+	<web-160192998@univ-paris7.fr> <web-160379365@univ-paris7.fr>
+Message-ID: <CADN69ykzk_kFSsz3dCTzC=TH-qppzHb1rUmF-wVd4Ksas6QRAQ@mail.gmail.com>
+
+Hi Adrian,
+
+> It's as if the ImageDisplay parameter was getting populated by the
+> image before cropping
+
+It seems that the ROI syncing between IJ1 and IJ2 is not happening as
+expected. When your command runs, a sync is supposed to happen during
+preprocessing because you have a Dataset parameter. But maybe the sync is
+incomplete for some reason. Sorry I don't have time to investigate it right
+now, though.
+
+> What are those WARNINGs printed upon plugin invokation ?
+
+Those were debugging statements, which were erroneously set to log.warn. I
+fixed it [1].
+
+Regards,
+Curtis
+
+[1]
+https://github.com/imagej/imagej-legacy/commit/2015336482fe284954d2603fede892d616d20960
+
+On Fri, Sep 4, 2015 at 2:29 PM, Adrian Daerr <
+adrian.daerr at univ-paris-diderot.fr> wrote:
+
+> Hi Curtis,
+>
+> OverlayService.getSelectionBounds seems to behave stranger yet. Take the
+> Foo_Bar test plugin source from my previous post, compile it and place it
+> in ImageJ's plugins directory. Start ImageJ, create a new image (say
+> 400x400 8bpp), draw a rectangular selection inside and invoke Foo_Bar: as
+> reported in my last mail it will report a getSelectionBounds of 399x399
+> instead of the expected dimension of the rectangular selection. Now crop
+> the image to the rectangular selection via Image->Crop, and invoke Foo_Bar
+> again. It will report the same getSelectionBounds (width 399, height 399)
+> although the active image is now strictly smaller. It's as if the
+> ImageDisplay parameter was getting populated by the image before cropping
+> (and of course still without rectangular selection).
+>
+> How is one supposed to use OverlayService.getSelectionBounds ?
+> What are those WARNINGs printed upon plugin invokation ?
+>
+> [WARNING] ====> Roi class = ij.gui.Roi
+> [WARNING] ====> RECTANGLE: Roi[Rectangle, x=76, y=92, width=209,
+> height=160]
+>
+> cheers,
+> Adrian
+>
+>
+> On Tue, 01 Sep 2015 20:41:30 +0200
+>
+>  "Adrian Daerr" <adrian.daerr at univ-paris-diderot.fr> wrote:
+>
+>> Hi Curtis, hi all,
+>>
+>> If all you care about is the bounding box of the active selection, you
+>>> can just do it the same way as the ImageJ2 CropImageJ command:
+>>> by calling OverlayService.getSelectionBounds. Then you would
+>>> avoid some of the current weirdness associated with Overlay
+>>> parameters.
+>>>
+>>
+>> This was working fine with a programmatically added rectangular
+>> overlay/selection, but when I call getSelectionBounds on an image with an
+>> interactively created rectangular selection it returns the whole image
+>> dimension. It does not seem to be aware of the ROI. Below is a MVCE to
+>> reproduce. After compiling and placing it in the plugins folder, I start
+>> imagej, create a new image, draw a rectangular selection using ImageJ's
+>> leftmost tool and then invoque the plugin. It logs the following to the
+>> console:
+>>
+>> [WARNING] ====> Roi class = ij.gui.Roi
+>> [WARNING] ====> RECTANGLE: Roi[Rectangle, x=100, y=163, width=196,
+>> height=112]
+>> [INFO] image: plugin:class net.imagej.display.DefaultImageDisplay:
+>> type=interface net.imagej.display.DataView, name=Untitled,
+>> objects={net.imagej.display.DefaultDatasetView at 757dbeaf,
+>> net.imagej.display.DefaultOverlayView at 2198a037}
+>> [INFO] region: +0.0 +0.0, 559.0 x 559.0
+>>
+>> I expected the region in the last line (that obtained through
+>> OverlayService.getSelectionBounds) to coincide with the Roi mentionned in
+>> the WARNING.
+>>
+>> The CropImage command you mentionned does not do anything either before
+>> calling getSelectionBounds, and cropping works fine. Do you understand what
+>> is going on ?
+>>
+>> Cheers,
+>> Adrian
+>>
+>>
+>> import net.imagej.display.ImageDisplay;
+>> import net.imagej.display.OverlayService;
+>>
+>> import org.scijava.command.Command;
+>> import org.scijava.log.LogService;
+>> import org.scijava.plugin.Parameter;
+>> import org.scijava.plugin.Plugin;
+>> import org.scijava.util.RealRect;
+>>
+>> @Plugin(type = Command.class, menuPath = "Plugins>Foo_Bar")
+>> public class Foo_Bar implements Command {
+>>
+>>     @Parameter
+>>     private ImageDisplay display;
+>>
+>>     @Parameter
+>>     private OverlayService overlayService;
+>>
+>>     @Parameter
+>>     private LogService log;
+>>
+>>     @Override
+>>     public void run() {
+>>         RealRect r = overlayService.getSelectionBounds(display);
+>>         log.info("image: "+display);
+>>         log.info("region: +" + r.x + " +" +  r.y
+>>                  + ", " +  r.width + " x " + r.height);
+>>     }
+>> }
+>>
+>>
+>>
+>>
+>> On Mon, 24 Aug 2015 16:22:15 -0500
+>>  Curtis Rueden <ctrueden at wisc.edu> wrote:
+>>
+>>> Hi Adrian,
+>>>
+>>> Glad to hear you found a working solution!
+>>>
+>>> The short answer about ROIs is that they have not been a focus of ImageJ2
+>>> or ImgLib2 development in recent years. Support for labelings (highly
+>>> related to ROIs) was rewritten this January [1], but a rewrite of the
+>>> core
+>>> ImgLib2 ROI library [2] is still pending. And there is a substantial
+>>> pending redesign of the ImageJ Common data model planned as well --
+>>> though
+>>> it is unlikely anyone will work on it this year.
+>>>
+>>> At this juncture, the most effective balance for most plugin developers
+>>> is
+>>> probably to use parameterized commands and/or scripts, but with the
+>>> ImageJ1
+>>> data structures (ij.ImagePlus, etc.) -- unless you need access to a new
+>>> capability that ImageJ2 + ImgLib2 make possible (>5D images, very large
+>>> image planes, very large numbers of image planes, dynamically generated
+>>> images, images stored in places besides disk, cell-based image caching,
+>>> image types beyond uint8/uint16/float32, etc.).
+>>>
+>>> That said, your feedback is very much appreciated.
+>>>
+>>> And some issues will be ironed out in the next couple of weeks as we
+>>> revamp
+>>> the tutorials for the upcoming ImageJ conference.
+>>>
+>>> The easiest way to give a plugin a (rectangular) roi is to ... just
+>>>> declare a net.imagej.overlay.RectangularOverlay as an input parameter.
+>>>> It is properly populated by the origin and extent of a rectangular
+>>>> selection drawn on the active image.
+>>>>
+>>>
+>>> If all you care about is the bounding box of the active selection, you
+>>> can
+>>> just do it the same way as the ImageJ2 CropImageJ command: by calling
+>>> OverlayService.getSelectionBounds [3]. Then you would avoid some of the
+>>> current weirdness associated with Overlay parameters.
+>>>
+>>> If I launch the default UI, then the ROI will not show, but the plugin
+>>>> can launch. If on the other hand I launch the "swing" UI as in the
+>>>> tutorial, I do see the ROI
+>>>>
+>>>
+>>> Yes, that tutorial was written when the ImageJ2 Swing UI was still the
+>>> default. It is not tested/working with the Legacy UI (which is now the
+>>> default). I will try to remedy that very soon.
+>>>
+>>> (not until I call Image>Adjust>Brightness/Contrast..., but that's a
+>>>> minor detail),
+>>>>
+>>>
+>>> Yes, that annoying bug has been around for quite a while. Many things
+>>> that
+>>> refresh the display will do, such as pressing + then - to zoom in/out.
+>>>
+>>> but now the invocation of the plugin at the end of main() will throw a
+>>>> MethodCallException with the stackTrace pasted below. How can the
+>>>> choice of a UI make the plugin execution fail ?
+>>>>
+>>> ...
+>>>
+>>>> Caused by: java.lang.NullPointerException
+>>>>         at Goutte_pendante.initTitle(Goutte_pendante.java:94)
+>>>>
+>>>
+>>> In 2014, we made a conscious decision to support the ImageJ 1.x classes
+>>> _only_ from the legacy UI. You cannot use them from the Swing UI. In your
+>>> case: the ActiveImagePlusPreprocessor cannot set the active ImagePlus
+>>> because WindowManager.getCurrentImage() returns null [4], because no
+>>> ImageJ
+>>> 1.x user interface exists. So it stays null and then your initializer
+>>> throws the NPE.
+>>>
+>>> Regards,
+>>> Curtis
+>>>
+>>> [1]
+>>>
+>>> https://github.com/imglib/imglib2-roi/tree/imglib2-roi-0.3.2/src/main/java/net/imglib2/labeling
+>>>
+>>> [2] https://github.com/imglib/imglib2-roi
+>>>
+>>> [3]
+>>>
+>>> https://github.com/imagej/imagej-plugins-commands/blob/imagej-plugins-commands-0.5.1/src/main/java/net/imagej/plugins/commands/imglib/CropImage.java#L104
+>>>
+>>> [4]
+>>>
+>>> https://github.com/imagej/imagej-legacy/blob/imagej-legacy-0.17.1/src/main/java/net/imagej/legacy/plugin/ActiveImagePlusPreprocessor.java#L49-L52
+>>>
+>>>
+>>> On Sun, Aug 23, 2015 at 6:30 AM, Adrian Daerr <
+>>> adrian.daerr at univ-paris-diderot.fr> wrote:
+>>>
+>>> Hello,
+>>>>
+>>>> While I am still interested in answers concerning the status/API/roadmap
+>>>> for ROIs and overlays beyond what's on http://imagej.net/ROIs, I have
+>>>> solved the problem at hand which was keeping me from making progress,
+>>>> so I
+>>>> post the (rather obvious, once I found the net.imagej.overlay package)
+>>>> solution here for the record and to close this thread.
+>>>>
+>>>> The easiest way to give a plugin a (rectangular) roi is to ...
+>>>> just declare a net.imagej.overlay.RectangularOverlay as an input
+>>>> parameter. It is properly populated by the origin and extent of a
+>>>> rectangular selection drawn on the active image.
+>>>>
+>>>> cheers,
+>>>> Adrian
+>>>>
+>>>>
+>>>> On Wed, 19 Aug 2015 17:10:06 +0200
+>>>>
+>>>>  "Adrian Daerr" <adrian.daerr at univ-paris-diderot.fr> wrote:
+>>>>
+>>>>
+>>>>> Dear ImageJ developers,
+>>>>>
+>>>>> I have included code from the AddROIs tutorial into the main()
+>>>>> method of my plugin (for the moment essentially one of Curtis'
+>>>>> commands-with-preview example), to select a Rectangle before
+>>>>> calling the plugin. The source is available here:
+>>>>>
+>>>>> https://gitlab.com/pendant-drop/pendant-drop
+>>>>> (in Goutte_pendante.java)
+>>>>>
+>>>>> If I launch the default UI, then the ROI will not show, but the
+>>>>> plugin can launch. If on the other hand I launch the "swing" UI
+>>>>> as in the tutorial, I do see the ROI (not until I call
+>>>>> Image>Adjust>Brightness/Contrast..., but that's a minor detail),
+>>>>> but now the invocation of the plugin at the end of main() will
+>>>>> throw a MethodCallException with the stackTrace pasted below. How
+>>>>> can the choice of a UI make the plugin execution fail ?
+>>>>>
+>>>>> Is there any other way that main can set a ROI on a loaded image
+>>>>> that the plugin, which still uses an ImagePlus as input
+>>>>> parameter, will see when calling imp.getProcessor().getRoi() ?
+>>>>>
+>>>>> TIA
+>>>>> Adrian
+>>>>>
+>>>>>
+>>>>> $> mvn package
+>>>>> $> fiji --class-path target/pendant_drop-2.0.0-SNAPSHOT.jar
+>>>>> Goutte_pendante.class
+>>>>> [INFO] Overriding About Pendant Drop; identifier:
+>>>>> command:About_Pendant_Drop; jar:
+>>>>>
+>>>>> file:/home/adrian/Programmes/plugins_ImageJ_src/Traitement_Gouttes/target/pendant_drop-2.0.0-SNAPSHOT.jar
+>>>>> [INFO] Overriding Pendant Drop; identifier: command:Goutte_pendante;
+>>>>> jar:
+>>>>>
+>>>>> file:/home/adrian/Programmes/plugins_ImageJ_src/Traitement_Gouttes/target/pendant_drop-2.0.0-SNAPSHOT.jar
+>>>>> [INFO] Populating metadata
+>>>>> [INFO] Populating metadata
+>>>>> [INFO] Found 10 JHotDraw adapters.
+>>>>> org.scijava.module.MethodCallException: Error executing method:
+>>>>> Goutte_pendante#initTitle
+>>>>>         at org.scijava.module.MethodRef.execute(MethodRef.java:73)
+>>>>>         at
+>>>>>
+>>>>> org.scijava.module.AbstractModuleItem.initialize(AbstractModuleItem.java:199)
+>>>>>         at
+>>>>> org.scijava.module.AbstractModule.initialize(AbstractModule.java:86)
+>>>>>         at
+>>>>> org.scijava.command.CommandModule.initialize(CommandModule.java:147)
+>>>>>         at
+>>>>>
+>>>>> org.scijava.module.process.InitPreprocessor.process(InitPreprocessor.java:60)
+>>>>>         at
+>>>>> org.scijava.module.ModuleRunner.preProcess(ModuleRunner.java:104)
+>>>>>         at org.scijava.module.ModuleRunner.run(ModuleRunner.java:156)
+>>>>>         at org.scijava.module.ModuleRunner.call(ModuleRunner.java:126)
+>>>>>         at org.scijava.module.ModuleRunner.call(ModuleRunner.java:65)
+>>>>>         at
+>>>>>
+>>>>> org.scijava.thread.DefaultThreadService$2.call(DefaultThreadService.java:191)
+>>>>>         at
+>>>>> java.util.concurrent.FutureTask$Sync.innerRun(FutureTask.java:303)
+>>>>>         at java.util.concurrent.FutureTask.run(FutureTask.java:138)
+>>>>>         at
+>>>>>
+>>>>> java.util.concurrent.ThreadPoolExecutor$Worker.runTask(ThreadPoolExecutor.java:886)
+>>>>>         at
+>>>>>
+>>>>> java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:908)
+>>>>>         at java.lang.Thread.run(Thread.java:662)
+>>>>> Caused by: java.lang.reflect.InvocationTargetException
+>>>>>         at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+>>>>>         at
+>>>>>
+>>>>> sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:39)
+>>>>>         at
+>>>>>
+>>>>> sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:25)
+>>>>>         at java.lang.reflect.Method.invoke(Method.java:597)
+>>>>>         at org.scijava.module.MethodRef.execute(MethodRef.java:69)
+>>>>>         ... 14 more
+>>>>> Caused by: java.lang.NullPointerException
+>>>>>         at Goutte_pendante.initTitle(Goutte_pendante.java:94)
+>>>>>         ... 19 more
+>>>>> [ERROR] Module threw exception
+>>>>> java.lang.NullPointerException
+>>>>>         at Goutte_pendante.cancel(Goutte_pendante.java:87)
+>>>>>         at
+>>>>> org.scijava.command.CommandModule.cancel(CommandModule.java:140)
+>>>>>         at
+>>>>>
+>>>>> org.scijava.module.ModuleRunner.cleanupAndBroadcastCancelation(ModuleRunner.java:189)
+>>>>>         at org.scijava.module.ModuleRunner.run(ModuleRunner.java:161)
+>>>>>         at org.scijava.module.ModuleRunner.call(ModuleRunner.java:126)
+>>>>>         at org.scijava.module.ModuleRunner.call(ModuleRunner.java:65)
+>>>>>         at
+>>>>>
+>>>>> org.scijava.thread.DefaultThreadService$2.call(DefaultThreadService.java:191)
+>>>>>         at
+>>>>> java.util.concurrent.FutureTask$Sync.innerRun(FutureTask.java:303)
+>>>>>         at java.util.concurrent.FutureTask.run(FutureTask.java:138)
+>>>>>         at
+>>>>>
+>>>>> java.util.concurrent.ThreadPoolExecutor$Worker.runTask(ThreadPoolExecutor.java:886)
+>>>>>         at
+>>>>>
+>>>>> java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:908)
+>>>>>         at java.lang.Thread.run(Thread.java:662)
+>>>>>
+>>>>>
+>>>>>
+>>>>> On Sat, 15 Aug 2015 13:14:13 +0200
+>>>>>  Adrian Daerr <adrian.daerr at univ-paris-diderot.fr> wrote:
+>>>>>
+>>>>> Hello,
+>>>>>>
+>>>>>> I am seizing a major rewrite of a plugin as an opportunity to switch
+>>>>>> from ImageJ1 to ImageJ2, also to avoid concurrency issues[*], and now
+>>>>>> lots of questions come up. Some concern the way ROIs are handled. What
+>>>>>> has happened in this regard since
+>>>>>>   http://imagej.net/ROIs
+>>>>>> was last updated ?
+>>>>>>
+>>>>>> [*] cf discussion on the ImageJ list archived at
+>>>>>>
+>>>>>>
+>>>>>> http://imagej.1557.x6.nabble.com/ExtendedPlugInFilter-GenericDialog-and-synchronization-td5013333.html
+>>>>>>
+>>>>>> Here are two concrete questions:
+>>>>>>
+>>>>>> 1) My plugin relies on a rectangular ROI being drawn on the image to
+>>>>>> know which area to include in the computation. How do I draw this ROI
+>>>>>> once I have loaded the image as a dataset in the main() method that is
+>>>>>> used for testing purposes ?
+>>>>>>
+>>>>>> public static void main(final String... args) throws Exception {
+>>>>>>     final String testImagePath = "testImage.jpg";
+>>>>>>
+>>>>>>     // Launch ImageJ as usual.
+>>>>>>     final ImageJ ij = net.imagej.Main.launch(args);
+>>>>>>
+>>>>>>     // Open test image.
+>>>>>>     final Dataset dataset = ij.dataset().open(testImagePath);
+>>>>>>
+>>>>>>     // display the dataset
+>>>>>>     ij.ui().show(dataset);
+>>>>>>
+>>>>>>     // create rectangular ROI
+>>>>>>     //imp.setRoi(120,60,340,420);// How to do this on a dataset ?
+>>>>>>
+>>>>>>     // Launch the "Foo_Bar" command.
+>>>>>>     ij.command().run(Foo_Bar.class, true);
+>>>>>> }
+>>>>>>
+>>>>>> (alternatively, how would I generate a new dataset, or I guess
+>>>>>> something
+>>>>>> like a "View" in ImageJ2 terminology, of the ROI sub-image of the
+>>>>>> original
+>>>>>> dataset ? I could then substitute the original dataset with this
+>>>>>> sub-image
+>>>>>> and have the plugin operate on the whole image by default)
+>>>>>>
+>>>>>> 2) The plugin preview generates overlays using java.awt.geom.Path2D,
+>>>>>> java.awt.geom.Area and java.awt.Shape, which are then converted via
+>>>>>> ij.gui.ShapeRoi() and ij.gui.Overlay(), assembled with overlay.add(),
+>>>>>> and drawn using imp.setOverlay(). Is there a new IJ2-way to do this
+>>>>>> (especially since the cited web page (rightly) insists on separation
+>>>>>> of selection and visualisation shapes) ?
+>>>>>>
+>>>>>> TIA,
+>>>>>> Adrian
+>>>>>>
+>>>>>> _______________________________________________
+>>>>>> ImageJ-devel mailing list
+>>>>>> ImageJ-devel at imagej.net
+>>>>>> http://imagej.net/mailman/listinfo/imagej-devel
+>>>>>>
+>>>>>>
+>>>>> --
+>>>>> http://www.msc.univ-paris-diderot.fr/~daerr/
+>>>>>
+>>>>> _______________________________________________
+>>>>> ImageJ-devel mailing list
+>>>>> ImageJ-devel at imagej.net
+>>>>> http://imagej.net/mailman/listinfo/imagej-devel
+>>>>>
+>>>>>
+>>>> --
+>>>> http://www.msc.univ-paris-diderot.fr/~daerr/
+>>>>
+>>>> _______________________________________________
+>>>> ImageJ-devel mailing list
+>>>> ImageJ-devel at imagej.net
+>>>> http://imagej.net/mailman/listinfo/imagej-devel
+>>>>
+>>>>
+>> --
+>> http://www.msc.univ-paris-diderot.fr/~daerr/
+>>
+>
+> --
+> http://www.msc.univ-paris-diderot.fr/~daerr/
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150924/8e34a019/attachment-0001.html>
+
+From ctrueden at wisc.edu  Thu Sep 24 12:35:09 2015
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Thu, 24 Sep 2015 12:35:09 -0500
+Subject: [ImageJ-devel] Disable automatic showing of command output
+In-Reply-To: <55E9711A.3020108@fz-juelich.de>
+References: <55E9711A.3020108@fz-juelich.de>
+Message-ID: <CADN69ymv4x=P5-nzma+mEWt0-0t9N+qgpcm4516Y3eT=pBLBqA@mail.gmail.com>
+
+Hi Stefan,
+
+Sorry for the delay in reply; things got busy with ImageJ conference and
+hackathon, and I'm finally catching up.
+
+> I am wondering if it is Possible to disable the Automatic showing of a
+> Dataset Output when running a command through the Command Service.
+
+Yes, but it is somewhat a pain right now:
+
+* You can pass "false" for the process flag to suppress all pre- and
+post-processing, including display of outputs.
+
+* You can use the lower-level ModuleService to customize exactly which pre-
+and post-processing plugins you want to include in the module execution.
+
+I am guessing what you want is all pre- and post-processing to occur
+_except_ for the final display of outputs? I agree it would be nice to have
+a super-easy way to do this, though I'm not totally sure what the API would
+look like for it.
+
+Care to file an issue? https://github.com/scijava/scijava-common/issues
+
+Regards,
+Curtis
+
+2015-09-04 5:23 GMT-05:00 Stefan Helfrich <s.helfrich at fz-juelich.de>:
+
+> Hey everyone,
+>
+> I am wondering if it is possible to disable the automatic showing of a
+> Dataset output when running a Command through the CommandService. I
+> couldn't find any documentation on that behaviour.
+>
+> All the best,
+> Stefan
+>
+> --
+> Stefan Helfrich, M.Sc.
+>
+> Institut f?r Bio- und Geowissenschaften
+> IBG-1: Biotechnologie
+> AG Modellierung und Simulation
+>
+> Forschungszentrum J?lich GmbH
+> 52425 J?lich
+>
+> Tel.: +49 2461 61-9068
+> WWW: http://www.fz-juelich.de/ibg/ibg-1/modsim
+>
+>
+>
+>
+> ------------------------------------------------------------------------------------------------
+>
+> ------------------------------------------------------------------------------------------------
+> Forschungszentrum Juelich GmbH
+> 52425 Juelich
+> Sitz der Gesellschaft: Juelich
+> Eingetragen im Handelsregister des Amtsgerichts Dueren Nr. HR B 3498
+> Vorsitzender des Aufsichtsrats: MinDir Dr. Karl Eugen Huthmacher
+> Geschaeftsfuehrung: Prof. Dr.-Ing. Wolfgang Marquardt (Vorsitzender),
+> Karsten Beneke (stellv. Vorsitzender), Prof. Dr.-Ing. Harald Bolt,
+> Prof. Dr. Sebastian M. Schmidt
+>
+> ------------------------------------------------------------------------------------------------
+>
+> ------------------------------------------------------------------------------------------------
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150924/aaacedc0/attachment.html>
+
+From adrian.daerr at univ-paris-diderot.fr  Fri Sep 25 03:40:49 2015
+From: adrian.daerr at univ-paris-diderot.fr (Adrian Daerr)
+Date: Fri, 25 Sep 2015 10:40:49 +0200
+Subject: [ImageJ-devel] Parameter synchronisation IJ1<->IJ2 (was: Status and
+ API of ROIs in ImageJ2 ?)
+In-Reply-To: <CADN69ykzk_kFSsz3dCTzC=TH-qppzHb1rUmF-wVd4Ksas6QRAQ@mail.gmail.com>
+References: <55CF1F05.3050904@univ-paris-diderot.fr>
+	<web-159675194@univ-paris7.fr> <web-159791302@univ-paris7.fr>
+	<CADN69ymvzGSZqFs=JShxA+3iD=FYCk+V38MeTqaLqpf8ybawKw@mail.gmail.com>
+	<web-160192998@univ-paris7.fr> <web-160379365@univ-paris7.fr>
+	<CADN69ykzk_kFSsz3dCTzC=TH-qppzHb1rUmF-wVd4Ksas6QRAQ@mail.gmail.com>
+Message-ID: <web-161527356@univ-paris7.fr>
+
+Dear Curtis,
+
+Thanks for the explanation. Don't worry about debugging this, I
+worked around this by using imp.getRoi() if non-null and
+overlayService.getSelectionBounds() otherwise [1] (and the image
+size if the latter is larger than the image [2]), which is
+resilient enough to work in all cases.
+
+regards,
+Adrian
+
+
+[1]
+https://github.com/adaerr/pendent-drop/commit/6bd16ab181154d6c28d776f7ca935ebe961ccc44
+[2]
+https://github.com/adaerr/pendent-drop/commit/97a69c086ae383dae0014f74a1f15f0499330c44
+
+
+On Thu, 24 Sep 2015 12:04:51 -0500
+  Curtis Rueden <ctrueden at wisc.edu> wrote:
+> Hi Adrian,
+> 
+>> It's as if the ImageDisplay parameter was getting populated by the
+>> image before cropping
+> 
+> It seems that the ROI syncing between IJ1 and IJ2 is not happening 
+>as
+> expected. When your command runs, a sync is supposed to happen 
+>during
+> preprocessing because you have a Dataset parameter. But maybe the 
+>sync is
+> incomplete for some reason. Sorry I don't have time to investigate 
+>it right
+> now, though.
+> 
+>> What are those WARNINGs printed upon plugin invokation ?
+> 
+> Those were debugging statements, which were erroneously set to 
+>log.warn. I
+> fixed it [1].
+> 
+> Regards,
+> Curtis
+> 
+> [1]
+> https://github.com/imagej/imagej-legacy/commit/2015336482fe284954d2603fede892d616d20960
+> 
+> On Fri, Sep 4, 2015 at 2:29 PM, Adrian Daerr <
+> adrian.daerr at univ-paris-diderot.fr> wrote:
+> 
+>> Hi Curtis,
+>>
+>> OverlayService.getSelectionBounds seems to behave stranger yet. Take 
+>>the
+>> Foo_Bar test plugin source from my previous post, compile it and 
+>>place it
+>> in ImageJ's plugins directory. Start ImageJ, create a new image (say
+>> 400x400 8bpp), draw a rectangular selection inside and invoke 
+>>Foo_Bar: as
+>> reported in my last mail it will report a getSelectionBounds of 
+>>399x399
+>> instead of the expected dimension of the rectangular selection. Now 
+>>crop
+>> the image to the rectangular selection via Image->Crop, and invoke 
+>>Foo_Bar
+>> again. It will report the same getSelectionBounds (width 399, height 
+>>399)
+>> although the active image is now strictly smaller. It's as if the
+>> ImageDisplay parameter was getting populated by the image before 
+>>cropping
+>> (and of course still without rectangular selection).
+>>
+>> How is one supposed to use OverlayService.getSelectionBounds ?
+>> What are those WARNINGs printed upon plugin invokation ?
+>>
+>> [WARNING] ====> Roi class = ij.gui.Roi
+>> [WARNING] ====> RECTANGLE: Roi[Rectangle, x=76, y=92, width=209,
+>> height=160]
+>>
+>> cheers,
+>> Adrian
+>>
+>>
+>> On Tue, 01 Sep 2015 20:41:30 +0200
+>>
+>>  "Adrian Daerr" <adrian.daerr at univ-paris-diderot.fr> wrote:
+>>
+>>> Hi Curtis, hi all,
+>>>
+>>> If all you care about is the bounding box of the active selection, 
+>>>you
+>>>> can just do it the same way as the ImageJ2 CropImageJ command:
+>>>> by calling OverlayService.getSelectionBounds. Then you would
+>>>> avoid some of the current weirdness associated with Overlay
+>>>> parameters.
+>>>>
+>>>
+>>> This was working fine with a programmatically added rectangular
+>>> overlay/selection, but when I call getSelectionBounds on an image 
+>>>with an
+>>> interactively created rectangular selection it returns the whole 
+>>>image
+>>> dimension. It does not seem to be aware of the ROI. Below is a MVCE 
+>>>to
+>>> reproduce. After compiling and placing it in the plugins folder, I 
+>>>start
+>>> imagej, create a new image, draw a rectangular selection using 
+>>>ImageJ's
+>>> leftmost tool and then invoque the plugin. It logs the following to 
+>>>the
+>>> console:
+>>>
+>>> [WARNING] ====> Roi class = ij.gui.Roi
+>>> [WARNING] ====> RECTANGLE: Roi[Rectangle, x=100, y=163, width=196,
+>>> height=112]
+>>> [INFO] image: plugin:class net.imagej.display.DefaultImageDisplay:
+>>> type=interface net.imagej.display.DataView, name=Untitled,
+>>> objects={net.imagej.display.DefaultDatasetView at 757dbeaf,
+>>> net.imagej.display.DefaultOverlayView at 2198a037}
+>>> [INFO] region: +0.0 +0.0, 559.0 x 559.0
+>>>
+>>> I expected the region in the last line (that obtained through
+>>> OverlayService.getSelectionBounds) to coincide with the Roi 
+>>>mentionned in
+>>> the WARNING.
+>>>
+>>> The CropImage command you mentionned does not do anything either 
+>>>before
+>>> calling getSelectionBounds, and cropping works fine. Do you 
+>>>understand what
+>>> is going on ?
+>>>
+>>> Cheers,
+>>> Adrian
+>>>
+>>>
+>>> import net.imagej.display.ImageDisplay;
+>>> import net.imagej.display.OverlayService;
+>>>
+>>> import org.scijava.command.Command;
+>>> import org.scijava.log.LogService;
+>>> import org.scijava.plugin.Parameter;
+>>> import org.scijava.plugin.Plugin;
+>>> import org.scijava.util.RealRect;
+>>>
+>>> @Plugin(type = Command.class, menuPath = "Plugins>Foo_Bar")
+>>> public class Foo_Bar implements Command {
+>>>
+>>>     @Parameter
+>>>     private ImageDisplay display;
+>>>
+>>>     @Parameter
+>>>     private OverlayService overlayService;
+>>>
+>>>     @Parameter
+>>>     private LogService log;
+>>>
+>>>     @Override
+>>>     public void run() {
+>>>         RealRect r = overlayService.getSelectionBounds(display);
+>>>         log.info("image: "+display);
+>>>         log.info("region: +" + r.x + " +" +  r.y
+>>>                  + ", " +  r.width + " x " + r.height);
+>>>     }
+>>> }
+>>>
+>>>
+>>>
+>>>
+>>> On Mon, 24 Aug 2015 16:22:15 -0500
+>>>  Curtis Rueden <ctrueden at wisc.edu> wrote:
+>>>
+>>>> Hi Adrian,
+>>>>
+>>>> Glad to hear you found a working solution!
+>>>>
+>>>> The short answer about ROIs is that they have not been a focus of 
+>>>>ImageJ2
+>>>> or ImgLib2 development in recent years. Support for labelings 
+>>>>(highly
+>>>> related to ROIs) was rewritten this January [1], but a rewrite of 
+>>>>the
+>>>> core
+>>>> ImgLib2 ROI library [2] is still pending. And there is a substantial
+>>>> pending redesign of the ImageJ Common data model planned as well --
+>>>> though
+>>>> it is unlikely anyone will work on it this year.
+>>>>
+>>>> At this juncture, the most effective balance for most plugin 
+>>>>developers
+>>>> is
+>>>> probably to use parameterized commands and/or scripts, but with the
+>>>> ImageJ1
+>>>> data structures (ij.ImagePlus, etc.) -- unless you need access to a 
+>>>>new
+>>>> capability that ImageJ2 + ImgLib2 make possible (>5D images, very 
+>>>>large
+>>>> image planes, very large numbers of image planes, dynamically 
+>>>>generated
+>>>> images, images stored in places besides disk, cell-based image 
+>>>>caching,
+>>>> image types beyond uint8/uint16/float32, etc.).
+>>>>
+>>>> That said, your feedback is very much appreciated.
+>>>>
+>>>> And some issues will be ironed out in the next couple of weeks as we
+>>>> revamp
+>>>> the tutorials for the upcoming ImageJ conference.
+>>>>
+>>>> The easiest way to give a plugin a (rectangular) roi is to ... just
+>>>>> declare a net.imagej.overlay.RectangularOverlay as an input 
+>>>>>parameter.
+>>>>> It is properly populated by the origin and extent of a rectangular
+>>>>> selection drawn on the active image.
+>>>>>
+>>>>
+>>>> If all you care about is the bounding box of the active selection, 
+>>>>you
+>>>> can
+>>>> just do it the same way as the ImageJ2 CropImageJ command: by 
+>>>>calling
+>>>> OverlayService.getSelectionBounds [3]. Then you would avoid some of 
+>>>>the
+>>>> current weirdness associated with Overlay parameters.
+>>>>
+>>>> If I launch the default UI, then the ROI will not show, but the 
+>>>>plugin
+>>>>> can launch. If on the other hand I launch the "swing" UI as in the
+>>>>> tutorial, I do see the ROI
+>>>>>
+>>>>
+>>>> Yes, that tutorial was written when the ImageJ2 Swing UI was still 
+>>>>the
+>>>> default. It is not tested/working with the Legacy UI (which is now 
+>>>>the
+>>>> default). I will try to remedy that very soon.
+>>>>
+>>>> (not until I call Image>Adjust>Brightness/Contrast..., but that's a
+>>>>> minor detail),
+>>>>>
+>>>>
+>>>> Yes, that annoying bug has been around for quite a while. Many 
+>>>>things
+>>>> that
+>>>> refresh the display will do, such as pressing + then - to zoom 
+>>>>in/out.
+>>>>
+>>>> but now the invocation of the plugin at the end of main() will throw 
+>>>>a
+>>>>> MethodCallException with the stackTrace pasted below. How can the
+>>>>> choice of a UI make the plugin execution fail ?
+>>>>>
+>>>> ...
+>>>>
+>>>>> Caused by: java.lang.NullPointerException
+>>>>>         at Goutte_pendante.initTitle(Goutte_pendante.java:94)
+>>>>>
+>>>>
+>>>> In 2014, we made a conscious decision to support the ImageJ 1.x 
+>>>>classes
+>>>> _only_ from the legacy UI. You cannot use them from the Swing UI. In 
+>>>>your
+>>>> case: the ActiveImagePlusPreprocessor cannot set the active 
+>>>>ImagePlus
+>>>> because WindowManager.getCurrentImage() returns null [4], because no
+>>>> ImageJ
+>>>> 1.x user interface exists. So it stays null and then your 
+>>>>initializer
+>>>> throws the NPE.
+>>>>
+>>>> Regards,
+>>>> Curtis
+>>>>
+>>>> [1]
+>>>>
+>>>> https://github.com/imglib/imglib2-roi/tree/imglib2-roi-0.3.2/src/main/java/net/imglib2/labeling
+>>>>
+>>>> [2] https://github.com/imglib/imglib2-roi
+>>>>
+>>>> [3]
+>>>>
+>>>> https://github.com/imagej/imagej-plugins-commands/blob/imagej-plugins-commands-0.5.1/src/main/java/net/imagej/plugins/commands/imglib/CropImage.java#L104
+>>>>
+>>>> [4]
+>>>>
+>>>> https://github.com/imagej/imagej-legacy/blob/imagej-legacy-0.17.1/src/main/java/net/imagej/legacy/plugin/ActiveImagePlusPreprocessor.java#L49-L52
+>>>>
+>>>>
+>>>> On Sun, Aug 23, 2015 at 6:30 AM, Adrian Daerr <
+>>>> adrian.daerr at univ-paris-diderot.fr> wrote:
+>>>>
+>>>> Hello,
+>>>>>
+>>>>> While I am still interested in answers concerning the 
+>>>>>status/API/roadmap
+>>>>> for ROIs and overlays beyond what's on http://imagej.net/ROIs, I 
+>>>>>have
+>>>>> solved the problem at hand which was keeping me from making 
+>>>>>progress,
+>>>>> so I
+>>>>> post the (rather obvious, once I found the net.imagej.overlay 
+>>>>>package)
+>>>>> solution here for the record and to close this thread.
+>>>>>
+>>>>> The easiest way to give a plugin a (rectangular) roi is to ...
+>>>>> just declare a net.imagej.overlay.RectangularOverlay as an input
+>>>>> parameter. It is properly populated by the origin and extent of a
+>>>>> rectangular selection drawn on the active image.
+>>>>>
+>>>>> cheers,
+>>>>> Adrian
+>>>>>
+>>>>>
+>>>>> On Wed, 19 Aug 2015 17:10:06 +0200
+>>>>>
+>>>>>  "Adrian Daerr" <adrian.daerr at univ-paris-diderot.fr> wrote:
+>>>>>
+>>>>>
+>>>>>> Dear ImageJ developers,
+>>>>>>
+>>>>>> I have included code from the AddROIs tutorial into the main()
+>>>>>> method of my plugin (for the moment essentially one of Curtis'
+>>>>>> commands-with-preview example), to select a Rectangle before
+>>>>>> calling the plugin. The source is available here:
+>>>>>>
+>>>>>> https://gitlab.com/pendant-drop/pendant-drop
+>>>>>> (in Goutte_pendante.java)
+>>>>>>
+>>>>>> If I launch the default UI, then the ROI will not show, but the
+>>>>>> plugin can launch. If on the other hand I launch the "swing" UI
+>>>>>> as in the tutorial, I do see the ROI (not until I call
+>>>>>> Image>Adjust>Brightness/Contrast..., but that's a minor detail),
+>>>>>> but now the invocation of the plugin at the end of main() will
+>>>>>> throw a MethodCallException with the stackTrace pasted below. How
+>>>>>> can the choice of a UI make the plugin execution fail ?
+>>>>>>
+>>>>>> Is there any other way that main can set a ROI on a loaded image
+>>>>>> that the plugin, which still uses an ImagePlus as input
+>>>>>> parameter, will see when calling imp.getProcessor().getRoi() ?
+>>>>>>
+>>>>>> TIA
+>>>>>> Adrian
+>>>>>>
+>>>>>>
+>>>>>> $> mvn package
+>>>>>> $> fiji --class-path target/pendant_drop-2.0.0-SNAPSHOT.jar
+>>>>>> Goutte_pendante.class
+>>>>>> [INFO] Overriding About Pendant Drop; identifier:
+>>>>>> command:About_Pendant_Drop; jar:
+>>>>>>
+>>>>>> file:/home/adrian/Programmes/plugins_ImageJ_src/Traitement_Gouttes/target/pendant_drop-2.0.0-SNAPSHOT.jar
+>>>>>> [INFO] Overriding Pendant Drop; identifier: command:Goutte_pendante;
+>>>>>> jar:
+>>>>>>
+>>>>>> file:/home/adrian/Programmes/plugins_ImageJ_src/Traitement_Gouttes/target/pendant_drop-2.0.0-SNAPSHOT.jar
+>>>>>> [INFO] Populating metadata
+>>>>>> [INFO] Populating metadata
+>>>>>> [INFO] Found 10 JHotDraw adapters.
+>>>>>> org.scijava.module.MethodCallException: Error executing method:
+>>>>>> Goutte_pendante#initTitle
+>>>>>>         at org.scijava.module.MethodRef.execute(MethodRef.java:73)
+>>>>>>         at
+>>>>>>
+>>>>>> org.scijava.module.AbstractModuleItem.initialize(AbstractModuleItem.java:199)
+>>>>>>         at
+>>>>>> org.scijava.module.AbstractModule.initialize(AbstractModule.java:86)
+>>>>>>         at
+>>>>>> org.scijava.command.CommandModule.initialize(CommandModule.java:147)
+>>>>>>         at
+>>>>>>
+>>>>>> org.scijava.module.process.InitPreprocessor.process(InitPreprocessor.java:60)
+>>>>>>         at
+>>>>>> org.scijava.module.ModuleRunner.preProcess(ModuleRunner.java:104)
+>>>>>>         at 
+>>>>>>org.scijava.module.ModuleRunner.run(ModuleRunner.java:156)
+>>>>>>         at 
+>>>>>>org.scijava.module.ModuleRunner.call(ModuleRunner.java:126)
+>>>>>>         at 
+>>>>>>org.scijava.module.ModuleRunner.call(ModuleRunner.java:65)
+>>>>>>         at
+>>>>>>
+>>>>>> org.scijava.thread.DefaultThreadService$2.call(DefaultThreadService.java:191)
+>>>>>>         at
+>>>>>> java.util.concurrent.FutureTask$Sync.innerRun(FutureTask.java:303)
+>>>>>>         at java.util.concurrent.FutureTask.run(FutureTask.java:138)
+>>>>>>         at
+>>>>>>
+>>>>>> java.util.concurrent.ThreadPoolExecutor$Worker.runTask(ThreadPoolExecutor.java:886)
+>>>>>>         at
+>>>>>>
+>>>>>> java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:908)
+>>>>>>         at java.lang.Thread.run(Thread.java:662)
+>>>>>> Caused by: java.lang.reflect.InvocationTargetException
+>>>>>>         at sun.reflect.NativeMethodAccessorImpl.invoke0(Native 
+>>>>>>Method)
+>>>>>>         at
+>>>>>>
+>>>>>> sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:39)
+>>>>>>         at
+>>>>>>
+>>>>>> sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:25)
+>>>>>>         at java.lang.reflect.Method.invoke(Method.java:597)
+>>>>>>         at org.scijava.module.MethodRef.execute(MethodRef.java:69)
+>>>>>>         ... 14 more
+>>>>>> Caused by: java.lang.NullPointerException
+>>>>>>         at Goutte_pendante.initTitle(Goutte_pendante.java:94)
+>>>>>>         ... 19 more
+>>>>>> [ERROR] Module threw exception
+>>>>>> java.lang.NullPointerException
+>>>>>>         at Goutte_pendante.cancel(Goutte_pendante.java:87)
+>>>>>>         at
+>>>>>> org.scijava.command.CommandModule.cancel(CommandModule.java:140)
+>>>>>>         at
+>>>>>>
+>>>>>> org.scijava.module.ModuleRunner.cleanupAndBroadcastCancelation(ModuleRunner.java:189)
+>>>>>>         at 
+>>>>>>org.scijava.module.ModuleRunner.run(ModuleRunner.java:161)
+>>>>>>         at 
+>>>>>>org.scijava.module.ModuleRunner.call(ModuleRunner.java:126)
+>>>>>>         at 
+>>>>>>org.scijava.module.ModuleRunner.call(ModuleRunner.java:65)
+>>>>>>         at
+>>>>>>
+>>>>>> org.scijava.thread.DefaultThreadService$2.call(DefaultThreadService.java:191)
+>>>>>>         at
+>>>>>> java.util.concurrent.FutureTask$Sync.innerRun(FutureTask.java:303)
+>>>>>>         at java.util.concurrent.FutureTask.run(FutureTask.java:138)
+>>>>>>         at
+>>>>>>
+>>>>>> java.util.concurrent.ThreadPoolExecutor$Worker.runTask(ThreadPoolExecutor.java:886)
+>>>>>>         at
+>>>>>>
+>>>>>> java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:908)
+>>>>>>         at java.lang.Thread.run(Thread.java:662)
+>>>>>>
+>>>>>>
+>>>>>>
+>>>>>> On Sat, 15 Aug 2015 13:14:13 +0200
+>>>>>>  Adrian Daerr <adrian.daerr at univ-paris-diderot.fr> wrote:
+>>>>>>
+>>>>>> Hello,
+>>>>>>>
+>>>>>>> I am seizing a major rewrite of a plugin as an opportunity to switch
+>>>>>>> from ImageJ1 to ImageJ2, also to avoid concurrency issues[*], and 
+>>>>>>>now
+>>>>>>> lots of questions come up. Some concern the way ROIs are handled. 
+>>>>>>>What
+>>>>>>> has happened in this regard since
+>>>>>>>   http://imagej.net/ROIs
+>>>>>>> was last updated ?
+>>>>>>>
+>>>>>>> [*] cf discussion on the ImageJ list archived at
+>>>>>>>
+>>>>>>>
+>>>>>>> http://imagej.1557.x6.nabble.com/ExtendedPlugInFilter-GenericDialog-and-synchronization-td5013333.html
+>>>>>>>
+>>>>>>> Here are two concrete questions:
+>>>>>>>
+>>>>>>> 1) My plugin relies on a rectangular ROI being drawn on the image to
+>>>>>>> know which area to include in the computation. How do I draw this 
+>>>>>>>ROI
+>>>>>>> once I have loaded the image as a dataset in the main() method that 
+>>>>>>>is
+>>>>>>> used for testing purposes ?
+>>>>>>>
+>>>>>>> public static void main(final String... args) throws Exception {
+>>>>>>>     final String testImagePath = "testImage.jpg";
+>>>>>>>
+>>>>>>>     // Launch ImageJ as usual.
+>>>>>>>     final ImageJ ij = net.imagej.Main.launch(args);
+>>>>>>>
+>>>>>>>     // Open test image.
+>>>>>>>     final Dataset dataset = ij.dataset().open(testImagePath);
+>>>>>>>
+>>>>>>>     // display the dataset
+>>>>>>>     ij.ui().show(dataset);
+>>>>>>>
+>>>>>>>     // create rectangular ROI
+>>>>>>>     //imp.setRoi(120,60,340,420);// How to do this on a dataset ?
+>>>>>>>
+>>>>>>>     // Launch the "Foo_Bar" command.
+>>>>>>>     ij.command().run(Foo_Bar.class, true);
+>>>>>>> }
+>>>>>>>
+>>>>>>> (alternatively, how would I generate a new dataset, or I guess
+>>>>>>> something
+>>>>>>> like a "View" in ImageJ2 terminology, of the ROI sub-image of the
+>>>>>>> original
+>>>>>>> dataset ? I could then substitute the original dataset with this
+>>>>>>> sub-image
+>>>>>>> and have the plugin operate on the whole image by default)
+>>>>>>>
+>>>>>>> 2) The plugin preview generates overlays using java.awt.geom.Path2D,
+>>>>>>> java.awt.geom.Area and java.awt.Shape, which are then converted via
+>>>>>>> ij.gui.ShapeRoi() and ij.gui.Overlay(), assembled with 
+>>>>>>>overlay.add(),
+>>>>>>> and drawn using imp.setOverlay(). Is there a new IJ2-way to do this
+>>>>>>> (especially since the cited web page (rightly) insists on separation
+>>>>>>> of selection and visualisation shapes) ?
+>>>>>>>
+>>>>>>> TIA,
+>>>>>>> Adrian
+>>>>>>>
+>>>>>>> _______________________________________________
+>>>>>>> ImageJ-devel mailing list
+>>>>>>> ImageJ-devel at imagej.net
+>>>>>>> http://imagej.net/mailman/listinfo/imagej-devel
+>>>>>>>
+>>>>>>>
+>>>>>> --
+>>>>>> http://www.msc.univ-paris-diderot.fr/~daerr/
+>>>>>>
+>>>>>> _______________________________________________
+>>>>>> ImageJ-devel mailing list
+>>>>>> ImageJ-devel at imagej.net
+>>>>>> http://imagej.net/mailman/listinfo/imagej-devel
+>>>>>>
+>>>>>>
+>>>>> --
+>>>>> http://www.msc.univ-paris-diderot.fr/~daerr/
+>>>>>
+>>>>> _______________________________________________
+>>>>> ImageJ-devel mailing list
+>>>>> ImageJ-devel at imagej.net
+>>>>> http://imagej.net/mailman/listinfo/imagej-devel
+>>>>>
+>>>>>
+>>> --
+>>> http://www.msc.univ-paris-diderot.fr/~daerr/
+>>>
+>>
+>> --
+>> http://www.msc.univ-paris-diderot.fr/~daerr/
+>>
+
+-- 
+http://www.msc.univ-paris-diderot.fr/~daerr/
+
+
+From cyril.mongis at googlemail.com  Sun Sep 27 10:37:52 2015
+From: cyril.mongis at googlemail.com (Mongis Cyril)
+Date: Sun, 27 Sep 2015 17:37:52 +0200
+Subject: [ImageJ-devel] Read a single plane from a multi-dimensional image
+Message-ID: <CAJf7PRfX2yZyBsjvcpYLMCj_46sOzz3h1fkxbW5J2PJhMURc_g@mail.gmail.com>
+
+Dear all,
+I would like to read a single plane from a multi-plane image (without
+loading the whole image into memory, and using SCIFIO or BioFormat) and
+convert it into a Dataset object. The ImgOpener seems to allow to read the
+whole image but not just a single plane. How can I do this ? Is there a
+service that already does it ?
+I could send you the code I made but I don't think it would be on any help.
+I want to use the method dataset.setPlane(int,planarAccess) but I don't
+know how to get a planarAccess object from the SCIFIO reader.
+reader.openPlane(...) doesn't seems to return anything helpful/compatible.
+I'm completly lost T-T
+
+Cheers,
+
+Cyril
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150927/5d94a52d/attachment.html>
+
+From cyril.mongis at googlemail.com  Sun Sep 27 10:52:42 2015
+From: cyril.mongis at googlemail.com (Mongis Cyril)
+Date: Sun, 27 Sep 2015 17:52:42 +0200
+Subject: [ImageJ-devel] EMBL Conference : Seeing is believing
+Message-ID: <CAJf7PRdqSC4F+UM4Lpidz04SqADT6Ym-F3OphkfHmNTKOcjLTA@mail.gmail.com>
+
+Dear all,
+
+I would like to know if there will be some ImageJ/Fij
+Developers/contributors attending the EMBL Conference "Seeing is believing"
+in Heidelberg (Germany) on the October, 6th. I will attend to this
+conference so it would a great occasion to talk to you guys (thus since I
+live there, I can hook you up with the good bars :-D )
+
+Cheers,
+
+Cyril
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150927/67fdbecb/attachment.html>
+

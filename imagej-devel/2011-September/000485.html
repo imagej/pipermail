@@ -1,0 +1,129 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Macros and scripting in Imagej 2.0
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Macros%20and%20scripting%20in%20Imagej%202.0&In-Reply-To=%3Calpine.DEB.1.00.1109090735230.27746%40s15462909.onlinehome-server.info%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000484.html">
+   <LINK REL="Next"  HREF="000486.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Macros and scripting in Imagej 2.0</H1>
+    <B>Johannes Schindelin</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Macros%20and%20scripting%20in%20Imagej%202.0&In-Reply-To=%3Calpine.DEB.1.00.1109090735230.27746%40s15462909.onlinehome-server.info%3E"
+       TITLE="[ImageJ-devel] Macros and scripting in Imagej 2.0">Johannes.Schindelin at gmx.de
+       </A><BR>
+    <I>Fri Sep  9 01:00:20 CDT 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000484.html">[ImageJ-devel] Macros and scripting in Imagej 2.0
+</A></li>
+        <LI>Next message: <A HREF="000486.html">[ImageJ-devel] Updates on the script front
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#485">[ date ]</a>
+              <a href="thread.html#485">[ thread ]</a>
+              <a href="subject.html#485">[ subject ]</a>
+              <a href="author.html#485">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+On Wed, 7 Sep 2011, Johannes Schindelin wrote:
+
+&gt;<i> Grant wrote:
+</I>&gt;<i>
+</I>&gt;<i> &gt; As mentioned in the chat, BeanShell is interesting for the fact that 
+</I>&gt;<i> &gt; it is syntactically very similar to the ImageJ Macro language - The 
+</I>&gt;<i> &gt; Macro Language is a DSL (domain specific language) for image 
+</I>&gt;<i> &gt; processing and manipulating the ImageJ environment.  &quot;Porting&quot; it to 
+</I>&gt;<i> &gt; Beanshell (as suggested by Dscho) sounds like a good idea.
+</I>&gt;<i> 
+</I>&gt;<i> But it is not at all without problems. The most urgent problem is that 
+</I>&gt;<i> the macro language has this quite surprising feature that you can assign 
+</I>&gt;<i> variables thusly:
+</I>&gt;<i> 
+</I>&gt;<i> 	getDimensions(width, height, depth, channels, frames);
+</I>&gt;<i> 
+</I>&gt;<i> That is so out of line with C/Java like languages that it is impossible 
+</I>&gt;<i> to support in Beanshell. I am currently looking into hacking the 
+</I>&gt;<i> Beanshell interpreter to work around such problems, but it is hard.
+</I>
+So here are my findings (after spending way too much time on this issue): 
+If I (ab-)use javassist before loading Beanshell to do the following:
+
+	CtClass clazz = pool.get(&quot;bsh.BSHArguments&quot;);
+	CtMethod method = CtNewMethod.make(
+		&quot;public String[] getParameterNames() {\n&quot;
+		+ &quot;	String[] result = new String[jjtGetNumChildren()];\n&quot;
+		+ &quot;	for (int i = 0; i &lt; result.length; i++) try {\n&quot;
+		+ &quot;		result[i] = ((bsh.SimpleNode)jjtGetChild(i)).firstToken.image;\n&quot;
+		+ &quot;	} catch (Exception e) {}\n&quot;
+		+ &quot;	return result;\n&quot;
+		+ &quot;}&quot;, clazz);
+	clazz.addMethod(method);
+	pool.toClass(clazz);
+
+	clazz = pool.get(&quot;bsh.BSHMethodInvocation&quot;);
+	method = clazz.getMethod(&quot;eval&quot;, &quot;(Lbsh/CallStack;Lbsh/Interpreter;)Ljava/lang/Object;&quot;);
+	method.insertBefore(&quot;Object result = &quot;
+		+ &quot;BSHHelper.handleSpecial(getNameNode().getName($1.top()).toString(),&quot;
+		+ &quot;	getArgsNode().getParameterNames(), $1.top());&quot;
+		+ &quot;if (result != Boolean.FALSE) return result;&quot;);
+	pool.toClass(clazz);
+
+... and then have the following definition in a class called BSHHelper:
+
+	public static Object handleSpecial3(String functionName,
+			String[] firstTokens, NameSpace nameSpace) {
+		if (!functionName.equals(&quot;getText&quot;))
+			return Boolean.FALSE;
+		try {
+			nameSpace.setTypedVariable(firstTokens[0], 
+				String.class, &quot;Hello&quot;, false);
+		} catch (Exception e) {
+			IJ.handleException(e);
+		}
+		return null;
+	}
+
+... then a Beanshell script &quot;getText(blabla);&quot; will define the variable 
+&quot;blabla&quot; to the value &quot;Hello&quot;.
+
+This is all horribly convoluted and I need to streamline it and introduce 
+checks and stuff, but at least I now know that we can overcome that 
+obstacle.
+
+But that'll have to wait until after sleeping.
+
+Ciao,
+Johannes
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000484.html">[ImageJ-devel] Macros and scripting in Imagej 2.0
+</A></li>
+	<LI>Next message: <A HREF="000486.html">[ImageJ-devel] Updates on the script front
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#485">[ date ]</a>
+              <a href="thread.html#485">[ thread ]</a>
+              <a href="subject.html#485">[ subject ]</a>
+              <a href="author.html#485">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

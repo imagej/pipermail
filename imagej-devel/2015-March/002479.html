@@ -1,0 +1,151 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] SemVer policies for ImageJ2 and Fiji
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20SemVer%20policies%20for%20ImageJ2%20and%20Fiji&In-Reply-To=%3C1426389157.18823.111.camel%40saalfeld-thinkpad%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002478.html">
+   <LINK REL="Next"  HREF="002480.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] SemVer policies for ImageJ2 and Fiji</H1>
+    <B>Stephan Saalfeld</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20SemVer%20policies%20for%20ImageJ2%20and%20Fiji&In-Reply-To=%3C1426389157.18823.111.camel%40saalfeld-thinkpad%3E"
+       TITLE="[ImageJ-devel] SemVer policies for ImageJ2 and Fiji">saalfelds at janelia.hhmi.org
+       </A><BR>
+    <I>Sat Mar 14 22:12:37 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002478.html">[ImageJ-devel] About memory usage with Fiji/JVM
+</A></li>
+        <LI>Next message: <A HREF="002480.html">[ImageJ-devel] SemVer policies for ImageJ2 and Fiji
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2479">[ date ]</a>
+              <a href="thread.html#2479">[ thread ]</a>
+              <a href="subject.html#2479">[ subject ]</a>
+              <a href="author.html#2479">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Dear list,
+
+a recent SPIM_Registration bug report on GitHub
+
+<A HREF="https://github.com/bigdataviewer/SPIM_Registration/issues/10#issuecomment-79721014">https://github.com/bigdataviewer/SPIM_Registration/issues/10#issuecomment-79721014</A>
+
+resulted in a discussion about the correct way of assigning version
+numbers to individual artifacts.
+
+We have earlier settled to follow SemVer
+
+<A HREF="http://semver.org/">http://semver.org/</A>
+
+which has reasonably clear guidelines under what circumstances to
+increase which of three version counters.
+
+&lt;quote src=&quot;<A HREF="http://semver.org/">http://semver.org/</A>&quot;&gt;
+1. MAJOR version when you make incompatible API changes,
+2. MINOR version when you add functionality in a backwards-compatible
+manner, and
+3. PATCH version when you make backwards-compatible bug fixes.
+&lt;/quote&gt;
+
+It is unspecified, however, how version changes in dependency artifacts
+affect the version of the consuming artifact, i.e. do they bubble or do
+they not?  In my current understanding, there are two competing
+objectives, deployment (advocated and executed by @dscho and @ctrueden),
+and development (advocated and executed by @axtimwalde and @ctrueden, we
+see that @ctrueden is ambivalent, @axtimwalde too, as always, just that
+you know):
+
+1.
+Developer perspective: Don't bubble!  Developers that use the public API
+of an artifact X in their code use SemVer to reason whether on upgrade
+of X they will have to change their code or simply recompile with no
+modification.  Dependency version bubbling would break this contract,
+because it signalizes API incompatibility in X when a dependency Y of X
+introduces incompatible changes, although this incompatibility does not
+affect the public API of X.  Deployment of a set of artifacts following
+this contract requires complete inspection of the entire set of
+artifacts to guarantee consistency of the deployed version by other
+means (maven pom tracing?) because the SemVer versions of individual
+artifacts do not encode the necessary information.  I have the
+impression that the developer perspective, ignoring it not being helpful
+for deployment, was the driver of the SemVer specification and have a
+preference for it because...
+
+2.
+Deployer perspective: Bubble?  Deployers could use SemVer to reason
+whether a new version of an artifact has ANY incompatible changes
+anywhere in its dependency tree.  This is useful to know when an
+artifact in the tree can be released *without* considering its
+dependents *and* dependencies (PATCH increase).  However, whenever the
+version number signalizes incompatibility (MAJOR) or new features
+(MINOR), further inspection of the entire dependency tree is required
+because consistency cannot be derived from SemVer versions alone.  The
+only definite conclusion that can be made from observing that an
+artifact changes its MAJOR or MINOR version, i.e. becomes incompatible,
+is that all dependents will need to be updated/ recompiled or that
+there's a problem, consistency across artifacts cannot be guaranteed.
+I.e. the bubbling scheme, at every individual artifact, sends a signal
+when further inspection is required.  This information, however is
+binary, and a single counter would suffice to do that.  If patch
+counters are desired, one would need two.  The MAJOR and MINOR counters
+are redundant.
+
+Short:
+Non-bubbling SemVer tells a developer whether her code will compile with
+a given dependency artifact (PATCH and MINOR).  Bubbling SemVer tells a
+deployer when a single artifact can be deployed without considering its
+environment (PATCH).  Both things exclude each other.  In this setup, I
+find the benefit for developers stronger and therefore prefer
+non-bubbling SemVer.
+
+An interesting animal are dependency management poms (BOMs) such as
+pom-fiji or pom-mpicbg.  Their `public API' is the composite of  managed
+dependencies and therefore it has to bubble the SemVer versions of the
+managed dependencies.  This is different from artifacts that consume a
+dependency, consuming and managing are different.  I may be wrong, but I
+have the impression that these two things often get confused.
+
+Please let me know your thoughts.
+
+Thanks,
+Stephan
+
+
+
+
+
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002478.html">[ImageJ-devel] About memory usage with Fiji/JVM
+</A></li>
+	<LI>Next message: <A HREF="002480.html">[ImageJ-devel] SemVer policies for ImageJ2 and Fiji
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2479">[ date ]</a>
+              <a href="thread.html#2479">[ thread ]</a>
+              <a href="subject.html#2479">[ subject ]</a>
+              <a href="author.html#2479">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

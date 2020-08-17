@@ -1,0 +1,142 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [fiji-devel] reading images larger than signed	int max value
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20reading%20images%20larger%20than%20signed%0A%09int%20max%20value&In-Reply-To=%3CCADN69y%3DVpbjvfuChh4X_FUHsGG8K51nmHOShT2j-wEBB_RAiLQ%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000520.html">
+   <LINK REL="Next"  HREF="000514.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [fiji-devel] reading images larger than signed	int max value</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20reading%20images%20larger%20than%20signed%0A%09int%20max%20value&In-Reply-To=%3CCADN69y%3DVpbjvfuChh4X_FUHsGG8K51nmHOShT2j-wEBB_RAiLQ%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] [fiji-devel] reading images larger than signed	int max value">ctrueden at wisc.edu
+       </A><BR>
+    <I>Fri Oct 21 00:07:41 CDT 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000520.html">[ImageJ-devel] [fiji-devel] reading images larger than signed	int max value
+</A></li>
+        <LI>Next message: <A HREF="000514.html">[ImageJ-devel] image for the about dialog
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#532">[ date ]</a>
+              <a href="thread.html#532">[ thread ]</a>
+              <a href="subject.html#532">[ subject ]</a>
+              <a href="author.html#532">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Albert,
+
+Thoughts on large files. ImageJ 1 cannot open images larger than the
+&gt;<i> maximum signed int value, but there is no reason why ImageJ 2
+</I>&gt;<i> shouldn't be able to.
+</I>&gt;<i>
+</I>
+Absolutely. This has been a goal of IJ2 from the beginning. However, given
+the magnitude of the project, the first release will not provide a full
+solution. However, the architecture (i.e., ImgLib2) is in place for a full
+solution to be implemented in a reasonable time frame.
+
+Relevant tickets in our issue tracking system include:
+  <A HREF="http://dev.imagejdev.org/trac/imagej/ticket/19">http://dev.imagejdev.org/trac/imagej/ticket/19</A>
+  <A HREF="http://dev.imagejdev.org/trac/imagej/ticket/216">http://dev.imagejdev.org/trac/imagej/ticket/216</A>
+
+As Aivar notes in one of ticket #19's comments, he began development at the
+last Fiji hackathon on a tiled image viewer for
+ImageJ&lt;<A HREF="http://dev.imagejdev.org/trac/imagej/browser/trunk/zoomviewer/src/imagej/display/zoomview">http://dev.imagejdev.org/trac/imagej/browser/trunk/zoomviewer/src/imagej/display/zoomview</A>&gt;.
+We plan to pursue this capability further early next year.
+
+Are you guys planning for imglib2 on a PlanarCellContainer that
+&gt;<i> behaves like a PlanarArrayContainer that has been internally chopped
+</I>&gt;<i> up into as many cells as necessary, circumventing the array size
+</I>&gt;<i> limit? And given the large size, extra bonus if the file is lazily
+</I>&gt;<i> loaded, that is, each cell is loaded on demand from the large file on
+</I>&gt;<i> disk.
+</I>&gt;<i>
+</I>
+Yes, we don't have a ticket for it yet, but it is very similar to #216. We
+will definitely need to create an ImgLib2 cell container (of which a planar
+cell container is just a special case). It will be needed not only for
+tiling, but also for caching image processing operations on huge datasets in
+general. For example, you can currently open a 200GB dataset (e.g., 1024 x
+1024 x 100 focal planes x 1000 time points x 16-bit) as a virtual stack. But
+you can't easily process every plane with a plugin filter and then keep
+browsing the processed planes. With a cell container that caches out blocks
+to disk as needed, it would at least be possible, if slow. And this
+capability would make it easier to implement undo as well, since prior
+dataset states could be cached to and from disk in a similar way.
+
+Regards,
+Curtis
+
+
+On Fri, Oct 14, 2011 at 5:53 PM, Albert Cardona &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">sapristi at gmail.com</A>&gt; wrote:
+
+&gt;<i> Melissa, Curtis, Johannes,
+</I>&gt;<i>
+</I>&gt;<i> Thoughts on large files. ImageJ 1 cannot open images larger than the
+</I>&gt;<i> maximum signed int value, but there is no reason why ImageJ 2
+</I>&gt;<i> shouldn't be able to.
+</I>&gt;<i>
+</I>&gt;<i> Are you guys planning for imglib2 on a PlanarCellContainer that
+</I>&gt;<i> behaves like a PlanarArrayContainer that has been internally chopped
+</I>&gt;<i> up into as many cells as necessary, circumventing the array size
+</I>&gt;<i> limit? And given the large size, extra bonus if the file is lazily
+</I>&gt;<i> loaded, that is, each cell is loaded on demand from the large file on
+</I>&gt;<i> disk.
+</I>&gt;<i>
+</I>&gt;<i> From some time ago I recall having heard or read that LOCI Bioformats
+</I>&gt;<i> can already read ROIs from images in disk. Is that right? If you could
+</I>&gt;<i> point me to an example that would b appreciated.
+</I>&gt;<i>
+</I>&gt;<i> What motivated the above is that we are currently dealing with 32k x
+</I>&gt;<i> 32k 16-bit images, which we had to cut into tiles. And larger images
+</I>&gt;<i> are bound to come.
+</I>&gt;<i>
+</I>&gt;<i> Albert
+</I>&gt;<i>
+</I>&gt;<i> --
+</I>&gt;<i> <A HREF="http://albert.rierol.net">http://albert.rierol.net</A>
+</I>&gt;<i> <A HREF="http://www.ini.uzh.ch/~acardona/">http://www.ini.uzh.ch/~acardona/</A>
+</I>&gt;<i>
+</I>&gt;<i> --
+</I>&gt;<i> You received this message because you are subscribed to the Google Groups
+</I>&gt;<i> &quot;Fiji-devel&quot; group.
+</I>&gt;<i> To post to this group, send email to <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">fiji-devel at googlegroups.com.</A>
+</I>&gt;<i> To unsubscribe from this group, send email to
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">fiji-devel+unsubscribe at googlegroups.com.</A>
+</I>&gt;<i> For more options, visit this group at
+</I>&gt;<i> <A HREF="http://groups.google.com/group/fiji-devel?hl=en.">http://groups.google.com/group/fiji-devel?hl=en.</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20111021/f4092339/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20111021/f4092339/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000520.html">[ImageJ-devel] [fiji-devel] reading images larger than signed	int max value
+</A></li>
+	<LI>Next message: <A HREF="000514.html">[ImageJ-devel] image for the about dialog
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#532">[ date ]</a>
+              <a href="thread.html#532">[ thread ]</a>
+              <a href="subject.html#532">[ subject ]</a>
+              <a href="author.html#532">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

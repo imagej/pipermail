@@ -1,0 +1,120 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-bugs] [Bug 835] Fiji hangs when installing macro tool
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%20835%5D%20Fiji%20hangs%20when%20installing%20macro%20tool&In-Reply-To=%3Cbug-835-19-k57Okoy6s9%40http.fiji.sc/bugzilla/%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000323.html">
+   <LINK REL="Next"  HREF="000328.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-bugs] [Bug 835] Fiji hangs when installing macro tool</H1>
+    <B>bugzilla at fiji.sc</B> 
+    <A HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%20835%5D%20Fiji%20hangs%20when%20installing%20macro%20tool&In-Reply-To=%3Cbug-835-19-k57Okoy6s9%40http.fiji.sc/bugzilla/%3E"
+       TITLE="[ImageJ-bugs] [Bug 835] Fiji hangs when installing macro tool">bugzilla at fiji.sc
+       </A><BR>
+    <I>Tue Aug 26 00:26:45 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000323.html">[ImageJ-bugs] [Bug 680] Skeletonize fails for vertical 2x3
+</A></li>
+        <LI>Next message: <A HREF="000328.html">[ImageJ-bugs] [Bug 913] New: Fiji cannot open .jp2 (nikon	microscope files)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#326">[ date ]</a>
+              <a href="thread.html#326">[ thread ]</a>
+              <a href="subject.html#326">[ subject ]</a>
+              <a href="author.html#326">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE><A HREF="http://fiji.sc/bugzilla/show_bug.cgi?id=835">http://fiji.sc/bugzilla/show_bug.cgi?id=835</A>
+
+--- Comment #12 from Ilan Tal &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">ilan.tal at gmail.com</A>&gt; ---
+I think it is time for a minor overhaul on Menus.java. I took Mark's idea of
+running the actual, up-to-date Fiji program and attaching Netbeans to it. This
+gives me the ability to look at all the variables and to compare the run of
+ImageJ to the run of Fiji. It is a very powerful idea.
+
+Inside validMacroName there is a isFiji static variable which I noticed was
+always false. This morning I decided to have a look. This code is in the
+Menus.java constructor
+
+        isFiji = title!=null &amp;&amp; title.contains(&quot;Fiji&quot;);
+
+and it clearly is no longer working. It used to be that Fiji was started by
+fiji-linux, but now ImageJ-linux32 is used. A breakpoint on the constructor
+shows that Fiji returns a title of ImageJ. So if the 2 cases in validMacroName
+still need to depend upon Fiji or not Fiji, this needs to be fixed (how is a
+very good question).
+
+Now back to my problem with macros, which has been extended to many macros I
+wasn't even aware of. I have a Window_Level_Tool.jar and a
+Postage_Action_Tool.ijm inside the Tools folder. Both work perfectly fine under
+ImageJ. The Window_Level_Tool.jar works fine under Fiji as well but
+Postage_Action_Tool.ijm fails under Fiji. Why?
+
+Yesterday I saw that name.endsWith(&quot;.jar&quot;) picks up my jar file while
+name.endsWith(&quot;.ijm&quot;) works in ImageJ and fails in Fiji. Why? One possibility
+is there is some unseen character in the file name. The trim() command would
+remove this problem. Another possibility is name.endsWith(&quot;.jar&quot;) is operated
+in the current instance of Menus.java, whereas name.endsWith(&quot;.ijm&quot;) is
+operated in a static program which may have some subtle difference.
+
+I did a search for validMacroName and found references to it only inside
+Menus.java. From this there is a possibility that it need not be static. In any
+case it is broken because isFiji is rubbish (always false).
+
+As a minimum I would suggest
+
+        String name = list[i].trim();
+
+as something which can't hurt and might possibly help. The real test is to make
+an experimental version with the trim() and test it. This is no problem for me
+inside ImageJ, but I have no control over Fiji and its contents.
+
+If anyone can give some help and suggestions maybe we can move this bug to a
+solution.
+
+Thanks,
+Ilan
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-bugs/attachments/20140826/3d0d4308/attachment.html">http://imagej.net/pipermail/imagej-bugs/attachments/20140826/3d0d4308/attachment.html</A>&gt;
+</PRE>
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000323.html">[ImageJ-bugs] [Bug 680] Skeletonize fails for vertical 2x3
+</A></li>
+	<LI>Next message: <A HREF="000328.html">[ImageJ-bugs] [Bug 913] New: Fiji cannot open .jp2 (nikon	microscope files)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#326">[ date ]</a>
+              <a href="thread.html#326">[ thread ]</a>
+              <a href="subject.html#326">[ subject ]</a>
+              <a href="author.html#326">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-bugs">More information about the Imagej-bugs
+mailing list</a><br>
+</body></html>

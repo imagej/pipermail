@@ -1,0 +1,168 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [IMGLIB] moved algorithm and stats packages out	of imglib2-core
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5BIMGLIB%5D%20moved%20algorithm%20and%20stats%20packages%20out%0A%09of%20imglib2-core&In-Reply-To=%3CCADN69y%3DxMAcPfCymps8ouAHVwaS_LYGBVNOtu1Cvwb%3DB2%3DGb6g%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000599.html">
+   <LINK REL="Next"  HREF="000603.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [IMGLIB] moved algorithm and stats packages out	of imglib2-core</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5BIMGLIB%5D%20moved%20algorithm%20and%20stats%20packages%20out%0A%09of%20imglib2-core&In-Reply-To=%3CCADN69y%3DxMAcPfCymps8ouAHVwaS_LYGBVNOtu1Cvwb%3DB2%3DGb6g%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] [IMGLIB] moved algorithm and stats packages out	of imglib2-core">ctrueden at wisc.edu
+       </A><BR>
+    <I>Wed Feb 29 14:51:57 CST 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000599.html">[ImageJ-devel] [IMGLIB] moved algorithm and stats packages out of imglib2-core
+</A></li>
+        <LI>Next message: <A HREF="000603.html">[ImageJ-devel] [IMGLIB] moved algorithm and stats packages out of imglib2-core
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#601">[ date ]</a>
+              <a href="thread.html#601">[ thread ]</a>
+              <a href="subject.html#601">[ subject ]</a>
+              <a href="author.html#601">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Bill,
+
+The hash of different licenses is starting to sound a bit icky. What's the
+&gt;<i> justification? Why not public domain ala IJ1?
+</I>&gt;<i>
+</I>
+It is not legal to &quot;release&quot; code to the public domain in the United
+States, nor in many other countries. The closest we can get is the BSD
+license. It is extremely permissive. The reason ImageJ1 is in the public
+domain is because there is one exception: code developed by the U.S.
+government (including at NIH) *cannot* be copyrighted, and is automatically
+in the public domain. But ImageJ2 does not fall into that category, as it
+is being developed as a community effort across several universities
+internationally.
+
+Similarly, ImgLib2 is BSD-licensed, to be as permissive as possible.
+However, there are some image processing algorithms (in the
+imglib2-algorithms package) that depend on GPL-licensed third-party
+libraries. In order to use those libraries legally, the imglib2-algorithms
+must also be GPL-licensed.
+
+Hopefully that makes sense. If not, ask and we will clarify further.
+
+Regards,
+Curtis
+
+
+On Wed, Feb 29, 2012 at 2:43 PM, Bill Mohler &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">wmohler at neuron.uchc.edu</A>&gt;wrote:
+
+&gt;<i>  The hash of different licenses is starting to sound a bit icky. What's
+</I>&gt;<i> the justification? Why not public domain ala IJ1?
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On 2/29/12 3:30 p.m., Curtis Rueden wrote:
+</I>&gt;<i>
+</I>&gt;<i> Hi Tobias,
+</I>&gt;<i>
+</I>&gt;<i> I moved the net.imglib2.algorithm and net.imglib2.stats packages
+</I>&gt;&gt;<i> from the imglib2-core into the imglib2-algorithms sub-project (because
+</I>&gt;&gt;<i> thats where they should belong.)
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> The problem with moving things from core to algorithms right now is that
+</I>&gt;<i> implicitly, it changes the license from BSD to GPL. ImageJ2 cannot include
+</I>&gt;<i> imglib2-algorithms, because of this license difference.
+</I>&gt;<i>
+</I>&gt;<i> So, there are a couple of potential solutions:
+</I>&gt;<i>
+</I>&gt;<i> 1) Keep things like net.imglib2.stats in imglib2 core, so that it can
+</I>&gt;<i> remain BSD licensed.
+</I>&gt;<i>
+</I>&gt;<i> 2) Split imglib2-algorithms into multiple components:
+</I>&gt;<i> imglib2-algorithms-bsd and imglib2-algorithms-gpl, for example. Then we can
+</I>&gt;<i> include imglib2-algorithms-bsd as a dependency for ImageJ2.
+</I>&gt;<i>
+</I>&gt;<i> The thinking with net.imglib2.stats was that the histogram functionality
+</I>&gt;<i> is so common that it belongs in the &quot;core&quot; library. While modularity is
+</I>&gt;<i> nice, splitting things up too much runs the risk of confusing new
+</I>&gt;<i> developers who do not know why there are so many different JAR files. I
+</I>&gt;<i> agree with something Albert said a while back that one primary motivator
+</I>&gt;<i> for multiple JARs is to discriminate dependencies. That is, if some code
+</I>&gt;<i> depends on e.g. weka, and other code does not, there should be two Maven
+</I>&gt;<i> modules: one with a dependency on weka that includes the relevant code, and
+</I>&gt;<i> the other without such dependency that includes the rest.
+</I>&gt;<i>
+</I>&gt;<i> The tricky bit is, the other primary motivator for multiple JARs is, as
+</I>&gt;<i> touched on above, licensing. We need to balance and reconcile those two
+</I>&gt;<i> needs. The most surefire solution is to have a separate module/JAR for each
+</I>&gt;<i> combination of licenses and dependencies&#8212;and hopefully that number of
+</I>&gt;<i> modules remains manageable.
+</I>&gt;<i>
+</I>&gt;<i> Maybe it is time to split up imglib2-algorithms into multiple submodules?
+</I>&gt;<i> I would be happy to do it, if we all agree.
+</I>&gt;<i>
+</I>&gt;<i> Regards,
+</I>&gt;<i> Curtis
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On Wed, Feb 29, 2012 at 1:11 PM, Tobias Pietzsch &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pietzsch at mpi-cbg.de</A>&gt;wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> Hi all,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I moved the net.imglib2.algorithm and net.imglib2.stats packages
+</I>&gt;&gt;<i> from the imglib2-core into the imglib2-algorithms sub-project (because
+</I>&gt;&gt;<i> thats where they should belong.)
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> With regard to the interfaces and classes from the algorithm package,
+</I>&gt;&gt;<i> I think we should reconsider whether we need those at all. In particular
+</I>&gt;&gt;<i> for the MultiThreaded interface, I imagine that something similar can
+</I>&gt;&gt;<i> be accomplished using the standard java.util.concurrent package.
+</I>&gt;&gt;<i> For instance, (potentially) multi-threaded algorithms could be started
+</I>&gt;&gt;<i> with an ExecutorService argument.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> best regards,
+</I>&gt;&gt;<i> Tobias
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20120229/72e4a573/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20120229/72e4a573/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000599.html">[ImageJ-devel] [IMGLIB] moved algorithm and stats packages out of imglib2-core
+</A></li>
+	<LI>Next message: <A HREF="000603.html">[ImageJ-devel] [IMGLIB] moved algorithm and stats packages out of imglib2-core
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#601">[ date ]</a>
+              <a href="thread.html#601">[ thread ]</a>
+              <a href="subject.html#601">[ subject ]</a>
+              <a href="author.html#601">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

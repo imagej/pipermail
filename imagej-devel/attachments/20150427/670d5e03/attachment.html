@@ -1,0 +1,58 @@
+<tt>
+&lt;div&nbsp;dir=&quot;ltr&quot;&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;Hi&nbsp;Jan,&lt;br&gt;&lt;br&gt;&gt;an&nbsp;error&nbsp;message&nbsp;is&nbsp;displayed:&nbsp;&quot;A&nbsp;Dataset&nbsp;is&nbsp;required&nbsp;but&nbsp;none&nbsp;exist.&quot;&lt;br&gt;&lt;br&gt;&lt;/div&gt;This&nbsp;was&nbsp;due&nbsp;to&nbsp;limitations&nbsp;with&nbsp;the&nbsp;input&nbsp;preprocessor&nbsp;presenting&nbsp;the&nbsp;list&nbsp;of&nbsp;datasets.&nbsp;Since&nbsp;ImagePluses&nbsp;aren&#39;t&nbsp;explicitly&nbsp;tracked&nbsp;by&nbsp;the&nbsp;IJ2&nbsp;framework,&nbsp;having&nbsp;an&nbsp;ImagePlus&nbsp;recognized&nbsp;as&nbsp;a&nbsp;Dataset&nbsp;requires&nbsp;some&nbsp;extra&nbsp;layers.&nbsp;We&nbsp;had&nbsp;covered&nbsp;the&nbsp;single&nbsp;input&nbsp;case&nbsp;(which&nbsp;is&nbsp;why&nbsp;your&nbsp;first&nbsp;script&nbsp;worked)&nbsp;but&nbsp;not&nbsp;the&nbsp;general&nbsp;multi-input&nbsp;case.&nbsp;There&nbsp;is&nbsp;an&nbsp;&lt;a&nbsp;href=&quot;https://github.com/imagej/imagej-legacy/issues/106&quot;&gt;issue&nbsp;tracking&nbsp;the&nbsp;multi-input&lt;/a&gt;&nbsp;case,&nbsp;which&nbsp;I&nbsp;resolved&nbsp;today.&nbsp;So&nbsp;this&nbsp;should&nbsp;work&nbsp;as&nbsp;intended&nbsp;in&nbsp;our&nbsp;next&nbsp;release&nbsp;-&nbsp;and&nbsp;thank&nbsp;you&nbsp;for&nbsp;the&nbsp;motivation&nbsp;to&nbsp;wrap&nbsp;this&nbsp;up!&lt;br&gt;&lt;br&gt;&lt;/div&gt;You&nbsp;can&nbsp;also&nbsp;manually&nbsp;enable&nbsp;ImagePlus&nbsp;&lt;&gt;&nbsp;Dataset&nbsp;synchronization&nbsp;to&nbsp;ensure&nbsp;ImagePluses&nbsp;always&nbsp;have&nbsp;a&nbsp;corresponding&nbsp;Dataset:&nbsp;&lt;a&nbsp;href=&quot;http://imagej.net/Compatibility#Translation_of_data_structures&quot;&gt;http://imagej.net/Compatibility#Translation_of_data_structures&lt;/a&gt;&lt;br&gt;&lt;br&gt;&gt;(where&nbsp;can&nbsp;this&nbsp;title&nbsp;be&nbsp;set,&nbsp;by&nbsp;the&nbsp;way?)&lt;br&gt;&lt;br&gt;&lt;/div&gt;For&nbsp;the&nbsp;multiple&nbsp;choice&nbsp;input&nbsp;selection,&nbsp;the&nbsp;labels&nbsp;are&nbsp;based&nbsp;on&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;input&nbsp;type.&nbsp;Since&nbsp;the&nbsp;input&nbsp;type&nbsp;is&nbsp;Dataset,&nbsp;the&nbsp;Dataset&nbsp;name&nbsp;is&nbsp;used&nbsp;(which&nbsp;delegates&nbsp;to&nbsp;the&nbsp;wrapped&nbsp;ImgPlus).&nbsp;In&nbsp;your&nbsp;code&nbsp;you&nbsp;are&nbsp;applying&nbsp;labels&nbsp;to&nbsp;the&nbsp;Display,&nbsp;but&nbsp;not&nbsp;the&nbsp;underlying&nbsp;dataset&nbsp;-&nbsp;if&nbsp;you&nbsp;name&nbsp;the&nbsp;ImgPlus,&nbsp;or&nbsp;explicitly&nbsp;create&nbsp;a&nbsp;Dataset&nbsp;and&nbsp;set&nbsp;its&nbsp;name,&nbsp;that&nbsp;name&nbsp;will&nbsp;propagate&nbsp;up&nbsp;to&nbsp;the&nbsp;input&nbsp;chooser&nbsp;(and&nbsp;the&nbsp;Display).&nbsp;As&nbsp;a&nbsp;side&nbsp;note,&nbsp;you&nbsp;should&nbsp;use&nbsp;the&nbsp;net.imagej.ImgPlus&nbsp;instead&nbsp;of&nbsp;the&nbsp;net.imglib2.meta.&lt;br&gt;&lt;br&gt;&lt;/div&gt;An&nbsp;updated&nbsp;script&nbsp;would&nbsp;be:&lt;br&gt;&lt;br&gt;&lt;br&gt;  &nbsp;#&nbsp;@DisplayService&nbsp;display&lt;br&gt;  &nbsp;#&nbsp;@OpService&nbsp;ops&lt;br&gt;  &nbsp;#&nbsp;@net.imagej.Dataset&nbsp;inputData1&lt;br&gt;  &nbsp;#&nbsp;@net.imagej.Dataset&nbsp;inputData2&lt;br&gt;&lt;br&gt;  &nbsp;from&nbsp;net.imagej&nbsp;import&nbsp;ImgPlus&lt;br&gt;&lt;br&gt;  &nbsp;display.createDisplay(ImgPlus(inputData1,&nbsp;&quot;my1&quot;))&lt;br&gt;  &nbsp;display.createDisplay(ImgPlus(inputData2,&nbsp;&quot;my2&quot;))&lt;br&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Hope&nbsp;that&nbsp;helps.&nbsp;Let&nbsp;me&nbsp;know&nbsp;if&nbsp;you&nbsp;have&nbsp;any&nbsp;other&nbsp;questions.&lt;br&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Best,&lt;br&gt;&lt;/div&gt;&lt;div&gt;Mark&lt;br&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&nbsp;class=&quot;gmail_extra&quot;&gt;&lt;br&gt;&lt;div&nbsp;class=&quot;gmail_quote&quot;&gt;On&nbsp;Mon,&nbsp;Apr&nbsp;27,&nbsp;2015&nbsp;at&nbsp;8:58&nbsp;AM,&nbsp;Jan&nbsp;Eglinger&nbsp;&lt;span&nbsp;dir=&quot;ltr&quot;&gt;&lt;&lt;a&nbsp;href=&quot;mailto:jan.eglinger@gmail.com&quot;&nbsp;target=&quot;_blank&quot;&gt;jan.eglinger@gmail.com&lt;/a&gt;&gt;&lt;/span&gt;&nbsp;wrote:&lt;br&gt;&lt;blockquote&nbsp;class=&quot;gmail_quote&quot;&nbsp;style=&quot;margin:0&nbsp;0&nbsp;0&nbsp;.8ex;border-left:1px&nbsp;#ccc&nbsp;solid;padding-left:1ex&quot;&gt;Dear&nbsp;all,&lt;br&gt;<br>
+&lt;br&gt;<br>
+***&nbsp;TL;DR:&lt;br&gt;<br>
+How&nbsp;do&nbsp;I&nbsp;proceed&nbsp;to&nbsp;get&nbsp;multiple&nbsp;input&nbsp;Datasets&nbsp;as&nbsp;ImageJ2&nbsp;parameters&nbsp;from&nbsp;open&nbsp;images&nbsp;in&nbsp;Fiji?&lt;br&gt;<br>
+***&lt;br&gt;<br>
+&lt;br&gt;<br>
+I&nbsp;was&nbsp;recently&nbsp;exploring&nbsp;ImageJ2&nbsp;scripting&nbsp;in&nbsp;Fiji&nbsp;and&nbsp;found&nbsp;the&nbsp;OpsThresholdIJ1Analyze&nbsp;template&nbsp;[1]&nbsp;in&nbsp;the&nbsp;script&nbsp;editor&nbsp;very&nbsp;helpful.&lt;br&gt;<br>
+&lt;br&gt;<br>
+When&nbsp;trying&nbsp;to&nbsp;get&nbsp;more&nbsp;than&nbsp;one&nbsp;@net.imagej.Dataset&nbsp;input&nbsp;parameter&nbsp;however,&nbsp;I&nbsp;noticed&nbsp;some&nbsp;inconsistencies.&lt;br&gt;<br>
+Let&nbsp;me&nbsp;try&nbsp;to&nbsp;illustrate&nbsp;with&nbsp;the&nbsp;two&nbsp;following&nbsp;scripts:&lt;br&gt;<br>
+&lt;br&gt;<br>
+ &nbsp; &nbsp;#&nbsp;@DisplayService&nbsp;display&lt;br&gt;<br>
+ &nbsp; &nbsp;#&nbsp;@OpService&nbsp;ops&lt;br&gt;<br>
+ &nbsp; &nbsp;#&nbsp;@net.imagej.Dataset&nbsp;inputData1&lt;br&gt;<br>
+&lt;br&gt;<br>
+ &nbsp; &nbsp;from&nbsp;net.imglib2.meta&nbsp;import&nbsp;ImgPlus&lt;br&gt;<br>
+&lt;br&gt;<br>
+ &nbsp; &nbsp;display.createDisplay(&quot;my1&quot;,&nbsp;ImgPlus(inputData1))&lt;br&gt;<br>
+&lt;br&gt;<br>
+&lt;br&gt;<br>
+The&nbsp;above&nbsp;script&nbsp;re-displays&nbsp;the&nbsp;current&nbsp;image&nbsp;as&nbsp;expected&nbsp;(I&nbsp;tried&nbsp;with&nbsp;the&nbsp;Blobs&nbsp;sample&nbsp;image&nbsp;open,&nbsp;which&nbsp;will&nbsp;be&nbsp;re-displayed&nbsp;with&nbsp;a&nbsp;non-inverted&nbsp;LUT.)&lt;br&gt;<br>
+&lt;br&gt;<br>
+When&nbsp;I&nbsp;ask&nbsp;for&nbsp;two&nbsp;input&nbsp;datasets&nbsp;(right&nbsp;after&nbsp;a&nbsp;fresh&nbsp;start&nbsp;of&nbsp;Fiji&nbsp;with&nbsp;only&nbsp;the&nbsp;Blobs&nbsp;sample&nbsp;image&nbsp;open):&lt;br&gt;<br>
+&lt;br&gt;<br>
+ &nbsp; &nbsp;#&nbsp;@DisplayService&nbsp;display&lt;br&gt;<br>
+ &nbsp; &nbsp;#&nbsp;@OpService&nbsp;ops&lt;br&gt;<br>
+ &nbsp; &nbsp;#&nbsp;@net.imagej.Dataset&nbsp;inputData1&lt;br&gt;<br>
+ &nbsp; &nbsp;#&nbsp;@net.imagej.Dataset&nbsp;inputData2&lt;br&gt;<br>
+&lt;br&gt;<br>
+ &nbsp; &nbsp;from&nbsp;net.imglib2.meta&nbsp;import&nbsp;ImgPlus&lt;br&gt;<br>
+&lt;br&gt;<br>
+ &nbsp; &nbsp;display.createDisplay(&quot;my1&quot;,&nbsp;ImgPlus(inputData1))&lt;br&gt;<br>
+ &nbsp; &nbsp;display.createDisplay(&quot;my2&quot;,&nbsp;ImgPlus(inputData2))&lt;br&gt;<br>
+&lt;br&gt;<br>
+an&nbsp;error&nbsp;message&nbsp;is&nbsp;displayed:&nbsp;&quot;A&nbsp;Dataset&nbsp;is&nbsp;required&nbsp;but&nbsp;none&nbsp;exist.&quot;&lt;br&gt;<br>
+The&nbsp;same&nbsp;error&nbsp;message&nbsp;is&nbsp;displayed&nbsp;when&nbsp;I&nbsp;open&nbsp;a&nbsp;second&nbsp;image&nbsp;in&nbsp;Fiji&nbsp;before&nbsp;running&nbsp;the&nbsp;script.&lt;br&gt;<br>
+&lt;br&gt;<br>
+Now,&nbsp;when&nbsp;I&nbsp;run&nbsp;script&nbsp;#2&nbsp;after&nbsp;script&nbsp;#1&nbsp;was&nbsp;run&nbsp;at&nbsp;least&nbsp;once,&nbsp;I&nbsp;get&nbsp;a&nbsp;dialog&nbsp;with&nbsp;two&nbsp;choices&nbsp;&quot;InputData1&quot;&nbsp;and&nbsp;&quot;InputData2&quot;,&nbsp;both&nbsp;choice&nbsp;fields&nbsp;containing&nbsp;&quot;blobs.gif&quot;&nbsp;and&nbsp;a&nbsp;number&nbsp;of&nbsp;&quot;Untitled&quot;&nbsp;entries&nbsp;(where&nbsp;can&nbsp;this&nbsp;title&nbsp;be&nbsp;set,&nbsp;by&nbsp;the&nbsp;way?).&lt;br&gt;<br>
+&lt;br&gt;<br>
+I&nbsp;guess&nbsp;that&nbsp;a&nbsp;choice&nbsp;is&nbsp;only&nbsp;displayed&nbsp;if&nbsp;there&nbsp;are&nbsp;ImageJ2&nbsp;datasets&nbsp;(i.e.&nbsp;wrapped&nbsp;ImagePlus)&nbsp;already&nbsp;available.&nbsp;The&nbsp;single&nbsp;input&nbsp;case&nbsp;seems&nbsp;to&nbsp;be&nbsp;special-cased&nbsp;as&nbsp;it&nbsp;auto-wraps&nbsp;the&nbsp;currently&nbsp;open&nbsp;image.&lt;br&gt;<br>
+&lt;br&gt;<br>
+So&nbsp;how&nbsp;do&nbsp;I&nbsp;proceed&nbsp;to&nbsp;get&nbsp;more&nbsp;than&nbsp;one&nbsp;input&nbsp;in&nbsp;ImageJ2&nbsp;scripting&nbsp;from&nbsp;open&nbsp;(ImageJ1-)images?&lt;br&gt;<br>
+&lt;br&gt;<br>
+Thanks&nbsp;for&nbsp;your&nbsp;advice,&lt;br&gt;<br>
+Regards,&lt;br&gt;<br>
+Jan&lt;br&gt;<br>
+&lt;br&gt;<br>
+&lt;br&gt;<br>
+[1]:&nbsp;&lt;a&nbsp;href=&quot;https://github.com/imagej/imagej-legacy/blob/master/src/main/resources/script_templates/Python/OpsThresholdIJ1Analyze.py&quot;&nbsp;target=&quot;_blank&quot;&gt;https://github.com/imagej/imagej-legacy/blob/master/src/main/resources/script_templates/Python/OpsThresholdIJ1Analyze.py&lt;/a&gt;&lt;br&gt;<br>
+&lt;br&gt;<br>
+_______________________________________________&lt;br&gt;<br>
+ImageJ-devel&nbsp;mailing&nbsp;list&lt;br&gt;<br>
+&lt;a&nbsp;href=&quot;mailto:ImageJ-devel@imagej.net&quot;&nbsp;target=&quot;_blank&quot;&gt;ImageJ-devel@imagej.net&lt;/a&gt;&lt;br&gt;<br>
+&lt;a&nbsp;href=&quot;http://imagej.net/mailman/listinfo/imagej-devel&quot;&nbsp;target=&quot;_blank&quot;&gt;http://imagej.net/mailman/listinfo/imagej-devel&lt;/a&gt;&lt;br&gt;<br>
+&lt;/blockquote&gt;&lt;/div&gt;&lt;br&gt;&lt;/div&gt;<br>
+
+</tt>

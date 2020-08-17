@@ -1,0 +1,219 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] releaseVersion.sh script failed -- how to recover
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20releaseVersion.sh%20script%20failed%20--%20how%20to%20recover&In-Reply-To=%3CCADN69ynoRSSacYH3K0GiOyPQZ3Y4VXPcqfioT_qmoxmmpXxj_g%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002366.html">
+   <LINK REL="Next"  HREF="002376.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] releaseVersion.sh script failed -- how to recover</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20releaseVersion.sh%20script%20failed%20--%20how%20to%20recover&In-Reply-To=%3CCADN69ynoRSSacYH3K0GiOyPQZ3Y4VXPcqfioT_qmoxmmpXxj_g%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] releaseVersion.sh script failed -- how to recover">ctrueden at wisc.edu
+       </A><BR>
+    <I>Tue Dec 16 09:55:21 CST 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002366.html">[ImageJ-devel] releaseVersion.sh script failed -- how to recover
+</A></li>
+        <LI>Next message: <A HREF="002376.html">[ImageJ-devel] releaseVersion.sh script failed -- how to recover
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2368">[ date ]</a>
+              <a href="thread.html#2368">[ thread ]</a>
+              <a href="subject.html#2368">[ subject ]</a>
+              <a href="author.html#2368">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Tobias,
+
+&gt;<i> Failed on releasing the javadoc and is now stuck&#8230;
+</I>
+It is probably a network error. This has happened to me several times when
+I try to release from a remote machine, even one on the same subnet as the
+ImageJ Maven server. So to avoid that, I always run release-version.sh from
+the dev server itself. Or use the Release-Version Jenkins job to release
+when possible.
+
+&gt;<i> I don&#8217;t really understand what goes on in the release-version.sh
+</I>&gt;<i> script.
+</I>
+The script mostly just leans on the maven-release-plugin. The actual deploy
+happens with a Maven wagon plugin: the wagon-webdav-jackrabbit [1]. The
+version we used was chosen for cross-compatibility with both Maven 2 and
+Maven 3 -- newer webdav wagon plugins I looked at stopped working with
+Maven 2. But now that we have migrated fully to requiring Maven 3 anyway,
+we should probably upgrade the wagon plugin to the latest, to see whether
+it helps with these connectivity issues.
+
+In the meantime, let's add the BDV projects to the Jenkins Release-Version
+job. See you on IRC.
+
+Regards,
+Curtis
+
+[1]
+<A HREF="https://github.com/scijava/pom-scijava/blob/pom-scijava-5.2.3/pom.xml#L919-L927">https://github.com/scijava/pom-scijava/blob/pom-scijava-5.2.3/pom.xml#L919-L927</A>
+
+On Tue, Dec 16, 2014 at 8:18 AM, Tobias Pietzsch &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pietzsch at mpi-cbg.de</A>&gt;
+wrote:
+&gt;<i>
+</I>&gt;<i> Ok, and the same thing happened with bigdataviewer-core. Failed on
+</I>&gt;<i> releasing the javadoc and is now stuck&#8230;
+</I>&gt;<i>
+</I>&gt;<i> I don&#8217;t really understand what goes on in the release-version.sh script.
+</I>&gt;<i> From the git history of that script it does not look like there have been
+</I>&gt;<i> recent changes that could explain why it fails now and didn&#8217;t a few weeks
+</I>&gt;<i> back. Is there something changed in the maven.imagej.net that could cause
+</I>&gt;<i> it?
+</I>&gt;<i>
+</I>&gt;<i> best regards,
+</I>&gt;<i> Tobias
+</I>&gt;<i>
+</I>&gt;<i> On 16 Dec 2014, at 14:54, Tobias Pietzsch &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pietzsch at mpi-cbg.de</A>&gt; wrote:
+</I>&gt;<i>
+</I>&gt;<i> Hi,
+</I>&gt;<i>
+</I>&gt;<i> I just tried to releaseVersion.sh for
+</I>&gt;<i> <A HREF="https://github.com/bigdataviewer/spimdata">https://github.com/bigdataviewer/spimdata</A> project.
+</I>&gt;<i> It failed in the middle of the release:
+</I>&gt;<i> In the imagej maven repository
+</I>&gt;<i> <A HREF="http://maven.imagej.net/index.html#nexus-search;quick~spim_data">http://maven.imagej.net/index.html#nexus-search;quick~spim_data</A> the
+</I>&gt;<i> spim_data-1.0.0-beta-4.jar and
+</I>&gt;<i> spim_data-1.0.0-beta-4-sources.jar are there.
+</I>&gt;<i> The upload of the spim_data-1.0.0-beta-4-javadoc.jar is missing.
+</I>&gt;<i> That&#8217;s where the script failed:
+</I>&gt;<i> &#8230;
+</I>&gt;<i> Dec 16, 2014 2:36:40 PM
+</I>&gt;<i> org.apache.commons.httpclient.auth.AuthChallengeProcessor selectAuthScheme
+</I>&gt;<i> INFO: basic authentication scheme selected
+</I>&gt;<i> Dec 16, 2014 2:36:40 PM
+</I>&gt;<i> org.apache.commons.httpclient.auth.AuthChallengeProcessor selectAuthScheme
+</I>&gt;<i> INFO: basic authentication scheme selected
+</I>&gt;<i> Uploaded:
+</I>&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/sc/fiji/spim_data/maven-metadata.xml">http://maven.imagej.net/content/repositories/releases/sc/fiji/spim_data/maven-metadata.xml</A>
+</I>&gt;<i> (772 B at 0.4 KB/sec)
+</I>&gt;<i> Uploading: dav:<A HREF="http://">http://</A>
+</I>&gt;<i> maven.imagej.net/content/repositories/releases/sc/fiji/spim_data/1.0.0-beta-4/spim_data-1.0.0-beta-4-sources.jar
+</I>&gt;<i> Dec 16, 2014 2:36:41 PM
+</I>&gt;<i> org.apache.commons.httpclient.auth.AuthChallengeProcessor selectAuthScheme
+</I>&gt;<i> INFO: basic authentication scheme selected
+</I>&gt;<i> Dec 16, 2014 2:36:41 PM
+</I>&gt;<i> org.apache.commons.httpclient.auth.AuthChallengeProcessor selectAuthScheme
+</I>&gt;<i> INFO: basic authentication scheme selected
+</I>&gt;<i> Dec 16, 2014 2:36:42 PM
+</I>&gt;<i> org.apache.commons.httpclient.auth.AuthChallengeProcessor selectAuthScheme
+</I>&gt;<i> INFO: basic authentication scheme selected
+</I>&gt;<i> Dec 16, 2014 2:36:42 PM
+</I>&gt;<i> org.apache.commons.httpclient.auth.AuthChallengeProcessor selectAuthScheme
+</I>&gt;<i> INFO: basic authentication scheme selected
+</I>&gt;<i> Dec 16, 2014 2:36:42 PM
+</I>&gt;<i> org.apache.commons.httpclient.auth.AuthChallengeProcessor selectAuthScheme
+</I>&gt;<i> INFO: basic authentication scheme selected
+</I>&gt;<i> Dec 16, 2014 2:36:43 PM
+</I>&gt;<i> org.apache.commons.httpclient.auth.AuthChallengeProcessor selectAuthScheme
+</I>&gt;<i> INFO: basic authentication scheme selected
+</I>&gt;<i> Uploaded: dav:<A HREF="http://">http://</A>
+</I>&gt;<i> maven.imagej.net/content/repositories/releases/sc/fiji/spim_data/1.0.0-beta-4/spim_data-1.0.0-beta-4-sources.jar
+</I>&gt;<i> (114 KB at 44.1 KB/sec)
+</I>&gt;<i> Uploading: dav:<A HREF="http://">http://</A>
+</I>&gt;<i> maven.imagej.net/content/repositories/releases/sc/fiji/spim_data/1.0.0-beta-4/spim_data-1.0.0-beta-4-sources.jar
+</I>&gt;<i> Dec 16, 2014 2:36:43 PM
+</I>&gt;<i> org.apache.commons.httpclient.auth.AuthChallengeProcessor selectAuthScheme
+</I>&gt;<i> INFO: basic authentication scheme selected
+</I>&gt;<i> Dec 16, 2014 2:36:44 PM
+</I>&gt;<i> org.apache.commons.httpclient.auth.AuthChallengeProcessor selectAuthScheme
+</I>&gt;<i> INFO: basic authentication scheme selected
+</I>&gt;<i> [INFO]
+</I>&gt;<i> ------------------------------------------------------------------------
+</I>&gt;<i> [INFO] BUILD FAILURE
+</I>&gt;<i> [INFO]
+</I>&gt;<i> ------------------------------------------------------------------------
+</I>&gt;<i> [INFO] Total time: 22.047 s
+</I>&gt;<i> [INFO] Finished at: 2014-12-16T14:36:44+01:00
+</I>&gt;<i> [INFO] Final Memory: 33M/447M
+</I>&gt;<i> [INFO]
+</I>&gt;<i> ------------------------------------------------------------------------
+</I>&gt;<i> [ERROR] Failed to execute goal
+</I>&gt;<i> org.apache.maven.plugins:maven-deploy-plugin:2.8.1:deploy (default-deploy)
+</I>&gt;<i> on project spim_data: Failed to deploy artifacts: Could not transfer
+</I>&gt;<i> artifact sc.fiji:spim_data:jar:sources:1.0.0-beta-4 from/to imagej.releases
+</I>&gt;<i> (dav:<A HREF="http://maven.imagej.net/content/repositories/releases">http://maven.imagej.net/content/repositories/releases</A>): Failed to
+</I>&gt;<i> transfer file:
+</I>&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/sc/fiji/spim_data/1.0.0-beta-4/spim_data-1.0.0-beta-4-sources.jar.">http://maven.imagej.net/content/repositories/releases/sc/fiji/spim_data/1.0.0-beta-4/spim_data-1.0.0-beta-4-sources.jar.</A>
+</I>&gt;<i> Return code is: 400 -&gt; [Help 1]
+</I>&gt;<i> [ERROR]
+</I>&gt;<i> [ERROR] To see the full stack trace of the errors, re-run Maven with the
+</I>&gt;<i> -e switch.
+</I>&gt;<i> [ERROR] Re-run Maven using the -X switch to enable full debug logging.
+</I>&gt;<i> [ERROR]
+</I>&gt;<i> [ERROR] For more information about the errors and possible solutions,
+</I>&gt;<i> please read the following articles:
+</I>&gt;<i> [ERROR] [Help 1]
+</I>&gt;<i> <A HREF="http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException">http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pietzsch at tomancak-mac-17</A>:~/workspace/BigDataViewer/SpimData
+</I>&gt;<i> ((spim_data-1.0.0-beta-4))$
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Now, I don&#8217;t know how to proceed...
+</I>&gt;<i> In git I&#8217;m in a detached HEAD state at spim_data-1.0.0-beta-4.
+</I>&gt;<i> Can I somehow manually try to upload the
+</I>&gt;<i> spim_data-1.0.0-beta-4-javadoc.jar?
+</I>&gt;<i> And then just checkout master branch again?
+</I>&gt;<i> Or, can I git reset HEAD^ and re-run the releaseVersion.sh (Is it even
+</I>&gt;<i> possible to re-deploy the already deployed jars&#8230;)?
+</I>&gt;<i>
+</I>&gt;<i> thanks for any help,
+</I>&gt;<i> Tobias
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20141216/2b200980/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20141216/2b200980/attachment-0001.html</A>&gt;
+</PRE>
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002366.html">[ImageJ-devel] releaseVersion.sh script failed -- how to recover
+</A></li>
+	<LI>Next message: <A HREF="002376.html">[ImageJ-devel] releaseVersion.sh script failed -- how to recover
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2368">[ date ]</a>
+              <a href="thread.html#2368">[ thread ]</a>
+              <a href="subject.html#2368">[ subject ]</a>
+              <a href="author.html#2368">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

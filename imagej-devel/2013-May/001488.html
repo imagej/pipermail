@@ -1,0 +1,435 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] experiments with a new ops framework for imglib2
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20experiments%20with%20a%20new%20ops%20framework%20for%20imglib2&In-Reply-To=%3CFAD28B20-195D-4CBD-908C-B2CF3548A52B%40mpi-cbg.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001487.html">
+   <LINK REL="Next"  HREF="001489.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] experiments with a new ops framework for imglib2</H1>
+    <B>Tobias Pietzsch</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20experiments%20with%20a%20new%20ops%20framework%20for%20imglib2&In-Reply-To=%3CFAD28B20-195D-4CBD-908C-B2CF3548A52B%40mpi-cbg.de%3E"
+       TITLE="[ImageJ-devel] experiments with a new ops framework for imglib2">pietzsch at mpi-cbg.de
+       </A><BR>
+    <I>Tue May  7 08:26:33 CDT 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001487.html">[ImageJ-devel] [icy] Re: .MRXS files in ICY
+</A></li>
+        <LI>Next message: <A HREF="001489.html">[ImageJ-devel] experiments with a new ops framework for imglib2
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1488">[ date ]</a>
+              <a href="thread.html#1488">[ thread ]</a>
+              <a href="subject.html#1488">[ subject ]</a>
+              <a href="author.html#1488">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi all,
+
+during the mini-hackathon last week in Madison, I tried to play with some ideas
+of a framework that could possibly unify the currently existing Functions, Ops,
+and Region-Of-Interest concepts in imglib2. At this point it is all very
+experimental and there are several open problems (see end of this mail).
+Anyway, here are some details on what I tried. I realize that it's a very long
+mail, it would be great if some of you grind through and comment anyway :-)
+
+Goals
+=====
+
+The goals of the stuff in net.imglib2.ops.expressions were the following:
+
+* Make ops easier to manipulate (i.e. concatenate, iterate, ...) than with the
+  current net.imglib2.ops.operations design.
+
+* The same design should be apply on all levels, for example pixels, images,
+  lists of images, and mixtures of those things.
+
+* It should be possible to make this nearly as fast as hand-written code.
+  The goal is that you actually would use a pixelwise operation with an iterate
+  construct to apply it to images instead of handcoding loops. (Unfortunately,
+  there is still much room for performance improvement...)
+
+
+
+Basic Ops
+=========
+
+The basic idea is that an Op producing a result of type T is a Sampler&lt;T&gt;.
+  public interface Op&lt; O &gt; extends Sampler&lt; O &gt; {...}
+Calling op.get() triggers the computation and returns the result.
+
+
+
+The inputs to an Op should also be Sampler&lt;T&gt;.
+This makes it easy to connect either cursors etc or other Ops to the inputs.
+
+
+
+If you have something like
+  op1 = A + 10
+  op2 = B + C
+  op3 = op1 + op2
+then I think we need some concept of a &quot;port&quot; to refer to the inputs.
+We want to be able to say: Here is a binary operation &quot;op3&quot; which has two
+inputs &quot;A&quot; and &quot;C&quot;, iterate that over (two input and one output) images!
+Note, that we leave port &quot;C&quot; open. Maybe later we want to connect a list of
+constants there when we iterate over sets of images.
+
+I made the following interface
+  public interface Port&lt; T &gt;
+  {
+    public void set( Sampler&lt; T &gt; sampler );
+    public void setConst( T t );
+  }
+where setConst() is just a convenience method supposed to create a Sampler&lt;T&gt;
+wrapper if you just want to connect a value directly.
+
+
+
+The interfaces for unary and binary operations can be asked for input and output
+ports:
+
+  public interface Op&lt; O &gt; extends Sampler&lt; O &gt;
+  {
+    public Port&lt; O &gt; output();
+  }
+
+  public interface UnaryOp&lt; O, I1 &gt; extends Op&lt; O &gt;
+  {
+    public Port&lt; I1 &gt; input1();
+  }
+
+  public interface BinaryOp&lt; O, I1, I2  &gt; extends Op&lt; O &gt;
+  {
+    public Port&lt; I1 &gt; input1();
+    public Port&lt; I2 &gt; input2();
+  }
+
+
+
+Lets look at an example of creating and using a binary op.
+(All examples can be found in net.imglib2.ops.expression.examples on the
+roi-experiments branch.)
+  public static void addExample1(
+        final Img&lt; FloatType &gt; inputA,
+        final Img&lt; FloatType &gt; inputB,
+        final Img&lt; FloatType &gt; output )
+  {
+    final Cursor&lt; FloatType &gt; ca = inputA.cursor();
+    final Cursor&lt; FloatType &gt; cb = inputB.cursor();
+    final Cursor&lt; FloatType &gt; cc = output.cursor();
+
+    final Add&lt; FloatType &gt; op = new Add&lt; FloatType &gt;();
+    op.input1().set( ca );
+    op.input2().set( cb );
+    op.output().set( cc );
+
+    while ( cc.hasNext() )
+    {
+      ca.fwd();
+      cb.fwd();
+      cc.fwd();
+      op.get();
+    }
+  }
+The op is created using new Add&lt;FloatType&gt;() which creates a
+BinaryOp&lt;FloatType,FloatType,FloatType&gt; with undefined inputs and outputs.
+Then we connect cursors over the input and output images to the ops ports
+and manually iterate over all pixels in the input and output image using a
+while loop and fwd()ing all cursors.
+
+Alternatively, we could have connected the cursors when constructing the op
+    final Add&lt; FloatType &gt; op = new Add&lt; FloatType &gt;( cc, ca, cb );
+or even used a static Ops creator method
+    final Add&lt; FloatType &gt; op = Ops.add( cc, ca, cb );
+
+
+
+If we look at the implementation of Add it is actually quite harmless.
+Boilerplate code for implementing Ports etc is inherited from AbstractBinaryOp.
+  public final class Add&lt; T extends NumericType&lt; T &gt; &gt;
+      extends AbstractBinaryOp&lt; T, T, T &gt;
+  {
+    public Add()
+    {}
+
+    public Add( final Sampler&lt; T &gt; output,
+        final Sampler&lt; T &gt; input1, final Sampler&lt; T &gt; input2 )
+    {
+      super( output, input1, input2 );
+    }
+
+    @Override
+    public T get()
+    {
+      final T t = output.get();
+      t.set( input1.get() );
+      t.add( input2.get() );
+      return t;
+    }
+
+    protected Add( final Add&lt; T &gt; expression )
+    {
+      super( expression );
+    }
+
+    @Override
+    public Add&lt; T &gt; copy()
+    {
+      return new Add&lt; T &gt;( this );
+    }
+  }
+
+
+
+Iterating Ops
+=============
+
+Next, lets use an Iteration construct to apply the pixel op to the images
+instead of doing the iteration manually.
+  public static void addExample2(
+      final Img&lt; FloatType &gt; inputA,
+      final Img&lt; FloatType &gt; inputB,
+      final Img&lt; FloatType &gt; output )
+  {
+    final Add&lt; FloatType &gt; pixelOp = new Add&lt; FloatType &gt;();
+    final BinaryIterate&lt; FloatType, FloatType, FloatType &gt; op =
+      new BinaryIterate&lt;FloatType, FloatType, FloatType&gt;( pixelOp );
+
+    // setConst(t) creates a new Sampler&lt;T&gt; object whose get() returns t.
+    op.input1().setConst( inputA );
+    op.input2().setConst( inputB );
+    op.output().setConst( output );
+    op.get();
+  }
+We &quot;lift&quot; the binary pixel op to a binary operation on IterableIntervals using a
+BinaryIterate operation.  BinaryIterate&lt; A, B, C &gt; is a
+BinaryOp&lt; IterableInterval&lt;A&gt;, IterableInterval&lt;B&gt;, IterableInterval&lt;C&gt; &gt;.
+So next we connect the input and output images to its ports, call get() once
+and are done.
+
+Alternatively,
+  Ops.compute( op, output, inputA, inputB );
+would do the connecting and get()ing for us.
+
+We can even write the whole addExample2 in one line:
+  Ops.compute( Ops.iterate( Ops.&lt;FloatType&gt;add() ), output, inputA, inputB );
+
+
+
+Chaining Ops
+============
+
+Lets create a slightly more complex pixelwise binary operation on inputs i1 and
+i2 that computes ( ( 100 + i1 ) + i2 ). Then we use the BinaryIterate operation
+and run it on the input and output images.
+  public static void addExample3(
+      final Img&lt; FloatType &gt; inputA,
+      final Img&lt; FloatType &gt; inputB,
+      final Img&lt; FloatType &gt; output )
+  {
+    final Add&lt; FloatType &gt; innerpixelop =
+      Ops.add( Ops.floatTemp(), Ops.floatConstant( 100 ), null );
+    final Add&lt; FloatType &gt; outerpixelop =
+      Ops.add( null, innerpixelop, null );
+    final WrapBinary&lt;FloatType,FloatType,FloatType&gt; pixelop =
+      Ops.wrap( outerpixelop, innerpixelop.input2(), outerpixelop.input2() );
+
+    final BinaryIterate&lt; FloatType, FloatType, FloatType &gt; op =
+      Ops.iterate( pixelop );
+    Ops.compute( op, output, inputA, inputB );
+  }
+First we create innerpixelop to compute (100 + i1) and store the result in a
+temporary variable (created using Ops.floatTemp()). Note that the second input
+port is null for now. Later we want BinaryIterate to connect a cursor to it.
+Next we create outerpixelop to compute (innerpixelop + i2). Again, the second
+input port is null.
+Now we have a tree of ops that should be presented to BinaryIterate as a
+BinaryOp. Therefore, we need to create a wrapper by specifying one Op (output)
+and two input ports. This happens in Ops.wrap(). outerpixelop is the op that
+provides the result, and the two ports we left set to null are the input ports.
+
+
+It would be nice to be able to write the pixelop construction compactly in one
+line. However, above we need the innerpixelop and outerpixel intermediate
+variables because we need to access innerpixelop.input2() and
+outerpixelop.input2() in order to construct the WrapBinary!
+
+Therefore, I have PortRef objects, which can act as names for ports.
+Introducing PortRefs i1 and i2,
+    final PortRef&lt; FloatType &gt; i1 = new PortRef&lt; FloatType &gt;();
+    final PortRef&lt; FloatType &gt; i2 = new PortRef&lt; FloatType &gt;();
+we can rewrite the above to
+    final Add&lt; FloatType &gt; innerpixelop =
+      Ops.add( Ops.floatTemp(), Ops.floatConstant( 100 ), i1 );
+    final Add&lt; FloatType &gt; outerpixelop =
+      Ops.add( null, innerpixelop, i2 );
+    final WrapBinary&lt; FloatType, FloatType, FloatType &gt; pixelop =
+      Ops.wrap( outerpixelop, i1, i2 );
+or in one (very long) line
+    final BinaryIterate&lt; FloatType, FloatType, FloatType &gt; op = Ops.iterate(
+      Ops.wrap(
+        Ops.add(null, Ops.add(Ops.floatTemp(), Ops.floatConstant(100), i1), i2),
+        i1, i2 ) );
+
+Now if only we could get rid of having to create the PortRefs...
+
+
+
+More &quot;Lifting&quot; Ops
+==================
+
+One more helpful tool I played with is a Reduce operation. Given a binary
+operation *:(x,y)-&gt;z, it is applied recursively to a sequence [a,b,d,...] as
+((((a*b)*c)*d)*...)
+
+Example:
+  public static void main( final String[] args )
+  {
+    final float[] data = new float[] { 12, 7, 4, 100, 9, 30, 34, 97.2f, 13.4f };
+    final Img&lt; FloatType &gt; imgA = ArrayImgs.floats( data, data.length );
+
+    final IntervalReduce&lt; FloatType &gt; reduceMin =
+      Ops.reduce( Ops.&lt;FloatType&gt;min() );
+    reduceMin.input1().setConst( imgA );
+    reduceMin.output().setConst( new FloatType() );
+    System.out.println( &quot;minimum is &quot; + reduceMin.get().get() );
+
+    System.out.println( &quot;maximum is &quot; +
+      Ops.compute( Ops.reduce( Ops.&lt;FloatType&gt;max() ), new FloatType(), imgA ));
+
+    System.out.println( &quot;sum is &quot; +
+      Ops.compute( Ops.reduce( Ops.&lt;FloatType&gt;add() ), new FloatType(), imgA ));
+  }
+First we create a 1D test image containing some values.
+Then we compute the minimum, maximum, and sum of the values by reduce with
+pixelwise min, max, and add.
+
+For the minimum operation, I have written it a bit more verbose than for the
+other two: IntervalReduce&lt;T&gt; is an Op that implements the reduce operation. It
+is a UnaryOp&lt;T, IterableInterval&lt;T&gt;&gt;. It is constructed with a BinaryOp&lt;T,T,T&gt;, 
+done here with the Ops.reduce() static convenience method.
+
+
+
+Final example. A reduce operation as the one discussed before, takes an
+IterableInterval&lt;T&gt; and computes a T. Now assume that the IterableInterval is
+a subset of pixels in an image, for instance all pixels within a hypersphere
+centered at X. The reduce the would compute for example the minimum of those
+pixels. Now if we can move the Hypersphere to different center X, compute the
+minimum there etc, and write the minima to another image, we have a minimum
+filter.
+
+With the region-of-iterest stuff (that the roi-experiments branch was actually
+about) we can do that easily.
+  public static void main( final String[] args ) throws ImgIOException
+  {
+    final String fn = &quot;/Users/pietzsch/workspace/data/DrosophilaWing.tif&quot;;
+    final int span = 2;
+
+    final ArrayImgFactory&lt;FloatType&gt; factory = new ArrayImgFactory&lt;FloatType&gt;();
+    final FloatType type = new FloatType();
+    final Img&lt;FloatType&gt; imgInput = new ImgOpener().openImg(fn, factory, type);
+    final Img&lt;FloatType&gt; imgOutput = factory.create(imgInput, type);
+
+    // a min filter using 2D hypersphere neighborhoods of radius 3.
+    final RegionFilter&lt; FloatType, BoolType, HyperSphereRegion &gt; op =
+      Ops.regionfilter( new HyperSphereRegion( 2, 3 ),
+                        Ops.reduce( Ops.&lt;FloatType&gt;min() ) );
+    Ops.compute( op, imgOutput, Views.extendBorder( imgInput ) );
+
+    // ... or a sum filter using 5x5 hyperbox neighborhoods ...
+    Ops.compute( Ops.regionfilter(
+        new HyperBoxRegion( Intervals.createMinMax( -2, -2, 2, 2 ) ),
+        Ops.reduce( Ops.&lt;FloatType&gt;add() ) ),
+      imgOutput, Views.extendBorder( imgInput ) );
+
+    // ... or a max filter using hypersphere neighborhoods of radius 5 ...
+    Ops.compute( Ops.regionfilter(
+        new HyperSphereRegion( 2, 5 ),
+        Ops.reduce( Ops.&lt;FloatType&gt;max() ) ),
+      imgOutput, Views.extendBorder( imgInput ) );
+
+    ImageJFunctions.show( imgInput, &quot;input&quot; );
+    ImageJFunctions.show( imgOutput, &quot;filtered&quot; );
+  }
+Note that in the RegionFilter op that we construct we lift the reduce operation
+that is already a lifted pixel operation to obtain a
+UnaryOp&lt; IterableInterval&lt;T&gt;, IterableInterval&lt;IterableInterval&lt;T&gt; &gt; &gt;.
+I think that this also shows that the &quot;ROI stuff&quot; we proposed in the Dundee
+hackathon fits very nicely into this framework (however that ROI stuff is still
+completely unoptimized, so the examples above are ... slow).
+
+
+Problems
+========
+Performance:
+We have seen that we now are at nesting levels where the JIT becomes quite
+unpredictable. So performance tuning for this stuff is not easy. In Madison,
+Johannes showed that for special cases we can become very fast using javassist
+to basically compile it ourselves.
+
+Temporaries:
+One problem that is completely unsolved in this proposal is the creation of
+temporary results (pixels, images, etc...). I had discussions with Christian
+Dietz about this, because they really need this in KNIME. I mainly remember,
+that there are all kinds of problems and we couldn't come up with a satisfying
+solution. Christian, maybe you can comment a bit, on what the requirements for
+temporary creation are.
+
+Copying Ops:
+For parallelization it is necessary that we copy Ops (which can be rather
+complicated nested trees) in order to run on partitions of the input data in
+parallel. This is not trivial, because the copying mechanism has to decide
+which temporaries to recreate, reassign ports between copied ops, etc...
+
+Samplers everywhere:
+Ok, so this was the original idea of the design, but sometimes it introduces
+an additional layer of indirection. Not always though: For instance if you
+connect accessors to the input and output of an op this actually avoids copying
+the data. I couldn't see a nice way around it, but maybe someone else does!
+
+
+
+Ok, if you've read this far, thanks a lot! If you want to take a closer look,
+it's all in the &quot;roi-experiments&quot; branch of imglib2, in package net.imglib2.ops.expression.
+
+Comments and suggestions are very welcome.
+
+best regards,
+Tobias
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001487.html">[ImageJ-devel] [icy] Re: .MRXS files in ICY
+</A></li>
+	<LI>Next message: <A HREF="001489.html">[ImageJ-devel] experiments with a new ops framework for imglib2
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1488">[ date ]</a>
+              <a href="thread.html#1488">[ thread ]</a>
+              <a href="subject.html#1488">[ subject ]</a>
+              <a href="author.html#1488">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

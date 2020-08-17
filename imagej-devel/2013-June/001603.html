@@ -1,0 +1,138 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Copy Plugin directly to Plugins folder.
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Copy%20Plugin%20directly%20to%20Plugins%20folder.&In-Reply-To=%3C9E4A9FC7-2427-4A50-B4E6-3F45419B4392%40gaiag.net%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001599.html">
+   <LINK REL="Next"  HREF="001605.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Copy Plugin directly to Plugins folder.</H1>
+    <B>Chris</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Copy%20Plugin%20directly%20to%20Plugins%20folder.&In-Reply-To=%3C9E4A9FC7-2427-4A50-B4E6-3F45419B4392%40gaiag.net%3E"
+       TITLE="[ImageJ-devel] Copy Plugin directly to Plugins folder.">coulonchris59 at gmail.com
+       </A><BR>
+    <I>Wed Jun 26 12:05:00 CDT 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001599.html">[ImageJ-devel] Copy Plugin directly to Plugins folder.
+</A></li>
+        <LI>Next message: <A HREF="001605.html">[ImageJ-devel] Copy Plugin directly to Plugins folder.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1603">[ date ]</a>
+              <a href="thread.html#1603">[ thread ]</a>
+              <a href="subject.html#1603">[ subject ]</a>
+              <a href="author.html#1603">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i> &gt; I don't understand how to change the name of the jar file created in
+</I>&gt;<i> &gt; the Netbeans build.  It currently builds a jar file called APC_.jar.
+</I>&gt;<i> &gt; The only place I can see that name is in the pom.xml in my project's
+</I>&gt;<i> &gt; Project Files.
+</I>&gt;<i> 
+</I>&gt;<i> As shown in the screencast, just change the &lt;artifactId&gt; of the project itself. Note that this is *not* one of the &lt;artifactId&gt; values within the &lt;dependencies&gt; block, but rather the &lt;artifactId&gt; immediately beneath &lt;project&gt;, towards the very top of the POM.
+</I>
+The &lt;artifact&gt; of the project is already changed in line 15:
+
+
+
+The problem lies between lines 27 and 32.  Should I delete those?
+
+
+&gt;<i> Also as shown in the screencast, after editing your POM, NetBeans should magically update itself to match the new information there. In my experience, it works pretty well, but if you run into trouble, try quitting and restarting NetBeans.
+</I>
+Well, it magically updates with the errors if I change line 29 from APC_ to A_Postcard, but yesterday I got odd errors which magically went away when I restarted Netbeans.
+
+&gt;<i> &gt; package org.jdesktop.layout does not exist
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; even though the swing-layout-1.0.3.jar (which contains
+</I>&gt;<i> &gt; org.jdesktop.layout) is in my project dependencies.
+</I>&gt;<i> 
+</I>&gt;<i> You must add a dependency to the proper GAV in your POM. In this case, it is:
+</I>&gt;<i> 
+</I>&gt;<i> &lt;dependency&gt;
+</I>&gt;<i>   &lt;groupId&gt;org.swinglabs&lt;/groupId&gt;
+</I>&gt;<i>   &lt;artifactId&gt;swing-layout&lt;/artifactId&gt;
+</I>&gt;<i>   &lt;version&gt;1.0.3&lt;/version&gt;
+</I>&gt;<i> &lt;/dependency&gt;
+</I>
+These errors do not occur with the pom.xml as shown above, and the project runs with Netbeans debug or run, but again, nothing appears under the ImageJ plugins menu, even though there are several classes with underscores in their names.  Also, in the Files&gt;target (which is grayed out) the classes contain both class and java files and there are two jar files, A_Postcard-0.1.0.jar and Process_Pixels-1.0.0.jar.  The A_Postcard contains a small test class that just says, &quot;It works!&quot; when run, and I deleted that file right after I setup and tested my new project, so clearly that A_Postcard-0.1.0.jar file is a residue from when I first set up the project yesterday.  
+
+&gt;<i> In general, to search for dependencies, you can use the site:
+</I>&gt;<i> 
+</I>&gt;<i>     <A HREF="http://maven.imagej.net/">http://maven.imagej.net/</A>
+</I>&gt;<i> 
+</I>&gt;<i> &gt; So in my Projects under Dependencies I have the APC_.jar with its
+</I>&gt;<i> &gt; version (APC_-1.0.0.jar)
+</I>&gt;<i> 
+</I>&gt;<i> I don't know where that APC_ artifact came from, but I suggest you remove it, since it is not an actual dependency of your project.
+</I>
+I don't know either.  Should I remove lines 27 through 32, i.e.,
+
+	 &lt;dependency&gt;
+	  &lt;groupId&gt;sc.fiji&lt;/groupId&gt;
+	  &lt;artifactId&gt;APC_&lt;/artifactId&gt;
+	  &lt;version&gt;1.0.0&lt;/version&gt;
+	  &lt;type&gt;jar&lt;/type&gt;
+	 &lt;/dependency&gt;
+
+Removing it gives me the org.jdesktop.layout.GroupLayout errors again, and adding the dependencies
+
+&gt;<i> &lt;dependency&gt;
+</I>&gt;<i>   &lt;groupId&gt;org.swinglabs&lt;/groupId&gt;
+</I>&gt;<i>   &lt;artifactId&gt;swing-layout&lt;/artifactId&gt;
+</I>&gt;<i>   &lt;version&gt;1.0.3&lt;/version&gt;
+</I>&gt;<i> &lt;/dependency&gt;
+</I>
+does not get rid of the errors.  The errors go away only if I replace the lines to the screenshot above.   
+
+&gt;<i> I also highly encourage you to read through the following article to get an overview of the Maven POM, as well as how to locate needed dependencies for your project:
+</I>&gt;<i> 
+</I>&gt;<i>     <A HREF="http://fiji.sc/Maven">http://fiji.sc/Maven</A>
+</I>
+OK, I read it and am trying to understand how it relates to my problem...
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20130626/566ae062/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20130626/566ae062/attachment-0001.html</A>&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: PastedGraphic-13.png
+Type: image/png
+Size: 47309 bytes
+Desc: not available
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20130626/566ae062/attachment-0001.png">http://imagej.net/pipermail/imagej-devel/attachments/20130626/566ae062/attachment-0001.png</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001599.html">[ImageJ-devel] Copy Plugin directly to Plugins folder.
+</A></li>
+	<LI>Next message: <A HREF="001605.html">[ImageJ-devel] Copy Plugin directly to Plugins folder.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1603">[ date ]</a>
+              <a href="thread.html#1603">[ thread ]</a>
+              <a href="subject.html#1603">[ subject ]</a>
+              <a href="author.html#1603">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

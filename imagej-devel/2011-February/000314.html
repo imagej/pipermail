@@ -1,0 +1,185 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] imglib2
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20imglib2&In-Reply-To=%3C1298722705.1912.180.camel%40saalfeld-laptop%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000313.html">
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] imglib2</H1>
+    <B>Stephan Saalfeld</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20imglib2&In-Reply-To=%3C1298722705.1912.180.camel%40saalfeld-laptop%3E"
+       TITLE="[ImageJ-devel] imglib2">saalfeld at mpi-cbg.de
+       </A><BR>
+    <I>Sat Feb 26 06:18:25 CST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000313.html">[ImageJ-devel] imglib2
+</A></li>
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#314">[ date ]</a>
+              <a href="thread.html#314">[ thread ]</a>
+              <a href="subject.html#314">[ subject ]</a>
+              <a href="author.html#314">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Tobias and all ImgLibers,
+
+on Friday afternoon, Johannes, Tobias and me (Preibisch is still busy
+currently) had a discussion on how to proceed with ImgLib2 development
+in a way that we do not block each other.  The result of the discussion
+was that Tobias and me will branch off the current imglib2 branch into
+the branch imglib2-dirty and remove everything that is not working
+currently from imglib2.  That way, imglib2 will be a reduced but working
+library to work with.  Those that develop imglib2 will keep working on
+the new branch imglib2-dirty and, whenever anything is fixed, move it
+into imglib2.  Those that develop anything using imglib2 as a library
+will use the imglib2 branch.
+
+This procedure will be done by Monday.  It includes that we consider the
+design of the imglib2 core as stable from Monday on.  I am saying this
+because we made a last noticeable change on Thursday night.  Here come
+the rationals:
+
+* We made RandomAccessibleInterval extend RandomAccessible (as well for
+real) because there is no way to generate a
+RandomAccess-with-OutOfBounds without a
+RandomAccess-without-OutOfBounds.
+
+* We found that the term Container does not exist in the hierarchy of
+ImgLib2 any more.  It is equivalent to Img.  For Img being shorter than
+Container and everybody using Img meanwhile, we decided to replace all
+references to the term Container by Img instead of vice versa.  We
+cleaned up some inconsistencies in the naming scheme for Img
+implementing classes.  Check the updated diagram, it makes total sense.
+The term Container can still be used in informal speaking about an Img
+but Img is preferred.  An Img is random accessible and iterable pixel
+data in an interval whose min coordinates are at 0^n.  Modifying the T
+accessed through an ImgSampler&lt;T&gt; will change the data in the Img&lt;T&gt;.  A
+follow-up to the same location will return the changed value.  That is,
+a ShapeList is not an Img!
+
+
+Another issue:
+
+ImgLib2 aims at compile time type safety.  We will therefore remove
+runtime test constructs from the imglib core.  If needed at all, they
+can go to the (sub)-project where they are required, e.g. type-checking
+in imglib-io or imglib-algorithm.
+
+&gt;<i> &gt; I changed three Positionable implementations, as they obviously
+</I>just 
+&gt;<i> &gt; needed their moveTo() methods be renamed to move().
+</I>&gt;<i> 
+</I>&gt;<i> Stephan is working on fixing those, as well.
+</I>&gt;<i> 
+</I>
+Renaming doesn't do it, move is meant relative, moveTo was not and is out.
+
+&gt;<i> &gt; Stephans (including Stephan 3): are you okay with merging this into
+</I>&gt;<i> &gt; the imglib2 branch?
+</I>&gt;<i> 
+</I>&gt;<i> Let's wait until Stephan 1 pushes.
+</I>&gt;<i> I think that the imglib2-cleanup changes will be already in imglib2.
+</I>&gt;<i>
+</I>
+I've pushed the half done cleanup into imglib2, more coming soon.
+Despite respecting your efforts, it is easier for Tobias and me to
+continue with what we've done in agreement with our discussion than
+reviewing what you, Johannes, have done that we didn't know about.
+
+Best regards,
+Stephan
+
+
+
+
+On Sat, 2011-02-26 at 01:27 +0100, Tobias Pietzsch wrote: 
+&gt;<i> Hi Johannes,
+</I>&gt;<i> 
+</I>&gt;<i> On 02/25/2011 11:53 PM, Johannes Schindelin wrote:
+</I>&gt;<i> &gt; I just pushed a branch 'imglib2-cleanup' which I intend to merge into
+</I>&gt;<i> &gt; imglib2 (as discussed IRL, imglib2 should not have non-compiling stuff so
+</I>&gt;<i> &gt; that we can go to a stable version Real Soon Now).
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; The classes I removed fall into 5 categories:
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; - CanvasImage (algorithm), dunno what to do with that,
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; - shapelist: probably needs adjustements WRT the OutOfBounds changes,
+</I>&gt;<i> 
+</I>&gt;<i> We started removing stuff from imglib2 branch as well, but it's not
+</I>&gt;<i> pushed yet (Stephan had to leave before we were finished cleaning up). 
+</I>&gt;<i> - Stephan, could you just push the changes we made so far? -
+</I>&gt;<i> 
+</I>&gt;<i> I guess we already made most of the changes that are imglib2-cleanup.
+</I>&gt;<i> 
+</I>&gt;<i> ShapeList compiles (I think Albert fixed it) but there is still some
+</I>&gt;<i> renaming to do to fit the new Interface names. So we thought to put
+</I>&gt;<i> it in the imglib2 branch, noting that is still subject to change.
+</I>&gt;<i> 
+</I>&gt;<i> I'm also fine with removing it for now until it can be considered
+</I>&gt;<i> stable.
+</I>&gt;<i> 
+</I>&gt;<i> &gt; - interpolation: same as shapelist,
+</I>&gt;<i> 
+</I>&gt;<i> Will not be in the imglib2 branch now.
+</I>&gt;<i> I'm working on that currently in the imglib2-dirty branch.
+</I>&gt;<i> Should be ready by Monday, then we can put it back into imglib2.
+</I>&gt;<i> 
+</I>&gt;<i> &gt; - OutOfBoundsStrategyMirrorExpWindowing (outofbounds): dunno,
+</I>&gt;<i> 
+</I>&gt;<i> me neither...
+</I>&gt;<i> 
+</I>&gt;<i> &gt; - sampler: you said that this package is no longer needed.
+</I>&gt;<i> 
+</I>&gt;<i> true. Samplers (Cursor, RandomAccess) are now in the same package as
+</I>&gt;<i> their respective containers. I think that was a very good decision.
+</I>&gt;<i> Besides having everything in one place now, it has also the advantage
+</I>&gt;<i> that Cursors can have access to package private members of their
+</I>&gt;<i> containers.
+</I>&gt;<i> 
+</I>&gt;<i> &gt; I changed three Positionable implementations, as they obviously just
+</I>&gt;<i> &gt; needed their moveTo() methods be renamed to move().
+</I>&gt;<i> 
+</I>&gt;<i> Stephan is working on fixing those, as well.
+</I>&gt;<i> 
+</I>&gt;<i> &gt; Stephans (including Stephan 3): are you okay with merging this into
+</I>&gt;<i> &gt; the imglib2 branch?
+</I>&gt;<i> 
+</I>&gt;<i> Let's wait until Stephan 1 pushes.
+</I>&gt;<i> I think that the imglib2-cleanup changes will be already in imglib2.
+</I>&gt;<i> 
+</I>&gt;<i> Cheers,
+</I>&gt;<i> Tobias
+</I>
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000313.html">[ImageJ-devel] imglib2
+</A></li>
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#314">[ date ]</a>
+              <a href="thread.html#314">[ thread ]</a>
+              <a href="subject.html#314">[ subject ]</a>
+              <a href="author.html#314">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

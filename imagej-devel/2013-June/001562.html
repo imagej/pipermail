@@ -1,0 +1,164 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] L2 Polynomial Spline Pyramid (2 of 2)
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20L2%20Polynomial%20Spline%20Pyramid%20%282%20of%202%29&In-Reply-To=%3CACC4028A-D2EC-4708-A314-4F35AA159528%40mpi-cbg.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001561.html">
+   <LINK REL="Next"  HREF="001563.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] L2 Polynomial Spline Pyramid (2 of 2)</H1>
+    <B>Stephan Preibisch</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20L2%20Polynomial%20Spline%20Pyramid%20%282%20of%202%29&In-Reply-To=%3CACC4028A-D2EC-4708-A314-4F35AA159528%40mpi-cbg.de%3E"
+       TITLE="[ImageJ-devel] L2 Polynomial Spline Pyramid (2 of 2)">preibisch at mpi-cbg.de
+       </A><BR>
+    <I>Wed Jun 19 12:02:51 CDT 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001561.html">[ImageJ-devel] L2 Polynomial Spline Pyramid (2 of 2)
+</A></li>
+        <LI>Next message: <A HREF="001563.html">[ImageJ-devel] L2 Polynomial Spline Pyramid (2 of 2)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1562">[ date ]</a>
+              <a href="thread.html#1562">[ thread ]</a>
+              <a href="subject.html#1562">[ subject ]</a>
+              <a href="author.html#1562">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Lee,
+
+&gt;&gt;<i> public &lt;T extends NumericType&lt;T&gt;&gt; void reduce(IterableInterval&lt;T&gt; src, IterableInterval&lt;T&gt; dest, ImgFactory&lt;T&gt; factory);
+</I>
+It seems to me that you should rather take as input RandomAccessibleInterval than IterableInterval. You can simply make it iterable by calling
+-- public static &lt; T &gt; IterableInterval&lt; T &gt; iterable( final RandomAccessibleInterval&lt; T &gt; randomAccessibleInterval ) 
+from the net.imglib2.view.Views class -- but not really the other way around. Or is there any good reason why it should not work on a RandomAccessibleInterval?
+
+Btw, be careful when you work with temporary images and Intervals. Temporary images always start at (0,0, ... 0), Intervals not. Happened to me several times that it actually worked when you take an Img as input to test, but not a View with an offset.
+
+&gt;&gt;<i> Isn't that what the net.imglib2.view.Views.interval methods do?
+</I>
+Yes ... check out the static Views class, has almost everything you need <A HREF="https://github.com/imagej/imglib/blob/master/core/src/main/java/net/imglib2/view/Views.java">https://github.com/imagej/imglib/blob/master/core/src/main/java/net/imglib2/view/Views.java</A> 
+
+Bye bye,
+Steffi
+
+On Jun 19, 2013, at 12:46 , Curtis Rueden wrote:
+
+&gt;<i> Hi Lee,
+</I>&gt;<i> 
+</I>&gt;<i> &gt; I won't use it, but I'll probably figure out an easy way to generate a
+</I>&gt;<i> &gt; RandomAccessibleInterval, given a source RandomAccessible and a
+</I>&gt;<i> &gt; destination.
+</I>&gt;<i> 
+</I>&gt;<i> Isn't that what the net.imglib2.view.Views.interval methods do?
+</I>&gt;<i> 
+</I>&gt;<i> Regards,
+</I>&gt;<i> Curtis
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> On Wed, Jun 19, 2013 at 11:44 AM, Lee Kamentsky &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">leek at broadinstitute.org</A>&gt; wrote:
+</I>&gt;<i> 
+</I>&gt;<i> On Wed, Jun 19, 2013 at 12:13 PM, Stephan Preibisch &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">preibisch at mpi-cbg.de</A>&gt; wrote:
+</I>&gt;<i> Hi Lee,
+</I>&gt;<i> 
+</I>&gt;<i> I think that sounds useful ... can you explain exactly how you want to implement it? It seems like it could work on and return a RandomAccessibleInterval on which one can instantiate RandomAccesses. There could be even two implementations of it. One that precomputes it and one that always computes it on the fly, just when the RandomAccess actually queries a value.
+</I>&gt;<i> 
+</I>&gt;<i> What do you guys think?
+</I>&gt;<i> 
+</I>&gt;<i> Internally, there's a seperable convolution which means that, for an N^dim kernel, you have O(N * dim) operations per pixel instead of O(N^dim) operations, but you need scratchpad memory to accumulate the result. I'm putting the computational logic into a class, Kernel1d, that holds the kernel for the convolution and I'm supplying methods to calculate the value at a single point and to use an IterableInterval over the source data to calculate the intermediate 1d convolutions on a scratchpad RandomAccessible or RandomAccessibleInterval. 
+</I>&gt;<i> 
+</I>&gt;<i> public &lt;T extends NumericType&lt;T&gt;&gt; void reduce(IterableInterval&lt;T&gt; src, IterableInterval&lt;T&gt; dest, ImgFactory&lt;T&gt; factory);
+</I>&gt;<i> 
+</I>&gt;<i> There are several flavors of methods that use this, but I think the one that I will end up using in my plugin is:
+</I>&gt;<i> 
+</I>&gt;<i> public &lt;T extends NumericType&lt;T&gt;&gt; RandomAccessibleInterval&lt;T&gt; reduce(Img&lt;T&gt; src);
+</I>&gt;<i> 
+</I>&gt;<i> which will use the factory of src to create a scratchpad Img for intermediate calculations and for the output image. One neat thing is that it should automagically work with Img&lt;ARGBType&gt; ooo score one brownie point for a good design Stephan.
+</I>&gt;<i> 
+</I>&gt;<i> I won't use it, but I'll probably figure out an easy way to generate a RandomAccessibleInterval, given a source RandomAccessible and a destination. Also, since it uses a kernel, the pixels along the output's border are undefined. The method I plan to use returns an interval defined only over valid pixels, but a dogged and misguided user should be able to use some out of bounds strategy to get bogus pixel values along the border.
+</I>&gt;<i>  
+</I>&gt;<i> Cheers, Steffi
+</I>&gt;<i> 
+</I>&gt;<i> On Jun 18, 2013, at 11:32 , Curtis Rueden wrote:
+</I>&gt;<i> 
+</I>&gt;&gt;<i> Hi Lee,
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> &gt; Do people think that these have enough utility to add to imglib2 (and
+</I>&gt;&gt;<i> &gt; where should they go?) or is it more appropriate to keep them within
+</I>&gt;&gt;<i> &gt; the project itself?
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> How about in algorithms/core? (Or if GPL licensed: in algorithms/gpl?)
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> Package prefix: net.imglib2.algorithm.somethingOrOther? (I leave the choice of &quot;somethingOrOther&quot; to you since I know how much you love naming! ;-)
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> What do others think?
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> Regards,
+</I>&gt;&gt;<i> Curtis
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> On Tue, Jun 18, 2013 at 10:25 AM, Lee Kamentsky &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">leek at broadinstitute.org</A>&gt; wrote:
+</I>&gt;&gt;<i> Hi all,
+</I>&gt;&gt;<i> As part of an upcoming project, I'm planning to implement the methods described in
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> Unser, The L2 Polynomial Spline Pyramid, IEEE Transactions on Pattern Analysis and Machine Intelligence, Vol 15 # 4, April 1993, p 364 (<A HREF="http://bigwww.epfl.ch/publications/unser9305.pdf">http://bigwww.epfl.ch/publications/unser9305.pdf</A>)
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> There are two operations, one that decimates an image by half to generate a smaller image (REDUCE) and one that reconstructs the larger image from the smaller (EXPAND). I'd implement both operations as classes supporting the RandomAccessible interface.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> Do people think that these have enough utility to add to imglib2 (and where should they go?) or is it more appropriate to keep them within the project itself?
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> --Lee
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20130619/fcad6bf7/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20130619/fcad6bf7/attachment-0001.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001561.html">[ImageJ-devel] L2 Polynomial Spline Pyramid (2 of 2)
+</A></li>
+	<LI>Next message: <A HREF="001563.html">[ImageJ-devel] L2 Polynomial Spline Pyramid (2 of 2)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1562">[ date ]</a>
+              <a href="thread.html#1562">[ thread ]</a>
+              <a href="subject.html#1562">[ subject ]</a>
+              <a href="author.html#1562">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

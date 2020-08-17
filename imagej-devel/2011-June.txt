@@ -1,0 +1,3177 @@
+From ctrueden at wisc.edu  Wed Jun  1 20:14:08 2011
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Wed, 1 Jun 2011 20:14:08 -0500
+Subject: [ImageJ-devel] [fiji-devel] Minutes of the ImgLib2 algorithms
+	discussion
+In-Reply-To: <008701cc1ec4$75bcea00$6136be00$@de>
+References: <008701cc1ec4$75bcea00$6136be00$@de>
+Message-ID: <BANLkTinhLtF_SY=qSw=S+0hEGizP3xx3tA@mail.gmail.com>
+
+Hi Steffi,
+
+last Friday Curtis, Saalfeld and me discussed the conventions for algorithm
+> development.
+>
+>
+>
+> I summarized them on the Fiji wiki here:
+>
+> http://pacific.mpi-cbg.de/wiki/index.php/ImgLib2_Algorithms
+>
+
+Nice writeup?I think all points are quite clear.
+
+One thing not mentioned is who is going to handle the various action items:
+
+1) Creation of MultiThreading interface: Steffi
+2) Split of algorithms: Saalfeld & anyone who creates a new algorithms
+subpackage (and Curtis available to help if needed)
+3) Cleanup of existing tests: Curtis?
+4) Creation of new tests: whoever wrote the relevant code being tested
+5) Improvements to ImgIOUtils for permanent caching: Curtis
+6) Benchmarker class: Steffi?
+
+For #3, I have been planning to organize the ImgLib2 tests (standardize
+package structure, move various human tests into the imglib2-tests project),
+but am not sure when I will find the time. Some time this summer, certainly.
+
+For #5, I have filed a ticket to make sure I don't forget:
+  http://dev.imagejdev.org/trac/imagej/ticket/557
+
+Cheers,
+Curtis
+
+On Mon, May 30, 2011 at 7:24 AM, Stephan Preibisch <preibisch at mpi-cbg.de>wrote:
+
+>  Hi,
+>
+>
+>
+> last Friday Curtis, Saalfeld and me discussed the conventions for algorithm
+> development.
+>
+>
+>
+> I summarized them on the Fiji wiki here:
+>
+> http://pacific.mpi-cbg.de/wiki/index.php/ImgLib2_Algorithms
+>
+>
+>
+> Comments are always welcome!
+>
+>
+>
+> Nice greetings,
+>
+> Steffi
+>
+> --
+> You received this message because you are subscribed to the Google Groups
+> "Fiji-devel" group.
+> To post to this group, send email to fiji-devel at googlegroups.com.
+> To unsubscribe from this group, send email to
+> fiji-devel+unsubscribe at googlegroups.com.
+> For more options, visit this group at
+> http://groups.google.com/group/fiji-devel?hl=en.
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110601/e6b73ad3/attachment.html>
+
+From leek at broadinstitute.org  Thu Jun  2 08:37:25 2011
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Thu, 02 Jun 2011 09:37:25 -0400
+Subject: [ImageJ-devel] OffsetImg
+Message-ID: <4de79216.4a8ee50a.61cf.0f7c@mx.google.com>
+
+Hi Stephans,
+I have this case - you have some region of interest represented by a 
+binary bitmap and the bitmap, for one reason or another is offset in 
+space (In Yiddish: it's "in mitten drinnen", don't know if that 
+translates to German and there's a good chance that the way it was used 
+in my family is the exact opposite of its literal meaning) but otherwise 
+is best suited as an array. You don't want to represent it using an 
+ArrayImg<BitType> because everything from the origin to the first pixel 
+will be uniformly false, otherwise, the ArrayImg is the right choice. 
+The obvious solution here is to have some sort of adapter object to hold 
+the Img and for it to do some lying about where the thing is in space - 
+every Localizable and Positionable needs to be wrapped in something that 
+adds or subtracts the offset.
+
+Is that a reasonable thing to add to Imglib? Where would it live and 
+what would you call it? Also, an Img isn't Localizable and Positionable 
+and perhaps this thing should be?
+
+Thx,
+--Lee
+
+
+
+From Johannes.Schindelin at gmx.de  Thu Jun  2 09:17:45 2011
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Thu, 2 Jun 2011 16:17:45 +0200 (CEST)
+Subject: [ImageJ-devel] OffsetImg
+In-Reply-To: <4de79216.4a8ee50a.61cf.0f7c@mx.google.com>
+References: <4de79216.4a8ee50a.61cf.0f7c@mx.google.com>
+Message-ID: <alpine.DEB.1.00.1106021615450.1594@bonsai2>
+
+Hi Lee,
+
+On Thu, 2 Jun 2011, Lee Kamentsky wrote:
+
+> I have this case - you have some region of interest represented by a 
+> binary bitmap and the bitmap, for one reason or another is offset in 
+> space (In Yiddish: it's "in mitten drinnen", don't know if that 
+> translates to German and there's a good chance that the way it was used 
+> in my family is the exact opposite of its literal meaning)
+
+That sounds Yiddish alright, and I think Germans do understand it. But 
+then, it might also be just due to my family that I am familiar with a 
+couple of Yiddish terms...
+
+> but otherwise is best suited as an array. You don't want to represent it 
+> using an ArrayImg<BitType> because everything from the origin to the 
+> first pixel will be uniformly false, otherwise, the ArrayImg is the 
+> right choice. The obvious solution here is to have some sort of adapter 
+> object to hold the Img and for it to do some lying about where the thing 
+> is in space - every Localizable and Positionable needs to be wrapped in 
+> something that adds or subtracts the offset.
+> 
+> Is that a reasonable thing to add to Imglib? Where would it live and 
+> what would you call it? Also, an Img isn't Localizable and Positionable 
+> and perhaps this thing should be?
+
+Would it maybe work if you used an "offsetting" View of an ArrayImg?
+
+Ciao,
+Dscho
+
+
+
+
+From leek at broadinstitute.org  Thu Jun  2 09:35:47 2011
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Thu, 02 Jun 2011 10:35:47 -0400
+Subject: [ImageJ-devel] OffsetImg
+In-Reply-To: <alpine.DEB.1.00.1106021615450.1594@bonsai2>
+References: <4de79216.4a8ee50a.61cf.0f7c@mx.google.com>
+	<alpine.DEB.1.00.1106021615450.1594@bonsai2>
+Message-ID: <4de79fc4.d04ee50a.1f57.12b8@mx.google.com>
+
+Oops - doesn't quite work because the views deal with RandomAccessibles 
+or RandomAccess. I need one that works off of IterableIntervals and 
+Cursors. I think that an IterableInterval is a considerably constrained 
+case - you could translate it or reflect it or transpose axes, but very 
+little else (I don't think even periodic makes sense).
+
+For a few seconds I was really excited because I didn't have to do any 
+extra work, so please, someone tell me that I'm wrong and it's easy to 
+do in the current code base.
+
+--Lee
+
+On 6/2/2011 10:17 AM, Johannes Schindelin wrote:
+> Hi Lee,
+>
+> On Thu, 2 Jun 2011, Lee Kamentsky wrote:
+>
+>> I have this case - you have some region of interest represented by a
+>> binary bitmap and the bitmap, for one reason or another is offset in
+>> space (In Yiddish: it's "in mitten drinnen", don't know if that
+>> translates to German and there's a good chance that the way it was used
+>> in my family is the exact opposite of its literal meaning)
+> That sounds Yiddish alright, and I think Germans do understand it. But
+> then, it might also be just due to my family that I am familiar with a
+> couple of Yiddish terms...
+>
+>> but otherwise is best suited as an array. You don't want to represent it
+>> using an ArrayImg<BitType>  because everything from the origin to the
+>> first pixel will be uniformly false, otherwise, the ArrayImg is the
+>> right choice. The obvious solution here is to have some sort of adapter
+>> object to hold the Img and for it to do some lying about where the thing
+>> is in space - every Localizable and Positionable needs to be wrapped in
+>> something that adds or subtracts the offset.
+>>
+>> Is that a reasonable thing to add to Imglib? Where would it live and
+>> what would you call it? Also, an Img isn't Localizable and Positionable
+>> and perhaps this thing should be?
+> Would it maybe work if you used an "offsetting" View of an ArrayImg?
+>
+> Ciao,
+> Dscho
+>
+
+
+
+
+From preibisch at mpi-cbg.de  Fri Jun  3 10:04:31 2011
+From: preibisch at mpi-cbg.de (Stephan Preibisch)
+Date: Fri, 3 Jun 2011 17:04:31 +0200 (MEST)
+Subject: [ImageJ-devel] OffsetImg
+In-Reply-To: <4de79fc4.d04ee50a.1f57.12b8@mx.google.com>
+References: <4de79216.4a8ee50a.61cf.0f7c@mx.google.com>
+	<alpine.DEB.1.00.1106021615450.1594@bonsai2>
+	<4de79fc4.d04ee50a.1f57.12b8@mx.google.com>
+Message-ID: <2388.10.1.235.16.1307113471.squirrel@webmail.mpi-cbg.de>
+
+Hi Lee,
+
+I seems to me that representing it as a View is right thing to do as
+Johannes suggested. Views do not iterate yet, but they will in the future.
+So that is maybe the right time to implement it :)
+
+Tobias has his defense on Tuesday, I guess we could implement it
+afterwards...
+
+Would that be ok for you?
+
+Nice greetings,
+Steffi
+
+> Oops - doesn't quite work because the views deal with RandomAccessibles
+> or RandomAccess. I need one that works off of IterableIntervals and
+> Cursors. I think that an IterableInterval is a considerably constrained
+> case - you could translate it or reflect it or transpose axes, but very
+> little else (I don't think even periodic makes sense).
+>
+> For a few seconds I was really excited because I didn't have to do any
+> extra work, so please, someone tell me that I'm wrong and it's easy to
+> do in the current code base.
+>
+> --Lee
+>
+> On 6/2/2011 10:17 AM, Johannes Schindelin wrote:
+>> Hi Lee,
+>>
+>> On Thu, 2 Jun 2011, Lee Kamentsky wrote:
+>>
+>>> I have this case - you have some region of interest represented by a
+>>> binary bitmap and the bitmap, for one reason or another is offset in
+>>> space (In Yiddish: it's "in mitten drinnen", don't know if that
+>>> translates to German and there's a good chance that the way it was used
+>>> in my family is the exact opposite of its literal meaning)
+>> That sounds Yiddish alright, and I think Germans do understand it. But
+>> then, it might also be just due to my family that I am familiar with a
+>> couple of Yiddish terms...
+>>
+>>> but otherwise is best suited as an array. You don't want to represent
+>>> it
+>>> using an ArrayImg<BitType>  because everything from the origin to the
+>>> first pixel will be uniformly false, otherwise, the ArrayImg is the
+>>> right choice. The obvious solution here is to have some sort of adapter
+>>> object to hold the Img and for it to do some lying about where the
+>>> thing
+>>> is in space - every Localizable and Positionable needs to be wrapped in
+>>> something that adds or subtracts the offset.
+>>>
+>>> Is that a reasonable thing to add to Imglib? Where would it live and
+>>> what would you call it? Also, an Img isn't Localizable and Positionable
+>>> and perhaps this thing should be?
+>> Would it maybe work if you used an "offsetting" View of an ArrayImg?
+>>
+>> Ciao,
+>> Dscho
+>>
+>
+>
+
+
+
+
+
+From sapristi at gmail.com  Fri Jun  3 10:18:11 2011
+From: sapristi at gmail.com (Albert Cardona)
+Date: Fri, 3 Jun 2011 11:18:11 -0400
+Subject: [ImageJ-devel] what jar contains
+	ome.xml.model.primitives.PositiveFloat
+Message-ID: <BANLkTi=0hMo=zvmZOXU+Ycb11DgttLEKJg@mail.gmail.com>
+
+... it's not any of:
+
+ome-java.jar
+omero-client*jar
+omero-common*jar
+
+Thanks.
+
+Albert
+
+
+-- 
+http://albert.rierol.net
+http://www.ini.uzh.ch/~acardona/
+
+
+
+From leek at broadinstitute.org  Fri Jun  3 10:19:45 2011
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Fri, 03 Jun 2011 11:19:45 -0400
+Subject: [ImageJ-devel] OffsetImg
+In-Reply-To: <2388.10.1.235.16.1307113471.squirrel@webmail.mpi-cbg.de>
+References: <4de79216.4a8ee50a.61cf.0f7c@mx.google.com>
+	<alpine.DEB.1.00.1106021615450.1594@bonsai2>
+	<4de79fc4.d04ee50a.1f57.12b8@mx.google.com>
+	<2388.10.1.235.16.1307113471.squirrel@webmail.mpi-cbg.de>
+Message-ID: <4de8fb90.9c82e50a.69cf.357b@mx.google.com>
+
+I have some code for the translation case - in 
+net.imglib2.img.transform.ImgTranslationAdapter. It's ok if you 
+implement it in views and tell me when you have. I'll remove my code and 
+use yours.
+
+On 6/3/2011 11:04 AM, Stephan Preibisch wrote:
+> Hi Lee,
+>
+> I seems to me that representing it as a View is right thing to do as
+> Johannes suggested. Views do not iterate yet, but they will in the future.
+> So that is maybe the right time to implement it :)
+>
+> Tobias has his defense on Tuesday, I guess we could implement it
+> afterwards...
+>
+> Would that be ok for you?
+>
+> Nice greetings,
+> Steffi
+>
+>> Oops - doesn't quite work because the views deal with RandomAccessibles
+>> or RandomAccess. I need one that works off of IterableIntervals and
+>> Cursors. I think that an IterableInterval is a considerably constrained
+>> case - you could translate it or reflect it or transpose axes, but very
+>> little else (I don't think even periodic makes sense).
+>>
+>> For a few seconds I was really excited because I didn't have to do any
+>> extra work, so please, someone tell me that I'm wrong and it's easy to
+>> do in the current code base.
+>>
+>> --Lee
+>>
+>> On 6/2/2011 10:17 AM, Johannes Schindelin wrote:
+>>> Hi Lee,
+>>>
+>>> On Thu, 2 Jun 2011, Lee Kamentsky wrote:
+>>>
+>>>> I have this case - you have some region of interest represented by a
+>>>> binary bitmap and the bitmap, for one reason or another is offset in
+>>>> space (In Yiddish: it's "in mitten drinnen", don't know if that
+>>>> translates to German and there's a good chance that the way it was used
+>>>> in my family is the exact opposite of its literal meaning)
+>>> That sounds Yiddish alright, and I think Germans do understand it. But
+>>> then, it might also be just due to my family that I am familiar with a
+>>> couple of Yiddish terms...
+>>>
+>>>> but otherwise is best suited as an array. You don't want to represent
+>>>> it
+>>>> using an ArrayImg<BitType>   because everything from the origin to the
+>>>> first pixel will be uniformly false, otherwise, the ArrayImg is the
+>>>> right choice. The obvious solution here is to have some sort of adapter
+>>>> object to hold the Img and for it to do some lying about where the
+>>>> thing
+>>>> is in space - every Localizable and Positionable needs to be wrapped in
+>>>> something that adds or subtracts the offset.
+>>>>
+>>>> Is that a reasonable thing to add to Imglib? Where would it live and
+>>>> what would you call it? Also, an Img isn't Localizable and Positionable
+>>>> and perhaps this thing should be?
+>>> Would it maybe work if you used an "offsetting" View of an ArrayImg?
+>>>
+>>> Ciao,
+>>> Dscho
+>>>
+>>
+>
+
+
+
+
+From melissa at glencoesoftware.com  Fri Jun  3 10:25:11 2011
+From: melissa at glencoesoftware.com (Melissa Linkert)
+Date: Fri, 3 Jun 2011 10:25:11 -0500
+Subject: [ImageJ-devel] what jar contains
+ ome.xml.model.primitives.PositiveFloat
+In-Reply-To: <BANLkTi=0hMo=zvmZOXU+Ycb11DgttLEKJg@mail.gmail.com>
+References: <BANLkTi=0hMo=zvmZOXU+Ycb11DgttLEKJg@mail.gmail.com>
+Message-ID: <20110603152510.GD19491@medusa>
+
+Hi Albert,
+
+ome.xml.model.primitives.PositiveFloat is contained in very recent
+versions of ome-xml.jar (which is included in loci_tools.jar).
+If you have a clone of bio-formats.git, then you can build it:
+
+$ cd bio-formats.git/
+$ ant clean jar-ome-xml
+$ ls artifacts/ome-xml.jar
+artifacts/ome-xml.jar
+
+Or you can download the JAR built from master:
+
+http://dev.loci.wisc.edu:8080/job/Bio-Formats/lastSuccessfulBuild/artifact/artifacts/ome-xml.jar
+
+Regards,
+-Melissa
+
+On Fri, Jun 03, 2011 at 11:18:11AM -0400, Albert Cardona wrote:
+> ... it's not any of:
+> 
+> ome-java.jar
+> omero-client*jar
+> omero-common*jar
+> 
+> Thanks.
+> 
+> Albert
+> 
+> 
+> -- 
+> http://albert.rierol.net
+> http://www.ini.uzh.ch/~acardona/
+> 
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+
+
+
+From leek at broadinstitute.org  Fri Jun  3 13:44:16 2011
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Fri, 03 Jun 2011 14:44:16 -0400
+Subject: [ImageJ-devel] EuclideanSpace and imagej.display.Display
+Message-ID: <4de92b82.8c00e50a.0bee.3c54@mx.google.com>
+
+I'm running into a number of problems with overlays that are caused by 
+the fact that the EuclideanSpace is now defined on the Dataset and not 
+on the Display used to composite datasets and overlays. There are more 
+than a few issues:
+
+    * Trac issue ImageJ 558 - the user takes a Z-stack, multichannel
+      image and thresholds it to get a BinaryMaskOverlay and associated
+      ROI. The ROI is properly defined in a 4-dimensional space.
+      However, when displayed, a single X/Y plane should be sampled and
+      displayed, but there is no mechanism to retrieve the plane being
+      displayed or the color display mode. The code iterates through the
+      entire stack and that's what causes it to update slowly.
+
+    * Datasets have axes which capture the metadata of what a particular
+      dimension means. Overlays don't have that.
+    * Channels are really categorical, not ordinal - there's no reason
+      the red channel is zero, the green is one and the blue is two and,
+      with a channel-stack, the DAPI channel in one image might be the
+      PI channel in a second. You can properly relate one channel to the
+      other through metadata, but overlays don't have that.
+    * You might want to composite datasets - take two images and place
+      them adjacently. What happens if they have different axes? What
+      happens if they have different channel layouts?
+
+So, what I'm thinking is the following:
+
+    * A display represents the EuclideanSpace that's used to composite
+      overlays and datasets.  Think of the display as a big
+      N-dimensional container and the overlays and datasets float inside
+      that container.
+          o The display has a set of axes that are the union of all of
+            the axes that appear in the view data objects.
+          o There are two behaviors for a view object that does not have
+            an axis in the space. Perhaps the user selects the behavior?:
+                + The value in space outside of a single plane defined
+                  by a coordinate location along the axis is nan or null.
+                + The value in space along the missing axis is the same
+                  at all locations along that axis.
+    * A display window holds the information about what plane is being
+      displayed and how the channels are composited.
+          o The views are asked to display according to the plane
+            information. A plane is an interval where the min=max for
+            all dimensions but X and Y. The views could construct
+            appropriate projectors based on the interval. The display
+            window should also control the channel compositing
+            information and the views should reference the display
+            window's compositing information instead of maintaining
+            their own copies.
+    * Perhaps there is a SpatialDataObject or perhaps the DataObject is
+      always spatial. In any case, the axis information and channel
+      metadata should be pushed up the inheritance hierarchy so that
+      Overlay has a first-class representation of that and operations
+      that generate overlays from datasets copy the information to the
+      overlays they create.
+    * There is a spectral dimension, but the channel axis doesn't
+      capture that. Channels are categorical and should have names so
+      they can be matched in the same way that axes are matched.
+
+It's some work to refactor these things, but as the code base grows and 
+becomes more entrenched it will become increasingly difficult to 
+refactor, so we should do it sooner rather than later. I don't think 
+this is much coding at this point and if you look at the code, there are 
+places where this organization clarifies some things.
+
+--Lee
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110603/14a97dcb/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Sat Jun  4 06:31:43 2011
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Sat, 4 Jun 2011 13:31:43 +0200 (CEST)
+Subject: [ImageJ-devel] what jar contains
+ ome.xml.model.primitives.PositiveFloat
+In-Reply-To: <20110603152510.GD19491@medusa>
+References: <BANLkTi=0hMo=zvmZOXU+Ycb11DgttLEKJg@mail.gmail.com>
+	<20110603152510.GD19491@medusa>
+Message-ID: <alpine.DEB.1.00.1106041330590.10740@bonsai2>
+
+Hi Melissa & Albert,
+
+On Fri, 3 Jun 2011, Melissa Linkert wrote:
+
+> ome.xml.model.primitives.PositiveFloat is contained in very recent
+> versions of ome-xml.jar (which is included in loci_tools.jar).
+> If you have a clone of bio-formats.git, then you can build it:
+> 
+> $ cd bio-formats.git/
+> $ ant clean jar-ome-xml
+> $ ls artifacts/ome-xml.jar
+> artifacts/ome-xml.jar
+> 
+> Or you can download the JAR built from master:
+> 
+> http://dev.loci.wisc.edu:8080/job/Bio-Formats/lastSuccessfulBuild/artifact/artifacts/ome-xml.jar
+
+We now follow Bio-Formats' 'master' branch instead of '4_2'. So our 
+current loci_tools.jar contains that.
+
+Thanks!
+Dscho
+
+
+
+
+From sapristi at gmail.com  Sat Jun  4 09:23:04 2011
+From: sapristi at gmail.com (Albert Cardona)
+Date: Sat, 4 Jun 2011 10:23:04 -0400
+Subject: [ImageJ-devel] what jar contains
+	ome.xml.model.primitives.PositiveFloat
+In-Reply-To: <alpine.DEB.1.00.1106041330590.10740@bonsai2>
+References: <BANLkTi=0hMo=zvmZOXU+Ycb11DgttLEKJg@mail.gmail.com>
+	<20110603152510.GD19491@medusa>
+	<alpine.DEB.1.00.1106041330590.10740@bonsai2>
+Message-ID: <BANLkTinFaSTeY2RvRPsC=AW8_uGw3ML58Q@mail.gmail.com>
+
+2011/6/4 Johannes Schindelin <Johannes.Schindelin at gmx.de>:
+> Hi Melissa & Albert,
+>
+> On Fri, 3 Jun 2011, Melissa Linkert wrote:
+>
+>> ome.xml.model.primitives.PositiveFloat is contained in very recent
+>> versions of ome-xml.jar (which is included in loci_tools.jar).
+>> If you have a clone of bio-formats.git, then you can build it:
+>>
+>> $ cd bio-formats.git/
+>> $ ant clean jar-ome-xml
+>> $ ls artifacts/ome-xml.jar
+>> artifacts/ome-xml.jar
+>>
+>> Or you can download the JAR built from master:
+>>
+>> http://dev.loci.wisc.edu:8080/job/Bio-Formats/lastSuccessfulBuild/artifact/artifacts/ome-xml.jar
+>
+> We now follow Bio-Formats' 'master' branch instead of '4_2'. So our
+> current loci_tools.jar contains that.
+>
+> Thanks!
+> Dscho
+
+
+Thanks!
+
+Albert
+
+
+-- 
+http://albert.rierol.net
+http://www.ini.uzh.ch/~acardona/
+
+
+
+From G.Landini at bham.ac.uk  Sun Jun  5 13:32:16 2011
+From: G.Landini at bham.ac.uk (Gabriel Landini)
+Date: Sun, 5 Jun 2011 19:32:16 +0100
+Subject: [ImageJ-devel] alpha 3
+Message-ID: <201106051932.16053.G.Landini@bham.ac.uk>
+
+Hi
+Great to see the alpha 3 out. Not sure if people are happy for comments at 
+this stage, but just in case... All comments are made with a positive intent.
+
+For some reason, the images (for example the Clown sample) when enlarged, the 
+first and last rows and columns of pixels appear to have pixels that are half 
+the size of the rest of the image pixels. (Sure pixels do not have area, but 
+for positioning of ROIs and so on perhaps they should be represented as the 
+rest of the pixels).
+
+I see that ROIs have a black border around. Is there any plan to be able to 
+turn that off? Otherwise we cannot see what is underneath the ROI. Or perhaps 
+best to make these semi transparent? Or with dotted lines in alternating 
+colours?  I see lots of room for confusion in terms of what is the image and 
+what is overlay or things disappearing because the overlay having the same 
+colour as the background.
+
+Something I noted in IJ1 is that having lots of overlays being shown makes it 
+run very slow. Has anybody noticed this? Maybe they get refreshed/repainted 
+too often. I wonder if it is worth looking at the performance of having ROIs 
+as overlays as they appear in the alpha 3.
+
+I also noted that the black border around images cannot be switched off in the 
+Edit Options. I wonder if this is related to the half pixel display mentioned 
+above.
+
+Regards to all,
+
+Gabriel
+
+
+
+
+From gharris at mbl.edu  Sun Jun  5 16:45:13 2011
+From: gharris at mbl.edu (Grant B. Harris)
+Date: Sun, 05 Jun 2011 17:45:13 -0400
+Subject: [ImageJ-devel] alpha 3
+In-Reply-To: <201106051932.16053.G.Landini@bham.ac.uk>
+References: <201106051932.16053.G.Landini@bham.ac.uk>
+Message-ID: <4DEBF8E9.4050300@mbl.edu>
+
+Good point, Gabriel.
+
+Perhaps we should add setStroke(Stroke stroke) to imagej.data.roi.Overlay.
+(http://download.oracle.com/javase/7/docs/api/java/awt/BasicStroke.html)
+
+For variable alpha on the ROI outline, we would need to change 
+setLineColor(ColorRGB lineColor)... perhaps we to add need a ColorRGBA 
+class.
+
+-- Grant
+
+
+On 6/5/2011 2:32 PM, Gabriel Landini wrote:
+> Hi
+> Great to see the alpha 3 out. Not sure if people are happy for comments at
+> this stage, but just in case... All comments are made with a positive intent.
+>
+> For some reason, the images (for example the Clown sample) when enlarged, the
+> first and last rows and columns of pixels appear to have pixels that are half
+> the size of the rest of the image pixels. (Sure pixels do not have area, but
+> for positioning of ROIs and so on perhaps they should be represented as the
+> rest of the pixels).
+>
+> I see that ROIs have a black border around. Is there any plan to be able to
+> turn that off? Otherwise we cannot see what is underneath the ROI. Or perhaps
+> best to make these semi transparent? Or with dotted lines in alternating
+> colours?  I see lots of room for confusion in terms of what is the image and
+> what is overlay or things disappearing because the overlay having the same
+> colour as the background.
+>
+> Something I noted in IJ1 is that having lots of overlays being shown makes it
+> run very slow. Has anybody noticed this? Maybe they get refreshed/repainted
+> too often. I wonder if it is worth looking at the performance of having ROIs
+> as overlays as they appear in the alpha 3.
+>
+> I also noted that the black border around images cannot be switched off in the
+> Edit Options. I wonder if this is related to the half pixel display mentioned
+> above.
+>
+> Regards to all,
+>
+> Gabriel
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+
+
+
+From tiago.ferreira at mail.mcgill.ca  Sun Jun  5 21:57:48 2011
+From: tiago.ferreira at mail.mcgill.ca (Tiago Ferreira)
+Date: Sun, 5 Jun 2011 22:57:48 -0400
+Subject: [ImageJ-devel] Documentation for ImageJ2
+Message-ID: <9B2C0129-745E-4F61-9245-2DADDEEC857E@mail.mcgill.ca>
+
+Hi,
+
+I'm also very excited to see the 3rd alpha released.
+I imagine that with so much to do, user documentation is probably the last
+thing you want to think about right now but nevertheless I would like to
+raise this issue here.
+
+I've been working on a new revision of the ImageJ Guide. I've been struggling
+to create a "publishing system" that could output simultaneously PDF, HTML
+and booklet versions. It is far from perfect but its getting there.
+A working draft is here (it is rather slow on dropbox):
+
+           <http://dl.dropbox.com/u/136719/guide/index.html>
+
+It would great if it could be extended to ImageJ2, but I would need guidance.
+I've just compiled IJ2 on my laptop and felt overwhelmed only by skimming
+some source files. Documenting IJ1 was hard, documenting IJ2 seems already
+impossible, but Johannes seems to think it is doable :)
+
+Questions:
+- Which plans do you have for the IJ2 documentation?
+- Could the guide be extended to ImageJ2? (A new chapter?) Or should it cease
+  with 1.45 and a new one be written for IJ2? In which modality then?
+
+Suggestions/Comments:
+_ I think self-contained user documentation is very important. I know some of 
+  you would prefer a wiki-like user guide. My experience however tells me
+  that average lay users don't. My opinion is that self-contained documents
+  are key to non-power users and wikis best suitable for advance usage and
+  How-Tos. 
+
+- It would be great if IJ2 users had more visible access to documentation.
+  Something like Fiji's "Help on Menu Item" would be great.
+
+- BTW, from a strictly usage point of view, IJ has some big flaws (e.g., the
+  notorious interpretation of binary images via the blackBackground option).
+  It would be great if IJ2 featured more user-friendliness.
+
+Best,
+
+-tiago
+
+
+From G.Landini at bham.ac.uk  Mon Jun  6 04:17:17 2011
+From: G.Landini at bham.ac.uk (Gabriel Landini)
+Date: Mon, 6 Jun 2011 10:17:17 +0100
+Subject: [ImageJ-devel] Documentation for ImageJ2
+In-Reply-To: <9B2C0129-745E-4F61-9245-2DADDEEC857E@mail.mcgill.ca>
+References: <9B2C0129-745E-4F61-9245-2DADDEEC857E@mail.mcgill.ca>
+Message-ID: <201106061017.17901.G.Landini@bham.ac.uk>
+
+On Monday 06 Jun 2011 03:57:48 Tiago Ferreira wrote:
+> - Could the guide be extended to ImageJ2? (A new chapter?) Or should it
+> cease with 1.45 and a new one be written for IJ2? In which modality then?
+
+I would think to keep the IJ1 until that time and  then re-adapt for IJ2. 
+Since some people might stick to IJ1 you want to keep that available.
+Many entries in the menus will remain similar, so the current manual entries 
+might still be valid for IJ2.
+ 
+> Suggestions/Comments:
+> _ I think self-contained user documentation is very important. I know some
+> of you would prefer a wiki-like user guide. My experience however tells me
+> that average lay users don't. My opinion is that self-contained documents
+> are key to non-power users and wikis best suitable for advance usage and
+> How-Tos.
+
+The easiest thing is to have an online resource until it matures, but as you 
+have experienced, this evolves constantly. If you want many people to 
+contribute, it will be difficult to work on a single document, so perhaps a 
+plan on what to work it would be the best. 
+Most importantly we need to learn from past errors. The Wiki at tudor 
+documentation has not worked as first thought it would (to help Wayne) as 
+still Wayne adds the new features to his pages, but these cannot be edited 
+from the outside.
+
+> - It would be great if IJ2 users had more visible access to documentation.
+>   Something like Fiji's "Help on Menu Item" would be great.
+
+You have to think if a local copy of the documentation or an active link are 
+needed.
+ 
+> - BTW, from a strictly usage point of view, IJ has some big flaws (e.g.,
+> the notorious interpretation of binary images via the blackBackground
+> option). It would be great if IJ2 featured more user-friendliness.
+
+In IJ2 there should be a single place where at startup for the first time one 
+is required to answer what kind of polarity one wants images to have. Then 
+store this in config file. Unfortunately in IJ1 this evolved over time and so 
+one has to set things in 2 or 3 places. 
+Most importantly, inverted LUTs are just not helpful when creating masks, just 
+confusing if one is thinking on applying logical operations between images.
+That needs a bit of thinking to avoid this in IJ2. The ugly side of this is 
+that when exchanging macros, one runs the risk of using a macro that is 
+assuming a different polarity than the current setting.
+
+Cheers
+G.
+
+
+
+From leek at broadinstitute.org  Mon Jun  6 07:03:15 2011
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Mon, 06 Jun 2011 08:03:15 -0400
+Subject: [ImageJ-devel] alpha 3
+In-Reply-To: <4DEBF8E9.4050300@mbl.edu>
+References: <201106051932.16053.G.Landini@bham.ac.uk>
+	<4DEBF8E9.4050300@mbl.edu>
+Message-ID: <4decc204.8c00e50a.41bc.715a@mx.google.com>
+
+I can handle the border issue today - not a lot of work. I might be able 
+to set the line alpha too. I have a little time on my hands to do so.
+
+On 6/5/2011 5:45 PM, Grant B. Harris wrote:
+> Good point, Gabriel.
+>
+> Perhaps we should add setStroke(Stroke stroke) to 
+> imagej.data.roi.Overlay.
+> (http://download.oracle.com/javase/7/docs/api/java/awt/BasicStroke.html)
+>
+> For variable alpha on the ROI outline, we would need to change 
+> setLineColor(ColorRGB lineColor)... perhaps we to add need a ColorRGBA 
+> class.
+>
+> -- Grant
+>
+>
+> On 6/5/2011 2:32 PM, Gabriel Landini wrote:
+>> Hi
+>> Great to see the alpha 3 out. Not sure if people are happy for 
+>> comments at
+>> this stage, but just in case... All comments are made with a positive 
+>> intent.
+>>
+>> For some reason, the images (for example the Clown sample) when 
+>> enlarged, the
+>> first and last rows and columns of pixels appear to have pixels that 
+>> are half
+>> the size of the rest of the image pixels. (Sure pixels do not have 
+>> area, but
+>> for positioning of ROIs and so on perhaps they should be represented 
+>> as the
+>> rest of the pixels).
+>>
+>> I see that ROIs have a black border around. Is there any plan to be 
+>> able to
+>> turn that off? Otherwise we cannot see what is underneath the ROI. Or 
+>> perhaps
+>> best to make these semi transparent? Or with dotted lines in alternating
+>> colours?  I see lots of room for confusion in terms of what is the 
+>> image and
+>> what is overlay or things disappearing because the overlay having the 
+>> same
+>> colour as the background.
+>>
+>> Something I noted in IJ1 is that having lots of overlays being shown 
+>> makes it
+>> run very slow. Has anybody noticed this? Maybe they get 
+>> refreshed/repainted
+>> too often. I wonder if it is worth looking at the performance of 
+>> having ROIs
+>> as overlays as they appear in the alpha 3.
+>>
+>> I also noted that the black border around images cannot be switched 
+>> off in the
+>> Edit Options. I wonder if this is related to the half pixel display 
+>> mentioned
+>> above.
+>>
+>> Regards to all,
+>>
+>> Gabriel
+>>
+>>
+>> _______________________________________________
+>> ImageJ-devel mailing list
+>> ImageJ-devel at imagejdev.org
+>> http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+
+
+
+
+From afraser at broadinstitute.org  Mon Jun  6 09:44:20 2011
+From: afraser at broadinstitute.org (Adam Fraser)
+Date: Mon, 6 Jun 2011 10:44:20 -0400
+Subject: [ImageJ-devel] EuclideanSpace and imagej.display.Display
+In-Reply-To: <4de92b82.8c00e50a.0bee.3c54@mx.google.com>
+References: <4de92b82.8c00e50a.0bee.3c54@mx.google.com>
+Message-ID: <BANLkTinGdzw=OKkomSBbZKq5hr214T+vnQ@mail.gmail.com>
+
+Hi Lee,
+
+These are great observations, and I agree that the sooner they are addressed
+the better. I looked at the Skype channel, and it appears there hasn't been
+much discussion on this, so I figured I'd see if I could get a bit of
+clarification on a couple things below...
+
+>
+>    - There are two behaviors for a view object that does not have an axis
+>       in the space. Perhaps the user selects the behavior?:
+>          - The value in space outside of a single plane defined by a
+>          coordinate location along the axis is nan or null.
+>          - The value in space along the missing axis is the same at all
+>          locations along that axis.
+>
+> The former behavior makes sense to me, but I'm having a tough time
+understanding the latter. Could you give an example?
+
+>
+>     - Perhaps there is a SpatialDataObject or perhaps the DataObject is
+>    always spatial. In any case, the axis information and channel metadata
+>    should be pushed up the inheritance hierarchy so that Overlay has a
+>    first-class representation of that and operations that generate overlays
+>    from datasets copy the information to the overlays they create.
+>
+> Hrm... it seems to me that Overlays are always spatial, but what about
+datasets? How are we planning on storing derived data (eg: a table of
+measurement values)?
+
+>
+>    - There is a spectral dimension, but the channel axis doesn't capture
+>    that. Channels are categorical and should have names so they can be matched
+>    in the same way that axes are matched.
+>
+> So the idea that the Display will ask its DataObjects for color information
+right? I'm thinking about what happens when a dataset has a spectral
+dimension and a channels dimension... not sure if there's a case for this,
+or how to handle it.
+
+Thanks!
+-Adam
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110606/5d94aaf6/attachment.html>
+
+From leek at broadinstitute.org  Mon Jun  6 09:55:57 2011
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Mon, 06 Jun 2011 10:55:57 -0400
+Subject: [ImageJ-devel] EuclideanSpace and imagej.display.Display
+In-Reply-To: <BANLkTinGdzw=OKkomSBbZKq5hr214T+vnQ@mail.gmail.com>
+References: <4de92b82.8c00e50a.0bee.3c54@mx.google.com>
+	<BANLkTinGdzw=OKkomSBbZKq5hr214T+vnQ@mail.gmail.com>
+Message-ID: <4decea7e.6082e50a.365a.79f3@mx.google.com>
+
+On 6/6/2011 10:44 AM, Adam Fraser wrote:
+> Hi Lee,
+>
+> These are great observations, and I agree that the sooner they are 
+> addressed the better. I looked at the Skype channel, and it appears 
+> there hasn't been much discussion on this, so I figured I'd see if I 
+> could get a bit of clarification on a couple things below...
+>
+>               o There are two behaviors for a view object that does
+>                 not have an axis in the space. Perhaps the user
+>                 selects the behavior?:
+>                     + The value in space outside of a single plane
+>                       defined by a coordinate location along the axis
+>                       is nan or null.
+>                     + The value in space along the missing axis is the
+>                       same at all locations along that axis.
+>
+> The former behavior makes sense to me, but I'm having a tough time 
+> understanding the latter. Could you give an example?
+If someone selects a rectangular region at some Z plane, maybe they mean 
+to analyze the region not just at that z-plane but at all z-planes. For 
+instance, I have one of those (beautiful) drosophila embryos in 3-d, but 
+it's z-planes for the current ImageJ 2.0 release. I draw a rectangle 
+around it and want to crop to it. I probably want to get the image at 
+its complete depth, not just one plane. The user should be able to choose.
+>
+>         * Perhaps there is a SpatialDataObject or perhaps the
+>           DataObject is always spatial. In any case, the axis
+>           information and channel metadata should be pushed up the
+>           inheritance hierarchy so that Overlay has a first-class
+>           representation of that and operations that generate overlays
+>           from datasets copy the information to the overlays they create.
+>
+> Hrm... it seems to me that Overlays are always spatial, but what about 
+> datasets? How are we planning on storing derived data (eg: a table of 
+> measurement values)?
+I think Dataset is always an image, right?
+>
+>         * There is a spectral dimension, but the channel axis doesn't
+>           capture that. Channels are categorical and should have names
+>           so they can be matched in the same way that axes are matched.
+>
+> So the idea that the Display will ask its DataObjects for color 
+> information right? I'm thinking about what happens when a dataset has 
+> a spectral dimension and a channels dimension... not sure if there's a 
+> case for this, or how to handle it.
+>
+I think that would play out as a spectral dimension with its own axis 
+and a categorical channels dimension with its own axis.
+> Thanks!
+> -Adam
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110606/fd43c157/attachment.html>
+
+From leek at broadinstitute.org  Mon Jun  6 10:11:10 2011
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Mon, 06 Jun 2011 11:11:10 -0400
+Subject: [ImageJ-devel] alpha 3
+In-Reply-To: <201106051932.16053.G.Landini@bham.ac.uk>
+References: <201106051932.16053.G.Landini@bham.ac.uk>
+Message-ID: <4decee21.524ee50a.6c41.7c58@mx.google.com>
+
+I've added a line style to overlays - dashes, dots, dot-dashes and none 
+(= outline disappears) in addition to Solid.
+
+For the current design, I think that ROI painting will still be slow and 
+will need to be optimized. I'm thinking that first-class support of 
+image segmentations will mean that more users will do things like 
+particle analysis which will generate a large number of ROIs. We could 
+be clever here and, because the ROIs are derived from a single labeling, 
+the labeling could be represented as a first-class object in the UI 
+instead of as a collection of ROIs (but still allowing individual ROIs 
+to be selected) by having a labeling DataObject similar to Overlay. 
+There would be a corresponding view which would be rendered as one 
+bitmap; it's fast to both generate the bitmap (two passes over the 
+labeling within the currently displayed plane) and economical to store 
+and display its graphical object.
+
+Are there any other use cases that generate a large number of ROIs?
+
+--Lee
+
+On 6/5/2011 2:32 PM, Gabriel Landini wrote:
+> Hi
+> Great to see the alpha 3 out. Not sure if people are happy for comments at
+> this stage, but just in case... All comments are made with a positive intent.
+>
+> For some reason, the images (for example the Clown sample) when enlarged, the
+> first and last rows and columns of pixels appear to have pixels that are half
+> the size of the rest of the image pixels. (Sure pixels do not have area, but
+> for positioning of ROIs and so on perhaps they should be represented as the
+> rest of the pixels).
+>
+> I see that ROIs have a black border around. Is there any plan to be able to
+> turn that off? Otherwise we cannot see what is underneath the ROI. Or perhaps
+> best to make these semi transparent? Or with dotted lines in alternating
+> colours?  I see lots of room for confusion in terms of what is the image and
+> what is overlay or things disappearing because the overlay having the same
+> colour as the background.
+>
+> Something I noted in IJ1 is that having lots of overlays being shown makes it
+> run very slow. Has anybody noticed this? Maybe they get refreshed/repainted
+> too often. I wonder if it is worth looking at the performance of having ROIs
+> as overlays as they appear in the alpha 3.
+>
+> I also noted that the black border around images cannot be switched off in the
+> Edit Options. I wonder if this is related to the half pixel display mentioned
+> above.
+>
+> Regards to all,
+>
+> Gabriel
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+
+
+
+
+From G.Landini at bham.ac.uk  Mon Jun  6 11:17:41 2011
+From: G.Landini at bham.ac.uk (Gabriel Landini)
+Date: Mon, 6 Jun 2011 17:17:41 +0100
+Subject: [ImageJ-devel] alpha 3
+In-Reply-To: <4decee21.524ee50a.6c41.7c58@mx.google.com>
+References: <201106051932.16053.G.Landini@bham.ac.uk>
+	<4decee21.524ee50a.6c41.7c58@mx.google.com>
+Message-ID: <201106061717.41299.G.Landini@bham.ac.uk>
+
+On Monday 06 Jun 2011 16:11:10 Lee Kamentsky wrote:
+> I've added a line style to overlays - dashes, dots, dot-dashes and none
+> (= outline disappears) in addition to Solid.
+
+Great.
+
+> Are there any other use cases that generate a large number of ROIs?
+
+What about the ROI manager where each ROI is independent of the others. 
+Wouldn't storing the vector holding the ROI boundary be more compact than a 
+bitplane for each of the ROIs (I am assuming -probably wrong? - that one needs 
+to store the whole image bitmap of the overlay?)
+
+Regards
+Gabriel
+
+
+
+From gharris at mbl.edu  Tue Jun  7 09:31:00 2011
+From: gharris at mbl.edu (Grant B. Harris)
+Date: Tue, 07 Jun 2011 10:31:00 -0400
+Subject: [ImageJ-devel] Some Naming Issues in imglib2
+Message-ID: <4DEE3624.4010800@mbl.edu>
+
+All --
+
+Curtis and I were considering the addition of methods for get/setting 
+the display scaling values and this drew our attention to some naming 
+issues that we may want to address. There are problems with both 
+semantics and style.
+
+-- Semantics of Interval min/max:
+
+In ImgPlus there are several methods names min and max which inherit 
+from Interval. Semantically, 'min' and 'max' should really be 'lower' 
+and 'upper' (or low/high, or lo/hi), as these fields refer to the bounds 
+or endpoints of an interval, whereas minima/maxima refer to the 
+smallest/largest values of a set or function.
+
+-- Consistency, or lack thereof, with Accessors, Mutators, Creators?
+
+We have generally used the naming style for accessors and mutators (for 
+data encapsulation), but there are many exceptions. While 
+getters/setters lengthens the calls, it really clarifies what a method 
+does. There are numerous other classes where we are inconsistent in 
+naming. For instance, in ImgPlus, get/set is not consistent for 
+dimension(), dimensions(), axis(d), axes(), and calibration(d). And 
+given that the methods cursor(), factory() and iterator() return newly 
+created objects, they should be createCursor(), createFactory() and 
+createIterator() respectively. Such changes would probably best be 
+propagated back into the ancestors of ImgPlus.
+
+And there are, no doubt, other places where there are naming 
+inconsistencies, so if we decide to make changes we should probably run 
+a more thorough review.
+
+These seem like significant inconsistencies which we should either fix 
+now or decide to live with. What do you all think?
+
+-- Grant & Curtis
+
+
+
+
+From leek at broadinstitute.org  Tue Jun  7 09:41:36 2011
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Tue, 07 Jun 2011 10:41:36 -0400
+Subject: [ImageJ-devel] Some Naming Issues in imglib2
+In-Reply-To: <4DEE3624.4010800@mbl.edu>
+References: <4DEE3624.4010800@mbl.edu>
+Message-ID: <4dee38a1.a2ae340a.536b.5be5@mx.google.com>
+
+Since you asked - this falls under my "Deck chairs on the Titanic" 
+category of things to do. ImageJ2.0 isn't the Titanic by any means, but 
+we are under a lot of time pressure and, when you shift the deck chairs 
+on a file I have modified and am about to check in, it's like I'm 
+walking around on the Titanic and the power's gone out and I'm tripping 
+over all the deck chairs you've moved.
+
+So, IMHO, don't do it. Can you live with it? Does it gnaw at you until 
+your eyeballs start to bleed? No? It's probably ok. I bet, over time, 
+you begin to grow to like min and max and lower and upper would feel 
+really wrong. My fingers have already grown accustomed to min and max, 
+my code has thousands of min and max and I know, you type shift-alt-R 
+and change min to lower and you're done, but what about me if I have 15 
+files checked out and this breaks all of them?
+
+So, IMHO don't do it.
+
+--Lee
+
+PS: Don't do it.
+
+On 6/7/2011 10:31 AM, Grant B. Harris wrote:
+> All --
+>
+> Curtis and I were considering the addition of methods for get/setting 
+> the display scaling values and this drew our attention to some naming 
+> issues that we may want to address. There are problems with both 
+> semantics and style.
+>
+> -- Semantics of Interval min/max:
+>
+> In ImgPlus there are several methods names min and max which inherit 
+> from Interval. Semantically, 'min' and 'max' should really be 'lower' 
+> and 'upper' (or low/high, or lo/hi), as these fields refer to the 
+> bounds or endpoints of an interval, whereas minima/maxima refer to the 
+> smallest/largest values of a set or function.
+>
+> -- Consistency, or lack thereof, with Accessors, Mutators, Creators?
+>
+> We have generally used the naming style for accessors and mutators 
+> (for data encapsulation), but there are many exceptions. While 
+> getters/setters lengthens the calls, it really clarifies what a method 
+> does. There are numerous other classes where we are inconsistent in 
+> naming. For instance, in ImgPlus, get/set is not consistent for 
+> dimension(), dimensions(), axis(d), axes(), and calibration(d). And 
+> given that the methods cursor(), factory() and iterator() return newly 
+> created objects, they should be createCursor(), createFactory() and 
+> createIterator() respectively. Such changes would probably best be 
+> propagated back into the ancestors of ImgPlus.
+>
+> And there are, no doubt, other places where there are naming 
+> inconsistencies, so if we decide to make changes we should probably 
+> run a more thorough review.
+>
+> These seem like significant inconsistencies which we should either fix 
+> now or decide to live with. What do you all think?
+>
+> -- Grant & Curtis
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+
+
+
+
+From gharris at mbl.edu  Thu Jun  9 14:41:53 2011
+From: gharris at mbl.edu (Grant B. Harris)
+Date: Thu, 09 Jun 2011 15:41:53 -0400
+Subject: [ImageJ-devel] Overlays, cut and paste
+Message-ID: <4DF12201.807@mbl.edu>
+
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110609/f3f4ecc3/attachment.html>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: 0000 at 22233_412668b39f9be024-72e3.png
+Type: image/png
+Size: 126050 bytes
+Desc: not available
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110609/f3f4ecc3/attachment.png>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: 0001 at 22233_412668b39ee5d4c4-a0f5.png
+Type: image/png
+Size: 9948 bytes
+Desc: not available
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110609/f3f4ecc3/attachment-0001.png>
+
+From leek at broadinstitute.org  Thu Jun  9 15:19:28 2011
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Thu, 09 Jun 2011 16:19:28 -0400
+Subject: [ImageJ-devel] Overlays, cut and paste
+In-Reply-To: <4DF12201.807@mbl.edu>
+References: <4DF12201.807@mbl.edu>
+Message-ID: <4df12ad1.07b2e60a.747e.2c76@mx.google.com>
+
+What's happening here is this:
+Cut and paste are currently ImageJ 1.0 functions.
+
+In the legacy layer, I run the ImageJ 1.0 plugin, ThresholdToSelection 
+with a ByteProcessor that holds the mask. For now, I'm flattening the 
+mask rather than trying to distribute it among different planes in the 
+stack, mostly because I don't know how any of that works. So 
+ThresholdToSelection makes a composite ShapeROI composed of lots of 
+polygons and that becomes the ImagePlus's ROI.
+
+Going in the other direction, some of the objects are polygons and some 
+are freehand rois. Each of them is transformed into its own overlay, so 
+it's as if the original overlay was broken into pieces.
+
+The legacy layer is very challenging. On the surface, a composite ROI 
+might seem to be a union of polygons and beziers that are found by using 
+the path iterator, but it's more complicated since some of them are 
+subtractions placed on top of a larger shape (that's how you get a hole 
+in something). On top of that, there's an issue of intent. Sometimes the 
+user has drawn two rectangles and the composite is intended to be 
+decomposed into two rectangles. But in cases such as this, the composite 
+was never intended to be decomposed and should be rendered as a bitmask 
+in ImageJ 2.0.
+
+Hope you all understand why it's all not quite working yet.
+--Lee
+
+On 6/9/2011 3:41 PM, Grant B. Harris wrote:
+> For anyone who is unaware, Lee committed some nice overlay stuff 
+> today.  I tried it out and I found something interesting... Just for 
+> the heck of it, I selected the thresholded binary overlay in the 
+> OrganOfCorti image.
+> and I copy/paste-ed to a 32-bit ramped NewImage, and I got this:
+> It took a while, but it drew all those overlays into the image.
+>
+> Is this what it is supposed to do?
+>
+> -- Grant
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110609/4fc8f2c3/attachment.html>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: image/png
+Size: 126050 bytes
+Desc: not available
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110609/4fc8f2c3/attachment.png>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: image/png
+Size: 9948 bytes
+Desc: not available
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110609/4fc8f2c3/attachment-0001.png>
+
+From leek at broadinstitute.org  Fri Jun 10 08:33:36 2011
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Fri, 10 Jun 2011 09:33:36 -0400
+Subject: [ImageJ-devel] net.imglib2.algorithm.kdtree and rectangles
+Message-ID: <4df21d36.e143340a.4294.5b7d@mx.google.com>
+
+Hi all, esp Dscho & Stephan P. I'm thinking of doing a composite region 
+of interest which would be a collection any other kinds of region of 
+interest. I'm thinking that the most efficient way to do this is to use 
+a K-D tree to store references to the sub-ROIs: Wikipedia says that you 
+can search for hyper-rectangles (the bounds of the ROIs) by storing the 
+minimum and maximum extents as a 2N-d object in the hyperplane and then 
+the search for rectangles containing a point becomes a range search in 
+the 2N-d space for all points on one side of a hyperplane.
+
+So 2 questions:
+
+1) Could I add a leaf that holds onto a real interval, 
+"RealntervalLeaf<I extends RealInterval>", a search method that returns 
+all points on one side of a hyperplane (T point, Node<T> node, bool [] 
+above = false to retrieve nodes less than point in the given dimension, 
+true to retrieve nodes greater than point in the given dimension) and 
+some wrapper class that purports to be a database of "I extends 
+RealInterval" with a simple interface for retrieving all RealIntervals 
+containing a point?
+
+2) imglib2-algorithms is really useful. There are going to be other 
+cases where imglib2 or other components would like to use algorithms to 
+construct things like NativeImg and RegionOfInterest. How do we manage 
+this? It sure would be nice if imglib2 and imglib2-algorithms were 
+interdependent. If we're not going to allow that, I'll probably 
+implement the composite ROI in imglib2-algorithms and I'll wait until 
+imglib2-algorithms to be completed before I use composite ROIs in ImageJ 
+2.0.
+
+I'm probably going to do the first for the fun of it, the legacy ROI 
+code will need it, need a break from the GUI stuff and this will be 
+refreshing. Tell me what you all think.
+
+--Lee
+
+
+
+From sapristi at gmail.com  Fri Jun 10 09:35:19 2011
+From: sapristi at gmail.com (Albert Cardona)
+Date: Fri, 10 Jun 2011 10:35:19 -0400
+Subject: [ImageJ-devel] net.imglib2.algorithm.kdtree and rectangles
+In-Reply-To: <4df21d36.e143340a.4294.5b7d@mx.google.com>
+References: <4df21d36.e143340a.4294.5b7d@mx.google.com>
+Message-ID: <BANLkTindHUUXK+Pf5qcjG6ZOxH3s-xtpVw@mail.gmail.com>
+
+2011/6/10 Lee Kamentsky <leek at broadinstitute.org>:
+
+> 2) imglib2-algorithms is really useful. There are going to be other cases
+> where imglib2 or other components would like to use algorithms to construct
+> things like NativeImg and RegionOfInterest. How do we manage this? It sure
+> would be nice if imglib2 and imglib2-algorithms were interdependent. If
+> we're not going to allow that, I'll probably implement the composite ROI in
+> imglib2-algorithms and I'll wait until imglib2-algorithms to be completed
+> before I use composite ROIs in ImageJ 2.0.
+
+
+Make the ROIs be a separate package that depends on imglib2-core and
+on imglib2-algorithms. It's the easiest and cleanest.
+
+Albert
+
+
+-- 
+http://albert.rierol.net
+http://www.ini.uzh.ch/~acardona/
+
+
+
+From leek at broadinstitute.org  Tue Jun 14 09:53:13 2011
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Tue, 14 Jun 2011 10:53:13 -0400
+Subject: [ImageJ-devel] ImageJ 1 legacy harmonization and rois
+Message-ID: <4df775db.4f76e50a.09c9.ffffe972@mx.google.com>
+
+Hi all,
+I'm looking for ideas on how to harmonize the ImageJ 1.0 rois with the 
+ImageJ 2.0 overlays. At present, if you run an ImageJ 1.0 plugin, the 
+harmonization code will duplicate the overlays because it has no 
+mechanism to check whether a roi was intentionally duplicated or just 
+happens to be there. Also, in ImageJ 1.0, each ImagePlus has a single 
+ROI which can be a composite of other ROIs but the compositing is done 
+by AWT. The pieces of the ROI composite produced by AWT will not have a 
+direct one-to-one correspondence with the overlays that produced them 
+and this makes matching and back-translation to ImageJ a non-trivial 
+task. Presently, the code correctly produces one overlay that represents 
+the one ImageJ ROI in the ImagePlus and it adds, not replaces, the 
+current set of overlays.
+
+I'd really like some guidance on how to proceed and what would be an 
+acceptable solution. I'm sure I can figure out how to implement any 
+reasonable idea but I feel completely unqualified to choose that 
+solution. Some possibilities:
+
+    * Only back-translate an ImagePlus's ROI if the area it masks is
+      different on output from what it was on input. Slow, but possibly
+      as close to correct as possible.
+          o Replace all overlays with a single composite on output.
+          o Replace all overlays with individual overlays as represented
+            by the paths in the ImagePlus's ROI. Requires analysis of
+            paths to determine which are disjoint (donut ROI is large
+            circle XORed with smaller inner circle and translates into a
+            composite ROI in this case whereas two circles that do not
+            overlap become two separate ROIs).
+    * Have a "HarmonizeOverlays" plugin that lets a user control what
+      happens via macros. Advantages: user can construct a macro
+      composed of several ImageJ 1.0 plugins and those will not suffer
+      from a mis-harmonization during the course of the macro. User will
+      have some degree of control over how the harmonization takes
+      place, choosing whether to replace overlays in the display, add to
+      them and whether to translate to a composite or individual
+      overlays. Disadvantages: not automatic and possibly confusing.
+
+But again, I don't want to decide what's right and I am most definitely 
+open to suggestion.
+
+--Lee
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110614/5b15eee1/attachment.html>
+
+From ctrueden at wisc.edu  Mon Jun 20 14:43:52 2011
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Mon, 20 Jun 2011 14:43:52 -0500
+Subject: [ImageJ-devel] Overriding min, max and choices at runtime
+Message-ID: <BANLkTimy0MspZ4_i+_5pGM4cGvHWTCbawA@mail.gmail.com>
+
+Hi Grant, Barry et. al,
+
+At the meeting today we discussed how there is currently no way to override
+an annotated parameter's min, max or choices settings. It would be nice to
+be able to set them based on the current state upon plugin execution.
+
+One way is to have option callback methods for min, max and choices. So
+rather than a constant value, the min, max and choices are computed by a
+method dynamically. For min and max, there could be a notation like putting
+"#" in front of the string to indicate it's a callback, since min and max of
+Parameter are already strings. For choices, it's a String, so you'd have to
+write it as: 'choices = {"#nameOfCallback"}'.
+
+Do you think that's too awkward? Anyone have any better ideas?
+
+-Curtis
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110620/1f3e13b6/attachment.html>
+
+From bdezonia at wisc.edu  Mon Jun 20 15:06:48 2011
+From: bdezonia at wisc.edu (Barry DeZonia)
+Date: Mon, 20 Jun 2011 15:06:48 -0500
+Subject: [ImageJ-devel] Overriding min, max and choices at runtime
+In-Reply-To: <BANLkTimy0MspZ4_i+_5pGM4cGvHWTCbawA@mail.gmail.com>
+References: <BANLkTimy0MspZ4_i+_5pGM4cGvHWTCbawA@mail.gmail.com>
+Message-ID: <BANLkTimA+HOFGdV2jjA0SoRNNmKi-viu9A@mail.gmail.com>
+
+I have created a ticket to track this issue:
+http://dev.imagejdev.org/trac/imagej/ticket/623. Note that it does not yet
+include anything from this discussion.
+
+In regards to the proposal note that I see that the issue is more than just
+allowing us to populate choices and min/max at runtime. In the ReorderAxes
+plugin I'd like to have 3 parameters each of which has 3 choices for an XYZ
+Dataset. And 5 parameters each with 5 choices for an XYCZT Dataset. So I
+should be able to specify the number of parameters at runtime also. Or make
+the plugin have the max possible but only enable and display/use a subset of
+the parameters present.
+
+On Mon, Jun 20, 2011 at 2:43 PM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+
+> Hi Grant, Barry et. al,
+>
+> At the meeting today we discussed how there is currently no way to override
+> an annotated parameter's min, max or choices settings. It would be nice to
+> be able to set them based on the current state upon plugin execution.
+>
+> One way is to have option callback methods for min, max and choices. So
+> rather than a constant value, the min, max and choices are computed by a
+> method dynamically. For min and max, there could be a notation like putting
+> "#" in front of the string to indicate it's a callback, since min and max of
+> Parameter are already strings. For choices, it's a String, so you'd have to
+> write it as: 'choices = {"#nameOfCallback"}'.
+>
+> Do you think that's too awkward? Anyone have any better ideas?
+>
+> -Curtis
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110620/9ebb671b/attachment.html>
+
+From leek at broadinstitute.org  Mon Jun 20 15:15:40 2011
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Mon, 20 Jun 2011 16:15:40 -0400
+Subject: [ImageJ-devel] Overriding min, max and choices at runtime
+In-Reply-To: <BANLkTimA+HOFGdV2jjA0SoRNNmKi-viu9A@mail.gmail.com>
+References: <BANLkTimy0MspZ4_i+_5pGM4cGvHWTCbawA@mail.gmail.com>
+	<BANLkTimA+HOFGdV2jjA0SoRNNmKi-viu9A@mail.gmail.com>
+Message-ID: <4dffaa6d.471c340a.4c2d.0e73@mx.google.com>
+
+I have a more-general mechanism in CellProfiler that lets you do this 
+kind of thing. The module (read ImageJ plugin) has a method that returns 
+a collection of settings. These are equivalent to the parameters in 
+ImageJ 2.0. You can restructure the collection contextually in response 
+to user events - for instance, there's a "DoSomething" setting which is 
+displayed as a button and it calls a callback when the button is 
+pressed. You can implement an "Add another" button that changes the 
+module's setting list in the callback and the framework will ask for the 
+settings again, with the settings added by pressing the button.
+
+CellProfiler 1.0 had a fixed list and it felt like it was arbitrarily 
+limiting - you'd run into cases where you wanted four of something, but 
+provisions were there for only 3 slots.
+
+IMHO, unfortunately pretty far down the line to change the way this 
+works, but you could convince me otherwise.
+
+-- Lee
+
+On 6/20/2011 4:06 PM, Barry DeZonia wrote:
+> I have created a ticket to track this issue: 
+> http://dev.imagejdev.org/trac/imagej/ticket/623. Note that it does not 
+> yet include anything from this discussion.
+>
+> In regards to the proposal note that I see that the issue is more than 
+> just allowing us to populate choices and min/max at runtime. In the 
+> ReorderAxes plugin I'd like to have 3 parameters each of which has 3 
+> choices for an XYZ Dataset. And 5 parameters each with 5 choices for 
+> an XYCZT Dataset. So I should be able to specify the number of 
+> parameters at runtime also. Or make the plugin have the max possible 
+> but only enable and display/use a subset of the parameters present.
+>
+> On Mon, Jun 20, 2011 at 2:43 PM, Curtis Rueden <ctrueden at wisc.edu 
+> <mailto:ctrueden at wisc.edu>> wrote:
+>
+>     Hi Grant, Barry et. al,
+>
+>     At the meeting today we discussed how there is currently no way to
+>     override an annotated parameter's min, max or choices settings. It
+>     would be nice to be able to set them based on the current state
+>     upon plugin execution.
+>
+>     One way is to have option callback methods for min, max and
+>     choices. So rather than a constant value, the min, max and choices
+>     are computed by a method dynamically. For min and max, there could
+>     be a notation like putting "#" in front of the string to indicate
+>     it's a callback, since min and max of Parameter are already
+>     strings. For choices, it's a String, so you'd have to write it as:
+>     'choices = {"#nameOfCallback"}'.
+>
+>     Do you think that's too awkward? Anyone have any better ideas?
+>
+>     -Curtis
+>
+>
+>     _______________________________________________
+>     ImageJ-devel mailing list
+>     ImageJ-devel at imagejdev.org <mailto:ImageJ-devel at imagejdev.org>
+>     http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110620/bfd13c08/attachment.html>
+
+From gharris at mbl.edu  Mon Jun 20 15:28:37 2011
+From: gharris at mbl.edu (Grant B. Harris)
+Date: Mon, 20 Jun 2011 16:28:37 -0400
+Subject: [ImageJ-devel] Overriding min, max and choices at runtime
+In-Reply-To: <4dffaa6d.471c340a.4c2d.0e73@mx.google.com>
+References: <BANLkTimy0MspZ4_i+_5pGM4cGvHWTCbawA@mail.gmail.com>	<BANLkTimA+HOFGdV2jjA0SoRNNmKi-viu9A@mail.gmail.com>
+	<4dffaa6d.471c340a.4c2d.0e73@mx.google.com>
+Message-ID: <4DFFAD75.4020002@mbl.edu>
+
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110620/829d3df3/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Mon Jun 20 17:25:39 2011
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Tue, 21 Jun 2011 00:25:39 +0200 (CEST)
+Subject: [ImageJ-devel] Overriding min, max and choices at runtime
+In-Reply-To: <4DFFAD75.4020002@mbl.edu>
+References: <BANLkTimy0MspZ4_i+_5pGM4cGvHWTCbawA@mail.gmail.com>
+	<BANLkTimA+HOFGdV2jjA0SoRNNmKi-viu9A@mail.gmail.com>
+	<4dffaa6d.471c340a.4c2d.0e73@mx.google.com>
+	<4DFFAD75.4020002@mbl.edu>
+Message-ID: <alpine.DEB.1.00.1106210009040.21756@bonsai2>
+
+Hi,
+
+On Mon, 20 Jun 2011, Grant B. Harris wrote:
+
+> Can we not, alternately, create a plugin that doesn't use @Parameters??
+> This is possible, is it not? I can imagine someone wanting to build a 
+> plugin that has some crazy custom input widgets...
+
+The idea of @Parameter was to simplify implementations of plugins. If the 
+design still simplifies matters even when you want to allow callbacks then 
+that should be the preferred method. If it complicates things, it should 
+not be used in that case.
+
+Having said that, I could imagine that something like
+
+	@Parameter(getMin = "getMinValue")
+	public double value;
+
+	...
+
+	public double getMinValue() {
+		return image == null ? 0 : -image.getWidth();
+	}
+
+could be easy enough. I am just afraid that we'll have method creep that 
+way (remember: every method has at least 4 lines and you might need a 
+couple of callbacks per parameter), and that it might be a better idea to 
+have something like
+
+	@Parameter(getLimits = "getLimitsValue")
+	public double limits;
+
+	...
+
+	public void getLimitsValue(DoubleLimits limits) {
+		if (image == null)
+			return;
+		limits.min = -image.getWidth();
+		limits.max = image.getWidth();
+		limits.step = 1;
+	}
+
+with a class
+
+	public class DoubleLimits {
+		public double min, max, step;
+	}
+
+might be more appropriate... Hmm?
+
+(One could also think of automatic getLimits<name>() methods, i.e. when 
+there is a parameter called "grant" and there exists a method 
+getLimitsGrant() it gets called, but that would be a bit too magic for my 
+liking; it's not intuitive.)
+
+> Another idea... could there not be a way to intercept the InputPanel 
+> after creation, modify it (and then one would need to intercept the 
+> 'harvesting' step ...).... Hmmm...
+
+I am afraid that these plugins would not be useful outside GUIs. For 
+example, if you would want to concoct a macro, say, in a web browser, and 
+run it inside an OMERO database on hundreds of thousands of images, then 
+there would not be an InputPanel.
+
+(Of course we could repeat ImageJ's design of making GUI elements 
+mandatory even for offline processing, but that design imposes rather 
+serious limitations IMO. In general, processing should not be thought of 
+as GUI centric, otherwise there is no proper separation of concerns.)
+
+Ciao,
+Dscho
+
+From pietzsch at mpi-cbg.de  Tue Jun 21 12:21:49 2011
+From: pietzsch at mpi-cbg.de (Tobias Pietzsch)
+Date: Tue, 21 Jun 2011 19:21:49 +0200
+Subject: [ImageJ-devel] net.imglib2.algorithm.kdtree and rectangles
+In-Reply-To: <4df21d36.e143340a.4294.5b7d@mx.google.com>
+References: <4df21d36.e143340a.4294.5b7d@mx.google.com>
+Message-ID: <4E00D32D.7070104@mpi-cbg.de>
+
+On 06/10/2011 03:33 PM, Lee Kamentsky wrote:
+> Hi all, esp Dscho & Stephan P. I'm thinking of doing a composite region
+> of interest which would be a collection any other kinds of region of
+> interest. I'm thinking that the most efficient way to do this is to use
+> a K-D tree to store references to the sub-ROIs: Wikipedia says that you
+> can search for hyper-rectangles (the bounds of the ROIs) by storing the
+> minimum and maximum extents as a 2N-d object in the hyperplane and then
+> the search for rectangles containing a point becomes a range search in
+> the 2N-d space for all points on one side of a hyperplane.
+>
+> So 2 questions:
+>
+> 1) Could I add a leaf that holds onto a real interval,
+> "RealntervalLeaf<I extends RealInterval>", a search method that returns
+> all points on one side of a hyperplane (T point, Node<T> node, bool []
+> above = false to retrieve nodes less than point in the given dimension,
+> true to retrieve nodes greater than point in the given dimension) and
+> some wrapper class that purports to be a database of "I extends
+> RealInterval" with a simple interface for retrieving all RealIntervals
+> containing a point?
+
+
+Hi Lee,
+
+I'm a bit out of the loop right now, just getting back into imglib 
+development. I don't know if this has been discussed in the Skype 
+channel or something, but...
+
+Did you consider using the new KDTree implementation in imglib2 core, 
+instead of the net.imglib2.algorithm.kdtree?
+
+The new KDTree does not require it's T to be a Leaf< T >
+and there are implementations of the 
+net.imglib2.neighborsearch.*NeighborSearch< T > interfaces.
+
+It uses exact median-finding algorithm for constructing the tree
+(instead of the approximate one in net.imglib2.algorithm.kdtree).
+
+It is also faster, if I remember correctly.
+
+best regards,
+Tobias
+
+
+>
+> 2) imglib2-algorithms is really useful. There are going to be other
+> cases where imglib2 or other components would like to use algorithms to
+> construct things like NativeImg and RegionOfInterest. How do we manage
+> this? It sure would be nice if imglib2 and imglib2-algorithms were
+> interdependent. If we're not going to allow that, I'll probably
+> implement the composite ROI in imglib2-algorithms and I'll wait until
+> imglib2-algorithms to be completed before I use composite ROIs in ImageJ
+> 2.0.
+>
+> I'm probably going to do the first for the fun of it, the legacy ROI
+> code will need it, need a break from the GUI stuff and this will be
+> refreshing. Tell me what you all think.
+>
+> --Lee
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+
+
+
+
+From leek at broadinstitute.org  Tue Jun 21 13:17:29 2011
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Tue, 21 Jun 2011 14:17:29 -0400
+Subject: [ImageJ-devel] net.imglib2.algorithm.kdtree and rectangles
+In-Reply-To: <4E00D32D.7070104@mpi-cbg.de>
+References: <4df21d36.e143340a.4294.5b7d@mx.google.com>
+	<4E00D32D.7070104@mpi-cbg.de>
+Message-ID: <4e00e039.505c340a.5d85.ffff9f62@mx.google.com>
+
+Thanks Tobias,
+I ended up not using the KD tree for my composite ROI, but I wrote a 
+hyperrectangle search class, 
+net.imglib2.algorithm.kdtree.VolumetricSearch, anyway. I'm looking at 
+net.imglib2.collection.KDTree and the searches in 
+net.imglib2.neighborsearch and I can see those are better places for it 
+now. I'll see if I can find some time to reimplement it there.
+
+But, the one in algorithms works - it's pretty cool to have a database 
+of N-dimensional intervals that you can search in log time.
+
+--Lee
+
+On 6/21/2011 1:21 PM, Tobias Pietzsch wrote:
+> On 06/10/2011 03:33 PM, Lee Kamentsky wrote:
+>> Hi all, esp Dscho & Stephan P. I'm thinking of doing a composite region
+>> of interest which would be a collection any other kinds of region of
+>> interest. I'm thinking that the most efficient way to do this is to use
+>> a K-D tree to store references to the sub-ROIs: Wikipedia says that you
+>> can search for hyper-rectangles (the bounds of the ROIs) by storing the
+>> minimum and maximum extents as a 2N-d object in the hyperplane and then
+>> the search for rectangles containing a point becomes a range search in
+>> the 2N-d space for all points on one side of a hyperplane.
+>>
+>> So 2 questions:
+>>
+>> 1) Could I add a leaf that holds onto a real interval,
+>> "RealntervalLeaf<I extends RealInterval>", a search method that returns
+>> all points on one side of a hyperplane (T point, Node<T> node, bool []
+>> above = false to retrieve nodes less than point in the given dimension,
+>> true to retrieve nodes greater than point in the given dimension) and
+>> some wrapper class that purports to be a database of "I extends
+>> RealInterval" with a simple interface for retrieving all RealIntervals
+>> containing a point?
+>
+>
+> Hi Lee,
+>
+> I'm a bit out of the loop right now, just getting back into imglib 
+> development. I don't know if this has been discussed in the Skype 
+> channel or something, but...
+>
+> Did you consider using the new KDTree implementation in imglib2 core, 
+> instead of the net.imglib2.algorithm.kdtree?
+>
+> The new KDTree does not require it's T to be a Leaf< T >
+> and there are implementations of the 
+> net.imglib2.neighborsearch.*NeighborSearch< T > interfaces.
+>
+> It uses exact median-finding algorithm for constructing the tree
+> (instead of the approximate one in net.imglib2.algorithm.kdtree).
+>
+> It is also faster, if I remember correctly.
+>
+> best regards,
+> Tobias
+>
+>
+>>
+>> 2) imglib2-algorithms is really useful. There are going to be other
+>> cases where imglib2 or other components would like to use algorithms to
+>> construct things like NativeImg and RegionOfInterest. How do we manage
+>> this? It sure would be nice if imglib2 and imglib2-algorithms were
+>> interdependent. If we're not going to allow that, I'll probably
+>> implement the composite ROI in imglib2-algorithms and I'll wait until
+>> imglib2-algorithms to be completed before I use composite ROIs in ImageJ
+>> 2.0.
+>>
+>> I'm probably going to do the first for the fun of it, the legacy ROI
+>> code will need it, need a break from the GUI stuff and this will be
+>> refreshing. Tell me what you all think.
+>>
+>> --Lee
+>>
+>> _______________________________________________
+>> ImageJ-devel mailing list
+>> ImageJ-devel at imagejdev.org
+>> http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+
+
+
+
+From jason at lifesci.dundee.ac.uk  Tue Jun 21 13:52:23 2011
+From: jason at lifesci.dundee.ac.uk (Jason Swedlow)
+Date: Tue, 21 Jun 2011 19:52:23 +0100
+Subject: [ImageJ-devel] net.imglib2.algorithm.kdtree and rectangles
+In-Reply-To: <4e00e039.505c340a.5d85.ffff9f62@mx.google.com>
+References: <4df21d36.e143340a.4294.5b7d@mx.google.com>
+	<4E00D32D.7070104@mpi-cbg.de>
+	<4e00e039.505c340a.5d85.ffff9f62@mx.google.com>
+Message-ID: <F995D945-A08E-4A62-9868-72F4F4570842@lifesci.dundee.ac.uk>
+
+Hi Gang-
+
+Sorry to do this again-
+
+For ROIs, see
+
+http://www.openmicroscopy.org/Schemas/ROI/2011-06/ROI.xsd
+
+or a more readable version is at:
+
+http://git.openmicroscopy.org/src/develop/components/specification/Documentation/Generated/OME-2011-06/ome.html
+
+(you'll have to scroll down a ways to the ROI schema).
+
+ If we want to achieve the interoperability that we often discuss, defining a single model for ROIs would help.  Tell us what you don't like and we'll work on it.  If you want to reject this, that's fine, and really not a problem.  If you can't map what we have to imglib2, then we need to scratch our heads and figure out how we might make that work.   There is no pretense that our existing model is perfect.  If you tell us what's broken, we'll work hard to fix it. 
+
+If you come up with a new ROI model, let us know, and we'll do the translation work (more work for the Bio-Formats developers, known to you as Melissa and Curtis).  Of course, if we all used the same one, or even worked to make the translation easy, wouldn't that be great?!?!?!
+
+Cheers,
+
+Jason
+
+
+On 21 Jun 2011, at 19:17, Lee Kamentsky wrote:
+
+> Thanks Tobias,
+> I ended up not using the KD tree for my composite ROI, but I wrote a hyperrectangle search class, net.imglib2.algorithm.kdtree.VolumetricSearch, anyway. I'm looking at net.imglib2.collection.KDTree and the searches in net.imglib2.neighborsearch and I can see those are better places for it now. I'll see if I can find some time to reimplement it there.
+> 
+> But, the one in algorithms works - it's pretty cool to have a database of N-dimensional intervals that you can search in log time.
+> 
+> --Lee
+> 
+> On 6/21/2011 1:21 PM, Tobias Pietzsch wrote:
+>> On 06/10/2011 03:33 PM, Lee Kamentsky wrote:
+>>> Hi all, esp Dscho & Stephan P. I'm thinking of doing a composite region
+>>> of interest which would be a collection any other kinds of region of
+>>> interest. I'm thinking that the most efficient way to do this is to use
+>>> a K-D tree to store references to the sub-ROIs: Wikipedia says that you
+>>> can search for hyper-rectangles (the bounds of the ROIs) by storing the
+>>> minimum and maximum extents as a 2N-d object in the hyperplane and then
+>>> the search for rectangles containing a point becomes a range search in
+>>> the 2N-d space for all points on one side of a hyperplane.
+>>> 
+>>> So 2 questions:
+>>> 
+>>> 1) Could I add a leaf that holds onto a real interval,
+>>> "RealntervalLeaf<I extends RealInterval>", a search method that returns
+>>> all points on one side of a hyperplane (T point, Node<T> node, bool []
+>>> above = false to retrieve nodes less than point in the given dimension,
+>>> true to retrieve nodes greater than point in the given dimension) and
+>>> some wrapper class that purports to be a database of "I extends
+>>> RealInterval" with a simple interface for retrieving all RealIntervals
+>>> containing a point?
+>> 
+>> 
+>> Hi Lee,
+>> 
+>> I'm a bit out of the loop right now, just getting back into imglib development. I don't know if this has been discussed in the Skype channel or something, but...
+>> 
+>> Did you consider using the new KDTree implementation in imglib2 core, instead of the net.imglib2.algorithm.kdtree?
+>> 
+>> The new KDTree does not require it's T to be a Leaf< T >
+>> and there are implementations of the net.imglib2.neighborsearch.*NeighborSearch< T > interfaces.
+>> 
+>> It uses exact median-finding algorithm for constructing the tree
+>> (instead of the approximate one in net.imglib2.algorithm.kdtree).
+>> 
+>> It is also faster, if I remember correctly.
+>> 
+>> best regards,
+>> Tobias
+>> 
+>> 
+>>> 
+>>> 2) imglib2-algorithms is really useful. There are going to be other
+>>> cases where imglib2 or other components would like to use algorithms to
+>>> construct things like NativeImg and RegionOfInterest. How do we manage
+>>> this? It sure would be nice if imglib2 and imglib2-algorithms were
+>>> interdependent. If we're not going to allow that, I'll probably
+>>> implement the composite ROI in imglib2-algorithms and I'll wait until
+>>> imglib2-algorithms to be completed before I use composite ROIs in ImageJ
+>>> 2.0.
+>>> 
+>>> I'm probably going to do the first for the fun of it, the legacy ROI
+>>> code will need it, need a break from the GUI stuff and this will be
+>>> refreshing. Tell me what you all think.
+>>> 
+>>> --Lee
+>>> 
+>>> _______________________________________________
+>>> ImageJ-devel mailing list
+>>> ImageJ-devel at imagejdev.org
+>>> http://imagejdev.org/mailman/listinfo/imagej-devel
+>> 
+>> 
+>> _______________________________________________
+>> ImageJ-devel mailing list
+>> ImageJ-devel at imagejdev.org
+>> http://imagejdev.org/mailman/listinfo/imagej-devel
+> 
+> 
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+
+
+
+**************************
+Wellcome Trust Centre for Gene Regulation & Expression
+College of Life Sciences
+MSI/WTB/JBC Complex
+University of Dundee
+Dow Street
+Dundee  DD1 5EH
+United Kingdom
+
+phone (01382) 385819
+Intl phone:  44 1382 385819 
+FAX   (01382) 388072 
+email: jason at lifesci.dundee.ac.uk
+
+Lab Page: http://gre.lifesci.dundee.ac.uk/staff/jason_swedlow.html
+Open Microscopy Environment: http://openmicroscopy.org
+**************************
+
+The University of Dundee is a Scottish Registered Charity, No. SC015096.
+
+
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110621/1ba3b482/attachment.html>
+
+From ctrueden at wisc.edu  Wed Jun 22 12:30:20 2011
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Wed, 22 Jun 2011 12:30:20 -0500
+Subject: [ImageJ-devel] ImageJ2 and OME ROI models
+Message-ID: <BANLkTim6xpOXy+Dp8zZWivEKCj8=gkm0_A@mail.gmail.com>
+
+Hi Jason,
+
+Thanks for spurring this discussion. I agree that having a single model for
+ROIs, or at least extremely compatible models, would be the best thing.
+
+First of all, please realize that the earlier discussion was about
+implementation of ROIs in code, rather than modelling. Specifically, we need
+the ImgLib2 library (the foundation of the ImageJ2 data model) to support
+ROIs. All this talk of KD-trees and hyperrectangle searches is regarding how
+best to support the model using data structures. We want to be able to do
+things like iterate over all image pixels within a ROI, for which AFAIK
+there is no OME reference library. Hopefully ImageJ2/ImgLib2 will help
+provide such functionality. Perhaps there is something in OMERO.server or
+OMERO.insight that provides such abilities, but my understanding is that
+these sorts of features are not exposed as (nor intended to be) standalone
+modules for use with other applications. (Though perhaps we could
+collaborate on something like that!)
+
+Lee wrote some proof of concept adapter classes that translate between
+ImgLib2/ImageJ2 RegionOfInterest objects and OME-XML ROI model objects (as
+defined in ome-xml.jar):
+
+
+http://dev.imagejdev.org/trac/imagej/browser/trunk/core/roi/src/main/java/imagej/roi/omero?rev=2612
+
+At the moment this work is not part of the latest trunk, but we will explore
+it further later so that ImageJ can read/write ROIs from/to OME-XML. (And
+something similar will likely work for reading/writing from/to an OMERO
+server.)
+
+Regarding the definition of the ImageJ2 ROI model, our first priority is to
+support everything that ImageJ1 supports. Fortunately, there is very strong
+(though not perfect) overlap between OME and ImageJ1 ROIs. As I said above,
+it should be straightforward to adapt them between each other.
+
+If you feel adaptation is not sufficient and would like for us to co-develop
+a single unified ROI model, we could attempt it. However, my intuition is
+that it might be extremely difficult?recall our many discussions at past OME
+meetings and how we never fully came to a consensus even then. We would
+probably need to formalize such a project, meet in person more often, define
+the model as separate from OME-XML as a whole, and have a reference library
+for working with ROIs at various levels (data, display, etc.).
+
+A related issue: when it comes to very general standards and foundations for
+imaging software, I think we need to move beyond the name "Open Microscopy
+Environment." The ImageJ project is broader than just microscopy, being used
+by scientists of widely varying disciplines, and we need to respect that.
+One idea I mentioned to Josh is to use a "backronym" such as "Open Metadata
+Environment" (though Josh pointed out that is probably *too* broad) to keep
+the term "OME" while expanding its meaning beyond microscopy, as we have
+certainly been working to do technically.
+
+Another thing that would make sense from a technical standpoint would be to
+split the OME-XML schema in half: have a base schema for describing image
+pixel structure, and an acquisition portion that is more microscopy and/or
+life sciences specific. I'm not sure what the best place(s) to divide it
+would be. However, as things stand there are some issues with ImageJ2 saving
+as OME-TIFF by default even for non-microscopy images. There are quite a few
+microscopy-driven design considerations in the schema right now, such as
+implicit units. E.g., if ImageJ saves a calibrated photo of a satellite
+image as OME-TIFF, storing the spatial calibration as microns per pixel,
+rather than e.g. meters per pixel, is awkward.
+
+Lately Kevin and I have been discussing how to improve Bio-Formats to
+include support for metadata models beyond OME-XML?or to put it another way,
+expand OME-XML beyond microscopy. The issue is a bit semantic, but
+regardless we are all working to create broadly useful tools for scientific
+imaging, and these growing pains merit further discussion.
+
+Regards,
+Curtis
+
+On Tue, Jun 21, 2011 at 1:52 PM, Jason Swedlow
+<jason at lifesci.dundee.ac.uk>wrote:
+
+> Hi Gang-
+>
+> Sorry to do this again-
+>
+> For ROIs, see
+>
+> http://www.openmicroscopy.org/Schemas/ROI/2011-06/ROI.xsd
+>
+> or a more readable version is at:
+>
+>
+> http://git.openmicroscopy.org/src/develop/components/specification/Documentation/Generated/OME-2011-06/ome.html
+>
+> (you'll have to scroll down a ways to the ROI schema).
+>
+>  If we want to achieve the interoperability that we often discuss, defining
+> a single model for ROIs would help.  Tell us what you don't like and we'll
+> work on it.  If you want to reject this, that's fine, and really not a
+> problem.  If you can't map what we have to imglib2, then we need to scratch
+> our heads and figure out how we might make that work.   There is no pretense
+> that our existing model is perfect.  If you tell us what's broken, we'll
+> work hard to fix it.
+>
+> If you come up with a new ROI model, let us know, and we'll do the
+> translation work (more work for the Bio-Formats developers, known to you as
+> Melissa and Curtis).  Of course, if we all used the same one, or even worked
+> to make the translation easy, wouldn't that be great?!?!?!
+>
+> Cheers,
+>
+> Jason
+>
+>
+> On 21 Jun 2011, at 19:17, Lee Kamentsky wrote:
+>
+> Thanks Tobias,
+> I ended up not using the KD tree for my composite ROI, but I wrote a
+> hyperrectangle search class, net.imglib2.algorithm.kdtree.VolumetricSearch,
+> anyway. I'm looking at net.imglib2.collection.KDTree and the searches in
+> net.imglib2.neighborsearch and I can see those are better places for it now.
+> I'll see if I can find some time to reimplement it there.
+>
+> But, the one in algorithms works - it's pretty cool to have a database of
+> N-dimensional intervals that you can search in log time.
+>
+> --Lee
+>
+> On 6/21/2011 1:21 PM, Tobias Pietzsch wrote:
+>
+> On 06/10/2011 03:33 PM, Lee Kamentsky wrote:
+>
+> Hi all, esp Dscho & Stephan P. I'm thinking of doing a composite region
+>
+> of interest which would be a collection any other kinds of region of
+>
+> interest. I'm thinking that the most efficient way to do this is to use
+>
+> a K-D tree to store references to the sub-ROIs: Wikipedia says that you
+>
+> can search for hyper-rectangles (the bounds of the ROIs) by storing the
+>
+> minimum and maximum extents as a 2N-d object in the hyperplane and then
+>
+> the search for rectangles containing a point becomes a range search in
+>
+> the 2N-d space for all points on one side of a hyperplane.
+>
+>
+> So 2 questions:
+>
+>
+> 1) Could I add a leaf that holds onto a real interval,
+>
+> "RealntervalLeaf<I extends RealInterval>", a search method that returns
+>
+> all points on one side of a hyperplane (T point, Node<T> node, bool []
+>
+> above = false to retrieve nodes less than point in the given dimension,
+>
+> true to retrieve nodes greater than point in the given dimension) and
+>
+> some wrapper class that purports to be a database of "I extends
+>
+> RealInterval" with a simple interface for retrieving all RealIntervals
+>
+> containing a point?
+>
+>
+>
+> Hi Lee,
+>
+>
+> I'm a bit out of the loop right now, just getting back into imglib
+> development. I don't know if this has been discussed in the Skype channel or
+> something, but...
+>
+>
+> Did you consider using the new KDTree implementation in imglib2 core,
+> instead of the net.imglib2.algorithm.kdtree?
+>
+>
+> The new KDTree does not require it's T to be a Leaf< T >
+>
+> and there are implementations of the
+> net.imglib2.neighborsearch.*NeighborSearch< T > interfaces.
+>
+>
+> It uses exact median-finding algorithm for constructing the tree
+>
+> (instead of the approximate one in net.imglib2.algorithm.kdtree).
+>
+>
+> It is also faster, if I remember correctly.
+>
+>
+> best regards,
+>
+> Tobias
+>
+>
+>
+>
+> 2) imglib2-algorithms is really useful. There are going to be other
+>
+> cases where imglib2 or other components would like to use algorithms to
+>
+> construct things like NativeImg and RegionOfInterest. How do we manage
+>
+> this? It sure would be nice if imglib2 and imglib2-algorithms were
+>
+> interdependent. If we're not going to allow that, I'll probably
+>
+> implement the composite ROI in imglib2-algorithms and I'll wait until
+>
+> imglib2-algorithms to be completed before I use composite ROIs in ImageJ
+>
+> 2.0.
+>
+>
+> I'm probably going to do the first for the fun of it, the legacy ROI
+>
+> code will need it, need a break from the GUI stuff and this will be
+>
+> refreshing. Tell me what you all think.
+>
+>
+> --Lee
+>
+>
+> _______________________________________________
+>
+> ImageJ-devel mailing list
+>
+> ImageJ-devel at imagejdev.org
+>
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+>
+>
+> _______________________________________________
+>
+> ImageJ-devel mailing list
+>
+> ImageJ-devel at imagejdev.org
+>
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+>
+>
+>
+> **************************
+> Wellcome Trust Centre for Gene Regulation & Expression
+> College of Life Sciences
+> MSI/WTB/JBC Complex
+> University of Dundee
+> Dow Street
+> Dundee  DD1 5EH
+> United Kingdom
+>
+> phone (01382) 385819
+> Intl phone:  44 1382 385819
+> FAX   (01382) 388072
+> email: jason at lifesci.dundee.ac.uk
+>
+> Lab Page: http://gre.lifesci.dundee.ac.uk/staff/jason_swedlow.html
+> Open Microscopy Environment: http://openmicroscopy.org
+> **************************
+>
+> The University of Dundee is a Scottish Registered Charity, No. SC015096.
+>
+>
+>
+>
+> _______________________________________________
+> ome-nitpick mailing list
+> ome-nitpick at lists.openmicroscopy.org.uk
+> http://lists.openmicroscopy.org.uk/mailman/listinfo/ome-nitpick
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110622/ebd488de/attachment.html>
+
+From jason at lifesci.dundee.ac.uk  Wed Jun 22 17:49:42 2011
+From: jason at lifesci.dundee.ac.uk (Jason Swedlow)
+Date: Wed, 22 Jun 2011 23:49:42 +0100
+Subject: [ImageJ-devel] ImageJ2 and OME ROI models
+In-Reply-To: <BANLkTim6xpOXy+Dp8zZWivEKCj8=gkm0_A@mail.gmail.com>
+References: <BANLkTim6xpOXy+Dp8zZWivEKCj8=gkm0_A@mail.gmail.com>
+Message-ID: <84337521-62DC-4819-A951-C6ECA83F27AD@lifesci.dundee.ac.uk>
+
+Curtis et al-
+
+Thanks very much for this.
+
+As a Preamble:
+
+1.  We can probably agree that email threads about standards are about as much fun as pounding nails into one's own head.
+
+2.  Emails that say "use my standard" are about as helpful as emails saying "wear my socks".
+
+In response:
+
+I want to discuss with everyone one on this side, but I think there is general agreement with all the points you are making.  The model ImageJ uses for ROIs (or anything else) must deliver utility for ImageJ devs and users-- that's its first priority.  I think the major point is that we should build and implement these tools mindful of common and interoperable use.  That sounds like what is happening, and Lee's work to date sounds great. We'll look at it and report back.  In any case, I doubt we can completely avoid adapting one to another.  I believe we should treat the willingness to consider and plan for adaptability as a good thing, and the basis for future cooperation and collaboration.
+
+On the wider issue of broadening OME's scope, that is happening anyway, and will be done because it is useful and for no other reason.  We'll likely agree to keep "OME", and we can decide what M stands for later (maybe "Muhahahahahaha!").
+
+The "split the schema" suggestion is interesting.  We were discussing this today.  We have EM models, SPIM models, EHR models, etc. all coming in.  So we need to understand how to do this.  Not a small task, and doubtless, enough work to keep us busy.
+
+For the moment, we should focus on getting the work done, and getting implementations that show these models working.  We'll start cogitating on the split schema issue, using these lists.
+
+Cheers,
+
+Jason
+
+On 22 Jun 2011, at 18:30, Curtis Rueden wrote:
+
+> Hi Jason,
+> 
+> Thanks for spurring this discussion. I agree that having a single model for ROIs, or at least extremely compatible models, would be the best thing.
+> 
+> First of all, please realize that the earlier discussion was about implementation of ROIs in code, rather than modelling. Specifically, we need the ImgLib2 library (the foundation of the ImageJ2 data model) to support ROIs. All this talk of KD-trees and hyperrectangle searches is regarding how best to support the model using data structures. We want to be able to do things like iterate over all image pixels within a ROI, for which AFAIK there is no OME reference library. Hopefully ImageJ2/ImgLib2 will help provide such functionality. Perhaps there is something in OMERO.server or OMERO.insight that provides such abilities, but my understanding is that these sorts of features are not exposed as (nor intended to be) standalone modules for use with other applications. (Though perhaps we could collaborate on something like that!)
+> 
+> Lee wrote some proof of concept adapter classes that translate between ImgLib2/ImageJ2 RegionOfInterest objects and OME-XML ROI model objects (as defined in ome-xml.jar):
+> 
+>   http://dev.imagejdev.org/trac/imagej/browser/trunk/core/roi/src/main/java/imagej/roi/omero?rev=2612
+> 
+> At the moment this work is not part of the latest trunk, but we will explore it further later so that ImageJ can read/write ROIs from/to OME-XML. (And something similar will likely work for reading/writing from/to an OMERO server.)
+> 
+> Regarding the definition of the ImageJ2 ROI model, our first priority is to support everything that ImageJ1 supports. Fortunately, there is very strong (though not perfect) overlap between OME and ImageJ1 ROIs. As I said above, it should be straightforward to adapt them between each other.
+> 
+> If you feel adaptation is not sufficient and would like for us to co-develop a single unified ROI model, we could attempt it. However, my intuition is that it might be extremely difficult?recall our many discussions at past OME meetings and how we never fully came to a consensus even then. We would probably need to formalize such a project, meet in person more often, define the model as separate from OME-XML as a whole, and have a reference library for working with ROIs at various levels (data, display, etc.).
+> 
+> A related issue: when it comes to very general standards and foundations for imaging software, I think we need to move beyond the name "Open Microscopy Environment." The ImageJ project is broader than just microscopy, being used by scientists of widely varying disciplines, and we need to respect that. One idea I mentioned to Josh is to use a "backronym" such as "Open Metadata Environment" (though Josh pointed out that is probably *too* broad) to keep the term "OME" while expanding its meaning beyond microscopy, as we have certainly been working to do technically.
+> 
+> Another thing that would make sense from a technical standpoint would be to split the OME-XML schema in half: have a base schema for describing image pixel structure, and an acquisition portion that is more microscopy and/or life sciences specific. I'm not sure what the best place(s) to divide it would be. However, as things stand there are some issues with ImageJ2 saving as OME-TIFF by default even for non-microscopy images. There are quite a few microscopy-driven design considerations in the schema right now, such as implicit units. E.g., if ImageJ saves a calibrated photo of a satellite image as OME-TIFF, storing the spatial calibration as microns per pixel, rather than e.g. meters per pixel, is awkward.
+> 
+> Lately Kevin and I have been discussing how to improve Bio-Formats to include support for metadata models beyond OME-XML?or to put it another way, expand OME-XML beyond microscopy. The issue is a bit semantic, but regardless we are all working to create broadly useful tools for scientific imaging, and these growing pains merit further discussion.
+> 
+> Regards,
+> Curtis
+> 
+> On Tue, Jun 21, 2011 at 1:52 PM, Jason Swedlow <jason at lifesci.dundee.ac.uk> wrote:
+> Hi Gang-
+> 
+> Sorry to do this again-
+> 
+> For ROIs, see
+> 
+> http://www.openmicroscopy.org/Schemas/ROI/2011-06/ROI.xsd
+> 
+> or a more readable version is at:
+> 
+> http://git.openmicroscopy.org/src/develop/components/specification/Documentation/Generated/OME-2011-06/ome.html
+> 
+> (you'll have to scroll down a ways to the ROI schema).
+> 
+>  If we want to achieve the interoperability that we often discuss, defining a single model for ROIs would help.  Tell us what you don't like and we'll work on it.  If you want to reject this, that's fine, and really not a problem.  If you can't map what we have to imglib2, then we need to scratch our heads and figure out how we might make that work.   There is no pretense that our existing model is perfect.  If you tell us what's broken, we'll work hard to fix it. 
+> 
+> If you come up with a new ROI model, let us know, and we'll do the translation work (more work for the Bio-Formats developers, known to you as Melissa and Curtis).  Of course, if we all used the same one, or even worked to make the translation easy, wouldn't that be great?!?!?!
+> 
+> Cheers,
+> 
+> Jason
+> 
+> 
+> On 21 Jun 2011, at 19:17, Lee Kamentsky wrote:
+> 
+>> Thanks Tobias,
+>> I ended up not using the KD tree for my composite ROI, but I wrote a hyperrectangle search class, net.imglib2.algorithm.kdtree.VolumetricSearch, anyway. I'm looking at net.imglib2.collection.KDTree and the searches in net.imglib2.neighborsearch and I can see those are better places for it now. I'll see if I can find some time to reimplement it there.
+>> 
+>> But, the one in algorithms works - it's pretty cool to have a database of N-dimensional intervals that you can search in log time.
+>> 
+>> --Lee
+>> 
+>> On 6/21/2011 1:21 PM, Tobias Pietzsch wrote:
+>>> On 06/10/2011 03:33 PM, Lee Kamentsky wrote:
+>>>> Hi all, esp Dscho & Stephan P. I'm thinking of doing a composite region
+>>>> of interest which would be a collection any other kinds of region of
+>>>> interest. I'm thinking that the most efficient way to do this is to use
+>>>> a K-D tree to store references to the sub-ROIs: Wikipedia says that you
+>>>> can search for hyper-rectangles (the bounds of the ROIs) by storing the
+>>>> minimum and maximum extents as a 2N-d object in the hyperplane and then
+>>>> the search for rectangles containing a point becomes a range search in
+>>>> the 2N-d space for all points on one side of a hyperplane.
+>>>> 
+>>>> So 2 questions:
+>>>> 
+>>>> 1) Could I add a leaf that holds onto a real interval,
+>>>> "RealntervalLeaf<I extends RealInterval>", a search method that returns
+>>>> all points on one side of a hyperplane (T point, Node<T> node, bool []
+>>>> above = false to retrieve nodes less than point in the given dimension,
+>>>> true to retrieve nodes greater than point in the given dimension) and
+>>>> some wrapper class that purports to be a database of "I extends
+>>>> RealInterval" with a simple interface for retrieving all RealIntervals
+>>>> containing a point?
+>>> 
+>>> 
+>>> Hi Lee,
+>>> 
+>>> I'm a bit out of the loop right now, just getting back into imglib development. I don't know if this has been discussed in the Skype channel or something, but...
+>>> 
+>>> Did you consider using the new KDTree implementation in imglib2 core, instead of the net.imglib2.algorithm.kdtree?
+>>> 
+>>> The new KDTree does not require it's T to be a Leaf< T >
+>>> and there are implementations of the net.imglib2.neighborsearch.*NeighborSearch< T > interfaces.
+>>> 
+>>> It uses exact median-finding algorithm for constructing the tree
+>>> (instead of the approximate one in net.imglib2.algorithm.kdtree).
+>>> 
+>>> It is also faster, if I remember correctly.
+>>> 
+>>> best regards,
+>>> Tobias
+>>> 
+>>> 
+>>>> 
+>>>> 2) imglib2-algorithms is really useful. There are going to be other
+>>>> cases where imglib2 or other components would like to use algorithms to
+>>>> construct things like NativeImg and RegionOfInterest. How do we manage
+>>>> this? It sure would be nice if imglib2 and imglib2-algorithms were
+>>>> interdependent. If we're not going to allow that, I'll probably
+>>>> implement the composite ROI in imglib2-algorithms and I'll wait until
+>>>> imglib2-algorithms to be completed before I use composite ROIs in ImageJ
+>>>> 2.0.
+>>>> 
+>>>> I'm probably going to do the first for the fun of it, the legacy ROI
+>>>> code will need it, need a break from the GUI stuff and this will be
+>>>> refreshing. Tell me what you all think.
+>>>> 
+>>>> --Lee
+>>>> 
+>>>> _______________________________________________
+>>>> ImageJ-devel mailing list
+>>>> ImageJ-devel at imagejdev.org
+>>>> http://imagejdev.org/mailman/listinfo/imagej-devel
+>>> 
+>>> 
+>>> _______________________________________________
+>>> ImageJ-devel mailing list
+>>> ImageJ-devel at imagejdev.org
+>>> http://imagejdev.org/mailman/listinfo/imagej-devel
+>> 
+>> 
+>> _______________________________________________
+>> ImageJ-devel mailing list
+>> ImageJ-devel at imagejdev.org
+>> http://imagejdev.org/mailman/listinfo/imagej-devel
+> 
+> 
+> 
+> **************************
+> Wellcome Trust Centre for Gene Regulation & Expression
+> College of Life Sciences
+> MSI/WTB/JBC Complex
+> University of Dundee
+> Dow Street
+> Dundee  DD1 5EH
+> United Kingdom
+> 
+> phone (01382) 385819
+> Intl phone:  44 1382 385819 
+> FAX   (01382) 388072 
+> email: jason at lifesci.dundee.ac.uk
+> 
+> Lab Page: http://gre.lifesci.dundee.ac.uk/staff/jason_swedlow.html
+> Open Microscopy Environment: http://openmicroscopy.org
+> **************************
+> 
+> The University of Dundee is a Scottish Registered Charity, No. SC015096.
+> 
+> 
+> 
+> 
+> _______________________________________________
+> ome-nitpick mailing list
+> ome-nitpick at lists.openmicroscopy.org.uk
+> http://lists.openmicroscopy.org.uk/mailman/listinfo/ome-nitpick
+> 
+> 
+
+
+
+**************************
+Wellcome Trust Centre for Gene Regulation & Expression
+College of Life Sciences
+MSI/WTB/JBC Complex
+University of Dundee
+Dow Street
+Dundee  DD1 5EH
+United Kingdom
+
+phone (01382) 385819
+Intl phone:  44 1382 385819 
+FAX   (01382) 388072 
+email: jason at lifesci.dundee.ac.uk
+
+Lab Page: http://gre.lifesci.dundee.ac.uk/staff/jason_swedlow.html
+Open Microscopy Environment: http://openmicroscopy.org
+**************************
+
+The University of Dundee is a Scottish Registered Charity, No. SC015096.
+
+
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110622/8ec0d72e/attachment.html>
+
+From ctrueden at wisc.edu  Wed Jun 22 18:20:34 2011
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Wed, 22 Jun 2011 18:20:34 -0500
+Subject: [ImageJ-devel] Broken legacy layer
+Message-ID: <BANLkTikJB=Ek4gg=FBLFO8-37dbfyEL8=Q@mail.gmail.com>
+
+Hi ImageJ2 developers,
+
+I accidentally pushed a bunch of local commits to trunk this afternoon,
+which has broken the legacy layer. The build is working, but no legacy
+plugins will behave properly. So if you need a working legacy layer for your
+development, you may want to wait on updating for the time being.
+
+My first priority is to get things working again, and I hope to have it
+fixed by the end of the week. I will be out of the office tomorrow but will
+work on it as much as I can.
+
+For those curious: I was using git-svn and had created a local branch. After
+making a few local commits, I wanted to push them to an remote branch on the
+SVN server. I thought it would be as simple as "git svn dcommit" but
+unfortunately that sends them to trunk, hence the current predicament.
+Nonetheless, git-svn is pretty nice!
+
+I'll keep y'all posted on legacy layer progress.
+
+Regards,
+Curtis
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110622/f77a01c6/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Wed Jun 22 19:04:47 2011
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Thu, 23 Jun 2011 02:04:47 +0200 (CEST)
+Subject: [ImageJ-devel] ImageJ2 and OME ROI models
+In-Reply-To: <84337521-62DC-4819-A951-C6ECA83F27AD@lifesci.dundee.ac.uk>
+References: <BANLkTim6xpOXy+Dp8zZWivEKCj8=gkm0_A@mail.gmail.com>
+	<84337521-62DC-4819-A951-C6ECA83F27AD@lifesci.dundee.ac.uk>
+Message-ID: <alpine.DEB.1.00.1106230202380.21756@bonsai2>
+
+Hi Jason,
+
+On Wed, 22 Jun 2011, Jason Swedlow wrote:
+
+> I want to discuss with everyone one on this side, but I think there is 
+> general agreement with all the points you are making.  The model ImageJ 
+> uses for ROIs (or anything else) must deliver utility for ImageJ devs 
+> and users-- that's its first priority.  I think the major point is that 
+> we should build and implement these tools mindful of common and 
+> interoperable use.  That sounds like what is happening, and Lee's work 
+> to date sounds great. We'll look at it and report back.  In any case, I 
+> doubt we can completely avoid adapting one to another.  I believe we 
+> should treat the willingness to consider and plan for adaptability as a 
+> good thing, and the basis for future cooperation and collaboration.
+
+My experience is that when people are forced to adapt two paradigms into 
+one, either the outcome is better than any of the previous attempts, or 
+the people do not speak to each other anymore :-)
+
+Seriously again, I think that we're on a good track here, because what Lee 
+does is indeed the implementation side of something that is pretty well 
+defined in the OME standard.
+
+So all is good.
+
+> On the wider issue of broadening OME's scope, that is happening anyway, 
+> and will be done because it is useful and for no other reason.  We'll 
+> likely agree to keep "OME", and we can decide what M stands for later 
+> (maybe "Muhahahahahaha!").
+
+How about "Meh!"?
+
+:-)
+
+Ciao,
+Johannes
+
+
+
+From jason at lifesci.dundee.ac.uk  Thu Jun 23 05:04:54 2011
+From: jason at lifesci.dundee.ac.uk (Jason Swedlow)
+Date: Thu, 23 Jun 2011 11:04:54 +0100
+Subject: [ImageJ-devel] ImageJ2 and OME ROI models
+In-Reply-To: <alpine.DEB.1.00.1106230202380.21756@bonsai2>
+References: <BANLkTim6xpOXy+Dp8zZWivEKCj8=gkm0_A@mail.gmail.com>
+	<84337521-62DC-4819-A951-C6ECA83F27AD@lifesci.dundee.ac.uk>
+	<alpine.DEB.1.00.1106230202380.21756@bonsai2>
+Message-ID: <E8ED2724-925C-4890-9A52-2C2E129D16EF@lifesci.dundee.ac.uk>
+
+All cool.  A bottle of whisky for the best suggestion for "M".
+
+Lee, if there's anything you want the OME team to look at, just shout.  I think most are now on imagejdev.
+
+Thanks again.
+
+Cheers,
+
+Jason
+
+On 23 Jun 2011, at 01:04, Johannes Schindelin wrote:
+
+> Hi Jason,
+> 
+> On Wed, 22 Jun 2011, Jason Swedlow wrote:
+> 
+>> I want to discuss with everyone one on this side, but I think there is 
+>> general agreement with all the points you are making.  The model ImageJ 
+>> uses for ROIs (or anything else) must deliver utility for ImageJ devs 
+>> and users-- that's its first priority.  I think the major point is that 
+>> we should build and implement these tools mindful of common and 
+>> interoperable use.  That sounds like what is happening, and Lee's work 
+>> to date sounds great. We'll look at it and report back.  In any case, I 
+>> doubt we can completely avoid adapting one to another.  I believe we 
+>> should treat the willingness to consider and plan for adaptability as a 
+>> good thing, and the basis for future cooperation and collaboration.
+> 
+> My experience is that when people are forced to adapt two paradigms into 
+> one, either the outcome is better than any of the previous attempts, or 
+> the people do not speak to each other anymore :-)
+> 
+> Seriously again, I think that we're on a good track here, because what Lee 
+> does is indeed the implementation side of something that is pretty well 
+> defined in the OME standard.
+> 
+> So all is good.
+> 
+>> On the wider issue of broadening OME's scope, that is happening anyway, 
+>> and will be done because it is useful and for no other reason.  We'll 
+>> likely agree to keep "OME", and we can decide what M stands for later 
+>> (maybe "Muhahahahahaha!").
+> 
+> How about "Meh!"?
+> 
+> :-)
+> 
+> Ciao,
+> Johannes
+
+
+
+**************************
+Wellcome Trust Centre for Gene Regulation & Expression
+College of Life Sciences
+MSI/WTB/JBC Complex
+University of Dundee
+Dow Street
+Dundee  DD1 5EH
+United Kingdom
+
+phone (01382) 385819
+Intl phone:  44 1382 385819 
+FAX   (01382) 388072 
+email: jason at lifesci.dundee.ac.uk
+
+Lab Page: http://gre.lifesci.dundee.ac.uk/staff/jason_swedlow.html
+Open Microscopy Environment: http://openmicroscopy.org
+**************************
+
+The University of Dundee is a Scottish Registered Charity, No. SC015096.
+
+
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110623/de207521/attachment.html>
+
+From leek at broadinstitute.org  Thu Jun 23 07:26:08 2011
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Thu, 23 Jun 2011 08:26:08 -0400
+Subject: [ImageJ-devel] ImageJ2 and OME ROI models
+In-Reply-To: <E8ED2724-925C-4890-9A52-2C2E129D16EF@lifesci.dundee.ac.uk>
+References: <BANLkTim6xpOXy+Dp8zZWivEKCj8=gkm0_A@mail.gmail.com>	<84337521-62DC-4819-A951-C6ECA83F27AD@lifesci.dundee.ac.uk>	<alpine.DEB.1.00.1106230202380.21756@bonsai2>
+	<E8ED2724-925C-4890-9A52-2C2E129D16EF@lifesci.dundee.ac.uk>
+Message-ID: <4e0330e1.4858dc0a.4964.0cae@mx.google.com>
+
+Thanks, I suppose if you wanted to look at how things are in the code 
+base, I'd appreciate it, but it's certainly not necessary. I've been 
+following the discussion and have kept silent mostly because Curtis has 
+described the situation correctly. We designed the overlay / ROI 
+framework specifically with the OME schema in mind so that our overlays 
+could both serve as image annotations and n-dimensional delineations of 
+the space in which the image resides. Eventually, we should have full 
+support for all attributes in the OME model and for all shapes in the 
+standard and adapters that allow their creation and editing.
+
+--Lee
+
+On 6/23/2011 6:04 AM, Jason Swedlow wrote:
+> All cool.  A bottle of whisky for the best suggestion for "M".
+>
+> Lee, if there's anything you want the OME team to look at, just shout. 
+>  I think most are now on imagejdev.
+>
+> Thanks again.
+>
+> Cheers,
+>
+> Jason
+>
+> On 23 Jun 2011, at 01:04, Johannes Schindelin wrote:
+>
+>> Hi Jason,
+>>
+>> On Wed, 22 Jun 2011, Jason Swedlow wrote:
+>>
+>>> I want to discuss with everyone one on this side, but I think there is
+>>> general agreement with all the points you are making.  The model ImageJ
+>>> uses for ROIs (or anything else) must deliver utility for ImageJ devs
+>>> and users-- that's its first priority.  I think the major point is that
+>>> we should build and implement these tools mindful of common and
+>>> interoperable use.  That sounds like what is happening, and Lee's work
+>>> to date sounds great. We'll look at it and report back.  In any case, I
+>>> doubt we can completely avoid adapting one to another.  I believe we
+>>> should treat the willingness to consider and plan for adaptability as a
+>>> good thing, and the basis for future cooperation and collaboration.
+>>
+>> My experience is that when people are forced to adapt two paradigms into
+>> one, either the outcome is better than any of the previous attempts, or
+>> the people do not speak to each other anymore :-)
+>>
+>> Seriously again, I think that we're on a good track here, because 
+>> what Lee
+>> does is indeed the implementation side of something that is pretty well
+>> defined in the OME standard.
+>>
+>> So all is good.
+>>
+>>> On the wider issue of broadening OME's scope, that is happening anyway,
+>>> and will be done because it is useful and for no other reason.  We'll
+>>> likely agree to keep "OME", and we can decide what M stands for later
+>>> (maybe "Muhahahahahaha!").
+>>
+>> How about "Meh!"?
+>>
+>> :-)
+>>
+>> Ciao,
+>> Johannes
+>
+>
+>
+> **************************
+> Wellcome Trust Centre for Gene Regulation & Expression
+> College of Life Sciences
+> MSI/WTB/JBC Complex
+> University of Dundee
+> Dow Street
+> Dundee  DD1 5EH
+> United Kingdom
+>
+> phone (01382) 385819
+> Intl phone:  44 1382 385819
+> FAX   (01382) 388072
+> email: jason at lifesci.dundee.ac.uk <mailto:jason at lifesci.dundee.ac.uk>
+>
+> Lab Page: http://gre.lifesci.dundee.ac.uk/staff/jason_swedlow.html
+> Open Microscopy Environment: http://openmicroscopy.org
+> **************************
+>
+> The University of Dundee is a Scottish Registered Charity, No. SC015096.
+>
+>
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110623/6585bff9/attachment.html>
+
+From gharris at mbl.edu  Thu Jun 23 11:55:34 2011
+From: gharris at mbl.edu (Grant B. Harris)
+Date: Thu, 23 Jun 2011 12:55:34 -0400
+Subject: [ImageJ-devel] EventBus issues.
+Message-ID: <4E037006.8070702@mbl.edu>
+
+I think EventBus can serve us well, but I have run into a serious issue 
+that demands that we move from EventBus version 1.2 to 1.4.
+
+Because "subscribers are called in the order in which they subscribed", 
+we cannot use the EventBus (1.2) in ways that we need.  If I have a 
+class which is watching things (say a ROI Manager or the Window menu 
+list of open displays) it's behavior depends on when it was subscribed.  
+I've been working on this for a week and I have not found a way to 
+manage this.  Fortunately I discovered that as of version 1.3 there is a 
+PrioritizedEventSubscriber  
+(http://www.jarvana.com/jarvana/view/org/bushe/eventbus/1.3/eventbus-1.3-javadoc.jar!/org/bushe/swing/event/Prioritized.html)  
+I think this is just what we need.
+
+(Using this priority mechanism may also eliminate the need for the 
+ObjectsUpdatedEvent that I added last week.)
+
+EventBus version 1.4 is here: 
+http://mvnrepository.com/artifact/org.bushe/eventbus/1.4
+
+We will need to change the Events framework a bit to add Prioritized 
+Event Subscription, but otherwise I don't think it will require any 
+refactoring except for the subscribers that need to set priority.
+
+-- Grant
+
+
+
+
+From gharris at mbl.edu  Thu Jun 23 11:58:13 2011
+From: gharris at mbl.edu (Grant B. Harris)
+Date: Thu, 23 Jun 2011 12:58:13 -0400
+Subject: [ImageJ-devel] EventBus issues.
+In-Reply-To: <4E037006.8070702@mbl.edu>
+References: <4E037006.8070702@mbl.edu>
+Message-ID: <4E0370A5.40009@mbl.edu>
+
+Ooops... My bad.  I thought we were using 1.2... We are already using 
+1.4.  But we need to change Events framework.  I'll take a stab at it today.
+-- Grant
+
+On 6/23/2011 12:55 PM, Grant B. Harris wrote:
+> I think EventBus can serve us well, but I have run into a serious 
+> issue that demands that we move from EventBus version 1.2 to 1.4.
+>
+> Because "subscribers are called in the order in which they 
+> subscribed", we cannot use the EventBus (1.2) in ways that we need.  
+> If I have a class which is watching things (say a ROI Manager or the 
+> Window menu list of open displays) it's behavior depends on when it 
+> was subscribed.  I've been working on this for a week and I have not 
+> found a way to manage this.  Fortunately I discovered that as of 
+> version 1.3 there is a PrioritizedEventSubscriber  
+> (http://www.jarvana.com/jarvana/view/org/bushe/eventbus/1.3/eventbus-1.3-javadoc.jar!/org/bushe/swing/event/Prioritized.html)  
+> I think this is just what we need.
+>
+> (Using this priority mechanism may also eliminate the need for the 
+> ObjectsUpdatedEvent that I added last week.)
+>
+> EventBus version 1.4 is here: 
+> http://mvnrepository.com/artifact/org.bushe/eventbus/1.4
+>
+> We will need to change the Events framework a bit to add Prioritized 
+> Event Subscription, but otherwise I don't think it will require any 
+> refactoring except for the subscribers that need to set priority.
+>
+> -- Grant
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+
+
+
+From leek at broadinstitute.org  Thu Jun 23 12:38:18 2011
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Thu, 23 Jun 2011 13:38:18 -0400
+Subject: [ImageJ-devel] EventBus issues.
+In-Reply-To: <4E0370A5.40009@mbl.edu>
+References: <4E037006.8070702@mbl.edu> <4E0370A5.40009@mbl.edu>
+Message-ID: <4e037a0c.6948340a.7d12.26c8@mx.google.com>
+
+IMHO - if you depend on order for events, there's a good chance you're 
+not doing something right. If you depend on order, I'm guessing that a 
+direct function call is the appropriate solution or that you are not 
+properly modeling what is really happening.
+
+I'm guessing that this has to do with the overlay manager - that you've 
+received an overlay created/deleted event and you don't know whether 
+it's in the overlay manager or not. There are two different events here:
+* an overlay object was created or deleted
+* the overlay manager added or removed an overlay
+so, the code that is experiencing difficulty should respond to the 
+appropriate event. If you have a user interface that shows the overlays 
+in the manager, it's the second event that you want. If I guessed wrong, 
+perhaps it follows the same pattern?
+
+--Lee
+
+On 6/23/2011 12:58 PM, Grant B. Harris wrote:
+> Ooops... My bad.  I thought we were using 1.2... We are already using 
+> 1.4.  But we need to change Events framework.  I'll take a stab at it 
+> today.
+> -- Grant
+>
+> On 6/23/2011 12:55 PM, Grant B. Harris wrote:
+>> I think EventBus can serve us well, but I have run into a serious 
+>> issue that demands that we move from EventBus version 1.2 to 1.4.
+>>
+>> Because "subscribers are called in the order in which they 
+>> subscribed", we cannot use the EventBus (1.2) in ways that we need.  
+>> If I have a class which is watching things (say a ROI Manager or the 
+>> Window menu list of open displays) it's behavior depends on when it 
+>> was subscribed.  I've been working on this for a week and I have not 
+>> found a way to manage this.  Fortunately I discovered that as of 
+>> version 1.3 there is a PrioritizedEventSubscriber  
+>> (http://www.jarvana.com/jarvana/view/org/bushe/eventbus/1.3/eventbus-1.3-javadoc.jar!/org/bushe/swing/event/Prioritized.html)  
+>> I think this is just what we need.
+>>
+>> (Using this priority mechanism may also eliminate the need for the 
+>> ObjectsUpdatedEvent that I added last week.)
+>>
+>> EventBus version 1.4 is here: 
+>> http://mvnrepository.com/artifact/org.bushe/eventbus/1.4
+>>
+>> We will need to change the Events framework a bit to add Prioritized 
+>> Event Subscription, but otherwise I don't think it will require any 
+>> refactoring except for the subscribers that need to set priority.
+>>
+>> -- Grant
+>>
+>>
+>> _______________________________________________
+>> ImageJ-devel mailing list
+>> ImageJ-devel at imagejdev.org
+>> http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+
+
+
+
+From ctrueden at wisc.edu  Thu Jun 30 13:27:12 2011
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Thu, 30 Jun 2011 13:27:12 -0500
+Subject: [ImageJ-devel] EventBus issues.
+In-Reply-To: <4e037a0c.6948340a.7d12.26c8@mx.google.com>
+References: <4E037006.8070702@mbl.edu> <4E0370A5.40009@mbl.edu>
+	<4e037a0c.6948340a.7d12.26c8@mx.google.com>
+Message-ID: <BANLkTi=4Wp8rKyx-eumnbqvcx7m7CkwU_A@mail.gmail.com>
+
+Hi Grant et. al,
+
+Grant and I discussed this further, and we agree that it is much preferred
+to avoid depending on or altering the order events are delivered to
+subscribers. It should always be possible to create additional event types
+to discriminate more finely, as Lee describes.
+
+So Grant, I propose that we remove the PriorityEventSubscriber stuff we
+added the other day, to avoid complexifying the events package. What do you
+think?
+
+-Curtis
+
+On Thu, Jun 23, 2011 at 12:38 PM, Lee Kamentsky <leek at broadinstitute.org>wrote:
+
+> IMHO - if you depend on order for events, there's a good chance you're not
+> doing something right. If you depend on order, I'm guessing that a direct
+> function call is the appropriate solution or that you are not properly
+> modeling what is really happening.
+>
+> I'm guessing that this has to do with the overlay manager - that you've
+> received an overlay created/deleted event and you don't know whether it's in
+> the overlay manager or not. There are two different events here:
+> * an overlay object was created or deleted
+> * the overlay manager added or removed an overlay
+> so, the code that is experiencing difficulty should respond to the
+> appropriate event. If you have a user interface that shows the overlays in
+> the manager, it's the second event that you want. If I guessed wrong,
+> perhaps it follows the same pattern?
+>
+> --Lee
+>
+>
+> On 6/23/2011 12:58 PM, Grant B. Harris wrote:
+>
+>> Ooops... My bad.  I thought we were using 1.2... We are already using 1.4.
+>>  But we need to change Events framework.  I'll take a stab at it today.
+>> -- Grant
+>>
+>> On 6/23/2011 12:55 PM, Grant B. Harris wrote:
+>>
+>>> I think EventBus can serve us well, but I have run into a serious issue
+>>> that demands that we move from EventBus version 1.2 to 1.4.
+>>>
+>>> Because "subscribers are called in the order in which they subscribed",
+>>> we cannot use the EventBus (1.2) in ways that we need.  If I have a class
+>>> which is watching things (say a ROI Manager or the Window menu list of open
+>>> displays) it's behavior depends on when it was subscribed.  I've been
+>>> working on this for a week and I have not found a way to manage this.
+>>>  Fortunately I discovered that as of version 1.3 there is a
+>>> PrioritizedEventSubscriber  (http://www.jarvana.com/**
+>>> jarvana/view/org/bushe/**eventbus/1.3/eventbus-1.3-**
+>>> javadoc.jar!/org/bushe/swing/**event/Prioritized.html<http://www.jarvana.com/jarvana/view/org/bushe/eventbus/1.3/eventbus-1.3-javadoc.jar%21/org/bushe/swing/event/Prioritized.html>)
+>>>  I think this is just what we need.
+>>>
+>>> (Using this priority mechanism may also eliminate the need for the
+>>> ObjectsUpdatedEvent that I added last week.)
+>>>
+>>> EventBus version 1.4 is here: http://mvnrepository.com/**
+>>> artifact/org.bushe/eventbus/1.**4<http://mvnrepository.com/artifact/org.bushe/eventbus/1.4>
+>>>
+>>> We will need to change the Events framework a bit to add Prioritized
+>>> Event Subscription, but otherwise I don't think it will require any
+>>> refactoring except for the subscribers that need to set priority.
+>>>
+>>> -- Grant
+>>>
+>>>
+>>> ______________________________**_________________
+>>> ImageJ-devel mailing list
+>>> ImageJ-devel at imagejdev.org
+>>> http://imagejdev.org/mailman/**listinfo/imagej-devel<http://imagejdev.org/mailman/listinfo/imagej-devel>
+>>>
+>>
+>> ______________________________**_________________
+>> ImageJ-devel mailing list
+>> ImageJ-devel at imagejdev.org
+>> http://imagejdev.org/mailman/**listinfo/imagej-devel<http://imagejdev.org/mailman/listinfo/imagej-devel>
+>>
+>
+>
+> ______________________________**_________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/**listinfo/imagej-devel<http://imagejdev.org/mailman/listinfo/imagej-devel>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110630/094924a5/attachment.html>
+
+From leek at broadinstitute.org  Thu Jun 30 13:29:04 2011
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Thu, 30 Jun 2011 14:29:04 -0400
+Subject: [ImageJ-devel] EventBus issues.
+In-Reply-To: <BANLkTi=4Wp8rKyx-eumnbqvcx7m7CkwU_A@mail.gmail.com>
+References: <4E037006.8070702@mbl.edu> <4E0370A5.40009@mbl.edu>
+	<4e037a0c.6948340a.7d12.26c8@mx.google.com>
+	<BANLkTi=4Wp8rKyx-eumnbqvcx7m7CkwU_A@mail.gmail.com>
+Message-ID: <4e0cc071.c27ee50a.155c.6fa8@mx.google.com>
+
+Thanks, hope this all helps to get it right.
+
+On 6/30/2011 2:27 PM, Curtis Rueden wrote:
+> Hi Grant et. al,
+>
+> Grant and I discussed this further, and we agree that it is much 
+> preferred to avoid depending on or altering the order events are 
+> delivered to subscribers. It should always be possible to create 
+> additional event types to discriminate more finely, as Lee describes.
+>
+> So Grant, I propose that we remove the PriorityEventSubscriber stuff 
+> we added the other day, to avoid complexifying the events package. 
+> What do you think?
+>
+> -Curtis
+>
+> On Thu, Jun 23, 2011 at 12:38 PM, Lee Kamentsky 
+> <leek at broadinstitute.org <mailto:leek at broadinstitute.org>> wrote:
+>
+>     IMHO - if you depend on order for events, there's a good chance
+>     you're not doing something right. If you depend on order, I'm
+>     guessing that a direct function call is the appropriate solution
+>     or that you are not properly modeling what is really happening.
+>
+>     I'm guessing that this has to do with the overlay manager - that
+>     you've received an overlay created/deleted event and you don't
+>     know whether it's in the overlay manager or not. There are two
+>     different events here:
+>     * an overlay object was created or deleted
+>     * the overlay manager added or removed an overlay
+>     so, the code that is experiencing difficulty should respond to the
+>     appropriate event. If you have a user interface that shows the
+>     overlays in the manager, it's the second event that you want. If I
+>     guessed wrong, perhaps it follows the same pattern?
+>
+>     --Lee
+>
+>
+>     On 6/23/2011 12:58 PM, Grant B. Harris wrote:
+>
+>         Ooops... My bad.  I thought we were using 1.2... We are
+>         already using 1.4.  But we need to change Events framework.
+>          I'll take a stab at it today.
+>         -- Grant
+>
+>         On 6/23/2011 12:55 PM, Grant B. Harris wrote:
+>
+>             I think EventBus can serve us well, but I have run into a
+>             serious issue that demands that we move from EventBus
+>             version 1.2 to 1.4.
+>
+>             Because "subscribers are called in the order in which they
+>             subscribed", we cannot use the EventBus (1.2) in ways that
+>             we need.  If I have a class which is watching things (say
+>             a ROI Manager or the Window menu list of open displays)
+>             it's behavior depends on when it was subscribed.  I've
+>             been working on this for a week and I have not found a way
+>             to manage this.  Fortunately I discovered that as of
+>             version 1.3 there is a PrioritizedEventSubscriber
+>              (http://www.jarvana.com/jarvana/view/org/bushe/eventbus/1.3/eventbus-1.3-javadoc.jar!/org/bushe/swing/event/Prioritized.html
+>             <http://www.jarvana.com/jarvana/view/org/bushe/eventbus/1.3/eventbus-1.3-javadoc.jar%21/org/bushe/swing/event/Prioritized.html>)
+>              I think this is just what we need.
+>
+>             (Using this priority mechanism may also eliminate the need
+>             for the ObjectsUpdatedEvent that I added last week.)
+>
+>             EventBus version 1.4 is here:
+>             http://mvnrepository.com/artifact/org.bushe/eventbus/1.4
+>
+>             We will need to change the Events framework a bit to add
+>             Prioritized Event Subscription, but otherwise I don't
+>             think it will require any refactoring except for the
+>             subscribers that need to set priority.
+>
+>             -- Grant
+>
+>
+>             _______________________________________________
+>             ImageJ-devel mailing list
+>             ImageJ-devel at imagejdev.org <mailto:ImageJ-devel at imagejdev.org>
+>             http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+>
+>         _______________________________________________
+>         ImageJ-devel mailing list
+>         ImageJ-devel at imagejdev.org <mailto:ImageJ-devel at imagejdev.org>
+>         http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+>
+>
+>     _______________________________________________
+>     ImageJ-devel mailing list
+>     ImageJ-devel at imagejdev.org <mailto:ImageJ-devel at imagejdev.org>
+>     http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+>
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110630/6e305e71/attachment.html>
+
+From gharris at mbl.edu  Thu Jun 30 15:27:30 2011
+From: gharris at mbl.edu (Grant B. Harris)
+Date: Thu, 30 Jun 2011 16:27:30 -0400
+Subject: [ImageJ-devel] EventBus issues.
+In-Reply-To: <BANLkTi=4Wp8rKyx-eumnbqvcx7m7CkwU_A@mail.gmail.com>
+References: <4E037006.8070702@mbl.edu>
+	<4E0370A5.40009@mbl.edu>	<4e037a0c.6948340a.7d12.26c8@mx.google.com>
+	<BANLkTi=4Wp8rKyx-eumnbqvcx7m7CkwU_A@mail.gmail.com>
+Message-ID: <4E0CDC32.20607@mbl.edu>
+
+Take it out for now... Pretty simple to re-add if we need it.
+
+-- Grant
+
+
+
+

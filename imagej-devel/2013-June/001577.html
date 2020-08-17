@@ -1,0 +1,151 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [fiji-devel] [imglib2] converters slow and	incorrect?
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20%5Bimglib2%5D%20converters%20slow%20and%0A%09incorrect%3F&In-Reply-To=%3CF1E9AC40-0EBC-481B-B3BC-E12CCE564E25%40mpi-cbg.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001576.html">
+   <LINK REL="Next"  HREF="001578.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [fiji-devel] [imglib2] converters slow and	incorrect?</H1>
+    <B>Tobias Pietzsch</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20%5Bimglib2%5D%20converters%20slow%20and%0A%09incorrect%3F&In-Reply-To=%3CF1E9AC40-0EBC-481B-B3BC-E12CCE564E25%40mpi-cbg.de%3E"
+       TITLE="[ImageJ-devel] [fiji-devel] [imglib2] converters slow and	incorrect?">pietzsch at mpi-cbg.de
+       </A><BR>
+    <I>Mon Jun 24 08:45:32 CDT 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001576.html">[ImageJ-devel] [fiji-devel] [imglib2] converters slow and	incorrect?
+</A></li>
+        <LI>Next message: <A HREF="001578.html">[ImageJ-devel] loading imageJ instance with full Services
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1577">[ date ]</a>
+              <a href="thread.html#1577">[ thread ]</a>
+              <a href="subject.html#1577">[ subject ]</a>
+              <a href="author.html#1577">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+I've been thinking more about the problem.
+
+When we scale down (for example 4-bit to 2-bit) I think it's clear what has to happen. Like described below, just throw away the lower 2 bits, i.e., multiply by 1/4.
+The scale factor 1/4 = 16/4 is obtained as the ratio of the *exclusive* max values (16 and 4) of the 4 and 2 bit range.
+If we assume exclusive range maxima, then the formula
+xB = minA + (xA - minA) / (maxA-minA) * (maxB-minB)
+does just the right thing for the quantized case.
+
+However, when scaling up, i.e., 2-bit to 4-bit, it looks a bit different.
+When we do as above we end up multiplying by 4, and map
+00 -&gt; 0000, 01 -&gt; 0100, 10 -&gt; 1000, 11 -&gt; 1100
+So we do not use the full range of the target interval.
+
+Here, it actually seems that we want to use the formula with *inclusive* range maxima.
+Then we get scale factor 5 = 15/3, and map
+00 -&gt; 0000, 01 -&gt; 0101, 10 -&gt; 1010, 11 -&gt; 1111
+which seems better to me.
+
+So, what do we do? Case distinction for scaling down and up?
+Is there any canonical right way to do this? Does anyone know?
+
+best regards,
+Tobias
+
+
+On Jun 24, 2013, at 2:00 PM, Tobias Pietzsch &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pietzsch at mpi-cbg.de</A>&gt; wrote:
+
+&gt;<i> Hi,
+</I>&gt;<i> 
+</I>&gt;<i> ok, sorry for the lurid subject line - it's not that bad, but I think the &quot;incorrect&quot; part is kind of important.
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> First regarding the slow (feel free to skip to this paragraph...). I played with unsigned short to ARGB conversion and noticed that it divides by scale factor for every pixel.
+</I>&gt;<i> I thought that maybe we could speed it up a little by replacing that with a multiplication. Amazingly even in a language as Java that is seemingly far removed from the CPU this actually matters.
+</I>&gt;<i> I have pushed a RealARGBConverterBenchmark which uses cursors and a converter to convert a UnsignedByteType image to ARGBType, <A HREF="https://github.com/imagej/imglib/commit/fbdf633a8b6d1c2894f9ef08eb3a642c010ca44e">https://github.com/imagej/imglib/commit/fbdf633a8b6d1c2894f9ef08eb3a642c010ca44e</A>
+</I>&gt;<i> Replacing the division to multiplication (and some minor tweaks) made the benchmark go from 28ms to 12ms, <A HREF="https://github.com/imagej/imglib/commit/5c6f40f0492bee2159eebe1ffb1e5b5f1bcc6a8d.">https://github.com/imagej/imglib/commit/5c6f40f0492bee2159eebe1ffb1e5b5f1bcc6a8d.</A> Amazing.
+</I>&gt;<i> Then I wanted to do that for all of the converters, got side-tracked, and as usual the 10-minute thing turned into 2 hours obsessing with details: is the converter math actually correct?
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> I think the linear range conversion in the Real*Converters is wrong.
+</I>&gt;<i> Mathematically, it is obviously simple. We have to intervals [minA, maxA] and [minB, maxB] and want to convert (linearly) xA to xB:
+</I>&gt;<i> xB = minA + (xA - minA) / (maxA-minA) * (maxB-minB)
+</I>&gt;<i> Thats exactly whats implemented in, for example, RealUnsignedByteConverter.
+</I>&gt;<i> Where it gets tricky is quantisation.
+</I>&gt;<i> 
+</I>&gt;<i> In RealUnsignedByteConverter:
+</I>&gt;<i> output.set( Math.min( 255, roundPositive( Math.max( 0, ( ( a - min ) / scale * 255.0 ) ) ) ) );
+</I>&gt;<i> Stripping the bounds check:
+</I>&gt;<i> output.set( roundPositive( ( a - min ) / scale * 255.0 ) );
+</I>&gt;<i> where roundPositive is just normal rounding, and scale = (maxA-minA) as above and 255.0 = (maxB-minB).
+</I>&gt;<i> I think, the roundPositive is supposed to take care of quantisation.
+</I>&gt;<i> 
+</I>&gt;<i> Now let's look a simplified example where we want to convert a 4-bit value into a 2-bit value.
+</I>&gt;<i> Intuitively I would expect the converter to perform a uniform re-binning. There are 16 4-bit values that need to be distributed into 4 2-bit bins.
+</I>&gt;<i> What should happen is that we keep the upper 2 bits of the 4-bit value, that is:
+</I>&gt;<i> 0000-0011 map to 00
+</I>&gt;<i> &#8230;
+</I>&gt;<i> 1100-1111 map to 11
+</I>&gt;<i> At least that is what my intuition tells me.
+</I>&gt;<i> Now if you go through the motions with the current converter logic you'll find that 1100 actually is mapped to 10. Likewise, 0011 is mapped to 01. There are 2 bins with 3 values each and 2 bins with 5. Not uniform.
+</I>&gt;<i> 
+</I>&gt;<i> I think this is wrong and I would fix it, but first I wanted to ask whether I'm missing something here?
+</I>&gt;<i> Especially, Stephan, maybe you can comment because you implemented current logic.
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> best regards,
+</I>&gt;<i> Tobias
+</I>&gt;<i> 
+</I>&gt;<i> -- 
+</I>&gt;<i> -- 
+</I>&gt;<i> Please avoid top-posting, and please make sure to reply-to-all!
+</I>&gt;<i>  
+</I>&gt;<i> Mailing list web interface: <A HREF="http://groups.google.com/group/fiji-devel">http://groups.google.com/group/fiji-devel</A>
+</I>&gt;<i>  
+</I>&gt;<i> --- 
+</I>&gt;<i> You received this message because you are subscribed to the Google Groups &quot;Fiji-devel&quot; group.
+</I>&gt;<i> To unsubscribe from this group and stop receiving emails from it, send an email to <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">fiji-devel+unsubscribe at googlegroups.com.</A>
+</I>&gt;<i> For more options, visit <A HREF="https://groups.google.com/groups/opt_out.">https://groups.google.com/groups/opt_out.</A>
+</I>&gt;<i>  
+</I>&gt;<i>  
+</I>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20130624/c9400aa9/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20130624/c9400aa9/attachment-0001.html</A>&gt;
+</PRE>
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001576.html">[ImageJ-devel] [fiji-devel] [imglib2] converters slow and	incorrect?
+</A></li>
+	<LI>Next message: <A HREF="001578.html">[ImageJ-devel] loading imageJ instance with full Services
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1577">[ date ]</a>
+              <a href="thread.html#1577">[ thread ]</a>
+              <a href="subject.html#1577">[ subject ]</a>
+              <a href="author.html#1577">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

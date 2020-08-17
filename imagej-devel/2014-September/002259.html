@@ -1,0 +1,223 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [fiji-devel] imglib2-neon project for runtime	bytecode transformation
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20imglib2-neon%20project%20for%20runtime%0A%09bytecode%20transformation&In-Reply-To=%3C6E2CCEE4-D9AC-455A-B830-8CBC0D20D49F%40mpi-cbg.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002254.html">
+   <LINK REL="Next"  HREF="002255.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [fiji-devel] imglib2-neon project for runtime	bytecode transformation</H1>
+    <B>Tobias Pietzsch</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20imglib2-neon%20project%20for%20runtime%0A%09bytecode%20transformation&In-Reply-To=%3C6E2CCEE4-D9AC-455A-B830-8CBC0D20D49F%40mpi-cbg.de%3E"
+       TITLE="[ImageJ-devel] [fiji-devel] imglib2-neon project for runtime	bytecode transformation">pietzsch at mpi-cbg.de
+       </A><BR>
+    <I>Tue Sep 30 12:35:27 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002254.html">[ImageJ-devel] imglib2-neon project for runtime bytecode	transformation
+</A></li>
+        <LI>Next message: <A HREF="002255.html">[ImageJ-devel] Fiji-javadoc failure
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2259">[ date ]</a>
+              <a href="thread.html#2259">[ thread ]</a>
+              <a href="subject.html#2259">[ subject ]</a>
+              <a href="author.html#2259">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi all,
+
+sorry, long (but hopefully informative) mail coming&#8230;
+
+On 25 Sep 2014, at 19:58, Johannes Schindelin &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">schindelin at wisc.edu</A>&gt; wrote:
+
+&gt;<i> It is great that you continue our conversation from the hackathon last
+</I>&gt;<i> year in Madison:
+</I>&gt;<i> 
+</I>&gt;<i> 	<A HREF="http://fiji.sc/2013-05-03_-_ImgLib2_Hackathon_in_Madison">http://fiji.sc/2013-05-03_-_ImgLib2_Hackathon_in_Madison</A>
+</I>&gt;<i> 
+</I>&gt;<i> I am very glad that you have returned to this work, with a promising
+</I>&gt;<i> initial foray into a general solution.
+</I>
+I need to make clear that (ex-)neon is not a continuation of our hackathon conversation. There is a crucial difference in scope. Let me quote the two relevant points from the above page:
+
+Performance is another issue, completely. Over the course of several experiments, I became convinced that we were wrong to rely on the JIT so much: it is okay for simple things, but for ever so slightly complicated things, we need a precompiler that knows what we really want to do. For example, just the mere fact should have taught us something that stand-alone FloatType instances *must* refer to their *single* float value as a 1-element float array *just so* that the JIT does not do an utterly bad job when we access single values as well as pixel values in an array.
+As a consequence of the findings regarding performance, I came up with a simple proof-of-concept that things could be made fast by using Javassist, a library for bytecode manipulation. We use this library extensively in ImageJ2 and Fiji already for just-in-time patching of, say, ImageJ1. It was a natural choice to turn to Javassist for trying to optimize ImgLib, too. Mind you, the example I made was very simple: it constructed a class working on ArrayImgs of FloatType directly, without even inspecting any code to know what to do, but instead hard-coding the &quot;+&quot; op. But it showed the way to how we could do things in the future: inspect what the, say, Expression is supposed to do and rewrite it in optimized bytecode. The speed improvement was&#8212;as I expected&#8212;impressive.
+
+In contrast to what Johannes describes here, (ex-)neon explicitly relies on the JIT to &#8220;do it&#8217;s thing&#8221;.
+I had hoped that this would be clear from the README which very explicitly explains what it currently does.
+It addresses one particular pattern of polymorphic method calls that makes the JIT *deoptimize* optimistically compiled code. I address this by modifying bytecode to make the optimistic assumption valid.
+Also answering the performance question below:
+	It should be clear, that this will never (!) produce something that runs faster than the optimistically compiled code, that is, the case where polymorphism was not realized at runtime.
+A lot of ImgLib2 benchmarks we did fall into this category. They are fast as individual benchmarks but put a few of them together and use different image types etc, it paints a totally different picture. This is where I though (ex-)neon could help ImgLib2.
+
+I also need to point out that I see the scope of (ex-)neon to be broader than imglib2, imagej2, scijava, etc. I think it could be useful in scenarios completely unrelated to our little corner of the world. Therefore, I would like to keep it a small, separate project to make it as easy as possible for whomever might be interested to take advantage of it.
+
+Johannes, what you describe in the above page is different in scope. You used knowledge about implementation details to hand-code a faster version. That the hand-coded source goes through a layer of indirection with Javassist is for that particular example irrelevant, but I absolutely see the potential of assembling code from expressions recombining these hand-coded patterns. This is a different but completely valid approach, which was what I meant by saying that it is &#8220;orthogonal to imagej-ops&#8221;. However pushing this to a level where it works for many things (like in the imglib case something simple as user-made Types that are not part of the core library), gathering these implementation details automatically from places in the code that are potentially very far from where you currently are is extremely difficult, if not infeasible. It amounts to making a new JIT, but without access to profiling information.
+So in my opinion this is a complementary approach. The advantage is potentially higher performance. The drawback is that you basically hand-code things. It&#8217;s targeted at a specific library and/or application. If the library code changes too much, it is likely to break.
+
+
+Sorry for being so nit-picky about it but I really think it is important to not convolute these two (valid) approaches (and projects).
+
+
+On the other hand I do not want to give the impression that I made this up out of thin air. There is lot&#8217;s of stuff that *is* closely related and I neglected to give credit for that (which seems to me to be part of your problem with this, Johannes?). To rectify that, I added a &#8220;Resources&#8221; section to the README on <A HREF="https://github.com/tpietzsch/none">https://github.com/tpietzsch/none</A> pointing to helpful discussions etc.
+
+
+&gt;<i> I do have some questions and suggestions:
+</I>&gt;<i> 
+</I>&gt;<i> - Why use ASM over Javassist? At the hackathon, we used Javassist because
+</I>&gt;<i>  it is easier to use, we have much better documentation (e.g.
+</I>&gt;<i>  <A HREF="http://fiji.sc/Javassist">http://fiji.sc/Javassist</A>) and we already ship it with Fiji.
+</I>
+Here I have a different opinion. I think ASM has the better documentation.
+
+There is no doc page for ASM on the Fiji wiki, but they have a very good guide on their own site:
+<A HREF="http://download.forge.objectweb.org/asm/asm4-guide.pdf">http://download.forge.objectweb.org/asm/asm4-guide.pdf</A>
+which is both tutorial style and going into detail. It also contains an introduction to the java class file format and bytecode.
+
+The API is well structured and the API documentation is complete, ASM 5.0 API. Especially after reading the guide, I had absolutely trouble finding my way around.
+
+Finally, and this is really really helpful. They have a &#8220;Bytecode Outline&#8221; plugin for Eclipse.
+This shows you not only the bytecode of the file you are currently editing:
+
+
+
+...but also the ASM code needed to generate that:
+
+
+
+This makes it trivial to get started. (Though you later figure out that there is a more powerful tree API that is to the above as DOM is to SAX).
+For the non-Eclipse people, there is of course a command-line &#8220;ASMifier&quot;.
+
+Importantly, I need low-level manipulations to arrive at code that I could *not* have produced by source code + javac.
+I think these manipulations are possible using Javassist but I couldn&#8217;t easily find information about how.
+
+Besides all that, ASM has going for it that it is bleeding edge, always at the latest java release version (and often beta versions).
+There is overlap between OpenJDK and ASM people. ASM is used in the JDK itself (to implement java 8 lambda expressions for example).
+
+So to summarize, I&#8217;m pretty much married to ASM now. I like the documentation, I like the tools, and it works great for what I want to do.
+I see no reason to dig into Javassist now without any clear benefit.
+Obviously, the same is probably true for the Javassist people: no reason to learn ASM.
+So it is completely ok for me if, for example Johannes chooses to not get involved in (ex-)neon for that reason.
+
+&gt;<i> - If the plan is to use it inside Fiji, why not use version 4.0 of ASM
+</I>&gt;<i>  which is in Fiji already as a transitive dependency of JRuby? Requiring
+</I>&gt;<i>  a newer version (5.0.2) is prone to cause problems&#8230;
+</I>
+Sure, I&#8217;ll start by making a branch that uses the 4.0 version.
+It should be as simple as using a now-deprecated ClassVisitor.visitMethodInsn() version.
+
+&gt;<i> - A quick web search shows that there is an active, successful Neon library for
+</I>&gt;<i>  WebDAV communication. To avoid legal and social problems, we'll need to
+</I>&gt;<i>  choose a different name for the project.
+</I>
+Ok, I understand. I changed the name. I just scrambled the letters and now it&#8217;s called &#8220;none&#8221;. I didn&#8217;t find a project called like this on google, so should be fine.
+It&#8217;s a bit strange at first, but actually, I think it&#8217;s not so bad:
+1) ample opportunity for evil chuckles whenever somebody claims his lib is &#8220;second to none&#8221;.
+2) chemical elements logo still works out nicely.
+I hope nobody has a problem with that.
+
+
+By pure coincidence, &#8220;none&#8221; is exactly the amount of controversy I expected when announcing the project.
+I could not have been more wrong. Off-list there has been a bit of a personal clash, which is not really of concern here.
+However, it made me realize that I was not prepared for the, let&#8217;s say, political discussions that I triggered.
+I wanted to get this out and off-my-plate in time for the hackathon. It turned out that by doing that I didn&#8217;t put it off-my-plate at all. To the contrary, it developed into a time- and fun-suck.
+
+So in order to avoid that, I want to step back a little and make this back into the little fun playground that it was.
+It has been made a much bigger deal than it actually is, and it needs time to mature before making it into imglib or fiji or wherever.
+By mature I mean that it must be a place where I can try ideas without worrying about compatibility, integratability, stepping on peoples toes, etc.
+So, this is what will happen in my github repository.
+
+The code is under BSD license, so of course if someone wants to fork, pick pieces out of it etc they are more than welcome.
+If there is a fork intended specifically for scijava/imglib2/imagej/fiji purposes, I&#8217;ll be glad to help with that.
+
+
+&gt;&gt;<i> I think it is orthogonal to what you do with compile-time code
+</I>&gt;&gt;<i> generation currently and therefore might complement it nicely.
+</I>&gt;<i> 
+</I>&gt;<i> - I agree that the bytecode manipulation and code generation strategies can
+</I>&gt;<i>  complement each other nicely. I am looking forward to the upcoming ImgLib2
+</I>&gt;<i>  hackathon so that we can show you how OPS tackles the performance issue in a
+</I>&gt;<i>  way that facilitates extensibility and keeps concerns well separated! If you
+</I>&gt;<i>  have a chance to explore OPS in depth before the hackathon, it would be very
+</I>&gt;<i>  helpful to expedite later discussion.
+</I>&gt;<i> 
+</I>&gt;<i> - I encourage you to study ImageJ OPS before continuing this project because it
+</I>&gt;<i>  provides the necessary infrastructure already, matured over a course of
+</I>&gt;<i>  several iterations.
+</I>
+I&#8217;ve been following ImageJ-Ops loosely. As I understand it still very much in flux and documentation is very sparse. I&#8217;m looking forward to learn about it in personal discussion at the hackathon. I&#8217;ll probably not be able to get an in-depth look before.
+
+&gt;<i> - For demonstration purposes, using a Java Agent at startup is great; We will
+</I>&gt;<i>  definitely want to explore practical ways of applying the bytecode
+</I>&gt;<i>  manipulation. It should be achievable -- we do it already in the ImageJ Legacy
+</I>&gt;<i>  project to rewrite portions of ImageJ1 as needed.
+</I>
+The important thing is that it needs to be able to intercept any class as it is loaded into the JVM.
+
+I think another perfect place to put it is in a ClassLoader.
+Building on OSGi, that is probably a feasible way to go for KNIME.
+Does ImageJ2 use custom ClassLoaders?
+
+
+best regards,
+Tobias
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140930/d8412011/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20140930/d8412011/attachment-0001.html</A>&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: Screen Shot 2014-09-30 at 16.59.16.png
+Type: image/png
+Size: 58997 bytes
+Desc: not available
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140930/d8412011/attachment-0002.png">http://imagej.net/pipermail/imagej-devel/attachments/20140930/d8412011/attachment-0002.png</A>&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: Screen Shot 2014-09-30 at 16.59.56.png
+Type: image/png
+Size: 64848 bytes
+Desc: not available
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140930/d8412011/attachment-0003.png">http://imagej.net/pipermail/imagej-devel/attachments/20140930/d8412011/attachment-0003.png</A>&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140930/d8412011/attachment-0001.pgp">http://imagej.net/pipermail/imagej-devel/attachments/20140930/d8412011/attachment-0001.pgp</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002254.html">[ImageJ-devel] imglib2-neon project for runtime bytecode	transformation
+</A></li>
+	<LI>Next message: <A HREF="002255.html">[ImageJ-devel] Fiji-javadoc failure
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2259">[ date ]</a>
+              <a href="thread.html#2259">[ thread ]</a>
+              <a href="subject.html#2259">[ subject ]</a>
+              <a href="author.html#2259">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

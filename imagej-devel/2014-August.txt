@@ -1,0 +1,4195 @@
+From bnorthan at gmail.com  Mon Aug  4 15:32:13 2014
+From: bnorthan at gmail.com (Brian Northan)
+Date: Mon, 4 Aug 2014 16:32:13 -0400
+Subject: [ImageJ-devel] 'ops not defined' when running jython script
+Message-ID: <CAMWa8i1PYKHRP9g94cz5uR4F=FewsimdU3ydhKgh=7tSzFONAA@mail.gmail.com>
+
+Hi List
+
+A couple of things...
+
+1.  The last couple of days when I try to extract the Fiji Linux 64
+continuous release tar file I get an error "truncated gzip input".  I can
+work around this by downloading the "all platforms" package instead.
+
+2.  It seems that the ops service is not getting injected into my jython
+scripts.  Scripts works fine (ie data and display are injuected) until I
+try to call an op.  Then I get "ops is not defined".   This only happens
+when using a Fiji release.  If I run imagej2 through a development
+environment using maven it works.
+
+Thanks, an example script is below
+
+Brian
+
+# @DatasetService data
+# @DisplayService display
+# @OpService ops
+
+# define a local directory to get the images from
+directory="/home/bnorthan/Brian2014/Images/TempForEasyAccess/"
+
+# use 2-channels of the lena image for test image
+image1Name="lena_red.tif"
+image2Name="lena_green.tif"
+
+# open first image
+image1=data.open(directory+image1Name)
+display.createDisplay(image1.getName(), image1);
+
+# open second image
+image2=data.open(directory+image2Name)
+display.createDisplay(image2.getName(), image2);
+
+# add the images
+image3 = ops.add(image1,image2)
+display.createDisplay(image3.getName(), image3)
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140804/01cf763f/attachment.html>
+
+From ctrueden at wisc.edu  Mon Aug  4 16:06:25 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Mon, 4 Aug 2014 16:06:25 -0500
+Subject: [ImageJ-devel] 'ops not defined' when running jython script
+In-Reply-To: <CAMWa8i1PYKHRP9g94cz5uR4F=FewsimdU3ydhKgh=7tSzFONAA@mail.gmail.com>
+References: <CAMWa8i1PYKHRP9g94cz5uR4F=FewsimdU3ydhKgh=7tSzFONAA@mail.gmail.com>
+Message-ID: <CADN69ymsYYtKyj=97AkCX+RoiOKzisMC5rE7zYGGZ30SWP07gQ@mail.gmail.com>
+
+Hi Brian,
+
+Thanks for the reports:
+
+> 1.  The last couple of days when I try to extract the Fiji Linux 64
+> continuous release tar file I get an error "truncated gzip input".  I can
+> work around this by downloading the "all platforms" package instead.
+
+Hmm, I did not see this problem when I tried just now. Perhaps the download
+itself is not completing successfully? It should be ~141MB. If it keeps
+happening, we could add an MD5 sum for verification if that would be
+helpful.
+
+> 2.  It seems that the ops service is not getting injected into my jython
+> scripts.  Scripts works fine (ie data and display are injuected) until I
+try
+> to call an op.  Then I get "ops is not defined".   This only happens when
+> using a Fiji release.  If I run imagej2 through a development environment
+> using maven it works.
+
+Yeah, I noticed this same problem the other day, and fixed it on master:
+
+
+https://github.com/scijava/scijava-common/commit/f88984cb587c314c53e06fdce606d4cecf3a4813
+
+Using scijava-common-2.28.0 or later will avoid the issue. Or you can work
+around it by writing:
+
+    # @net.imagej.ops.OpService ops
+
+Regards,
+Curtis
+
+
+On Mon, Aug 4, 2014 at 3:32 PM, Brian Northan <bnorthan at gmail.com> wrote:
+
+> Hi List
+>
+> A couple of things...
+>
+> 1.  The last couple of days when I try to extract the Fiji Linux 64
+> continuous release tar file I get an error "truncated gzip input".  I can
+> work around this by downloading the "all platforms" package instead.
+>
+> 2.  It seems that the ops service is not getting injected into my jython
+> scripts.  Scripts works fine (ie data and display are injuected) until I
+> try to call an op.  Then I get "ops is not defined".   This only happens
+> when using a Fiji release.  If I run imagej2 through a development
+> environment using maven it works.
+>
+> Thanks, an example script is below
+>
+> Brian
+>
+> # @DatasetService data
+> # @DisplayService display
+> # @OpService ops
+>
+> # define a local directory to get the images from
+> directory="/home/bnorthan/Brian2014/Images/TempForEasyAccess/"
+>
+> # use 2-channels of the lena image for test image
+> image1Name="lena_red.tif"
+> image2Name="lena_green.tif"
+>
+> # open first image
+> image1=data.open(directory+image1Name)
+> display.createDisplay(image1.getName(), image1);
+>
+> # open second image
+> image2=data.open(directory+image2Name)
+> display.createDisplay(image2.getName(), image2);
+>
+> # add the images
+> image3 = ops.add(image1,image2)
+> display.createDisplay(image3.getName(), image3)
+>
+>
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140804/180df1d1/attachment.html>
+
+From bnorthan at gmail.com  Mon Aug  4 16:14:11 2014
+From: bnorthan at gmail.com (Brian Northan)
+Date: Mon, 4 Aug 2014 17:14:11 -0400
+Subject: [ImageJ-devel] 'ops not defined' when running jython script
+In-Reply-To: <CADN69ymsYYtKyj=97AkCX+RoiOKzisMC5rE7zYGGZ30SWP07gQ@mail.gmail.com>
+References: <CAMWa8i1PYKHRP9g94cz5uR4F=FewsimdU3ydhKgh=7tSzFONAA@mail.gmail.com>
+	<CADN69ymsYYtKyj=97AkCX+RoiOKzisMC5rE7zYGGZ30SWP07gQ@mail.gmail.com>
+Message-ID: <CAMWa8i1rD3VespaDaudyyzJe4swWtt-p_qt7P6qb96D1bLGKFA@mail.gmail.com>
+
+Hi Curtis
+
+Thanks, it worked perfectly - btw I doubled posted on the fiji list as I
+figured this question might be of interest to any fiji users trying out the
+new scripting.
+
+Brian
+
+
+On Mon, Aug 4, 2014 at 5:06 PM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+
+> Hi Brian,
+>
+> Thanks for the reports:
+>
+> > 1.  The last couple of days when I try to extract the Fiji Linux 64
+> > continuous release tar file I get an error "truncated gzip input".  I can
+> > work around this by downloading the "all platforms" package instead.
+>
+> Hmm, I did not see this problem when I tried just now. Perhaps the
+> download itself is not completing successfully? It should be ~141MB. If it
+> keeps happening, we could add an MD5 sum for verification if that would be
+> helpful.
+>
+> > 2.  It seems that the ops service is not getting injected into my jython
+> > scripts.  Scripts works fine (ie data and display are injuected) until I
+> try
+> > to call an op.  Then I get "ops is not defined".   This only happens when
+> > using a Fiji release.  If I run imagej2 through a development environment
+> > using maven it works.
+>
+> Yeah, I noticed this same problem the other day, and fixed it on master:
+>
+>
+> https://github.com/scijava/scijava-common/commit/f88984cb587c314c53e06fdce606d4cecf3a4813
+>
+> Using scijava-common-2.28.0 or later will avoid the issue. Or you can work
+> around it by writing:
+>
+>     # @net.imagej.ops.OpService ops
+>
+> Regards,
+> Curtis
+>
+>
+> On Mon, Aug 4, 2014 at 3:32 PM, Brian Northan <bnorthan at gmail.com> wrote:
+>
+>> Hi List
+>>
+>> A couple of things...
+>>
+>> 1.  The last couple of days when I try to extract the Fiji Linux 64
+>> continuous release tar file I get an error "truncated gzip input".  I can
+>> work around this by downloading the "all platforms" package instead.
+>>
+>> 2.  It seems that the ops service is not getting injected into my jython
+>> scripts.  Scripts works fine (ie data and display are injuected) until I
+>> try to call an op.  Then I get "ops is not defined".   This only happens
+>> when using a Fiji release.  If I run imagej2 through a development
+>> environment using maven it works.
+>>
+>> Thanks, an example script is below
+>>
+>> Brian
+>>
+>> # @DatasetService data
+>> # @DisplayService display
+>> # @OpService ops
+>>
+>> # define a local directory to get the images from
+>> directory="/home/bnorthan/Brian2014/Images/TempForEasyAccess/"
+>>
+>> # use 2-channels of the lena image for test image
+>> image1Name="lena_red.tif"
+>> image2Name="lena_green.tif"
+>>
+>> # open first image
+>> image1=data.open(directory+image1Name)
+>> display.createDisplay(image1.getName(), image1);
+>>
+>> # open second image
+>> image2=data.open(directory+image2Name)
+>> display.createDisplay(image2.getName(), image2);
+>>
+>> # add the images
+>> image3 = ops.add(image1,image2)
+>> display.createDisplay(image3.getName(), image3)
+>>
+>>
+>>
+>>
+>> _______________________________________________
+>> ImageJ-devel mailing list
+>> ImageJ-devel at imagej.net
+>> http://imagej.net/mailman/listinfo/imagej-devel
+>>
+>>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140804/2ccffe43/attachment.html>
+
+From bnorthan at gmail.com  Mon Aug  4 16:34:54 2014
+From: bnorthan at gmail.com (Brian Northan)
+Date: Mon, 4 Aug 2014 17:34:54 -0400
+Subject: [ImageJ-devel] 'ops not defined' when running jython script
+In-Reply-To: <CAMWa8i1rD3VespaDaudyyzJe4swWtt-p_qt7P6qb96D1bLGKFA@mail.gmail.com>
+References: <CAMWa8i1PYKHRP9g94cz5uR4F=FewsimdU3ydhKgh=7tSzFONAA@mail.gmail.com>
+	<CADN69ymsYYtKyj=97AkCX+RoiOKzisMC5rE7zYGGZ30SWP07gQ@mail.gmail.com>
+	<CAMWa8i1rD3VespaDaudyyzJe4swWtt-p_qt7P6qb96D1bLGKFA@mail.gmail.com>
+Message-ID: <CAMWa8i2FVwDe_etQvdSJFLq0aR__xhfbEo_EFEBgAuAXa5GgwA@mail.gmail.com>
+
+Regarding the download problem.  The download is 141 MB.  So something must
+be wrong with my archive manager set up.  I'll have to figure it out.  It
+handles zip fine but not tar.
+
+
+On Mon, Aug 4, 2014 at 5:14 PM, Brian Northan <bnorthan at gmail.com> wrote:
+
+> Hi Curtis
+>
+> Thanks, it worked perfectly - btw I doubled posted on the fiji list as I
+> figured this question might be of interest to any fiji users trying out the
+> new scripting.
+>
+> Brian
+>
+>
+> On Mon, Aug 4, 2014 at 5:06 PM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+>
+>> Hi Brian,
+>>
+>> Thanks for the reports:
+>>
+>> > 1.  The last couple of days when I try to extract the Fiji Linux 64
+>> > continuous release tar file I get an error "truncated gzip input".  I
+>> can
+>> > work around this by downloading the "all platforms" package instead.
+>>
+>> Hmm, I did not see this problem when I tried just now. Perhaps the
+>> download itself is not completing successfully? It should be ~141MB. If it
+>> keeps happening, we could add an MD5 sum for verification if that would be
+>> helpful.
+>>
+>> > 2.  It seems that the ops service is not getting injected into my jython
+>> > scripts.  Scripts works fine (ie data and display are injuected) until
+>> I try
+>> > to call an op.  Then I get "ops is not defined".   This only happens
+>> when
+>> > using a Fiji release.  If I run imagej2 through a development
+>> environment
+>> > using maven it works.
+>>
+>> Yeah, I noticed this same problem the other day, and fixed it on master:
+>>
+>>
+>> https://github.com/scijava/scijava-common/commit/f88984cb587c314c53e06fdce606d4cecf3a4813
+>>
+>> Using scijava-common-2.28.0 or later will avoid the issue. Or you can
+>> work around it by writing:
+>>
+>>     # @net.imagej.ops.OpService ops
+>>
+>> Regards,
+>> Curtis
+>>
+>>
+>> On Mon, Aug 4, 2014 at 3:32 PM, Brian Northan <bnorthan at gmail.com> wrote:
+>>
+>>> Hi List
+>>>
+>>> A couple of things...
+>>>
+>>> 1.  The last couple of days when I try to extract the Fiji Linux 64
+>>> continuous release tar file I get an error "truncated gzip input".  I can
+>>> work around this by downloading the "all platforms" package instead.
+>>>
+>>> 2.  It seems that the ops service is not getting injected into my jython
+>>> scripts.  Scripts works fine (ie data and display are injuected) until I
+>>> try to call an op.  Then I get "ops is not defined".   This only happens
+>>> when using a Fiji release.  If I run imagej2 through a development
+>>> environment using maven it works.
+>>>
+>>> Thanks, an example script is below
+>>>
+>>> Brian
+>>>
+>>> # @DatasetService data
+>>> # @DisplayService display
+>>> # @OpService ops
+>>>
+>>> # define a local directory to get the images from
+>>> directory="/home/bnorthan/Brian2014/Images/TempForEasyAccess/"
+>>>
+>>> # use 2-channels of the lena image for test image
+>>> image1Name="lena_red.tif"
+>>> image2Name="lena_green.tif"
+>>>
+>>> # open first image
+>>> image1=data.open(directory+image1Name)
+>>> display.createDisplay(image1.getName(), image1);
+>>>
+>>> # open second image
+>>> image2=data.open(directory+image2Name)
+>>> display.createDisplay(image2.getName(), image2);
+>>>
+>>> # add the images
+>>> image3 = ops.add(image1,image2)
+>>> display.createDisplay(image3.getName(), image3)
+>>>
+>>>
+>>>
+>>>
+>>> _______________________________________________
+>>> ImageJ-devel mailing list
+>>> ImageJ-devel at imagej.net
+>>> http://imagej.net/mailman/listinfo/imagej-devel
+>>>
+>>>
+>>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140804/8f8356cf/attachment-0001.html>
+
+From ctrueden at wisc.edu  Mon Aug  4 16:36:33 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Mon, 4 Aug 2014 16:36:33 -0500
+Subject: [ImageJ-devel] 'ops not defined' when running jython script
+In-Reply-To: <CAMWa8i2FVwDe_etQvdSJFLq0aR__xhfbEo_EFEBgAuAXa5GgwA@mail.gmail.com>
+References: <CAMWa8i1PYKHRP9g94cz5uR4F=FewsimdU3ydhKgh=7tSzFONAA@mail.gmail.com>
+	<CADN69ymsYYtKyj=97AkCX+RoiOKzisMC5rE7zYGGZ30SWP07gQ@mail.gmail.com>
+	<CAMWa8i1rD3VespaDaudyyzJe4swWtt-p_qt7P6qb96D1bLGKFA@mail.gmail.com>
+	<CAMWa8i2FVwDe_etQvdSJFLq0aR__xhfbEo_EFEBgAuAXa5GgwA@mail.gmail.com>
+Message-ID: <CADN69y=Wyvki+j_ewHU8N=7kTkzxah4uWmy0oVbC+RXt8GV3GQ@mail.gmail.com>
+
+Hi Brian,
+
+> So something must be wrong with my archive manager set up.  I'll have
+> to figure it out.  It handles zip fine but not tar.
+
+Which OS? Which program?
+
+On OS X, "tar xf" from the command line works for me.
+
+On Windows, did you try 7-zip?
+
+Regards,
+Curtis
+
+
+On Mon, Aug 4, 2014 at 4:34 PM, Brian Northan <bnorthan at gmail.com> wrote:
+
+> Regarding the download problem.  The download is 141 MB.  So something
+> must be wrong with my archive manager set up.  I'll have to figure it out.
+> It handles zip fine but not tar.
+>
+>
+> On Mon, Aug 4, 2014 at 5:14 PM, Brian Northan <bnorthan at gmail.com> wrote:
+>
+>> Hi Curtis
+>>
+>> Thanks, it worked perfectly - btw I doubled posted on the fiji list as I
+>> figured this question might be of interest to any fiji users trying out the
+>> new scripting.
+>>
+>> Brian
+>>
+>>
+>> On Mon, Aug 4, 2014 at 5:06 PM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+>>
+>>> Hi Brian,
+>>>
+>>> Thanks for the reports:
+>>>
+>>> > 1.  The last couple of days when I try to extract the Fiji Linux 64
+>>> > continuous release tar file I get an error "truncated gzip input".  I
+>>> can
+>>> > work around this by downloading the "all platforms" package instead.
+>>>
+>>> Hmm, I did not see this problem when I tried just now. Perhaps the
+>>> download itself is not completing successfully? It should be ~141MB. If it
+>>> keeps happening, we could add an MD5 sum for verification if that would be
+>>> helpful.
+>>>
+>>> > 2.  It seems that the ops service is not getting injected into my
+>>> jython
+>>> > scripts.  Scripts works fine (ie data and display are injuected) until
+>>> I try
+>>> > to call an op.  Then I get "ops is not defined".   This only happens
+>>> when
+>>> > using a Fiji release.  If I run imagej2 through a development
+>>> environment
+>>> > using maven it works.
+>>>
+>>> Yeah, I noticed this same problem the other day, and fixed it on master:
+>>>
+>>>
+>>> https://github.com/scijava/scijava-common/commit/f88984cb587c314c53e06fdce606d4cecf3a4813
+>>>
+>>> Using scijava-common-2.28.0 or later will avoid the issue. Or you can
+>>> work around it by writing:
+>>>
+>>>     # @net.imagej.ops.OpService ops
+>>>
+>>> Regards,
+>>> Curtis
+>>>
+>>>
+>>> On Mon, Aug 4, 2014 at 3:32 PM, Brian Northan <bnorthan at gmail.com>
+>>> wrote:
+>>>
+>>>> Hi List
+>>>>
+>>>> A couple of things...
+>>>>
+>>>> 1.  The last couple of days when I try to extract the Fiji Linux 64
+>>>> continuous release tar file I get an error "truncated gzip input".  I can
+>>>> work around this by downloading the "all platforms" package instead.
+>>>>
+>>>> 2.  It seems that the ops service is not getting injected into my
+>>>> jython scripts.  Scripts works fine (ie data and display are injuected)
+>>>> until I try to call an op.  Then I get "ops is not defined".   This only
+>>>> happens when using a Fiji release.  If I run imagej2 through a development
+>>>> environment using maven it works.
+>>>>
+>>>> Thanks, an example script is below
+>>>>
+>>>> Brian
+>>>>
+>>>> # @DatasetService data
+>>>> # @DisplayService display
+>>>> # @OpService ops
+>>>>
+>>>> # define a local directory to get the images from
+>>>> directory="/home/bnorthan/Brian2014/Images/TempForEasyAccess/"
+>>>>
+>>>> # use 2-channels of the lena image for test image
+>>>> image1Name="lena_red.tif"
+>>>> image2Name="lena_green.tif"
+>>>>
+>>>> # open first image
+>>>> image1=data.open(directory+image1Name)
+>>>> display.createDisplay(image1.getName(), image1);
+>>>>
+>>>> # open second image
+>>>> image2=data.open(directory+image2Name)
+>>>> display.createDisplay(image2.getName(), image2);
+>>>>
+>>>> # add the images
+>>>> image3 = ops.add(image1,image2)
+>>>> display.createDisplay(image3.getName(), image3)
+>>>>
+>>>>
+>>>>
+>>>>
+>>>> _______________________________________________
+>>>> ImageJ-devel mailing list
+>>>> ImageJ-devel at imagej.net
+>>>> http://imagej.net/mailman/listinfo/imagej-devel
+>>>>
+>>>>
+>>>
+>>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140804/0de66098/attachment.html>
+
+From bnorthan at gmail.com  Mon Aug  4 16:50:15 2014
+From: bnorthan at gmail.com (Brian Northan)
+Date: Mon, 4 Aug 2014 17:50:15 -0400
+Subject: [ImageJ-devel] 'ops not defined' when running jython script
+In-Reply-To: <CADN69y=Wyvki+j_ewHU8N=7kTkzxah4uWmy0oVbC+RXt8GV3GQ@mail.gmail.com>
+References: <CAMWa8i1PYKHRP9g94cz5uR4F=FewsimdU3ydhKgh=7tSzFONAA@mail.gmail.com>
+	<CADN69ymsYYtKyj=97AkCX+RoiOKzisMC5rE7zYGGZ30SWP07gQ@mail.gmail.com>
+	<CAMWa8i1rD3VespaDaudyyzJe4swWtt-p_qt7P6qb96D1bLGKFA@mail.gmail.com>
+	<CAMWa8i2FVwDe_etQvdSJFLq0aR__xhfbEo_EFEBgAuAXa5GgwA@mail.gmail.com>
+	<CADN69y=Wyvki+j_ewHU8N=7kTkzxah4uWmy0oVbC+RXt8GV3GQ@mail.gmail.com>
+Message-ID: <CAMWa8i3FpSUD3E78V4W2_0bz5m1SMa6cc1GRkMBQ8VDDMoa7Ew@mail.gmail.com>
+
+Ubuntu 14.04 GNU tar 1.27.1.  On second thought I must be having gremlins
+while downloading.  I tried again and the download was 148.1 MB this time
+and it worked.
+
+
+On Mon, Aug 4, 2014 at 5:36 PM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+
+> Hi Brian,
+>
+> > So something must be wrong with my archive manager set up.  I'll have
+> > to figure it out.  It handles zip fine but not tar.
+>
+> Which OS? Which program?
+>
+> On OS X, "tar xf" from the command line works for me.
+>
+> On Windows, did you try 7-zip?
+>
+> Regards,
+> Curtis
+>
+>
+> On Mon, Aug 4, 2014 at 4:34 PM, Brian Northan <bnorthan at gmail.com> wrote:
+>
+>> Regarding the download problem.  The download is 141 MB.  So something
+>> must be wrong with my archive manager set up.  I'll have to figure it out.
+>> It handles zip fine but not tar.
+>>
+>>
+>> On Mon, Aug 4, 2014 at 5:14 PM, Brian Northan <bnorthan at gmail.com> wrote:
+>>
+>>> Hi Curtis
+>>>
+>>> Thanks, it worked perfectly - btw I doubled posted on the fiji list as I
+>>> figured this question might be of interest to any fiji users trying out the
+>>> new scripting.
+>>>
+>>> Brian
+>>>
+>>>
+>>> On Mon, Aug 4, 2014 at 5:06 PM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+>>>
+>>>> Hi Brian,
+>>>>
+>>>> Thanks for the reports:
+>>>>
+>>>> > 1.  The last couple of days when I try to extract the Fiji Linux 64
+>>>> > continuous release tar file I get an error "truncated gzip input".  I
+>>>> can
+>>>> > work around this by downloading the "all platforms" package instead.
+>>>>
+>>>> Hmm, I did not see this problem when I tried just now. Perhaps the
+>>>> download itself is not completing successfully? It should be ~141MB. If it
+>>>> keeps happening, we could add an MD5 sum for verification if that would be
+>>>> helpful.
+>>>>
+>>>> > 2.  It seems that the ops service is not getting injected into my
+>>>> jython
+>>>> > scripts.  Scripts works fine (ie data and display are injuected)
+>>>> until I try
+>>>> > to call an op.  Then I get "ops is not defined".   This only happens
+>>>> when
+>>>> > using a Fiji release.  If I run imagej2 through a development
+>>>> environment
+>>>> > using maven it works.
+>>>>
+>>>> Yeah, I noticed this same problem the other day, and fixed it on master:
+>>>>
+>>>>
+>>>> https://github.com/scijava/scijava-common/commit/f88984cb587c314c53e06fdce606d4cecf3a4813
+>>>>
+>>>> Using scijava-common-2.28.0 or later will avoid the issue. Or you can
+>>>> work around it by writing:
+>>>>
+>>>>     # @net.imagej.ops.OpService ops
+>>>>
+>>>> Regards,
+>>>> Curtis
+>>>>
+>>>>
+>>>> On Mon, Aug 4, 2014 at 3:32 PM, Brian Northan <bnorthan at gmail.com>
+>>>> wrote:
+>>>>
+>>>>> Hi List
+>>>>>
+>>>>> A couple of things...
+>>>>>
+>>>>> 1.  The last couple of days when I try to extract the Fiji Linux 64
+>>>>> continuous release tar file I get an error "truncated gzip input".  I can
+>>>>> work around this by downloading the "all platforms" package instead.
+>>>>>
+>>>>> 2.  It seems that the ops service is not getting injected into my
+>>>>> jython scripts.  Scripts works fine (ie data and display are injuected)
+>>>>> until I try to call an op.  Then I get "ops is not defined".   This only
+>>>>> happens when using a Fiji release.  If I run imagej2 through a development
+>>>>> environment using maven it works.
+>>>>>
+>>>>> Thanks, an example script is below
+>>>>>
+>>>>> Brian
+>>>>>
+>>>>> # @DatasetService data
+>>>>> # @DisplayService display
+>>>>> # @OpService ops
+>>>>>
+>>>>> # define a local directory to get the images from
+>>>>> directory="/home/bnorthan/Brian2014/Images/TempForEasyAccess/"
+>>>>>
+>>>>> # use 2-channels of the lena image for test image
+>>>>> image1Name="lena_red.tif"
+>>>>> image2Name="lena_green.tif"
+>>>>>
+>>>>> # open first image
+>>>>> image1=data.open(directory+image1Name)
+>>>>> display.createDisplay(image1.getName(), image1);
+>>>>>
+>>>>> # open second image
+>>>>> image2=data.open(directory+image2Name)
+>>>>> display.createDisplay(image2.getName(), image2);
+>>>>>
+>>>>> # add the images
+>>>>> image3 = ops.add(image1,image2)
+>>>>> display.createDisplay(image3.getName(), image3)
+>>>>>
+>>>>>
+>>>>>
+>>>>>
+>>>>> _______________________________________________
+>>>>> ImageJ-devel mailing list
+>>>>> ImageJ-devel at imagej.net
+>>>>> http://imagej.net/mailman/listinfo/imagej-devel
+>>>>>
+>>>>>
+>>>>
+>>>
+>>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140804/cd94fb1a/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Tue Aug  5 06:43:33 2014
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Tue, 5 Aug 2014 13:43:33 +0200 (CEST)
+Subject: [ImageJ-devel] 'ops not defined' when running jython script
+In-Reply-To: <CAMWa8i3FpSUD3E78V4W2_0bz5m1SMa6cc1GRkMBQ8VDDMoa7Ew@mail.gmail.com>
+References: <CAMWa8i1PYKHRP9g94cz5uR4F=FewsimdU3ydhKgh=7tSzFONAA@mail.gmail.com>
+	<CADN69ymsYYtKyj=97AkCX+RoiOKzisMC5rE7zYGGZ30SWP07gQ@mail.gmail.com>
+	<CAMWa8i1rD3VespaDaudyyzJe4swWtt-p_qt7P6qb96D1bLGKFA@mail.gmail.com>
+	<CAMWa8i2FVwDe_etQvdSJFLq0aR__xhfbEo_EFEBgAuAXa5GgwA@mail.gmail.com>
+	<CADN69y=Wyvki+j_ewHU8N=7kTkzxah4uWmy0oVbC+RXt8GV3GQ@mail.gmail.com>
+	<CAMWa8i3FpSUD3E78V4W2_0bz5m1SMa6cc1GRkMBQ8VDDMoa7Ew@mail.gmail.com>
+Message-ID: <alpine.DEB.1.00.1408051342560.3456@s15462909.onlinehome-server.info>
+
+Hi Brian,
+
+On Mon, 4 Aug 2014, Brian Northan wrote:
+
+> Ubuntu 14.04 GNU tar 1.27.1.  On second thought I must be having gremlins
+> while downloading.  I tried again and the download was 148.1 MB this time
+> and it worked.
+
+It could be that you downloaded it with one of those web browsers that
+like to unpack gzipped data without removing the .gz suffix. Happened to
+me.
+
+Ciao,
+Johannes
+
+
+From vera.andrejcenko at gmail.com  Wed Aug  6 03:10:05 2014
+From: vera.andrejcenko at gmail.com (Vera Andrejchenko)
+Date: Wed, 6 Aug 2014 10:10:05 +0200
+Subject: [ImageJ-devel] ImageJ2 library set up and referencing?
+Message-ID: <CANF3avGg4vCggxePJuexKdfEe8Tz7H_4Nw5fooeSK8GQnbcRbw@mail.gmail.com>
+
+Dear ImageJ Dev community,
+
+I would like to ask if ImageJ2 can be used as a library for developing
+stand alone applications, (not only for plugins)?
+
+What I would like to use it is:
+- reading, writing, accessing pixel values of multidimensional
+(multispectral) images,
+- FFT, histograms, using the Filters (as they are in the ImageJ app)
+- Addition, multiplication etc. of image pixel values as they are in the
+Image Calculator methods (add, divide, multiply...)
+
+What I tried so far is using the .jars from the ImageJ.app and referenced
+them as external libraries from my project. But on the very beginning when
+I try creating the ImageJ object
+I keep receiving error messages related to some of the Services, for
+example:
+
+ java.lang.UnsupportedOperationException: Cannot instantiate more than one
+DefaultLegacyService at net.imagej
+.legacy.DefaultLegacyService.checkInstance(DefaultLegacyService.java:514)
+and
+Invalid service: net.imagej.legacy.DefaultLegacyService
+        at
+org.scijava.service.ServiceHelper.createExactService(ServiceHelper.java:279)
+
+So I was wondering if I can use ImageJ2 as an image processing library for
+my proejct...
+
+If it is meant to be used as an image processing library which can be
+referenced from other projects? If yes, could you send me some links I can
+read how to properly set it up and reference the necessary libraries?
+
+Thanks a lot in advance!
+
+Greetings,
+Vera
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140806/f21ecc85/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Wed Aug  6 04:39:12 2014
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Wed, 6 Aug 2014 11:39:12 +0200 (CEST)
+Subject: [ImageJ-devel] ImageJ2 library set up and referencing?
+In-Reply-To: <CANF3avGg4vCggxePJuexKdfEe8Tz7H_4Nw5fooeSK8GQnbcRbw@mail.gmail.com>
+References: <CANF3avGg4vCggxePJuexKdfEe8Tz7H_4Nw5fooeSK8GQnbcRbw@mail.gmail.com>
+Message-ID: <alpine.DEB.1.00.1408061128520.3456@s15462909.onlinehome-server.info>
+
+Hi Vera,
+
+On Wed, 6 Aug 2014, Vera Andrejchenko wrote:
+
+> I would like to ask if ImageJ2 can be used as a library for developing
+> stand alone applications, (not only for plugins)?
+
+Yes, the idea of ImageJ2 is to future-proof ImageJ for many more use
+cases, including writing a new application.
+
+For details, see http://imagej.net/ImageJ2#Features_of_ImageJ2
+
+> What I would like to use it is:
+> - reading, writing, accessing pixel values of multidimensional
+> (multispectral) images,
+> - FFT, histograms, using the Filters (as they are in the ImageJ app)
+> - Addition, multiplication etc. of image pixel values as they are in the
+> Image Calculator methods (add, divide, multiply...)
+
+It sounds as if you would benefit from the modular structure of ImageJ2:
+you can basically cherry-pick which parts you want to use. In particular,
+it looks as if you could benefit from ImageJ OPS -- which is still in the
+hot phase of development. To get an idea how to make use of ImageJ OPS,
+please have a look here: https://github.com/imagej/imagej-ops (scroll down
+to the README)
+
+> What I tried so far is using the .jars from the ImageJ.app and referenced
+> them as external libraries from my project. But on the very beginning when
+> I try creating the ImageJ object I keep receiving error messages related
+> to some of the Services, for example:
+> 
+>  java.lang.UnsupportedOperationException: Cannot instantiate more than one
+> DefaultLegacyService at net.imagej [...]
+
+The problem you face is caused by *more* than one ImageJ object being
+instantiated: every ImageJ object (which we call "gateway" because it is
+basically a gateway to all the different services) is connected to a
+"SciJava context" that basically offers all the services such as the
+plugin service, the event service, the log service, etc
+
+Due to limitations in ImageJ 1.x' design, the legacy service --
+responsible for executing any function in ImageJ 1.x -- can be
+instantiated only once per class loader. That means that you have to
+*dispose* of a SciJava context offering a legacy service *before* you can
+instantiate a new context.
+
+> So I was wondering if I can use ImageJ2 as an image processing library
+> for my proejct...
+
+Absolutely.
+
+> If it is meant to be used as an image processing library which can be
+> referenced from other projects? If yes, could you send me some links I can
+> read how to properly set it up and reference the necessary libraries?
+
+The best examples we have live in this source code repository:
+
+	https://github.com/imagej/imagej-tutorials/
+
+I would like to point you in particular to 'load-and-display-dataset' and
+'using-ops'.
+
+Ciao,
+Johannes
+
+
+From Johannes.Schindelin at gmx.de  Wed Aug  6 04:51:41 2014
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Wed, 6 Aug 2014 11:51:41 +0200 (CEST)
+Subject: [ImageJ-devel] ImageJ2 library set up and referencing?
+In-Reply-To: <alpine.DEB.1.00.1408061128520.3456@s15462909.onlinehome-server.info>
+References: <CANF3avGg4vCggxePJuexKdfEe8Tz7H_4Nw5fooeSK8GQnbcRbw@mail.gmail.com>
+	<alpine.DEB.1.00.1408061128520.3456@s15462909.onlinehome-server.info>
+Message-ID: <alpine.DEB.1.00.1408061150240.3456@s15462909.onlinehome-server.info>
+
+Hi Vera,
+
+On Wed, 6 Aug 2014, Johannes Schindelin wrote:
+
+> Due to limitations in ImageJ 1.x' design, the legacy service --
+> responsible for executing any function in ImageJ 1.x -- can be
+> instantiated only once per class loader. That means that you have to
+> *dispose* of a SciJava context offering a legacy service *before* you can
+> instantiate a new context.
+
+I completely forgot to mention that the best practice is to instantiate
+the ImageJ object *once* and then reuse that instance, rather than
+instantiating a new ImageJ object everytime you want to call ImageJ
+functionality.
+
+Ciao,
+Johannes
+
+
+From warrick at wisc.edu  Wed Aug  6 05:41:18 2014
+From: warrick at wisc.edu (Jay Warrick)
+Date: Wed, 06 Aug 2014 05:41:18 -0500
+Subject: [ImageJ-devel] ImageJ2 library set up and referencing?
+In-Reply-To: <alpine.DEB.1.00.1408061150240.3456@s15462909.onlinehome-server.info>
+References: <CANF3avGg4vCggxePJuexKdfEe8Tz7H_4Nw5fooeSK8GQnbcRbw@mail.gmail.com>
+	<alpine.DEB.1.00.1408061128520.3456@s15462909.onlinehome-server.info>
+	<alpine.DEB.1.00.1408061150240.3456@s15462909.onlinehome-server.info>
+Message-ID: <BFABA716-45FF-4B7E-B258-D62BA171548C@wisc.edu>
+
+Hi All,
+
+I also wrote this help document for just this purpose. I have not received feedback from the ImageJ2 dev crew on it yet, but this is what I learned and it really helped me. Also, I wrote this before the OPS stuff was added so likely, as I learn this interface too, it should be added as well. Feel free to add to the document as it is a work in progress. It is written using an online collaborative latex editor. But if you don't know latex and want to add a section for a topic I missed, just look at the other sections and try to copy what I have done or just add plain text and I'll format for you later.
+
+Here is the link.
+
+https://www.writelatex.com/756020pphsxc
+
+Cheers,
+
+Jay
+
+On Aug 6, 2014, at 4:51 AM, Johannes Schindelin <Johannes.Schindelin at gmx.de> wrote:
+
+> Hi Vera,
+> 
+> On Wed, 6 Aug 2014, Johannes Schindelin wrote:
+> 
+>> Due to limitations in ImageJ 1.x' design, the legacy service --
+>> responsible for executing any function in ImageJ 1.x -- can be
+>> instantiated only once per class loader. That means that you have to
+>> *dispose* of a SciJava context offering a legacy service *before* you can
+>> instantiate a new context.
+> 
+> I completely forgot to mention that the best practice is to instantiate
+> the ImageJ object *once* and then reuse that instance, rather than
+> instantiating a new ImageJ object everytime you want to call ImageJ
+> functionality.
+> 
+> Ciao,
+> Johannes
+> 
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+
+
+
+From ctrueden at wisc.edu  Wed Aug  6 16:19:43 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Wed, 6 Aug 2014 16:19:43 -0500
+Subject: [ImageJ-devel] ImageJ quits twice
+Message-ID: <CADN69ymGF0hFv0W6a4JCdTh9oQsUR_fhouOm-a=D8ZcgchhC_w@mail.gmail.com>
+
+Hi everyone,
+
+Today I spent some time fixing a new quitting-related bug in ImageJ2: the
+"ImageJ quits twice" bug. This was an OS-X-specific bug, related to the Mac
+application menu handling.
+
+When quitting via Apple > Quit (or Cmd+Q), ImageJ would show two different
+sets of dialogs: the usual ones, and another one that said simply "Quit
+ImageJ?" with OK/Cancel. Relatedly, ImageJ would also show two About
+dialogs when you say Apple > About, and take two different actions when you
+say Apple > Preferences. In a nutshell, this unfortunate behavior was
+because both ImageJ 1.x and ImageJ2 were trying to handle those actions.
+
+The problem has now been fixed, and made it onto the respective master
+branches, as follows:
+
+EventHandler: add optional key attribute
+https://github.com/scijava/scijava-common/commit/bdf746798cbea51fddc4822f220bba2d909be0b8
+
+Which makes possible:
+
+DefaultAppEventService: specify subscription keys
+https://github.com/scijava/scijava-common/commit/6b1fd5fc3c7f00f8d443d2447f72b016caf378f1
+
+Which makes the following fully work:
+
+Fix the "Fiji quits twice" bug ;-)
+https://github.com/imagej/imagej-legacy/commit/a9cfa620f694dd7af8d0224d399b47adaef20942
+
+Please note that these fixes have _not_ been uploaded to the Updater yet,
+but we will do so as soon as we can. There will be a slew of releases by
+the end of this week.
+
+Regards,
+Curtis
+
+P.S. For the very technically inclined (*squints at Dscho*), as well as the
+archives:
+
+I want to describe one detail while it's still fresh in my mind. In the
+SciJava Common application framework, if you have multiple services that
+implement the same service interface, both annotated with "@Plugin(type =
+Service.class)", then a full-blown application context will instantiate one
+of each. _However_, if one of them extends the other, the story is
+different. In the case of AppEventService, there is a
+DefaultAppEventService in scijava-common, a CoreAppEventService in
+imagej-plugins-commands and now a LegacyAppEventService in imagej-legacy.
+Both of the latter two extend the Default one. Hence, when the Context is
+initializing its services, it creates them in priority order: 1)
+LegacyAppEventService [high]; 2) CoreAppEventService [normal]; and 3)
+DefaultAppEventService [low]. Except that when it is time to create the
+DefaultAppEventService, the ServiceHelper skips creating it because there
+is already one present in the context. _Two_, actually!
+
+This has a weird ramification on event handling. As long as we had only
+CoreAppEventService and DefaultAppEventService, there is only one
+AppEventService instance in the context, so only one receives the
+App*Events, so all is well. As soon as we added LegacyAppEventService,
+though, suddenly a full context has _two_ different AppEventService
+implementations, _both_ of which are receiving the App*Event notifications.
+So each of them was trying to handle the events, resulting in the double
+quit behavior.
+
+The fix is described in the GitHub links above. We might need to make _all_
+@EventHandler methods have some default non-empty key based on their class
+and method signature. Otherwise, it will only be possible to override
+behavior of EventHandler methods that take care to provide such a key.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140806/1627a81a/attachment.html>
+
+From schindelin at wisc.edu  Thu Aug  7 03:56:25 2014
+From: schindelin at wisc.edu (Johannes Schindelin)
+Date: Thu, 07 Aug 2014 10:56:25 +0200 (CEST)
+Subject: [ImageJ-devel] ImageJ quits twice
+In-Reply-To: <CADN69ymGF0hFv0W6a4JCdTh9oQsUR_fhouOm-a=D8ZcgchhC_w@mail.gmail.com>
+References: <CADN69ymGF0hFv0W6a4JCdTh9oQsUR_fhouOm-a=D8ZcgchhC_w@mail.gmail.com>
+Message-ID: <alpine.DEB.1.00.1408071055340.3456@s15462909.onlinehome-server.info>
+
+Hi Curtis,
+
+On Wed, 6 Aug 2014, Curtis Rueden wrote:
+
+> P.S. For the very technically inclined (*squints at Dscho*), as well as the
+> archives:
+
+*squints back*
+
+> We might need to make _all_ @EventHandler methods have some default
+> non-empty key based on their class and method signature. Otherwise, it
+> will only be possible to override behavior of EventHandler methods that
+> take care to provide such a key.
+
+I fully agree!
+
+Thanks for the concise and informative explanation!
+Dscho
+
+
+From ctrueden at wisc.edu  Thu Aug  7 12:00:57 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Thu, 7 Aug 2014 12:00:57 -0500
+Subject: [ImageJ-devel] ImageJ quits twice
+In-Reply-To: <alpine.DEB.1.00.1408071055340.3456@s15462909.onlinehome-server.info>
+References: <CADN69ymGF0hFv0W6a4JCdTh9oQsUR_fhouOm-a=D8ZcgchhC_w@mail.gmail.com>
+	<alpine.DEB.1.00.1408071055340.3456@s15462909.onlinehome-server.info>
+Message-ID: <CADN69yk9Rsg2L99HExMtwX+dfnZxmARQeQ2+FmJo3BosdpiB6A@mail.gmail.com>
+
+Hi Dscho,
+
+> We might need to make _all_ @EventHandler methods have some default
+> non-empty key based on their class and method signature. Otherwise, it
+> will only be possible to override behavior of EventHandler methods that
+> take care to provide such a key.
+
+Mark and I looked into doing this, and _almost_ pushed some changes to that
+effect. However, we realized that it only makes sense to provide a key in
+the case of singletons. So, for services, it makes sense, but for e.g. a
+display viewer that listens for DisplayDeletedEvent, it would wreak havoc
+to limit event handling to only a single instance. We considered adding
+some cleverness around SingletonPlugin, or even just Service (i.e.:
+generate a default key if the @EventHandler is in a class compatible with
+Service), but even then, you may or may not actually want to limit the
+behavior, depending on which layer of an abstract class hierarchy the event
+handling method is in.
+
+So for now, until we have a concrete use case otherwise, we are holding off
+on assigning any default keys. It should be "opt in" -- i.e., a conscious
+choice -- to say "limit this event handler to only _one_ instance."
+
+-Curtis
+
+
+On Thu, Aug 7, 2014 at 3:56 AM, Johannes Schindelin <schindelin at wisc.edu>
+wrote:
+
+> Hi Curtis,
+>
+> On Wed, 6 Aug 2014, Curtis Rueden wrote:
+>
+> > P.S. For the very technically inclined (*squints at Dscho*), as well as
+> the
+> > archives:
+>
+> *squints back*
+>
+> > We might need to make _all_ @EventHandler methods have some default
+> > non-empty key based on their class and method signature. Otherwise, it
+> > will only be possible to override behavior of EventHandler methods that
+> > take care to provide such a key.
+>
+> I fully agree!
+>
+> Thanks for the concise and informative explanation!
+> Dscho
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140807/492bdcfa/attachment.html>
+
+From warrick at wisc.edu  Thu Aug  7 13:12:58 2014
+From: warrick at wisc.edu (Jay Warrick)
+Date: Thu, 07 Aug 2014 13:12:58 -0500
+Subject: [ImageJ-devel] quick question(s) on maven dependencies
+In-Reply-To: <CADN69yk1Bif4D1_mHsTC+6a6_-NixnKCp1DNVj2ca8FuqK9K7g@mail.gmail.com>
+References: <470B5432-F139-482E-9924-B4F048D9F29D@wisc.edu>
+	<CADN69yk1Bif4D1_mHsTC+6a6_-NixnKCp1DNVj2ca8FuqK9K7g@mail.gmail.com>
+Message-ID: <AC0EC5C6-980E-4481-9EEF-40AFE12BE88A@wisc.edu>
+
+Great. Wasn't sure. Thanks.
+
+On Aug 7, 2014, at 12:40 PM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+
+> Hi Jay,
+> 
+> I would prefer to discuss things on the public mailing lists. This sort of question is just fine on fiji-devel (since it is about a Fiji plugin).
+> 
+> Thanks,
+> Curtis
+> 
+> 
+> On Thu, Aug 7, 2014 at 6:26 AM, Jay Warrick <warrick at wisc.edu> wrote:
+> Hi Curtis,
+> 
+> Just a learning question regarding maven dependencies. When I add a maven dependency to my project (e.g., Track Mate so I can use it's tracking algorithms...)
+> 
+> <dependency>
+>         <groupId>sc.fiji</groupId>
+>         <artifactId>TrackMate_</artifactId>
+>         <version>2.4.0</version>
+> </dependency>
+> 
+> My program sees the new dependency and I can compile and run but when I use the TrackMate algorithm I get an error saying that it can't find a class that TrackMate depends on from net.sf.jgrapht. I look in the TrackMate pom and I see...
+> 
+> <dependency>
+>         <groupId>net.sf.jgrapht</groupId>
+>         <artifactId>jgrapht</artifactId>
+>         <version>${jgrapht.version}
+>         </version>
+> </dependency>
+> 
+> So, obviously it looks like the dependency is in the TrackMate pom and not some purely local dependency that points to a jar in some non-maven-controlled folder on the developer's computer. However, in order to get my TrackMate algorithm to work without an error I have to add the missing dependency on jgrapht explicitly to my pom (removing the jgrapht version parameter because I don't have this parameter defined in my project and replacing it with the only version that is available at maven.imagej.net)
+> 
+> <dependency>
+>         <groupId>net.sf.jgrapht</groupId>
+>         <artifactId>jgrapht</artifactId>
+>         <version>0.8.3</version>
+> </dependency>
+> 
+> Is it likely that the ${jgrapht.version} parameter in TrackMate refers to a different version than is available on maven.imagej.net? If I'm not on the right track, what is going on? Lastly, if/when this happens more generally, what should my general course of action (do what I did and contact others such as TrackMate developers or you guys and your maven repo)?
+> 
+> This sort of kinda happened to me with the xadisk jar artifact dependency that I have but in the case of the xadisk dependency, the xadisk pom had the following which, I think, suggests that the jar expects this to be provided by the java distribution I'm running. Not sure why it isn't but at least adding this as a dependency allows my xadisk stuff to work now. Anything striking you as wrong about this xadisk situation or just merely unfortunate and I should add the needed dependency like I have?
+> 
+> <dependency>
+>                 <groupId>javax.resource</groupId>
+>                 <artifactId>connector-api</artifactId>
+>                 <version>1.5</version>
+>                 <scope>provided</scope>
+> </dependency>
+> 
+> Thanks,
+> 
+> Jay
+> 
+> 
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140807/532b6bb0/attachment.html>
+
+From vera.andrejcenko at gmail.com  Thu Aug  7 14:31:43 2014
+From: vera.andrejcenko at gmail.com (Vera Andrejchenko)
+Date: Thu, 7 Aug 2014 21:31:43 +0200
+Subject: [ImageJ-devel] ImageJ2 library set up and referencing?
+In-Reply-To: <BFABA716-45FF-4B7E-B258-D62BA171548C@wisc.edu>
+References: <CANF3avGg4vCggxePJuexKdfEe8Tz7H_4Nw5fooeSK8GQnbcRbw@mail.gmail.com>
+	<alpine.DEB.1.00.1408061128520.3456@s15462909.onlinehome-server.info>
+	<alpine.DEB.1.00.1408061150240.3456@s15462909.onlinehome-server.info>
+	<BFABA716-45FF-4B7E-B258-D62BA171548C@wisc.edu>
+Message-ID: <CANF3avEauS41A7mSJ9dZ77b5VNrg_T=ugKqRiyGgiF+Q2kmyzQ@mail.gmail.com>
+
+Dear Johannes and Jay,
+
+thank you both for the reply, links and the latex documentation.
+Yes indeed I did had instantiated ImageJ multiple times..
+
+Now I just tried using one of the tutorial examples:
+image-tutorials/add-two-datasets
+
+So I created a new maven project, added the pom file from this link:
+https://github.com/imagej/imagej-tutorials/blob/master/add-two-datasets/pom.xml
+and the java file from:
+https://github.com/imagej/imagej-tutorials/blob/master/intro-to-imagej-api/src/main/java/IntroToImageJAPI.java
+
+and tried to run the application, but I got the following error:
+java.lang.NoClassDefFoundError: net/imagej/updater/UploaderService
+
+Is there anything I'm missing?
+
+Thank you!
+
+Greetings,
+Vera
+
+
+
+
+
+On Wed, Aug 6, 2014 at 12:41 PM, Jay Warrick <warrick at wisc.edu> wrote:
+
+> Hi All,
+>
+> I also wrote this help document for just this purpose. I have not received
+> feedback from the ImageJ2 dev crew on it yet, but this is what I learned
+> and it really helped me. Also, I wrote this before the OPS stuff was added
+> so likely, as I learn this interface too, it should be added as well. Feel
+> free to add to the document as it is a work in progress. It is written
+> using an online collaborative latex editor. But if you don't know latex and
+> want to add a section for a topic I missed, just look at the other sections
+> and try to copy what I have done or just add plain text and I'll format for
+> you later.
+>
+> Here is the link.
+>
+> https://www.writelatex.com/756020pphsxc
+>
+> Cheers,
+>
+> Jay
+>
+> On Aug 6, 2014, at 4:51 AM, Johannes Schindelin <
+> Johannes.Schindelin at gmx.de> wrote:
+>
+> > Hi Vera,
+> >
+> > On Wed, 6 Aug 2014, Johannes Schindelin wrote:
+> >
+> >> Due to limitations in ImageJ 1.x' design, the legacy service --
+> >> responsible for executing any function in ImageJ 1.x -- can be
+> >> instantiated only once per class loader. That means that you have to
+> >> *dispose* of a SciJava context offering a legacy service *before* you
+> can
+> >> instantiate a new context.
+> >
+> > I completely forgot to mention that the best practice is to instantiate
+> > the ImageJ object *once* and then reuse that instance, rather than
+> > instantiating a new ImageJ object everytime you want to call ImageJ
+> > functionality.
+> >
+> > Ciao,
+> > Johannes
+> >
+> > _______________________________________________
+> > ImageJ-devel mailing list
+> > ImageJ-devel at imagej.net
+> > http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+
+
+-- 
+----------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------
+Artificial Intelligence Program at KULeuven, Belgium
+grad.ing at The Faculty of Electrical Engineering and Information
+Technologies
+in Skopje,Macedonia
+tel: +32 483 439 906
+skype:vercence_zvercence
+----------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140807/5798ac7e/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Fri Aug  8 03:00:45 2014
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Fri, 8 Aug 2014 10:00:45 +0200 (CEST)
+Subject: [ImageJ-devel] ImageJ2 library set up and referencing?
+In-Reply-To: <CANF3avEauS41A7mSJ9dZ77b5VNrg_T=ugKqRiyGgiF+Q2kmyzQ@mail.gmail.com>
+References: <CANF3avGg4vCggxePJuexKdfEe8Tz7H_4Nw5fooeSK8GQnbcRbw@mail.gmail.com>
+	<alpine.DEB.1.00.1408061128520.3456@s15462909.onlinehome-server.info>
+	<alpine.DEB.1.00.1408061150240.3456@s15462909.onlinehome-server.info>
+	<BFABA716-45FF-4B7E-B258-D62BA171548C@wisc.edu>
+	<CANF3avEauS41A7mSJ9dZ77b5VNrg_T=ugKqRiyGgiF+Q2kmyzQ@mail.gmail.com>
+Message-ID: <alpine.DEB.1.00.1408080959190.990@s15462909.onlinehome-server.info>
+
+Hi Vera,
+
+On Thu, 7 Aug 2014, Vera Andrejchenko wrote:
+
+> Now I just tried using one of the tutorial examples:
+> image-tutorials/add-two-datasets
+> 
+> So I created a new maven project, added the pom file from this link:
+> https://github.com/imagej/imagej-tutorials/blob/master/add-two-datasets/pom.xml
+> and the java file from:
+> https://github.com/imagej/imagej-tutorials/blob/master/intro-to-imagej-api/src/main/java/IntroToImageJAPI.java
+> 
+> and tried to run the application, but I got the following error:
+> java.lang.NoClassDefFoundError: net/imagej/updater/UploaderService
+
+Why not just clone the imagej-tutorials project and import the existing
+add-two-datasets Maven project via File>Import>Maven>Import Existing Maven
+Project...?
+
+Alternatively, feel free to make your project available on GitHub so I can
+have a look and possibly point out what needs to be fixed.
+
+Ciao,
+Johannes
+
+
+From vera.andrejcenko at gmail.com  Fri Aug  8 04:50:10 2014
+From: vera.andrejcenko at gmail.com (Vera Andrejchenko)
+Date: Fri, 8 Aug 2014 11:50:10 +0200
+Subject: [ImageJ-devel] ImageJ2 library set up and referencing?
+In-Reply-To: <alpine.DEB.1.00.1408080959190.990@s15462909.onlinehome-server.info>
+References: <CANF3avGg4vCggxePJuexKdfEe8Tz7H_4Nw5fooeSK8GQnbcRbw@mail.gmail.com>
+	<alpine.DEB.1.00.1408061128520.3456@s15462909.onlinehome-server.info>
+	<alpine.DEB.1.00.1408061150240.3456@s15462909.onlinehome-server.info>
+	<BFABA716-45FF-4B7E-B258-D62BA171548C@wisc.edu>
+	<CANF3avEauS41A7mSJ9dZ77b5VNrg_T=ugKqRiyGgiF+Q2kmyzQ@mail.gmail.com>
+	<alpine.DEB.1.00.1408080959190.990@s15462909.onlinehome-server.info>
+Message-ID: <CANF3avHt0t-XppqJpisqCzzhnRNQkmfS1U6uPUc8OVogESK=-A@mail.gmail.com>
+
+Hi Johannes,
+
+sorry for the confusion. I was actually running my other project where the
+pom.xml file was not properly set up...
+I can now run the add-two-datasets example project, thank you!
+
+I should now try to see if its possible to use ImageJ2 and Repast Simpohony
+- agent based modeling framework together.
+Is there maybe a way not to use Maven, but reference all the ImageJ .jars
+and this way use them in my agent based modeling framework project (without
+converting my project to Maven project)?
+
+Thank you again!
+
+Greetings,
+Vera
+
+
+
+
+On Fri, Aug 8, 2014 at 10:00 AM, Johannes Schindelin <
+Johannes.Schindelin at gmx.de> wrote:
+
+> Hi Vera,
+>
+> On Thu, 7 Aug 2014, Vera Andrejchenko wrote:
+>
+> > Now I just tried using one of the tutorial examples:
+> > image-tutorials/add-two-datasets
+> >
+> > So I created a new maven project, added the pom file from this link:
+> >
+> https://github.com/imagej/imagej-tutorials/blob/master/add-two-datasets/pom.xml
+> > and the java file from:
+> >
+> https://github.com/imagej/imagej-tutorials/blob/master/intro-to-imagej-api/src/main/java/IntroToImageJAPI.java
+> >
+> > and tried to run the application, but I got the following error:
+> > java.lang.NoClassDefFoundError: net/imagej/updater/UploaderService
+>
+> Why not just clone the imagej-tutorials project and import the existing
+> add-two-datasets Maven project via File>Import>Maven>Import Existing Maven
+> Project...?
+>
+> Alternatively, feel free to make your project available on GitHub so I can
+> have a look and possibly point out what needs to be fixed.
+>
+> Ciao,
+> Johannes
+>
+
+
+
+-- 
+----------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------
+Artificial Intelligence Program at KULeuven, Belgium
+grad.ing at The Faculty of Electrical Engineering and Information
+Technologies
+in Skopje,Macedonia
+tel: +32 483 439 906
+skype:vercence_zvercence
+----------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140808/66b038d7/attachment-0001.html>
+
+From jrminter at gmail.com  Tue Aug 12 14:10:39 2014
+From: jrminter at gmail.com (John Minter)
+Date: Tue, 12 Aug 2014 15:10:39 -0400
+Subject: [ImageJ-devel] latest update broke jython "import os"
+Message-ID: <CABq4i1O+no3xyJgaK7hZ2V_sSQ+FRXNsnb10KNeAjGQdh7-mFg@mail.gmail.com>
+
+A minimal reproducible example:
+
+File:New:Script
+select language: Python
+
+import os
+
+Run
+Error:   File "New_.py", line 1, in <module>
+ImportError: No module named os
+
+Thanks for providing the lifeline version that still works
+
+Thanks for your work
+
+
+Best Regards
+John Minter
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140812/c73c7195/attachment.html>
+
+From ctrueden at wisc.edu  Thu Aug 14 11:24:24 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Thu, 14 Aug 2014 11:24:24 -0500
+Subject: [ImageJ-devel] latest update broke jython "import os"
+In-Reply-To: <CABq4i1O+no3xyJgaK7hZ2V_sSQ+FRXNsnb10KNeAjGQdh7-mFg@mail.gmail.com>
+References: <CABq4i1O+no3xyJgaK7hZ2V_sSQ+FRXNsnb10KNeAjGQdh7-mFg@mail.gmail.com>
+Message-ID: <CADN69yn1vzuwjwdumu4XmWGk5YoDaD2i0QyK+98tO0tj5xXm1w@mail.gmail.com>
+
+Hi John,
+
+> ImportError: No module named os
+
+Thanks for the report. I see you also commented on the existing issue at:
+http://fiji.sc/bugzilla/show_bug.cgi?id=741
+
+We will continue to track and discuss the problem there.
+
+Regards,
+Curtis
+
+
+On Tue, Aug 12, 2014 at 2:10 PM, John Minter <jrminter at gmail.com> wrote:
+
+> A minimal reproducible example:
+>
+> File:New:Script
+> select language: Python
+>
+> import os
+>
+> Run
+> Error:   File "New_.py", line 1, in <module>
+> ImportError: No module named os
+>
+> Thanks for providing the lifeline version that still works
+>
+> Thanks for your work
+>
+>
+> Best Regards
+> John Minter
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140814/3e38ccf1/attachment.html>
+
+From carandraug+dev at gmail.com  Thu Aug 14 12:18:21 2014
+From: carandraug+dev at gmail.com (=?UTF-8?B?Q2FybsOrIERyYXVn?=)
+Date: Thu, 14 Aug 2014 18:18:21 +0100
+Subject: [ImageJ-devel] get current image when implementing a Command
+	interface
+Message-ID: <CAPOrs_1-_XTWvwo0qy8SO1BBfo2G1ududYgqX+0M1dcuuTRaQQ@mail.gmail.com>
+
+Hi
+
+I'm trying to write an ImageJ plugin but I'm failing at the most basic
+step which I thought would be getting the current image (last selected
+image). I am using the @Parameter annotation to get a Dataset and
+implementing a Command interface but I'm unsure of what it's
+happening. Using:
+
+  @Parameter
+  private Dataset dataset;
+
+as suggested on the tutorials [1], seems to use what the image was
+when opened. After reading the javadocs [2], I have tried to set
+persist to false but go no change.
+
+Please, consider my very small case which should simply print the
+image data type [3] (it requires closing the text window after each
+call). I open the sample image "blobs" and the plugin will print
+"8-bit" (expected). Then I open the sample "CT" and it prints "16-bit"
+(expected). I then select the blobs image, run it again but get
+"16-bit" (that was a surprise, I guess it's choosing the last opened
+image). So I change the CT to 8-bit using "Edit > Type", run the
+plugin again but still get back "16-bit" (uh! I have no idea of what's
+going on).
+
+I'm probably doing something very stupid as I'm still getting to grips
+with java. Could anyone explain to me how to get the current image? I
+did found the ImageJ1 getCurrentImage() method but I'm trying to use
+ImgLib2 to later on get a RandomAccessible and implement some
+N-dimensional algorithms.
+
+Thank you,
+Carn?
+
+[1] https://github.com/imagej/imagej-tutorials/blob/master/simple-commands/src/main/java/ComputeStats.java
+[2] http://jenkins.imagej.net/job/SciJava-common-javadoc/javadoc/org/scijava/plugin/Parameter.html
+[3] http://pastebin.com/ZVt1YsJ0
+
+
+From ctrueden at wisc.edu  Thu Aug 14 15:47:23 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Thu, 14 Aug 2014 15:47:23 -0500
+Subject: [ImageJ-devel] get current image when implementing a Command
+	interface
+In-Reply-To: <CAPOrs_1-_XTWvwo0qy8SO1BBfo2G1ududYgqX+0M1dcuuTRaQQ@mail.gmail.com>
+References: <CAPOrs_1-_XTWvwo0qy8SO1BBfo2G1ududYgqX+0M1dcuuTRaQQ@mail.gmail.com>
+Message-ID: <CADN69y=C5EWt-p63utrmNSmQZehCECu_a3ifk48NvbFsrCGeqQ@mail.gmail.com>
+
+Hi Carn?,
+
+> I open the sample image "blobs" and the plugin will print "8-bit"
+> (expected). Then I open the sample "CT" and it prints "16-bit"
+> (expected). I then select the blobs image, run it again but get
+> "16-bit"
+
+This is a bug in the ImageJ2 legacy layer, responsible for keeping the
+ImageJ2 data structures in sync with ImageJ 1.x. Could you please file an
+issue at https://github.com/imagej/imagej-legacy/issues ?
+
+Thank you,
+Curtis
+
+
+On Thu, Aug 14, 2014 at 12:18 PM, Carn? Draug <carandraug+dev at gmail.com>
+wrote:
+
+> Hi
+>
+> I'm trying to write an ImageJ plugin but I'm failing at the most basic
+> step which I thought would be getting the current image (last selected
+> image). I am using the @Parameter annotation to get a Dataset and
+> implementing a Command interface but I'm unsure of what it's
+> happening. Using:
+>
+>   @Parameter
+>   private Dataset dataset;
+>
+> as suggested on the tutorials [1], seems to use what the image was
+> when opened. After reading the javadocs [2], I have tried to set
+> persist to false but go no change.
+>
+> Please, consider my very small case which should simply print the
+> image data type [3] (it requires closing the text window after each
+> call). I open the sample image "blobs" and the plugin will print
+> "8-bit" (expected). Then I open the sample "CT" and it prints "16-bit"
+> (expected). I then select the blobs image, run it again but get
+> "16-bit" (that was a surprise, I guess it's choosing the last opened
+> image). So I change the CT to 8-bit using "Edit > Type", run the
+> plugin again but still get back "16-bit" (uh! I have no idea of what's
+> going on).
+>
+> I'm probably doing something very stupid as I'm still getting to grips
+> with java. Could anyone explain to me how to get the current image? I
+> did found the ImageJ1 getCurrentImage() method but I'm trying to use
+> ImgLib2 to later on get a RandomAccessible and implement some
+> N-dimensional algorithms.
+>
+> Thank you,
+> Carn?
+>
+> [1]
+> https://github.com/imagej/imagej-tutorials/blob/master/simple-commands/src/main/java/ComputeStats.java
+> [2]
+> http://jenkins.imagej.net/job/SciJava-common-javadoc/javadoc/org/scijava/plugin/Parameter.html
+> [3] http://pastebin.com/ZVt1YsJ0
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140814/da00b10c/attachment.html>
+
+From carandraug+dev at gmail.com  Fri Aug 15 08:32:59 2014
+From: carandraug+dev at gmail.com (=?UTF-8?B?Q2FybsOrIERyYXVn?=)
+Date: Fri, 15 Aug 2014 14:32:59 +0100
+Subject: [ImageJ-devel] get current image when implementing a Command
+	interface
+In-Reply-To: <CADN69y=C5EWt-p63utrmNSmQZehCECu_a3ifk48NvbFsrCGeqQ@mail.gmail.com>
+References: <CAPOrs_1-_XTWvwo0qy8SO1BBfo2G1ududYgqX+0M1dcuuTRaQQ@mail.gmail.com>
+	<CADN69y=C5EWt-p63utrmNSmQZehCECu_a3ifk48NvbFsrCGeqQ@mail.gmail.com>
+Message-ID: <CAPOrs_37Dd9N8o=wPC4HrKeHf+EAu-5JA_Yh-oVAGA8Rgnw3ig@mail.gmail.com>
+
+On 14 August 2014 21:47, Curtis Rueden <ctrueden at wisc.edu> wrote:
+> Hi Carn?,
+>
+> On Thu, Aug 14, 2014 at 12:18 PM, Carn? Draug <carandraug+dev at gmail.com>
+> wrote:
+>> I open the sample image "blobs" and the plugin will print "8-bit"
+>> (expected). Then I open the sample "CT" and it prints "16-bit"
+>> (expected). I then select the blobs image, run it again but get
+>> "16-bit"
+>
+> This is a bug in the ImageJ2 legacy layer, responsible for keeping the
+> ImageJ2 data structures in sync with ImageJ 1.x. Could you please file an
+> issue at https://github.com/imagej/imagej-legacy/issues ?
+>
+
+I have just done so [1]. But were all the 3 problems the result of the same bug?
+
+1) it was picking the last opened image instead of last active;
+2) it was giving the data type of the image when opened and not the
+current data type;
+3) running the same plugin on the same image would do no nothing if
+the window was still open
+
+Or are these different bugs and I should report them separately?
+
+Also, then how do I use the ImageJ2 libraries to get the current
+image? How do I go around to get a RandomAccessible out of an opened
+image if I plan to implement an net.imagej.ops.Op that handles ND
+images?
+
+Carn?
+
+[1] https://github.com/imagej/imagej-legacy/issues/81
+
+
+From ctrueden at wisc.edu  Fri Aug 15 15:15:35 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Fri, 15 Aug 2014 15:15:35 -0500
+Subject: [ImageJ-devel] get current image when implementing a Command
+	interface
+In-Reply-To: <CAPOrs_37Dd9N8o=wPC4HrKeHf+EAu-5JA_Yh-oVAGA8Rgnw3ig@mail.gmail.com>
+References: <CAPOrs_1-_XTWvwo0qy8SO1BBfo2G1ududYgqX+0M1dcuuTRaQQ@mail.gmail.com>
+	<CADN69y=C5EWt-p63utrmNSmQZehCECu_a3ifk48NvbFsrCGeqQ@mail.gmail.com>
+	<CAPOrs_37Dd9N8o=wPC4HrKeHf+EAu-5JA_Yh-oVAGA8Rgnw3ig@mail.gmail.com>
+Message-ID: <CADN69ykxypZDT5pk_sjiax_0qm3vRVo73NmybCHASBTnBzyAQQ@mail.gmail.com>
+
+Hi Carn?, ?
+
+> I have just done so
+
+Thank you!
+
+> But were all the 3 problems the result of the same bug?
+
+Probably two separate yet related issues, actually. I wrote up an
+explanation on the GitHub issue:
+  https://github.com/imagej/imagej-legacy/issues/81
+
+Regards,
+Curtis
+
+
+On Fri, Aug 15, 2014 at 8:32 AM, Carn? Draug <carandraug+dev at gmail.com>
+wrote:
+
+> On 14 August 2014 21:47, Curtis Rueden <ctrueden at wisc.edu> wrote:
+> > Hi Carn?,
+> >
+> > On Thu, Aug 14, 2014 at 12:18 PM, Carn? Draug <carandraug+dev at gmail.com>
+> > wrote:
+> >> I open the sample image "blobs" and the plugin will print "8-bit"
+> >> (expected). Then I open the sample "CT" and it prints "16-bit"
+> >> (expected). I then select the blobs image, run it again but get
+> >> "16-bit"
+> >
+> > This is a bug in the ImageJ2 legacy layer, responsible for keeping the
+> > ImageJ2 data structures in sync with ImageJ 1.x. Could you please file an
+> > issue at https://github.com/imagej/imagej-legacy/issues ?
+> >
+>
+> I have just done so [1]. But were all the 3 problems the result of the
+> same bug?
+>
+> 1) it was picking the last opened image instead of last active;
+> 2) it was giving the data type of the image when opened and not the
+> current data type;
+> 3) running the same plugin on the same image would do no nothing if
+> the window was still open
+>
+> Or are these different bugs and I should report them separately?
+>
+> Also, then how do I use the ImageJ2 libraries to get the current
+> image? How do I go around to get a RandomAccessible out of an opened
+> image if I plan to implement an net.imagej.ops.Op that handles ND
+> images?
+>
+> Carn?
+>
+> [1] https://github.com/imagej/imagej-legacy/issues/81
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140815/57f86201/attachment.html>
+
+From bnorthan at gmail.com  Mon Aug 18 14:26:27 2014
+From: bnorthan at gmail.com (Brian Northan)
+Date: Mon, 18 Aug 2014 15:26:27 -0400
+Subject: [ImageJ-devel] (no subject)
+Message-ID: <CAMWa8i0Tgpn_trKy9YLACwcWc_5u6Wf76Ss-W5Yfo65W-Lka_w@mail.gmail.com>
+
+Hi List
+
+Johannes recently pointed me to the formatting and cleanup styles of the
+top level imagej project (
+https://github.com/imagej/imagej/tree/master/config).
+
+They work great.  Though one thing I've noticed is that it seems to handle
+the curly braces of functions with a multi-line declaration differently
+then those with one line.  What I mean is.
+
+short declaration gets formatted like this...
+
+public int sillyFunction1(final boolean b) {
+        return 0;
+    }
+
+but if the declaration wraps to the next line the curly brace goes to
+another line
+
+public int sillyFunction2(final boolean b, final int someInteger,
+        final long... dims)
+    {
+        return 0;
+    }
+
+Does anybody else notice this??  Is it an intended part of the style??
+I've noticed this pattern in a few places in the imagej-ops code.
+Sometimes the curly braces for a function (or class declaration) are on the
+same line, sometimes on a new line.  Seems to depend on the length of the
+function/class declaration.
+
+Brian
+<https://github.com/imagej/imagej-ops/blob/master/src/main/java/net/imagej/ops/arithmetic/add/AddConstantToArrayByteImage.java>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140818/9fdb1e2a/attachment.html>
+
+From bschlining at gmail.com  Tue Aug 19 17:20:50 2014
+From: bschlining at gmail.com (Brian Schlining)
+Date: Tue, 19 Aug 2014 15:20:50 -0700
+Subject: [ImageJ-devel] Img <-> BufferedImage conversion
+Message-ID: <etPan.53f3cdc2.327b23c6.6e70@zen>
+
+Hi All,
+
+I?m trying to use imglib2 for some image processing. One thing I need to do is transform Img (actually ArrayImg) objects to BufferedImages. I?d also like to be able to transform those BufferedImages back into ArrayImg objects. For the most part I?m currently working with just PNG and JPEG (i.e. ARGB).
+
+I think I found a way to convert an Img to BufferedImage, but I?m not sure this is the recommended method. So if anyone has a better recommendation, please let me know!! Here?s the method I found:
+
+// Scala code, sorry Java folks.
+
+import net.imglib2.img.display.imagej.ImageJFunctions
+
+val imagePlus = ImageJFunctions.wrap(img, "")
+val bufferedImage = imagePlus.getBufferedImage
+
+How do I convert the buffered image back to an Img object? I saw this code at https://github.com/imglib/imglib/?/BufferedImageImg.java, but the resulting ArrayImg has dimensions of (height, width, 1) instead of the expected dimensions of (heigh, width, 3), so it doesn?t appear to be doing the right thing.
+
+Thanks!
+
+Brian
+
+
+
+--?
+Brian Schlining
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140819/3b9f41fa/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Wed Aug 20 02:42:13 2014
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Wed, 20 Aug 2014 09:42:13 +0200 (CEST)
+Subject: [ImageJ-devel] Apology for Jenkins mails
+Message-ID: <alpine.DEB.1.00.1408200939070.990@s15462909.onlinehome-server.info>
+
+Dear collaborators,
+
+yesterday, at 15:41:36 -0500 (CDT) for some reason, our Jenkins started
+sending out tons of mails to all developers active in this project, more
+than one mail per minute. I have still no idea why more than one mail was
+sent out, and decided that I cannot afford the time to investigate. The
+configuration has been changed to stop sending out those mails, but I am
+afraid that you will have to delete thousands of mails of little interest.
+
+Very sorry about that,
+Johannes
+
+
+From Johannes.Schindelin at gmx.de  Wed Aug 20 03:29:07 2014
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Wed, 20 Aug 2014 10:29:07 +0200 (CEST)
+Subject: [ImageJ-devel] Eclipse and SciJava annotation processing
+Message-ID: <alpine.DEB.1.00.1408201002130.990@s15462909.onlinehome-server.info>
+
+Hi Steffi,
+
+since you mentioned it yesterday, and since we are collaborating on
+SciJava projects, I thought about writing up a brief description of the
+problems Eclipse has with annotation processing (which is used heavily by
+SciJava), along with two suggestions how to address them.
+
+For background, let be briefly introduce the concept of annotation
+processing. Developed in the context of Enterprise Java Beans (EJB),
+annotations allow developers to provide meta information for use with
+types (e.g. classes), fields and methods. The idea was to let so-called
+annotation processors parse those annotations and then generate code
+*during the compilation*. For example, a specific annotation processor
+could generate getters and setters for all appropriately annotated fields.
+
+Now, why does Eclipse have problems with that? The specification of Java5
+demands that all annotation processors on the class path are called *as
+part of the compilation*. Unfortunately, the interfaces annotation
+processors have to implement are tuned toward complete compilation, but
+Eclipse wants to build *incrementally*. Therefore, the Eclipse developers
+decided to punt and require special settings by the developers to force
+running specific annotation processors.
+
+To work around this problem, we have code in a class called EclipseHelper
+designed to detect when Eclipse-compiled code is in dear need of
+processing the annotations. The idea being that as a diligent developer,
+you always will run at least one unit test, or at least one interactive
+test, before shipping your build artifact, and the EclipseHelper would be
+triggered by the first code path accessing SciJava plugins. You always
+test your code in Eclipse before packaging and distributing it, right? ;-)
+
+Now, with Christian Dietz, I developed a pure Eclipse (non-Maven) example
+that makes sure that the annotations are processed -- even if you never
+test the code from within Eclipse -- and you can find the code here:
+
+	https://github.com/scijava/eclipse-scijava-project
+
+The README contains a brief description of the problem, too, and a link to
+the relevant commit adding the workaround.
+
+But as you pointed out that you appreciated the patience with which I
+helped you get into Maven (and subsequently benefit from everything that
+system provides for you), I guess it is time to make another, Maven-based,
+example, intended to be imported into Eclipse via Import>Maven>Import
+Existing Maven Project.
+
+The main idea here is to use a *profile*. A Maven profile is essentially a
+*conditional* part of the pom.xml. It looks roughly like this:
+
+	<profiles>
+		<profile>
+			<id>total-eclipse-of-my-heart</id>
+
+			...
+		</profile>
+	</profiles>
+
+The part that is inside the <profile> block could be a <build> block,
+indented two levels more than usual. The profiles are conditional, and you
+can make them conditional upon some tell-tale such as the m2e property set
+by Eclipse's Maven integration. See a real-life example here:
+
+	https://github.com/scijava/scijava-common/blob/e53204823068a4313c618c362851a64b16a199b8/pom.xml#L200-L241
+
+(This is actually the real life example that lets you build SciJava
+common inside Eclipse, with all SciJava annotations properly processed.)
+
+I guess the best course of action would be to include this profile in
+pom-scijava, but we will have to make it conditional, somehow, on
+scijava-common being a dependency, otherwise we would fail builds of
+SciJava-related projects that do *not* have scijava-common as dependency
+(such as ImgLib2 core).
+
+Hopefully this clarifies the problem and the possible solutions,
+Johannes
+
+
+From pietzsch at mpi-cbg.de  Wed Aug 20 04:10:44 2014
+From: pietzsch at mpi-cbg.de (Tobias Pietzsch)
+Date: Wed, 20 Aug 2014 11:10:44 +0200
+Subject: [ImageJ-devel] Img <-> BufferedImage conversion
+In-Reply-To: <etPan.53f3cdc2.327b23c6.6e70@zen>
+References: <etPan.53f3cdc2.327b23c6.6e70@zen>
+Message-ID: <633028A8-11A9-413B-90BC-7E9C85939169@mpi-cbg.de>
+
+Hi Brian,
+
+BufferedImage is always 2D, so you cannot have a BufferedImage with dimensions (height, width, 3).
+
+If you know that you have an ArrayImg and you know the pixel Type, you can get to the underlying primitive array, for example
+byte[] array = ( byte[] ) ( ( ArrayDataAccess< ? > ) img.update( null ) ).getCurrentStorageArray()
+if you know that img is a UnsignedByteType ArrayImg. Then you wrap that in a BufferedImage.
+
+You can do the same thing the other way around: Get the primitive array from the BufferedImage and wrap it in an ArrayImg.
+
+Essentially the code you found does that for you for the standard PixelTypes (UnsignedByteType, ARGBType, etc )...
+
+best regards,
+Tobias
+
+On 20 Aug 2014, at 00:20, Brian Schlining <bschlining at gmail.com> wrote:
+
+> Hi All,
+> 
+> I?m trying to use imglib2 for some image processing. One thing I need to do is transform Img (actually ArrayImg) objects to BufferedImages. I?d also like to be able to transform those BufferedImages back into ArrayImg objects. For the most part I?m currently working with just PNG and JPEG (i.e. ARGB).
+> 
+> I think I found a way to convert an Img to BufferedImage, but I?m not sure this is the recommended method. So if anyone has a better recommendation, please let me know!! Here?s the method I found:
+> 
+> // Scala code, sorry Java folks.
+> 
+> import net.imglib2.img.display.imagej.ImageJFunctions
+> 
+> val imagePlus = ImageJFunctions.wrap(img, "")
+> val bufferedImage = imagePlus.getBufferedImage
+> 
+> How do I convert the buffered image back to an Img object? I saw this code at https://github.com/imglib/imglib/?/BufferedImageImg.java, but the resulting ArrayImg has dimensions of (height, width, 1) instead of the expected dimensions of (heigh, width, 3), so it doesn?t appear to be doing the right thing.
+> 
+> Thanks!
+> 
+> Brian
+> 
+> 
+> 
+> -- 
+> Brian Schlining
+> 
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140820/ed3ac6c5/attachment.html>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140820/ed3ac6c5/attachment.pgp>
+
+From bschlining at gmail.com  Wed Aug 20 11:30:14 2014
+From: bschlining at gmail.com (Brian Schlining)
+Date: Wed, 20 Aug 2014 09:30:14 -0700
+Subject: [ImageJ-devel] Image Orientation
+Message-ID: <etPan.53f4cd17.6b8b4567.1a4@zen>
+
+Hi All,
+
+I?m reading an image that has the following dimensions: width = 2448 pixels, height = 3264. I?m reading it as an ImgPlus as follows:
+
+// Scala code
+import io.scif.img.IO
+
+val imgs = IO.openImgs("/images/IMG_20140806_080706.jpg")
+val imgPlus = imgs.get(0);
+
+The resulting Img has dimensions of [3264x2448x3] or [HEIGHTxWIDTHxCOLORS; which seems to be transposed from what I expect. I would expect it to be [WIDTHxHEIGHTxCOLORS]. In fact, if I convert it to a bufferedImage (see below), then it the BufferedImage also has the wrong orientation:
+
+import net.imglib2.img.display.imagej.ImageJFunctions
+
+val imagePlus = ImageJFunctions.wrap(img, "")
+val bufferedImage = imagePlus.getBufferedImage
+println(bufferedImage)
+println(s"\twidth = ${bufferedImage.getWidth()}") // prints 3264 -> WRONG
+println(s"\theight = ${bufferedImage.getHeight()}") // prints 2448 -> WRONG
+Can some explain what?s going on here. I?m very confused.
+
+Thanks
+
+
+
+--?
+Brian Schlining
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140820/838e544c/attachment-0001.html>
+
+From bschlining at gmail.com  Wed Aug 20 11:41:49 2014
+From: bschlining at gmail.com (Brian Schlining)
+Date: Wed, 20 Aug 2014 09:41:49 -0700
+Subject: [ImageJ-devel] Img <-> BufferedImage conversion
+In-Reply-To: <633028A8-11A9-413B-90BC-7E9C85939169@mpi-cbg.de>
+References: <etPan.53f3cdc2.327b23c6.6e70@zen>
+	<633028A8-11A9-413B-90BC-7E9C85939169@mpi-cbg.de>
+Message-ID: <etPan.53f4cfcd.6b8b4567.396@zen>
+
+Hi Tobias (et al),
+
+Thanks for getting back to me.
+
+So it sounds like to go full round trip from ArrayImg[x, y, 3] -> BufferedImage -> ArrayImg[x, y, 3] I?ll need to manually unpack values from the buffered image. Something like:
+
+val arraying = // initialize empty ArrayImg
+val cursor = arrayImg.randomAccess()
+
+for (x <- 0 until bufferedImage.getWidth;  
+     y <- 0 until bufferedImage.getHeight) {
+         
+  val rgb: Int = bufferedImage.getRGB
+  val b: Array[Byte] = // unpack rbg to components
+  for (c <- 0 until 3) {
+        cursor.setPosition(x, y, c)
+        cursor.get.set(b(c))
+  }
+}
+Does that sound like the correct thing to do?
+
+Thanks for you help
+
+Brian
+
+
+
+On August 20, 2014 at 2:10:45 AM, Tobias Pietzsch (pietzsch at mpi-cbg.de) wrote:
+
+Hi Brian,
+
+BufferedImage is always 2D, so you cannot have a BufferedImage with dimensions (height, width, 3).
+
+If you know that you have an ArrayImg and you know the pixel Type, you can get to the underlying primitive array, for example
+byte[] array = ( byte[] ) ( ( ArrayDataAccess< ? > ) img.update( null ) ).getCurrentStorageArray()
+if you know that img is a UnsignedByteType ArrayImg. Then you wrap that in a BufferedImage.
+
+You can do the same thing the other way around: Get the primitive array from the BufferedImage and wrap it in an ArrayImg.
+
+Essentially the code you found does that for you for the standard PixelTypes (UnsignedByteType, ARGBType, etc )...
+
+best regards,
+Tobias
+
+On 20 Aug 2014, at 00:20, Brian Schlining <bschlining at gmail.com> wrote:
+
+Hi All,
+
+I?m trying to use imglib2 for some image processing. One thing I need to do is transform Img (actually ArrayImg) objects to BufferedImages. I?d also like to be able to transform those BufferedImages back into ArrayImg objects. For the most part I?m currently working with just PNG and JPEG (i.e. ARGB).
+
+I think I found a way to convert an Img to BufferedImage, but I?m not sure this is the recommended method. So if anyone has a better recommendation, please let me know!!?Here?s the method I found:
+
+// Scala code, sorry Java folks.
+
+import net.imglib2.img.display.imagej.ImageJFunctions
+
+val imagePlus = ImageJFunctions.wrap(img, "")
+val bufferedImage = imagePlus.getBufferedImage
+
+
+How do I convert the buffered image back to an Img object??I saw this code at?https://github.com/imglib/imglib/?/BufferedImageImg.java, but the resulting ArrayImg has dimensions of (height, width, 1) instead of the expected dimensions of (heigh, width, 3), so it doesn?t appear to be doing the right thing.
+
+Thanks!
+
+Brian
+
+
+
+--?
+Brian Schlining
+
+_______________________________________________
+ImageJ-devel mailing list
+ImageJ-devel at imagej.net
+http://imagej.net/mailman/listinfo/imagej-devel
+
+--?
+Brian Schlining
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140820/066bf9cd/attachment.html>
+
+From ctrueden at wisc.edu  Wed Aug 20 12:56:29 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Wed, 20 Aug 2014 12:56:29 -0500
+Subject: [ImageJ-devel] Img <-> BufferedImage conversion
+In-Reply-To: <etPan.53f4cfcd.6b8b4567.396@zen>
+References: <etPan.53f3cdc2.327b23c6.6e70@zen>
+	<633028A8-11A9-413B-90BC-7E9C85939169@mpi-cbg.de>
+	<etPan.53f4cfcd.6b8b4567.396@zen>
+Message-ID: <CADN69ynOLBNGL-EBBr4h+QDL9zoXffrbhqNOL==Reg0_uq-m3w@mail.gmail.com>
+
+Hi Brian,
+
+> One thing I need to do is transform Img (actually ArrayImg) objects to
+> BufferedImages.
+
+Note that if what you want is to transform N-dimensional Imgs to _rendered_
+BufferedImages (e.g., at specific planes, perhaps composited, and so
+forth), you can use the Projector and Converter API:
+
+https://github.com/imglib/imglib/tree/imglib2-2.0.0-beta-26/core/src/main/java/net/imglib2/display/projector
+https://github.com/imglib/imglib/tree/imglib2-2.0.0-beta-26/core/src/main/java/net/imglib2/converter
+
+This is how ImageJ2 actually paints Img objects on screen, using
+CompositeXYProjector and RealLUTConverter.
+
+If, on the other hand, you actually want the BufferedImage objects to
+contain raw data, it might be helpful for you to describe your use case in
+more detail. In my experience, BufferedImages are designed for image data
+intended for blitting to the screen, as opposed to raw scientific image
+samples. Trying to use them for the latter is likely to cause more problems
+than it solves.
+
+Regards,
+Curtis
+
+
+On Wed, Aug 20, 2014 at 11:41 AM, Brian Schlining <bschlining at gmail.com>
+wrote:
+
+> Hi Tobias (et al),
+>
+> Thanks for getting back to me.
+>
+> So it sounds like to go full round trip from ArrayImg[x, y, 3] ->
+> BufferedImage -> ArrayImg[x, y, 3] I?ll need to manually unpack values
+> from the buffered image. Something like:
+>
+> val arraying = // initialize empty ArrayImg
+> val cursor = arrayImg.randomAccess()
+>
+> for (x <- 0 until bufferedImage.getWidth;
+>      y <- 0 until bufferedImage.getHeight) {
+>
+>   val rgb: Int = bufferedImage.getRGB
+>   val b: Array[Byte] = // unpack rbg to components
+>   for (c <- 0 until 3) {
+>         cursor.setPosition(x, y, c)
+>         cursor.get.set(b(c))
+>   }
+> }
+>
+> Does that sound like the correct thing to do?
+>
+> Thanks for you help
+>
+> Brian
+>
+>
+>
+> On August 20, 2014 at 2:10:45 AM, Tobias Pietzsch (pietzsch at mpi-cbg.de)
+> wrote:
+>
+> Hi Brian,
+>
+> BufferedImage is always 2D, so you cannot have a BufferedImage with
+> dimensions (height, width, 3).
+>
+> If you know that you have an ArrayImg and you know the pixel Type, you can
+> get to the underlying primitive array, for example
+>  byte[] array = ( byte[] ) ( ( ArrayDataAccess< ? > ) img.update( null )
+> ).getCurrentStorageArray()
+>  if you know that img is a UnsignedByteType ArrayImg. Then you wrap that
+> in a BufferedImage.
+>
+> You can do the same thing the other way around: Get the primitive array
+> from the BufferedImage and wrap it in an ArrayImg.
+>
+> Essentially the code you found does that for you for the standard
+> PixelTypes (UnsignedByteType, ARGBType, etc )...
+>
+> best regards,
+> Tobias
+>
+>  On 20 Aug 2014, at 00:20, Brian Schlining <bschlining at gmail.com> wrote:
+>
+>   Hi All,
+>
+> I?m trying to use imglib2 for some image processing. One thing I need to
+> do is transform Img (actually ArrayImg) objects to BufferedImages. I?d also
+> like to be able to transform those BufferedImages back into ArrayImg
+> objects. For the most part I?m currently working with just PNG and JPEG
+> (i.e. ARGB).
+>
+> *I think I found a way to convert an Img to BufferedImage, but I?m not
+> sure this is the recommended method. So if anyone has a better
+> recommendation, please let me know!!* Here?s the method I found:
+>
+> // Scala code, sorry Java folks.
+>
+> import net.imglib2.img.display.imagej.ImageJFunctions
+>
+> val imagePlus = ImageJFunctions.wrap(img, "")
+> val bufferedImage = imagePlus.getBufferedImage
+>
+>
+> *How do I convert the buffered image back to an Img object?* I saw this
+> code at https://github.com/imglib/imglib/?/BufferedImageImg.java
+> <https://github.com/imglib/imglib/blob/imglib2-2.0.0-beta-21/scripting/src/main/java/net/imglib2/script/bufferedimag/BufferedImageImg.java>,
+> but the resulting ArrayImg has dimensions of (height, width, 1) instead of
+> the expected dimensions of (heigh, width, 3), so it doesn?t appear to be
+> doing the right thing.
+>
+> Thanks!
+>
+> Brian
+>
+>
+>  --
+> Brian Schlining
+>
+>  _______________________________________________
+> ImageJ-devel mailing list
+>  ImageJ-devel at imagej.net
+>  http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+> ------------------------------
+>
+> --
+> Brian Schlining
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140820/3381157c/attachment.html>
+
+From bschlining at gmail.com  Wed Aug 20 13:13:24 2014
+From: bschlining at gmail.com (Brian Schlining)
+Date: Wed, 20 Aug 2014 11:13:24 -0700
+Subject: [ImageJ-devel] Img <-> BufferedImage conversion
+In-Reply-To: <CADN69ynOLBNGL-EBBr4h+QDL9zoXffrbhqNOL==Reg0_uq-m3w@mail.gmail.com>
+References: <etPan.53f3cdc2.327b23c6.6e70@zen>
+	<633028A8-11A9-413B-90BC-7E9C85939169@mpi-cbg.de>
+	<etPan.53f4cfcd.6b8b4567.396@zen>
+	<CADN69ynOLBNGL-EBBr4h+QDL9zoXffrbhqNOL==Reg0_uq-m3w@mail.gmail.com>
+Message-ID: <etPan.53f4e544.2eb141f2.396@zen>
+
+Hi Curtis,
+
+One thing I need to do is transform Img (actually ArrayImg) objects to BufferedImages.
+Note that if what you want is to transform N-dimensional Imgs to rendered BufferedImages (e.g., at specific planes, perhaps composited, and so forth), you can use the Projector and Converter API:
+Yes, for the most part, I want to transform the Img to BufferedImages so that I can draw info onto them. (See attached example). A full round-trip might not be needed, but it would be a nice to have.
+
+https://github.com/imglib/imglib/tree/imglib2?2.0.0-beta?26/core/src/main/java/net/imglib2/display/projector https://github.com/imglib/imglib/tree/imglib2?2.0.0-beta?26/core/src/main/java/net/imglib2/converter
+
+This is how ImageJ2 actually paints Img objects on screen, using CompositeXYProjector and RealLUTConverter.
+Can you give me a code example of how this would work? It?s not obvious from the javadocs how to use a Projector and Converter to generate a BufferedImage.
+
+? Brian Schlining
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140820/a0e9356c/attachment-0001.html>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: filter_3-20090430221134.png
+Type: image/png
+Size: 178158 bytes
+Desc: not available
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140820/a0e9356c/attachment-0001.png>
+
+From bschlining at gmail.com  Wed Aug 20 18:38:52 2014
+From: bschlining at gmail.com (Brian Schlining)
+Date: Wed, 20 Aug 2014 16:38:52 -0700
+Subject: [ImageJ-devel] Image Orientation
+In-Reply-To: <etPan.53f4cd17.6b8b4567.1a4@zen>
+References: <etPan.53f4cd17.6b8b4567.1a4@zen>
+Message-ID: <etPan.53f5318c.6b8b4567.11b7@zen>
+
+Never mind! I?m working on a Mac and all it?s preview utilities were auto-rotating the image. The imglib IO is reading the file using the correct dimensions. (smacking head on desk)
+
+
+
+On August 20, 2014 at 9:30:21 AM, Brian Schlining (bschlining at gmail.com) wrote:
+
+Hi All,
+
+I?m reading an image that has the following dimensions: width = 2448 pixels, height = 3264. I?m reading it as an ImgPlus as follows:
+
+// Scala code
+import io.scif.img.IO
+
+val imgs = IO.openImgs("/images/IMG_20140806_080706.jpg")
+val imgPlus = imgs.get(0);
+
+
+The resulting Img has dimensions of [3264x2448x3] or [HEIGHTxWIDTHxCOLORS; which seems to be transposed from what I expect. I would expect it to be [WIDTHxHEIGHTxCOLORS]. In fact, if I convert it to a bufferedImage (see below), then it the BufferedImage also has the wrong orientation:
+
+import net.imglib2.img.display.imagej.ImageJFunctions
+
+val imagePlus = ImageJFunctions.wrap(img, "")
+val bufferedImage = imagePlus.getBufferedImage
+println(bufferedImage)
+println(s"\twidth = ${bufferedImage.getWidth()}") // prints 3264 -> WRONG
+println(s"\theight = ${bufferedImage.getHeight()}") // prints 2448 -> WRONG
+
+Can some explain what?s going on here. I?m very confused.
+
+Thanks
+
+
+
+--?
+Brian Schlining
+--?
+Brian Schlining
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140820/56de4369/attachment.html>
+
+From ctrueden at wisc.edu  Thu Aug 21 12:40:22 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Thu, 21 Aug 2014 12:40:22 -0500
+Subject: [ImageJ-devel] Img <-> BufferedImage conversion
+In-Reply-To: <etPan.53f4e544.2eb141f2.396@zen>
+References: <etPan.53f3cdc2.327b23c6.6e70@zen>
+	<633028A8-11A9-413B-90BC-7E9C85939169@mpi-cbg.de>
+	<etPan.53f4cfcd.6b8b4567.396@zen>
+	<CADN69ynOLBNGL-EBBr4h+QDL9zoXffrbhqNOL==Reg0_uq-m3w@mail.gmail.com>
+	<etPan.53f4e544.2eb141f2.396@zen>
+Message-ID: <CADN69ynVeAVnvkNym2tpbtW0c-w-CqobTZyj3Be8m2EQG9cMCw@mail.gmail.com>
+
+Hi Brian,
+
+> Can you give me a code example of how this would work? It?s not
+> obvious from the javadocs how to use a Projector and Converter to
+> generate a BufferedImage.
+
+I whipped one up for you.
+https://github.com/imglib/imglib-tutorials/commit/929de9b7482c312ff9c51ab52aa632779ef058f3
+
+Regards,
+Curtis
+
+
+On Wed, Aug 20, 2014 at 1:13 PM, Brian Schlining <bschlining at gmail.com>
+wrote:
+
+>  Hi Curtis,
+>
+>  One thing I need to do is transform Img (actually ArrayImg) objects to
+> BufferedImages.
+>
+> Note that if what you want is to transform N-dimensional Imgs to
+> *rendered* BufferedImages (e.g., at specific planes, perhaps composited,
+> and so forth), you can use the Projector and Converter API:
+>
+> Yes, for the most part, I want to transform the Img to BufferedImages so
+> that I can draw info onto them. (See attached example). A full round-trip
+> *might* not be needed, but it would be a *nice to have*.
+>
+>
+> https://github.com/imglib/imglib/tree/imglib2?2.0.0-beta?26/core/src/main/java/net/imglib2/display/projector
+> https://github.com/imglib/imglib/tree/imglib2?2.0.0-beta?26/core/src/main/java/net/imglib2/converter
+>
+> This is how ImageJ2 actually paints Img objects on screen, using
+> CompositeXYProjector and RealLUTConverter.
+>
+> Can you give me a code example of how this would work? It?s not obvious
+> from the javadocs how to use a Projector and Converter to generate a
+> BufferedImage.
+>
+> ? Brian Schlining
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140821/e2126d5e/attachment.html>
+
+From ctrueden at wisc.edu  Thu Aug 21 15:30:42 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Thu, 21 Aug 2014 15:30:42 -0500
+Subject: [ImageJ-devel] (no subject)
+In-Reply-To: <CAMWa8i0Tgpn_trKy9YLACwcWc_5u6Wf76Ss-W5Yfo65W-Lka_w@mail.gmail.com>
+References: <CAMWa8i0Tgpn_trKy9YLACwcWc_5u6Wf76Ss-W5Yfo65W-Lka_w@mail.gmail.com>
+Message-ID: <CADN69ynKnoJsmvy7xApRFTogDVhvH8czv8gq+=bMYE43vZizdg@mail.gmail.com>
+
+Hi Brian,
+
+> Is it an intended part of the style??
+
+Yep, it's intended. It is a style I have used for many years. My reasoning
+is that once things wrap to a new line, the indentation becomes very
+misleading, and the "{" on its own line helps readability. But I
+acknowledge it's a bit weird.
+
+Lately I've been a little weary of the verbosity of Java -- maybe I'll give
+Scala a spin some time...
+
+Regards,
+Curtis
+
+
+On Mon, Aug 18, 2014 at 2:26 PM, Brian Northan <bnorthan at gmail.com> wrote:
+
+> Hi List
+>
+> Johannes recently pointed me to the formatting and cleanup styles of the
+> top level imagej project (
+> https://github.com/imagej/imagej/tree/master/config).
+>
+> They work great.  Though one thing I've noticed is that it seems to handle
+> the curly braces of functions with a multi-line declaration differently
+> then those with one line.  What I mean is.
+>
+> short declaration gets formatted like this...
+>
+> public int sillyFunction1(final boolean b) {
+>         return 0;
+>     }
+>
+> but if the declaration wraps to the next line the curly brace goes to
+> another line
+>
+> public int sillyFunction2(final boolean b, final int someInteger,
+>         final long... dims)
+>     {
+>         return 0;
+>     }
+>
+> Does anybody else notice this??  Is it an intended part of the style??
+> I've noticed this pattern in a few places in the imagej-ops code.
+> Sometimes the curly braces for a function (or class declaration) are on the
+> same line, sometimes on a new line.  Seems to depend on the length of the
+> function/class declaration.
+>
+> Brian
+>
+> <https://github.com/imagej/imagej-ops/blob/master/src/main/java/net/imagej/ops/arithmetic/add/AddConstantToArrayByteImage.java>
+>
+>
+>
+>
+>
+>
+>
+>
+>
+>
+>
+>
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140821/b033991b/attachment.html>
+
+From bnorthan at gmail.com  Thu Aug 21 16:14:09 2014
+From: bnorthan at gmail.com (Brian Northan)
+Date: Thu, 21 Aug 2014 17:14:09 -0400
+Subject: [ImageJ-devel] (no subject)
+In-Reply-To: <CADN69ynKnoJsmvy7xApRFTogDVhvH8czv8gq+=bMYE43vZizdg@mail.gmail.com>
+References: <CAMWa8i0Tgpn_trKy9YLACwcWc_5u6Wf76Ss-W5Yfo65W-Lka_w@mail.gmail.com>
+	<CADN69ynKnoJsmvy7xApRFTogDVhvH8czv8gq+=bMYE43vZizdg@mail.gmail.com>
+Message-ID: <CAMWa8i3m4fW22YXqctsqCJbqiCLi4b8Z0cXM-6mD8zJ-P=Ru-g@mail.gmail.com>
+
+Hi Curtis
+
+Thanks for clarifying.   I was a bit confused by the fact that after
+autoformat sometimes the "{" was on the same line, and other time it was on
+a different line.  It took me a while to figure out the pattern.
+
+Brian
+
+
+On Thu, Aug 21, 2014 at 4:30 PM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+
+> Hi Brian,
+>
+> > Is it an intended part of the style??
+>
+> Yep, it's intended. It is a style I have used for many years. My reasoning
+> is that once things wrap to a new line, the indentation becomes very
+> misleading, and the "{" on its own line helps readability. But I
+> acknowledge it's a bit weird.
+>
+> Lately I've been a little weary of the verbosity of Java -- maybe I'll
+> give Scala a spin some time...
+>
+> Regards,
+> Curtis
+>
+>
+> On Mon, Aug 18, 2014 at 2:26 PM, Brian Northan <bnorthan at gmail.com> wrote:
+>
+>> Hi List
+>>
+>> Johannes recently pointed me to the formatting and cleanup styles of the
+>> top level imagej project (
+>> https://github.com/imagej/imagej/tree/master/config).
+>>
+>> They work great.  Though one thing I've noticed is that it seems to
+>> handle the curly braces of functions with a multi-line declaration
+>> differently then those with one line.  What I mean is.
+>>
+>> short declaration gets formatted like this...
+>>
+>> public int sillyFunction1(final boolean b) {
+>>         return 0;
+>>     }
+>>
+>> but if the declaration wraps to the next line the curly brace goes to
+>> another line
+>>
+>> public int sillyFunction2(final boolean b, final int someInteger,
+>>         final long... dims)
+>>     {
+>>         return 0;
+>>     }
+>>
+>> Does anybody else notice this??  Is it an intended part of the style??
+>> I've noticed this pattern in a few places in the imagej-ops code.
+>> Sometimes the curly braces for a function (or class declaration) are on the
+>> same line, sometimes on a new line.  Seems to depend on the length of the
+>> function/class declaration.
+>>
+>> Brian
+>>
+>> <https://github.com/imagej/imagej-ops/blob/master/src/main/java/net/imagej/ops/arithmetic/add/AddConstantToArrayByteImage.java>
+>>
+>>
+>>
+>>
+>>
+>>
+>>
+>>
+>>
+>>
+>>
+>>
+>>
+>>
+>> _______________________________________________
+>> ImageJ-devel mailing list
+>> ImageJ-devel at imagej.net
+>> http://imagej.net/mailman/listinfo/imagej-devel
+>>
+>>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140821/e7ab45a9/attachment.html>
+
+From pietzsch at mpi-cbg.de  Thu Aug 21 18:05:28 2014
+From: pietzsch at mpi-cbg.de (Tobias Pietzsch)
+Date: Fri, 22 Aug 2014 01:05:28 +0200
+Subject: [ImageJ-devel] creating io.scif.img.ImgOpener currently fails in
+	Fiji
+Message-ID: <6ECEB0A7-0F51-4F78-922B-43B6AB834412@mpi-cbg.de>
+
+Hi,
+
+Currently
+new io.scif.img.ImgOpener();
+fails with
+java.lang.IllegalArgumentException: Invalid service: net.imagej.legacy.LegacyAppEventService
+
+To reproduce run
+new io.scif.img.ImgOpener();
+in Beanshell interpreter.
+
+The exception displayed in Beanshell interpreter is a bit non-helpful.
+Benjamin Schmid noticed the error, when it occurred in BigDataViewer?s ExportSpimSequencePlugIn.
+Here is the exception from that, which is a bit more detailed
+
+java.lang.IllegalArgumentException: Invalid service: net.imagej.legacy.LegacyAppEventService
+	at org.scijava.service.ServiceHelper.createExactService(ServiceHelper.java:280)
+	at org.scijava.service.ServiceHelper.loadService(ServiceHelper.java:231)
+	at org.scijava.service.ServiceHelper.loadService(ServiceHelper.java:194)
+	at org.scijava.service.ServiceHelper.loadServices(ServiceHelper.java:166)
+	at org.scijava.Context.<init>(Context.java:244)
+	at org.scijava.Context.<init>(Context.java:203)
+	at org.scijava.Context.<init>(Context.java:142)
+	at org.scijava.Context.<init>(Context.java:128)
+	at io.scif.img.AbstractImgIOComponent.<init>(AbstractImgIOComponent.java:57)
+	at io.scif.img.ImgOpener.<init>(ImgOpener.java:94)
+	at bdv.ij.export.imgloader.StackImageLoader.<init>(StackImageLoader.java:52)
+	at bdv.ij.export.SpimRegistrationSequence.createImageLoader(SpimRegistrationSequence.java:109)
+	at bdv.ij.export.SpimRegistrationSequence.<init>(SpimRegistrationSequence.java:56)
+	at bdv.ij.ExportSpimSequencePlugIn.getParameters(ExportSpimSequencePlugIn.java:490)
+	at bdv.ij.ExportSpimSequencePlugIn.run(ExportSpimSequencePlugIn.java:52)
+	at ij.IJ.runUserPlugIn(IJ.java:202)
+	at ij.IJ.runPlugIn(IJ.java:166)
+	at ij.Executer.runCommand(Executer.java:131)
+	at ij.Executer.run(Executer.java:64)
+	at java.lang.Thread.run(Thread.java:744)
+Caused by: java.lang.IllegalArgumentException: Invalid service: net.imagej.legacy.DefaultLegacyService
+	at org.scijava.service.ServiceHelper.createExactService(ServiceHelper.java:280)
+	at org.scijava.service.ServiceHelper.loadService(ServiceHelper.java:231)
+	at org.scijava.service.ServiceHelper.createServiceRecursively(ServiceHelper.java:340)
+	at org.scijava.service.ServiceHelper.createExactService(ServiceHelper.java:269)
+	... 19 more
+Caused by: java.lang.UnsupportedOperationException: Cannot instantiate more than one DefaultLegacyService
+	at net.imagej.legacy.DefaultLegacyService.checkInstance(DefaultLegacyService.java:606)
+	at net.imagej.legacy.DefaultLegacyService.initialize(DefaultLegacyService.java:411)
+	at org.scijava.service.ServiceHelper.createServiceRecursively(ServiceHelper.java:353)
+	at org.scijava.service.ServiceHelper.createExactService(ServiceHelper.java:269)
+	... 22 more
+Caused by: java.lang.Throwable: Initialized here:
+	at net.imagej.legacy.DefaultLegacyService.initialize(DefaultLegacyService.java:429)
+	at org.scijava.service.ServiceHelper.createServiceRecursively(ServiceHelper.java:353)
+	at org.scijava.service.ServiceHelper.createExactService(ServiceHelper.java:269)
+	at org.scijava.service.ServiceHelper.loadService(ServiceHelper.java:231)
+	at org.scijava.service.ServiceHelper.createServiceRecursively(ServiceHelper.java:340)
+	at org.scijava.service.ServiceHelper.createExactService(ServiceHelper.java:269)
+	at org.scijava.service.ServiceHelper.loadService(ServiceHelper.java:231)
+	at org.scijava.service.ServiceHelper.loadService(ServiceHelper.java:194)
+	at org.scijava.service.ServiceHelper.loadServices(ServiceHelper.java:166)
+	at org.scijava.Context.<init>(Context.java:244)
+	at org.scijava.Context.<init>(Context.java:203)
+	at org.scijava.Context.<init>(Context.java:142)
+	at org.scijava.Context.<init>(Context.java:98)
+	at org.scijava.Context.<init>(Context.java:86)
+	at net.imagej.ImageJ.<init>(ImageJ.java:82)
+	at net.imagej.Main.launch(Main.java:61)
+	at net.imagej.Main.main(Main.java:73)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:606)
+	at net.imagej.launcher.ClassLauncher.launch(ClassLauncher.java:258)
+	at net.imagej.launcher.ClassLauncher.run(ClassLauncher.java:184)
+	at net.imagej.launcher.ClassLauncher.main(ClassLauncher.java:76)
+
+best regards,
+Tobias
+
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140822/0c88dddb/attachment-0001.pgp>
+
+From Johannes.Schindelin at gmx.de  Fri Aug 22 02:04:47 2014
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Fri, 22 Aug 2014 09:04:47 +0200 (CEST)
+Subject: [ImageJ-devel] creating io.scif.img.ImgOpener currently fails
+ in Fiji
+In-Reply-To: <6ECEB0A7-0F51-4F78-922B-43B6AB834412@mpi-cbg.de>
+References: <6ECEB0A7-0F51-4F78-922B-43B6AB834412@mpi-cbg.de>
+Message-ID: <alpine.DEB.1.00.1408220849150.990@s15462909.onlinehome-server.info>
+
+Hi Tobias,
+
+On Fri, 22 Aug 2014, Tobias Pietzsch wrote:
+
+> Currently
+> new io.scif.img.ImgOpener();
+> fails with
+> java.lang.IllegalArgumentException: Invalid service: net.imagej.legacy.LegacyAppEventService
+
+Yep, the explanation is very easy:
+
+> [...]
+> Caused by: java.lang.UnsupportedOperationException: Cannot instantiate more than one DefaultLegacyService
+> [...]
+
+There is already a context, including a legacy service. Unfortunately, the
+best way to get at this context from an *ImageJ 1.x plugin* that I could
+come up with is:
+
+	import org.scijava.Context;
+
+	...
+
+	final Context context = (Context)
+		IJ.runPlugIn(Context.class.getName(), "");
+	final ImgOpener opener = new ImgOpener(context);
+
+(There is no way to make that more convenient without letting SCIFIO
+depend on ImageJ 1.x, which is of course a big no-no).
+
+Of course, you could also turn your plugin into an ImageJ2 plugin -- which
+is handled properly in Fiji thanks to Fiji Just Being ImageJ2 -- and then
+it would become as easy as:
+
+		@Parameter
+		private IOService io;
+
+		...
+			// use the IOService (which lets SCIFIO handle
+			// things) to open your dataset
+
+Ciao,
+Johannes
+
+
+From pietzsch at mpi-cbg.de  Fri Aug 22 09:35:53 2014
+From: pietzsch at mpi-cbg.de (Tobias Pietzsch)
+Date: Fri, 22 Aug 2014 16:35:53 +0200
+Subject: [ImageJ-devel] [fiji-devel] creating io.scif.img.ImgOpener
+	currently fails in Fiji
+In-Reply-To: <alpine.DEB.1.00.1408220849150.990@s15462909.onlinehome-server.info>
+References: <6ECEB0A7-0F51-4F78-922B-43B6AB834412@mpi-cbg.de>
+	<alpine.DEB.1.00.1408220849150.990@s15462909.onlinehome-server.info>
+Message-ID: <FC9E2E31-3091-4BC7-8A25-AA6DDB43CC51@mpi-cbg.de>
+
+Hi Johannes,
+
+On 22 Aug 2014, at 09:04, Johannes Schindelin <Johannes.Schindelin at gmx.de> wrote:
+
+> Hi Tobias,
+> 
+> On Fri, 22 Aug 2014, Tobias Pietzsch wrote:
+> 
+>> Currently
+>> new io.scif.img.ImgOpener();
+>> fails with
+>> java.lang.IllegalArgumentException: Invalid service: net.imagej.legacy.LegacyAppEventService
+> 
+> Yep, the explanation is very easy:
+> 
+>> [...]
+>> Caused by: java.lang.UnsupportedOperationException: Cannot instantiate more than one DefaultLegacyService
+>> [?]
+
+I missed that...
+
+> 
+> There is already a context, including a legacy service. Unfortunately, the
+> best way to get at this context from an *ImageJ 1.x plugin* that I could
+> come up with is:
+> 
+> 	import org.scijava.Context;
+> 
+> 	...
+> 
+> 	final Context context = (Context)
+> 		IJ.runPlugIn(Context.class.getName(), "");
+> 	final ImgOpener opener = new ImgOpener(context);
+> 
+> (There is no way to make that more convenient without letting SCIFIO
+> depend on ImageJ 1.x, which is of course a big no-no).
+
+The problem with this solution you suggested is that it does not work in Eclipse:
+Exception in thread "main" java.lang.IllegalArgumentException: Invalid service: net.imagej.legacy.DefaultLegacyService
+
+As much as I understand the need for the runtime service discovery used by the scijava stack, there are certainly downsides to it.
+My feeling is that in some ways it undermines the advantages that we have gained by switching to maven.
+I can import a maven project into my Eclipse, and all the dependencies are there, explicitly and automatically, which is really very convenient.
+Except now all dependencies are not there anymore because now there are non-obvious (to me) implicit runtime dependencies.
+I find this unfortunate.
+
+That being said, I found a solution that works for now, both in Eclipse and in Fiji
+    final ImgOpener opener = new ImgOpener( new Context( SCIFIOService.class, AppService.class, StatusService.class ) );
+This avoids requiring the net.imagej.legacy.LegacyAppEventService.
+It seems to work, but I?m not sure: Are there any downsides to that?
+
+best regards,
+Tobias
+
+> 
+> Of course, you could also turn your plugin into an ImageJ2 plugin -- which
+> is handled properly in Fiji thanks to Fiji Just Being ImageJ2 -- and then
+> it would become as easy as:
+> 
+> 		@Parameter
+> 		private IOService io;
+> 
+> 		...
+> 			// use the IOService (which lets SCIFIO handle
+> 			// things) to open your dataset
+> 
+> Ciao,
+> Johannes
+> 
+> -- 
+> -- 
+> Please avoid top-posting, and please make sure to reply-to-all!
+> 
+> Mailing list web interface: http://groups.google.com/group/fiji-devel
+> 
+> --- 
+> You received this message because you are subscribed to the Google Groups "Fiji-devel" group.
+> To unsubscribe from this group and stop receiving emails from it, send an email to fiji-devel+unsubscribe at googlegroups.com.
+> For more options, visit https://groups.google.com/d/optout.
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140822/2a6139ab/attachment.html>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140822/2a6139ab/attachment.pgp>
+
+From ctrueden at wisc.edu  Fri Aug 22 09:41:22 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Fri, 22 Aug 2014 09:41:22 -0500
+Subject: [ImageJ-devel] [fiji-devel] creating io.scif.img.ImgOpener
+ currently fails in Fiji
+In-Reply-To: <FC9E2E31-3091-4BC7-8A25-AA6DDB43CC51@mpi-cbg.de>
+References: <6ECEB0A7-0F51-4F78-922B-43B6AB834412@mpi-cbg.de>
+	<alpine.DEB.1.00.1408220849150.990@s15462909.onlinehome-server.info>
+	<FC9E2E31-3091-4BC7-8A25-AA6DDB43CC51@mpi-cbg.de>
+Message-ID: <CADN69yntLmhMReSCzMDNQXgUpdjm2wUrga+V_UEyvmRUOu0XxQ@mail.gmail.com>
+
+Hi Tobias,
+
+> java.lang.IllegalArgumentException: Invalid service:
+net.imagej.legacy.LegacyAppEventService
+>         at
+org.scijava.service.ServiceHelper.createExactService(ServiceHelper.java:280)
+...
+>         at org.scijava.Context.<init>(Context.java:128)
+>         at
+io.scif.img.AbstractImgIOComponent.<init>(AbstractImgIOComponent.java:57)
+>         at io.scif.img.ImgOpener.<init>(ImgOpener.java:94)
+
+Actually, this problem is a known bug, for which I am already working on a
+fix:
+
+    https://github.com/imagej/imagej-legacy/pull/88
+
+It is not a problem in your code, Tobias.
+
+Basically, the problem comes down to this "AppEventService" and how the
+design of it works. I have a strategy in mind for a new design that avoids
+the "cascade" of service dependencies which end up pulling in a
+LegacyService into a pure SCIFIO context, which is what causes this error.
+
+Feel free to comment on the PR if you wish to follow the progress.
+
+Regards,
+Curtis
+
+
+On Fri, Aug 22, 2014 at 9:35 AM, Tobias Pietzsch <pietzsch at mpi-cbg.de>
+wrote:
+
+> Hi Johannes,
+>
+> On 22 Aug 2014, at 09:04, Johannes Schindelin <Johannes.Schindelin at gmx.de>
+> wrote:
+>
+> Hi Tobias,
+>
+> On Fri, 22 Aug 2014, Tobias Pietzsch wrote:
+>
+> Currently
+> new io.scif.img.ImgOpener();
+> fails with
+> java.lang.IllegalArgumentException: Invalid service:
+> net.imagej.legacy.LegacyAppEventService
+>
+>
+> Yep, the explanation is very easy:
+>
+> [...]
+> Caused by: java.lang.UnsupportedOperationException: Cannot instantiate
+> more than one DefaultLegacyService
+> [?]
+>
+>
+> I missed that...
+>
+>
+> There is already a context, including a legacy service. Unfortunately, the
+> best way to get at this context from an *ImageJ 1.x plugin* that I could
+> come up with is:
+>
+> import org.scijava.Context;
+>
+> ...
+>
+> final Context context = (Context)
+>  IJ.runPlugIn(Context.class.getName(), "");
+> final ImgOpener opener = new ImgOpener(context);
+>
+> (There is no way to make that more convenient without letting SCIFIO
+> depend on ImageJ 1.x, which is of course a big no-no).
+>
+>
+> The problem with this solution you suggested is that it does not work in
+> Eclipse:
+> Exception in thread "main" java.lang.IllegalArgumentException: Invalid
+> service: net.imagej.legacy.DefaultLegacyService
+>
+> As much as I understand the need for the runtime service discovery used by
+> the scijava stack, there are certainly downsides to it.
+> My feeling is that in some ways it undermines the advantages that we have
+> gained by switching to maven.
+> I can import a maven project into my Eclipse, and all the dependencies are
+> there, explicitly and automatically, which is really very convenient.
+> Except now all dependencies are not there anymore because now there are
+> non-obvious (to me) implicit runtime dependencies.
+> I find this unfortunate.
+>
+> That being said, I found a solution that works for now, both in Eclipse
+> and in Fiji
+>     final ImgOpener opener = new ImgOpener( new Context(
+> SCIFIOService.class, AppService.class, StatusService.class ) );
+> This avoids requiring the net.imagej.legacy.LegacyAppEventService.
+> It seems to work, but I?m not sure: Are there any downsides to that?
+>
+> best regards,
+> Tobias
+>
+>
+> Of course, you could also turn your plugin into an ImageJ2 plugin -- which
+> is handled properly in Fiji thanks to Fiji Just Being ImageJ2 -- and then
+> it would become as easy as:
+>
+>  @Parameter
+>  private IOService io;
+>
+>  ...
+>   // use the IOService (which lets SCIFIO handle
+>  // things) to open your dataset
+>
+> Ciao,
+> Johannes
+>
+> --
+> --
+> Please avoid top-posting, and please make sure to reply-to-all!
+>
+> Mailing list web interface: http://groups.google.com/group/fiji-devel
+>
+> ---
+> You received this message because you are subscribed to the Google Groups
+> "Fiji-devel" group.
+> To unsubscribe from this group and stop receiving emails from it, send an
+> email to fiji-devel+unsubscribe at googlegroups.com.
+> For more options, visit https://groups.google.com/d/optout.
+>
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140822/2782c54a/attachment.html>
+
+From ctrueden at wisc.edu  Fri Aug 22 09:51:54 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Fri, 22 Aug 2014 09:51:54 -0500
+Subject: [ImageJ-devel] [fiji-devel] creating io.scif.img.ImgOpener
+ currently fails in Fiji
+In-Reply-To: <FC9E2E31-3091-4BC7-8A25-AA6DDB43CC51@mpi-cbg.de>
+References: <6ECEB0A7-0F51-4F78-922B-43B6AB834412@mpi-cbg.de>
+	<alpine.DEB.1.00.1408220849150.990@s15462909.onlinehome-server.info>
+	<FC9E2E31-3091-4BC7-8A25-AA6DDB43CC51@mpi-cbg.de>
+Message-ID: <CADN69y=hSUhmb9Juv3XFDtoCj+k2th6hS4=P2iYk5uJXWniNhw@mail.gmail.com>
+
+Hi Tobias,
+
+> Except now all dependencies are not there anymore because now there
+> are non-obvious (to me) implicit runtime dependencies.
+>
+> I find this unfortunate.
+
+I agree that this is a two-edged sword. We have more types of plugins now,
+which can alter the runtime behavior in more ways, so of course it becomes
+possible for ill-behaved plugins to bring down the system.
+
+This is already true in ImageJ 1.x though, because it is extensible at
+runtime: any plugin class could have a static initializer block that hoses
+up the JVM however it can imagine. It is just easier to do now.
+
+IMO, it would not be worth it to eliminate these powerful extension points
+just because of this possibility. The flexibility gained outweighs any
+disadvantages.
+
+We have already taken great pains to mitigate the issue with services in
+the context: when you create a new ImgOpener without specifying an SJC
+context, it uses _only_ relevant service types: things that implement the
+SciJavaService and SCIFIOService interfaces. In other words: _not_
+ImageJServices or other service types. The reason LegacyService is being
+(erroneously!) pulled in here is due to a bug in the design of the SJC
+AppEventService, as I said. I introduced a "LegacyAppEventService" which is
+a SciJavaService but depends on the ImageJ LegacyService. Hence, any
+Context that asks for SciJavaServices now pulls in a DefaultLegacyService
+whenever the LegacyAppEventService is on the classpath. The fix is to stop
+doing that.
+
+Anyway, if it still bothers you that any ol' developer can add something to
+the classpath which hoses up your programs, then you can stop it: create a
+more carefully controlled SJC Context and pass that to the ImgOpener.
+Alternately, we could change ImgOpener to be even more conservative in
+which services it uses. Of course, there are downsides there: any
+additional file format plugins, codec plugins, etc., might not be work
+properly if they do not have access to the services they need.
+
+I am very open to ideas for mitigating the extensibility issues here.
+
+Regards,
+Curtis
+
+
+On Fri, Aug 22, 2014 at 9:35 AM, Tobias Pietzsch <pietzsch at mpi-cbg.de>
+wrote:
+
+> Hi Johannes,
+>
+> On 22 Aug 2014, at 09:04, Johannes Schindelin <Johannes.Schindelin at gmx.de>
+> wrote:
+>
+> Hi Tobias,
+>
+> On Fri, 22 Aug 2014, Tobias Pietzsch wrote:
+>
+> Currently
+> new io.scif.img.ImgOpener();
+> fails with
+> java.lang.IllegalArgumentException: Invalid service:
+> net.imagej.legacy.LegacyAppEventService
+>
+>
+> Yep, the explanation is very easy:
+>
+> [...]
+> Caused by: java.lang.UnsupportedOperationException: Cannot instantiate
+> more than one DefaultLegacyService
+> [?]
+>
+>
+> I missed that...
+>
+>
+> There is already a context, including a legacy service. Unfortunately, the
+> best way to get at this context from an *ImageJ 1.x plugin* that I could
+> come up with is:
+>
+> import org.scijava.Context;
+>
+> ...
+>
+> final Context context = (Context)
+>  IJ.runPlugIn(Context.class.getName(), "");
+> final ImgOpener opener = new ImgOpener(context);
+>
+> (There is no way to make that more convenient without letting SCIFIO
+> depend on ImageJ 1.x, which is of course a big no-no).
+>
+>
+> The problem with this solution you suggested is that it does not work in
+> Eclipse:
+> Exception in thread "main" java.lang.IllegalArgumentException: Invalid
+> service: net.imagej.legacy.DefaultLegacyService
+>
+> As much as I understand the need for the runtime service discovery used by
+> the scijava stack, there are certainly downsides to it.
+> My feeling is that in some ways it undermines the advantages that we have
+> gained by switching to maven.
+> I can import a maven project into my Eclipse, and all the dependencies are
+> there, explicitly and automatically, which is really very convenient.
+> Except now all dependencies are not there anymore because now there are
+> non-obvious (to me) implicit runtime dependencies.
+> I find this unfortunate.
+>
+> That being said, I found a solution that works for now, both in Eclipse
+> and in Fiji
+>     final ImgOpener opener = new ImgOpener( new Context(
+> SCIFIOService.class, AppService.class, StatusService.class ) );
+> This avoids requiring the net.imagej.legacy.LegacyAppEventService.
+> It seems to work, but I?m not sure: Are there any downsides to that?
+>
+> best regards,
+> Tobias
+>
+>
+> Of course, you could also turn your plugin into an ImageJ2 plugin -- which
+> is handled properly in Fiji thanks to Fiji Just Being ImageJ2 -- and then
+> it would become as easy as:
+>
+>  @Parameter
+>  private IOService io;
+>
+>  ...
+>   // use the IOService (which lets SCIFIO handle
+>  // things) to open your dataset
+>
+> Ciao,
+> Johannes
+>
+> --
+> --
+> Please avoid top-posting, and please make sure to reply-to-all!
+>
+> Mailing list web interface: http://groups.google.com/group/fiji-devel
+>
+> ---
+> You received this message because you are subscribed to the Google Groups
+> "Fiji-devel" group.
+> To unsubscribe from this group and stop receiving emails from it, send an
+> email to fiji-devel+unsubscribe at googlegroups.com.
+> For more options, visit https://groups.google.com/d/optout.
+>
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140822/022fef70/attachment-0001.html>
+
+From Johannes.Schindelin at gmx.de  Fri Aug 22 10:53:28 2014
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Fri, 22 Aug 2014 17:53:28 +0200 (CEST)
+Subject: [ImageJ-devel] [fiji-devel] creating io.scif.img.ImgOpener
+ currently fails in Fiji
+In-Reply-To: <FC9E2E31-3091-4BC7-8A25-AA6DDB43CC51@mpi-cbg.de>
+References: <6ECEB0A7-0F51-4F78-922B-43B6AB834412@mpi-cbg.de>
+	<alpine.DEB.1.00.1408220849150.990@s15462909.onlinehome-server.info>
+	<FC9E2E31-3091-4BC7-8A25-AA6DDB43CC51@mpi-cbg.de>
+Message-ID: <alpine.DEB.1.00.1408221753010.990@s15462909.onlinehome-server.info>
+
+Hi Tobias,
+
+On Fri, 22 Aug 2014, Tobias Pietzsch wrote:
+
+>     final ImgOpener opener = new ImgOpener( new Context(
+>     SCIFIOService.class, AppService.class, StatusService.class ) );
+
+Why do you create a new Context everytime? That's a bit wasteful...
+
+Ciao,
+Johannes
+
+
+From pietzsch at mpi-cbg.de  Fri Aug 22 11:18:50 2014
+From: pietzsch at mpi-cbg.de (Tobias Pietzsch)
+Date: Fri, 22 Aug 2014 18:18:50 +0200
+Subject: [ImageJ-devel] [fiji-devel] creating io.scif.img.ImgOpener
+	currently fails in Fiji
+In-Reply-To: <alpine.DEB.1.00.1408221753010.990@s15462909.onlinehome-server.info>
+References: <6ECEB0A7-0F51-4F78-922B-43B6AB834412@mpi-cbg.de>
+	<alpine.DEB.1.00.1408220849150.990@s15462909.onlinehome-server.info>
+	<FC9E2E31-3091-4BC7-8A25-AA6DDB43CC51@mpi-cbg.de>
+	<alpine.DEB.1.00.1408221753010.990@s15462909.onlinehome-server.info>
+Message-ID: <81BE61E7-E3C7-49D0-AED6-BCB622C3B19F@mpi-cbg.de>
+
+Hi Johannes,
+
+On 22 Aug 2014, at 17:53, Johannes Schindelin <Johannes.Schindelin at gmx.de> wrote:
+
+> Hi Tobias,
+> 
+> On Fri, 22 Aug 2014, Tobias Pietzsch wrote:
+> 
+>>    final ImgOpener opener = new ImgOpener( new Context(
+>>    SCIFIOService.class, AppService.class, StatusService.class ) );
+> 
+> Why do you create a new Context everytime? That's a bit wasteful?
+
+That is true, but I?m not sure how to improve it.
+
+The problem is that I know too little about how the infrastructure around Context works.
+I assume in Fiji there is only one Context that is used by everything? An I get it the way you described?
+In Eclipse, for testing, I have a main() method that just says
+new ExportSpimSequencePlugIn().run( null );
+so there is no Fiji that has a Context.
+How would I make something that works in both cases?
+
+best regards,
+Tobias
+
+> 
+> Ciao,
+> Johannes
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140822/06c2dfea/attachment.html>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140822/06c2dfea/attachment.pgp>
+
+From pietzsch at mpi-cbg.de  Fri Aug 22 11:45:00 2014
+From: pietzsch at mpi-cbg.de (Tobias Pietzsch)
+Date: Fri, 22 Aug 2014 18:45:00 +0200
+Subject: [ImageJ-devel] [fiji-devel] creating io.scif.img.ImgOpener
+	currently fails in Fiji
+In-Reply-To: <CADN69y=hSUhmb9Juv3XFDtoCj+k2th6hS4=P2iYk5uJXWniNhw@mail.gmail.com>
+References: <6ECEB0A7-0F51-4F78-922B-43B6AB834412@mpi-cbg.de>
+	<alpine.DEB.1.00.1408220849150.990@s15462909.onlinehome-server.info>
+	<FC9E2E31-3091-4BC7-8A25-AA6DDB43CC51@mpi-cbg.de>
+	<CADN69y=hSUhmb9Juv3XFDtoCj+k2th6hS4=P2iYk5uJXWniNhw@mail.gmail.com>
+Message-ID: <91DE0EAF-87FE-459B-8654-EE389BDC8537@mpi-cbg.de>
+
+Hi Curtis,
+
+On 22 Aug 2014, at 16:51, Curtis Rueden <ctrueden at wisc.edu> wrote:
+
+> Hi Tobias,
+> 
+> > Except now all dependencies are not there anymore because now there
+> > are non-obvious (to me) implicit runtime dependencies.
+> >
+> > I find this unfortunate.
+> 
+> I agree that this is a two-edged sword. We have more types of plugins now, which can alter the runtime behavior in more ways, so of course it becomes possible for ill-behaved plugins to bring down the system.
+> 
+> This is already true in ImageJ 1.x though, because it is extensible at runtime: any plugin class could have a static initializer block that hoses up the JVM however it can imagine. It is just easier to do now.
+> 
+> IMO, it would not be worth it to eliminate these powerful extension points just because of this possibility. The flexibility gained outweighs any disadvantages.
+
+I agree that it is very powerful and I?m not proposing to eliminate it.
+
+I?m happy that my problem is just a quirk and that I will be able to continue just calling new ImgOpener(), in blissfull ignorance of what is going on behind the scenes.
+
+> We have already taken great pains to mitigate the issue with services in the context: when you create a new ImgOpener without specifying an SJC context, it uses _only_ relevant service types: things that implement the SciJavaService and SCIFIOService interfaces. In other words: _not_ ImageJServices or other service types. The reason LegacyService is being (erroneously!) pulled in here is due to a bug in the design of the SJC AppEventService, as I said. I introduced a "LegacyAppEventService" which is a SciJavaService but depends on the ImageJ LegacyService. Hence, any Context that asks for SciJavaServices now pulls in a DefaultLegacyService whenever the LegacyAppEventService is on the classpath. The fix is to stop doing that.
+> 
+> Anyway, if it still bothers you that any ol' developer can add something to the classpath which hoses up your programs, then you can stop it: create a more carefully controlled SJC Context and pass that to the ImgOpener. Alternately, we could change ImgOpener to be even more conservative in which services it uses. Of course, there are downsides there: any additional file format plugins, codec plugins, etc., might not be work properly if they do not have access to the services they need.
+> 
+> I am very open to ideas for mitigating the extensibility issues here.
+
+I currently have only limited knowledge of the workings of scijava-common so I admit that I have no ideas here.
+
+I imagine that in many cases it would be helpful to somehow produce an explicit list of transitive (runtime) dependencies at compile time. But this is probably not possible because these dependencies are specified as interfaces and there is no way of knowing beforehand the dependencies of the implementing class that will be used at runtime.
+In the present case it is even worse, because, if I understand correctly, simply put the problem was not a missing dependency is missing but additional stuff being present?
+
+best regards,
+Tobias
+
+> 
+> Regards,
+> Curtis
+> 
+> 
+> On Fri, Aug 22, 2014 at 9:35 AM, Tobias Pietzsch <pietzsch at mpi-cbg.de> wrote:
+> Hi Johannes,
+> 
+> On 22 Aug 2014, at 09:04, Johannes Schindelin <Johannes.Schindelin at gmx.de> wrote:
+> 
+>> Hi Tobias,
+>> 
+>> On Fri, 22 Aug 2014, Tobias Pietzsch wrote:
+>> 
+>>> Currently
+>>> new io.scif.img.ImgOpener();
+>>> fails with
+>>> java.lang.IllegalArgumentException: Invalid service: net.imagej.legacy.LegacyAppEventService
+>> 
+>> Yep, the explanation is very easy:
+>> 
+>>> [...]
+>>> Caused by: java.lang.UnsupportedOperationException: Cannot instantiate more than one DefaultLegacyService
+>>> [?]
+> 
+> I missed that...
+> 
+>> 
+>> There is already a context, including a legacy service. Unfortunately, the
+>> best way to get at this context from an *ImageJ 1.x plugin* that I could
+>> come up with is:
+>> 
+>> 	import org.scijava.Context;
+>> 
+>> 	...
+>> 
+>> 	final Context context = (Context)
+>> 		IJ.runPlugIn(Context.class.getName(), "");
+>> 	final ImgOpener opener = new ImgOpener(context);
+>> 
+>> (There is no way to make that more convenient without letting SCIFIO
+>> depend on ImageJ 1.x, which is of course a big no-no).
+> 
+> The problem with this solution you suggested is that it does not work in Eclipse:
+> Exception in thread "main" java.lang.IllegalArgumentException: Invalid service: net.imagej.legacy.DefaultLegacyService
+> 
+> As much as I understand the need for the runtime service discovery used by the scijava stack, there are certainly downsides to it.
+> My feeling is that in some ways it undermines the advantages that we have gained by switching to maven.
+> I can import a maven project into my Eclipse, and all the dependencies are there, explicitly and automatically, which is really very convenient.
+> Except now all dependencies are not there anymore because now there are non-obvious (to me) implicit runtime dependencies.
+> I find this unfortunate.
+> 
+> That being said, I found a solution that works for now, both in Eclipse and in Fiji
+>     final ImgOpener opener = new ImgOpener( new Context( SCIFIOService.class, AppService.class, StatusService.class ) );
+> This avoids requiring the net.imagej.legacy.LegacyAppEventService.
+> It seems to work, but I?m not sure: Are there any downsides to that?
+> 
+> best regards,
+> Tobias
+> 
+>> 
+>> Of course, you could also turn your plugin into an ImageJ2 plugin -- which
+>> is handled properly in Fiji thanks to Fiji Just Being ImageJ2 -- and then
+>> it would become as easy as:
+>> 
+>> 		@Parameter
+>> 		private IOService io;
+>> 
+>> 		...
+>> 			// use the IOService (which lets SCIFIO handle
+>> 			// things) to open your dataset
+>> 
+>> Ciao,
+>> Johannes
+>> 
+>> -- 
+>> -- 
+>> Please avoid top-posting, and please make sure to reply-to-all!
+>> 
+>> Mailing list web interface: http://groups.google.com/group/fiji-devel
+>> 
+>> --- 
+>> You received this message because you are subscribed to the Google Groups "Fiji-devel" group.
+>> To unsubscribe from this group and stop receiving emails from it, send an email to fiji-devel+unsubscribe at googlegroups.com.
+>> For more options, visit https://groups.google.com/d/optout.
+> 
+> 
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140822/94a4745e/attachment.html>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140822/94a4745e/attachment.pgp>
+
+From ctrueden at wisc.edu  Fri Aug 22 11:51:05 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Fri, 22 Aug 2014 11:51:05 -0500
+Subject: [ImageJ-devel] [fiji-devel] creating io.scif.img.ImgOpener
+ currently fails in Fiji
+In-Reply-To: <91DE0EAF-87FE-459B-8654-EE389BDC8537@mpi-cbg.de>
+References: <6ECEB0A7-0F51-4F78-922B-43B6AB834412@mpi-cbg.de>
+	<alpine.DEB.1.00.1408220849150.990@s15462909.onlinehome-server.info>
+	<FC9E2E31-3091-4BC7-8A25-AA6DDB43CC51@mpi-cbg.de>
+	<CADN69y=hSUhmb9Juv3XFDtoCj+k2th6hS4=P2iYk5uJXWniNhw@mail.gmail.com>
+	<91DE0EAF-87FE-459B-8654-EE389BDC8537@mpi-cbg.de>
+Message-ID: <CADN69ymWocZQSu3R5cH0W30HGCc=8s4RzskP4xp-_b=CZA-EeQ@mail.gmail.com>
+
+Hi Tobias,
+
+> I imagine that in many cases it would be helpful to somehow produce an
+> explicit list of transitive (runtime) dependencies at compile time.
+> But this is probably not possible because these dependencies are
+> specified as interfaces and there is no way of knowing beforehand the
+> dependencies of the implementing class that will be used at runtime.
+
+Actually, you can do it either way. If you ask for an interface, it adds
+all concrete service plugins that implement that interface. If you ask for
+a concrete class, you get that concrete class only. But it is true that
+whenever you ask for an interface, you will also transitively bring in all
+dependencies of all implementing classes.
+
+> In the present case it is even worse, because, if I understand
+> correctly, simply put the problem was not a missing dependency is
+> missing but additional stuff being present?
+
+Right. There was an additional AppEventService that had a dependency on the
+most problematic and limited ImageJ service: the DefaultLegacyService.
+
+Another way I plan to (eventually!) mitigate that is to make the
+DefaultLegacyService less crabby: I want it to be possible to have more
+than one, that simply ends up referencing the same instance of ImageJ 1.x.
+This shouldn't be too hard to do but haven't had to time explore that yet.
+This would "paper over" the problem you had in that you wouldn't have
+received an exception, but still would have brought in a whole bunch of
+unneeded service dependencies for the purposes of ImgOpener.
+
+The real fix here is to retool the AppEvent API as described here:
+https://github.com/scijava/scijava-common/commit/852f05cf1dbfb3ce99ccd416fee64573a0692764
+
+This is a critical bug in SJC which I will work on resolving today if
+possible.
+
+Regards,
+Curtis
+
+
+
+On Fri, Aug 22, 2014 at 11:45 AM, Tobias Pietzsch <pietzsch at mpi-cbg.de>
+wrote:
+
+> Hi Curtis,
+>
+> On 22 Aug 2014, at 16:51, Curtis Rueden <ctrueden at wisc.edu> wrote:
+>
+> Hi Tobias,
+>
+> > Except now all dependencies are not there anymore because now there
+> > are non-obvious (to me) implicit runtime dependencies.
+> >
+> > I find this unfortunate.
+>
+> I agree that this is a two-edged sword. We have more types of plugins now,
+> which can alter the runtime behavior in more ways, so of course it becomes
+> possible for ill-behaved plugins to bring down the system.
+>
+> This is already true in ImageJ 1.x though, because it is extensible at
+> runtime: any plugin class could have a static initializer block that hoses
+> up the JVM however it can imagine. It is just easier to do now.
+>
+> IMO, it would not be worth it to eliminate these powerful extension points
+> just because of this possibility. The flexibility gained outweighs any
+> disadvantages.
+>
+>
+> I agree that it is very powerful and I?m not proposing to eliminate it.
+>
+> I?m happy that my problem is just a quirk and that I will be able to
+> continue just calling new ImgOpener(), in blissfull ignorance of what is
+> going on behind the scenes.
+>
+> We have already taken great pains to mitigate the issue with services in
+> the context: when you create a new ImgOpener without specifying an SJC
+> context, it uses _only_ relevant service types: things that implement the
+> SciJavaService and SCIFIOService interfaces. In other words: _not_
+> ImageJServices or other service types. The reason LegacyService is being
+> (erroneously!) pulled in here is due to a bug in the design of the SJC
+> AppEventService, as I said. I introduced a "LegacyAppEventService" which is
+> a SciJavaService but depends on the ImageJ LegacyService. Hence, any
+> Context that asks for SciJavaServices now pulls in a DefaultLegacyService
+> whenever the LegacyAppEventService is on the classpath. The fix is to stop
+> doing that.
+>
+> Anyway, if it still bothers you that any ol' developer can add something
+> to the classpath which hoses up your programs, then you can stop it: create
+> a more carefully controlled SJC Context and pass that to the ImgOpener.
+> Alternately, we could change ImgOpener to be even more conservative in
+> which services it uses. Of course, there are downsides there: any
+> additional file format plugins, codec plugins, etc., might not be work
+> properly if they do not have access to the services they need.
+>
+> I am very open to ideas for mitigating the extensibility issues here.
+>
+>
+> I currently have only limited knowledge of the workings of scijava-common
+> so I admit that I have no ideas here.
+>
+> I imagine that in many cases it would be helpful to somehow produce an
+> explicit list of transitive (runtime) dependencies at compile time. But
+> this is probably not possible because these dependencies are specified as
+> interfaces and there is no way of knowing beforehand the dependencies of
+> the implementing class that will be used at runtime.
+> In the present case it is even worse, because, if I understand correctly,
+> simply put the problem was not a missing dependency is missing but
+> additional stuff being present?
+>
+> best regards,
+> Tobias
+>
+>
+> Regards,
+> Curtis
+>
+>
+> On Fri, Aug 22, 2014 at 9:35 AM, Tobias Pietzsch <pietzsch at mpi-cbg.de>
+> wrote:
+>
+>> Hi Johannes,
+>>
+>> On 22 Aug 2014, at 09:04, Johannes Schindelin <Johannes.Schindelin at gmx.de>
+>> wrote:
+>>
+>> Hi Tobias,
+>>
+>> On Fri, 22 Aug 2014, Tobias Pietzsch wrote:
+>>
+>> Currently
+>> new io.scif.img.ImgOpener();
+>> fails with
+>> java.lang.IllegalArgumentException: Invalid service:
+>> net.imagej.legacy.LegacyAppEventService
+>>
+>>
+>> Yep, the explanation is very easy:
+>>
+>> [...]
+>> Caused by: java.lang.UnsupportedOperationException: Cannot instantiate
+>> more than one DefaultLegacyService
+>> [?]
+>>
+>>
+>> I missed that...
+>>
+>>
+>> There is already a context, including a legacy service. Unfortunately, the
+>> best way to get at this context from an *ImageJ 1.x plugin* that I could
+>> come up with is:
+>>
+>> import org.scijava.Context;
+>>
+>> ...
+>>
+>> final Context context = (Context)
+>>  IJ.runPlugIn(Context.class.getName(), "");
+>> final ImgOpener opener = new ImgOpener(context);
+>>
+>> (There is no way to make that more convenient without letting SCIFIO
+>> depend on ImageJ 1.x, which is of course a big no-no).
+>>
+>>
+>> The problem with this solution you suggested is that it does not work in
+>> Eclipse:
+>> Exception in thread "main" java.lang.IllegalArgumentException: Invalid
+>> service: net.imagej.legacy.DefaultLegacyService
+>>
+>> As much as I understand the need for the runtime service discovery used
+>> by the scijava stack, there are certainly downsides to it.
+>> My feeling is that in some ways it undermines the advantages that we have
+>> gained by switching to maven.
+>> I can import a maven project into my Eclipse, and all the dependencies
+>> are there, explicitly and automatically, which is really very convenient.
+>> Except now all dependencies are not there anymore because now there are
+>> non-obvious (to me) implicit runtime dependencies.
+>> I find this unfortunate.
+>>
+>> That being said, I found a solution that works for now, both in Eclipse
+>> and in Fiji
+>>     final ImgOpener opener = new ImgOpener( new Context(
+>> SCIFIOService.class, AppService.class, StatusService.class ) );
+>> This avoids requiring the net.imagej.legacy.LegacyAppEventService.
+>> It seems to work, but I?m not sure: Are there any downsides to that?
+>>
+>> best regards,
+>> Tobias
+>>
+>>
+>> Of course, you could also turn your plugin into an ImageJ2 plugin -- which
+>> is handled properly in Fiji thanks to Fiji Just Being ImageJ2 -- and then
+>> it would become as easy as:
+>>
+>>  @Parameter
+>>  private IOService io;
+>>
+>>  ...
+>>   // use the IOService (which lets SCIFIO handle
+>>  // things) to open your dataset
+>>
+>> Ciao,
+>> Johannes
+>>
+>> --
+>> --
+>> Please avoid top-posting, and please make sure to reply-to-all!
+>>
+>> Mailing list web interface: http://groups.google.com/group/fiji-devel
+>>
+>> ---
+>> You received this message because you are subscribed to the Google Groups
+>> "Fiji-devel" group.
+>> To unsubscribe from this group and stop receiving emails from it, send an
+>> email to fiji-devel+unsubscribe at googlegroups.com.
+>> For more options, visit https://groups.google.com/d/optout.
+>>
+>>
+>>
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140822/5d935066/attachment-0001.html>
+
+From ctrueden at wisc.edu  Mon Aug 25 13:03:30 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Mon, 25 Aug 2014 13:03:30 -0500
+Subject: [ImageJ-devel] [fiji-devel] creating io.scif.img.ImgOpener
+ currently fails in Fiji
+In-Reply-To: <CADN69ymWocZQSu3R5cH0W30HGCc=8s4RzskP4xp-_b=CZA-EeQ@mail.gmail.com>
+References: <6ECEB0A7-0F51-4F78-922B-43B6AB834412@mpi-cbg.de>
+	<alpine.DEB.1.00.1408220849150.990@s15462909.onlinehome-server.info>
+	<FC9E2E31-3091-4BC7-8A25-AA6DDB43CC51@mpi-cbg.de>
+	<CADN69y=hSUhmb9Juv3XFDtoCj+k2th6hS4=P2iYk5uJXWniNhw@mail.gmail.com>
+	<91DE0EAF-87FE-459B-8654-EE389BDC8537@mpi-cbg.de>
+	<CADN69ymWocZQSu3R5cH0W30HGCc=8s4RzskP4xp-_b=CZA-EeQ@mail.gmail.com>
+Message-ID: <CADN69yk2iggSM-1Zd3mAzknCdr-oobpbd9mxZyw+F_4pUmBb-w@mail.gmail.com>
+
+Hi Tobias,
+
+> This is a critical bug in SJC which I will work on resolving today if
+> possible.
+
+Latest released versions of the SciJava software stack now have this bug
+fixed.
+
+You can get the needed component versions by using pom-imagej 2.49 as
+parent.
+
+Regards,
+Curtis
+
+
+On Fri, Aug 22, 2014 at 11:51 AM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+
+> Hi Tobias,
+>
+> > I imagine that in many cases it would be helpful to somehow produce an
+> > explicit list of transitive (runtime) dependencies at compile time.
+> > But this is probably not possible because these dependencies are
+> > specified as interfaces and there is no way of knowing beforehand the
+> > dependencies of the implementing class that will be used at runtime.
+>
+> Actually, you can do it either way. If you ask for an interface, it adds
+> all concrete service plugins that implement that interface. If you ask for
+> a concrete class, you get that concrete class only. But it is true that
+> whenever you ask for an interface, you will also transitively bring in all
+> dependencies of all implementing classes.
+>
+> > In the present case it is even worse, because, if I understand
+> > correctly, simply put the problem was not a missing dependency is
+> > missing but additional stuff being present?
+>
+> Right. There was an additional AppEventService that had a dependency on
+> the most problematic and limited ImageJ service: the DefaultLegacyService.
+>
+> Another way I plan to (eventually!) mitigate that is to make the
+> DefaultLegacyService less crabby: I want it to be possible to have more
+> than one, that simply ends up referencing the same instance of ImageJ 1.x.
+> This shouldn't be too hard to do but haven't had to time explore that yet.
+> This would "paper over" the problem you had in that you wouldn't have
+> received an exception, but still would have brought in a whole bunch of
+> unneeded service dependencies for the purposes of ImgOpener.
+>
+> The real fix here is to retool the AppEvent API as described here:
+>
+> https://github.com/scijava/scijava-common/commit/852f05cf1dbfb3ce99ccd416fee64573a0692764
+>
+> This is a critical bug in SJC which I will work on resolving today if
+> possible.
+>
+> Regards,
+> Curtis
+>
+>
+>
+> On Fri, Aug 22, 2014 at 11:45 AM, Tobias Pietzsch <pietzsch at mpi-cbg.de>
+> wrote:
+>
+>> Hi Curtis,
+>>
+>> On 22 Aug 2014, at 16:51, Curtis Rueden <ctrueden at wisc.edu> wrote:
+>>
+>> Hi Tobias,
+>>
+>> > Except now all dependencies are not there anymore because now there
+>> > are non-obvious (to me) implicit runtime dependencies.
+>> >
+>> > I find this unfortunate.
+>>
+>> I agree that this is a two-edged sword. We have more types of plugins
+>> now, which can alter the runtime behavior in more ways, so of course it
+>> becomes possible for ill-behaved plugins to bring down the system.
+>>
+>> This is already true in ImageJ 1.x though, because it is extensible at
+>> runtime: any plugin class could have a static initializer block that hoses
+>> up the JVM however it can imagine. It is just easier to do now.
+>>
+>> IMO, it would not be worth it to eliminate these powerful extension
+>> points just because of this possibility. The flexibility gained outweighs
+>> any disadvantages.
+>>
+>>
+>> I agree that it is very powerful and I?m not proposing to eliminate it.
+>>
+>> I?m happy that my problem is just a quirk and that I will be able to
+>> continue just calling new ImgOpener(), in blissfull ignorance of what is
+>> going on behind the scenes.
+>>
+>> We have already taken great pains to mitigate the issue with services in
+>> the context: when you create a new ImgOpener without specifying an SJC
+>> context, it uses _only_ relevant service types: things that implement the
+>> SciJavaService and SCIFIOService interfaces. In other words: _not_
+>> ImageJServices or other service types. The reason LegacyService is being
+>> (erroneously!) pulled in here is due to a bug in the design of the SJC
+>> AppEventService, as I said. I introduced a "LegacyAppEventService" which is
+>> a SciJavaService but depends on the ImageJ LegacyService. Hence, any
+>> Context that asks for SciJavaServices now pulls in a DefaultLegacyService
+>> whenever the LegacyAppEventService is on the classpath. The fix is to stop
+>> doing that.
+>>
+>> Anyway, if it still bothers you that any ol' developer can add something
+>> to the classpath which hoses up your programs, then you can stop it: create
+>> a more carefully controlled SJC Context and pass that to the ImgOpener.
+>> Alternately, we could change ImgOpener to be even more conservative in
+>> which services it uses. Of course, there are downsides there: any
+>> additional file format plugins, codec plugins, etc., might not be work
+>> properly if they do not have access to the services they need.
+>>
+>> I am very open to ideas for mitigating the extensibility issues here.
+>>
+>>
+>> I currently have only limited knowledge of the workings of scijava-common
+>> so I admit that I have no ideas here.
+>>
+>> I imagine that in many cases it would be helpful to somehow produce an
+>> explicit list of transitive (runtime) dependencies at compile time. But
+>> this is probably not possible because these dependencies are specified as
+>> interfaces and there is no way of knowing beforehand the dependencies of
+>> the implementing class that will be used at runtime.
+>> In the present case it is even worse, because, if I understand correctly,
+>> simply put the problem was not a missing dependency is missing but
+>> additional stuff being present?
+>>
+>> best regards,
+>> Tobias
+>>
+>>
+>> Regards,
+>> Curtis
+>>
+>>
+>> On Fri, Aug 22, 2014 at 9:35 AM, Tobias Pietzsch <pietzsch at mpi-cbg.de>
+>> wrote:
+>>
+>>> Hi Johannes,
+>>>
+>>> On 22 Aug 2014, at 09:04, Johannes Schindelin <
+>>> Johannes.Schindelin at gmx.de> wrote:
+>>>
+>>> Hi Tobias,
+>>>
+>>> On Fri, 22 Aug 2014, Tobias Pietzsch wrote:
+>>>
+>>> Currently
+>>> new io.scif.img.ImgOpener();
+>>> fails with
+>>> java.lang.IllegalArgumentException: Invalid service:
+>>> net.imagej.legacy.LegacyAppEventService
+>>>
+>>>
+>>> Yep, the explanation is very easy:
+>>>
+>>> [...]
+>>> Caused by: java.lang.UnsupportedOperationException: Cannot instantiate
+>>> more than one DefaultLegacyService
+>>> [?]
+>>>
+>>>
+>>> I missed that...
+>>>
+>>>
+>>> There is already a context, including a legacy service. Unfortunately,
+>>> the
+>>> best way to get at this context from an *ImageJ 1.x plugin* that I could
+>>> come up with is:
+>>>
+>>> import org.scijava.Context;
+>>>
+>>> ...
+>>>
+>>> final Context context = (Context)
+>>>  IJ.runPlugIn(Context.class.getName(), "");
+>>> final ImgOpener opener = new ImgOpener(context);
+>>>
+>>> (There is no way to make that more convenient without letting SCIFIO
+>>> depend on ImageJ 1.x, which is of course a big no-no).
+>>>
+>>>
+>>> The problem with this solution you suggested is that it does not work in
+>>> Eclipse:
+>>> Exception in thread "main" java.lang.IllegalArgumentException: Invalid
+>>> service: net.imagej.legacy.DefaultLegacyService
+>>>
+>>> As much as I understand the need for the runtime service discovery used
+>>> by the scijava stack, there are certainly downsides to it.
+>>> My feeling is that in some ways it undermines the advantages that we
+>>> have gained by switching to maven.
+>>> I can import a maven project into my Eclipse, and all the dependencies
+>>> are there, explicitly and automatically, which is really very convenient.
+>>> Except now all dependencies are not there anymore because now there are
+>>> non-obvious (to me) implicit runtime dependencies.
+>>> I find this unfortunate.
+>>>
+>>> That being said, I found a solution that works for now, both in Eclipse
+>>> and in Fiji
+>>>     final ImgOpener opener = new ImgOpener( new Context(
+>>> SCIFIOService.class, AppService.class, StatusService.class ) );
+>>> This avoids requiring the net.imagej.legacy.LegacyAppEventService.
+>>> It seems to work, but I?m not sure: Are there any downsides to that?
+>>>
+>>> best regards,
+>>> Tobias
+>>>
+>>>
+>>> Of course, you could also turn your plugin into an ImageJ2 plugin --
+>>> which
+>>> is handled properly in Fiji thanks to Fiji Just Being ImageJ2 -- and then
+>>> it would become as easy as:
+>>>
+>>>  @Parameter
+>>>  private IOService io;
+>>>
+>>>  ...
+>>>   // use the IOService (which lets SCIFIO handle
+>>>  // things) to open your dataset
+>>>
+>>> Ciao,
+>>> Johannes
+>>>
+>>> --
+>>> --
+>>> Please avoid top-posting, and please make sure to reply-to-all!
+>>>
+>>> Mailing list web interface: http://groups.google.com/group/fiji-devel
+>>>
+>>> ---
+>>> You received this message because you are subscribed to the Google
+>>> Groups "Fiji-devel" group.
+>>> To unsubscribe from this group and stop receiving emails from it, send
+>>> an email to fiji-devel+unsubscribe at googlegroups.com.
+>>> For more options, visit https://groups.google.com/d/optout.
+>>>
+>>>
+>>>
+>>
+>>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140825/fe6e0fd5/attachment.html>
+
+From pawelthebiologist at gmail.com  Tue Aug 26 04:35:25 2014
+From: pawelthebiologist at gmail.com (Pawel Niewiadomski)
+Date: Tue, 26 Aug 2014 11:35:25 +0200
+Subject: [ImageJ-devel] [fiji-devel] Opening file fails in ij2 mode from the
+ command line
+Message-ID: <53FC54DD.5010906@gmail.com>
+
+Hi,
+
+I am trying to open a file in ImageJ from the command line in Windows. 
+The following command works:
+ImageJ-win32.exe --ij1 c:\temp\test.tif
+but the following two commands open ImageJ in ij2 mode, but fail to open 
+the image:
+ImageJ-win32.exe c:\temp\test.tif
+ImageJ-win32.exe --ij2 c:\temp\test.tif
+This also means that setting imagej as the default program to open tif 
+files in Windows fails - ImageJ is launched but does not open the file.
+Am I missing something or is this a bug?
+
+Pawel
+
+-- 
+Pawe? Niewiadomski
+e-mail: pawelthebiologist at gmail.com
+website: www.pawelthebiologist.com
+
+
+From pietzsch at mpi-cbg.de  Tue Aug 26 14:00:22 2014
+From: pietzsch at mpi-cbg.de (Tobias Pietzsch)
+Date: Tue, 26 Aug 2014 21:00:22 +0200
+Subject: [ImageJ-devel] [fiji-devel] creating io.scif.img.ImgOpener
+	currently fails in Fiji
+In-Reply-To: <CADN69yk2iggSM-1Zd3mAzknCdr-oobpbd9mxZyw+F_4pUmBb-w@mail.gmail.com>
+References: <6ECEB0A7-0F51-4F78-922B-43B6AB834412@mpi-cbg.de>
+	<alpine.DEB.1.00.1408220849150.990@s15462909.onlinehome-server.info>
+	<FC9E2E31-3091-4BC7-8A25-AA6DDB43CC51@mpi-cbg.de>
+	<CADN69y=hSUhmb9Juv3XFDtoCj+k2th6hS4=P2iYk5uJXWniNhw@mail.gmail.com>
+	<91DE0EAF-87FE-459B-8654-EE389BDC8537@mpi-cbg.de>
+	<CADN69ymWocZQSu3R5cH0W30HGCc=8s4RzskP4xp-_b=CZA-EeQ@mail.gmail.com>
+	<CADN69yk2iggSM-1Zd3mAzknCdr-oobpbd9mxZyw+F_4pUmBb-w@mail.gmail.com>
+Message-ID: <8B608E3E-0F9E-4184-B6B1-5062E6A061E2@mpi-cbg.de>
+
+Awesome! Thank you!
+Tobias
+
+On 25 Aug 2014, at 20:03, Curtis Rueden <ctrueden at wisc.edu> wrote:
+
+> Hi Tobias,
+> 
+> > This is a critical bug in SJC which I will work on resolving today if
+> > possible.
+> 
+> Latest released versions of the SciJava software stack now have this bug fixed.
+> 
+> You can get the needed component versions by using pom-imagej 2.49 as parent.
+> 
+> Regards,
+> Curtis
+> 
+> 
+> On Fri, Aug 22, 2014 at 11:51 AM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+> Hi Tobias,
+> 
+> > I imagine that in many cases it would be helpful to somehow produce an
+> > explicit list of transitive (runtime) dependencies at compile time.
+> > But this is probably not possible because these dependencies are
+> > specified as interfaces and there is no way of knowing beforehand the
+> > dependencies of the implementing class that will be used at runtime.
+> 
+> Actually, you can do it either way. If you ask for an interface, it adds all concrete service plugins that implement that interface. If you ask for a concrete class, you get that concrete class only. But it is true that whenever you ask for an interface, you will also transitively bring in all dependencies of all implementing classes.
+> 
+> > In the present case it is even worse, because, if I understand
+> > correctly, simply put the problem was not a missing dependency is
+> > missing but additional stuff being present?
+> 
+> Right. There was an additional AppEventService that had a dependency on the most problematic and limited ImageJ service: the DefaultLegacyService.
+> 
+> Another way I plan to (eventually!) mitigate that is to make the DefaultLegacyService less crabby: I want it to be possible to have more than one, that simply ends up referencing the same instance of ImageJ 1.x. This shouldn't be too hard to do but haven't had to time explore that yet. This would "paper over" the problem you had in that you wouldn't have received an exception, but still would have brought in a whole bunch of unneeded service dependencies for the purposes of ImgOpener.
+> 
+> The real fix here is to retool the AppEvent API as described here:
+> https://github.com/scijava/scijava-common/commit/852f05cf1dbfb3ce99ccd416fee64573a0692764
+> 
+> This is a critical bug in SJC which I will work on resolving today if possible.
+> 
+> Regards,
+> Curtis
+> 
+> 
+> 
+> On Fri, Aug 22, 2014 at 11:45 AM, Tobias Pietzsch <pietzsch at mpi-cbg.de> wrote:
+> Hi Curtis,
+> 
+> On 22 Aug 2014, at 16:51, Curtis Rueden <ctrueden at wisc.edu> wrote:
+> 
+>> Hi Tobias,
+>> 
+>> > Except now all dependencies are not there anymore because now there
+>> > are non-obvious (to me) implicit runtime dependencies.
+>> >
+>> > I find this unfortunate.
+>> 
+>> I agree that this is a two-edged sword. We have more types of plugins now, which can alter the runtime behavior in more ways, so of course it becomes possible for ill-behaved plugins to bring down the system.
+>> 
+>> This is already true in ImageJ 1.x though, because it is extensible at runtime: any plugin class could have a static initializer block that hoses up the JVM however it can imagine. It is just easier to do now.
+>> 
+>> IMO, it would not be worth it to eliminate these powerful extension points just because of this possibility. The flexibility gained outweighs any disadvantages.
+> 
+> I agree that it is very powerful and I?m not proposing to eliminate it.
+> 
+> I?m happy that my problem is just a quirk and that I will be able to continue just calling new ImgOpener(), in blissfull ignorance of what is going on behind the scenes.
+> 
+>> We have already taken great pains to mitigate the issue with services in the context: when you create a new ImgOpener without specifying an SJC context, it uses _only_ relevant service types: things that implement the SciJavaService and SCIFIOService interfaces. In other words: _not_ ImageJServices or other service types. The reason LegacyService is being (erroneously!) pulled in here is due to a bug in the design of the SJC AppEventService, as I said. I introduced a "LegacyAppEventService" which is a SciJavaService but depends on the ImageJ LegacyService. Hence, any Context that asks for SciJavaServices now pulls in a DefaultLegacyService whenever the LegacyAppEventService is on the classpath. The fix is to stop doing that.
+>> 
+>> Anyway, if it still bothers you that any ol' developer can add something to the classpath which hoses up your programs, then you can stop it: create a more carefully controlled SJC Context and pass that to the ImgOpener. Alternately, we could change ImgOpener to be even more conservative in which services it uses. Of course, there are downsides there: any additional file format plugins, codec plugins, etc., might not be work properly if they do not have access to the services they need.
+>> 
+>> I am very open to ideas for mitigating the extensibility issues here.
+> 
+> I currently have only limited knowledge of the workings of scijava-common so I admit that I have no ideas here.
+> 
+> I imagine that in many cases it would be helpful to somehow produce an explicit list of transitive (runtime) dependencies at compile time. But this is probably not possible because these dependencies are specified as interfaces and there is no way of knowing beforehand the dependencies of the implementing class that will be used at runtime.
+> In the present case it is even worse, because, if I understand correctly, simply put the problem was not a missing dependency is missing but additional stuff being present?
+> 
+> best regards,
+> Tobias
+> 
+>> 
+>> Regards,
+>> Curtis
+>> 
+>> 
+>> On Fri, Aug 22, 2014 at 9:35 AM, Tobias Pietzsch <pietzsch at mpi-cbg.de> wrote:
+>> Hi Johannes,
+>> 
+>> On 22 Aug 2014, at 09:04, Johannes Schindelin <Johannes.Schindelin at gmx.de> wrote:
+>> 
+>>> Hi Tobias,
+>>> 
+>>> On Fri, 22 Aug 2014, Tobias Pietzsch wrote:
+>>> 
+>>>> Currently
+>>>> new io.scif.img.ImgOpener();
+>>>> fails with
+>>>> java.lang.IllegalArgumentException: Invalid service: net.imagej.legacy.LegacyAppEventService
+>>> 
+>>> Yep, the explanation is very easy:
+>>> 
+>>>> [...]
+>>>> Caused by: java.lang.UnsupportedOperationException: Cannot instantiate more than one DefaultLegacyService
+>>>> [?]
+>> 
+>> I missed that...
+>> 
+>>> 
+>>> There is already a context, including a legacy service. Unfortunately, the
+>>> best way to get at this context from an *ImageJ 1.x plugin* that I could
+>>> come up with is:
+>>> 
+>>> 	import org.scijava.Context;
+>>> 
+>>> 	...
+>>> 
+>>> 	final Context context = (Context)
+>>> 		IJ.runPlugIn(Context.class.getName(), "");
+>>> 	final ImgOpener opener = new ImgOpener(context);
+>>> 
+>>> (There is no way to make that more convenient without letting SCIFIO
+>>> depend on ImageJ 1.x, which is of course a big no-no).
+>> 
+>> The problem with this solution you suggested is that it does not work in Eclipse:
+>> Exception in thread "main" java.lang.IllegalArgumentException: Invalid service: net.imagej.legacy.DefaultLegacyService
+>> 
+>> As much as I understand the need for the runtime service discovery used by the scijava stack, there are certainly downsides to it.
+>> My feeling is that in some ways it undermines the advantages that we have gained by switching to maven.
+>> I can import a maven project into my Eclipse, and all the dependencies are there, explicitly and automatically, which is really very convenient.
+>> Except now all dependencies are not there anymore because now there are non-obvious (to me) implicit runtime dependencies.
+>> I find this unfortunate.
+>> 
+>> That being said, I found a solution that works for now, both in Eclipse and in Fiji
+>>     final ImgOpener opener = new ImgOpener( new Context( SCIFIOService.class, AppService.class, StatusService.class ) );
+>> This avoids requiring the net.imagej.legacy.LegacyAppEventService.
+>> It seems to work, but I?m not sure: Are there any downsides to that?
+>> 
+>> best regards,
+>> Tobias
+>> 
+>>> 
+>>> Of course, you could also turn your plugin into an ImageJ2 plugin -- which
+>>> is handled properly in Fiji thanks to Fiji Just Being ImageJ2 -- and then
+>>> it would become as easy as:
+>>> 
+>>> 		@Parameter
+>>> 		private IOService io;
+>>> 
+>>> 		...
+>>> 			// use the IOService (which lets SCIFIO handle
+>>> 			// things) to open your dataset
+>>> 
+>>> Ciao,
+>>> Johannes
+>>> 
+>>> -- 
+>>> -- 
+>>> Please avoid top-posting, and please make sure to reply-to-all!
+>>> 
+>>> Mailing list web interface: http://groups.google.com/group/fiji-devel
+>>> 
+>>> --- 
+>>> You received this message because you are subscribed to the Google Groups "Fiji-devel" group.
+>>> To unsubscribe from this group and stop receiving emails from it, send an email to fiji-devel+unsubscribe at googlegroups.com.
+>>> For more options, visit https://groups.google.com/d/optout.
+>> 
+>> 
+> 
+> 
+> 
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140826/ad4c761f/attachment.html>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140826/ad4c761f/attachment.pgp>
+
+From michael.ellis at dsuk.biz  Thu Aug 28 16:05:39 2014
+From: michael.ellis at dsuk.biz (Michael Ellis)
+Date: Thu, 28 Aug 2014 22:05:39 +0100
+Subject: [ImageJ-devel] Are there JavaDOC pages for ImgLib2 and if so where
+	are they?
+Message-ID: <8E8664F1-B15A-447C-B2AD-2D1D2A499902@dsuk.biz>
+
+Are there JavaDOC pages for ImgLib2 and if so where are they?
+
+I want to explore ImgLib2, I have looked at some of the examples but have further questions and I do not really want to have to go to source code to discover how to use it (or is that the only way?)
+
+Many thanks - Michael Ellis
+
+Digital Scientific UK
+
+From bnorthan at gmail.com  Thu Aug 28 16:33:56 2014
+From: bnorthan at gmail.com (Brian Northan)
+Date: Thu, 28 Aug 2014 17:33:56 -0400
+Subject: [ImageJ-devel] manual threshold op
+Message-ID: <CAMWa8i3X09TXi=vaA8JVWoCGzhzXaOHuhRH9hiR4Xtn32bx_EQ@mail.gmail.com>
+
+I was using the threshold ops and I have a couple of questions about the
+manualthreshold
+<https://github.com/imagej/imagej-ops/blob/master/src/main/java/net/imagej/ops/threshold/Manual.java>
+op.
+
+1.  It has a variable "threshold".  The parent class, GlobalThresholdMethod
+<https://github.com/imagej/imagej-ops/blob/master/src/main/java/net/imagej/ops/threshold/GlobalThresholdMethod.java>
+also has a private variable threshold.  The code compiles but would the
+OpService get confused when it tries to create the op??  I get a
+illegalargument exception when trying to create it.  But if I rename the
+duplicate 'threshold' variable I can then create the op with the op
+service.
+
+2.  I can't figure out how to create the manualthreshold op, set the manual
+threshold parameter and then pass the manualthreshold op to the
+GlobalThreshold
+<https://github.com/imagej/imagej-ops/blob/master/src/main/java/net/imagej/ops/threshold/GlobalThreshold.java>
+op.
+
+For Otsu I just do it like this
+
+ops.run("threshold", otsu, in, new Otsu());
+>
+
+But for manual I need to set the threshold parameter somehow.  I tried this.
+
+>
+> Op manualOp=ops.op("manualthreshold", in, manualthreshold);
+> ops.run("threshold", manual, in, manualOp);
+>
+
+But it doesn't totally make sense to me to do it that way and it throws an
+exception anyway.  Parameters get injected twice (again when
+GlobalThreshold attempts to run "manualOp" to get the threshold).
+
+Any suggestions??
+
+Thanks
+
+Brian
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140828/2e76cb28/attachment.html>
+
+From ctrueden at wisc.edu  Thu Aug 28 16:55:36 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Thu, 28 Aug 2014 16:55:36 -0500
+Subject: [ImageJ-devel] Are there JavaDOC pages for ImgLib2 and if so
+ where are they?
+In-Reply-To: <8E8664F1-B15A-447C-B2AD-2D1D2A499902@dsuk.biz>
+References: <8E8664F1-B15A-447C-B2AD-2D1D2A499902@dsuk.biz>
+Message-ID: <CADN69yngdaH3_xFnc69E98zaqpZy6tSsGxs4j0WaTWw+UNGXJQ@mail.gmail.com>
+
+Hi Michael,
+
+> I want to explore ImgLib2
+
+All of the available resources for learning about ImgLib2 are summarized on
+the web site:
+
+    http://imglib2.net/
+
+See the "Resources" section for links, including documentation, examples,
+javadocs and workshop materials.
+
+Regards,
+Curtis
+
+
+On Thu, Aug 28, 2014 at 4:05 PM, Michael Ellis <michael.ellis at dsuk.biz>
+wrote:
+
+> Are there JavaDOC pages for ImgLib2 and if so where are they?
+>
+> I want to explore ImgLib2, I have looked at some of the examples but have
+> further questions and I do not really want to have to go to source code to
+> discover how to use it (or is that the only way?)
+>
+> Many thanks - Michael Ellis
+>
+> Digital Scientific UK
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140828/4fa539c1/attachment.html>
+
+From carandraug+dev at gmail.com  Thu Aug 28 17:49:01 2014
+From: carandraug+dev at gmail.com (=?UTF-8?B?Q2FybsOrIERyYXVn?=)
+Date: Thu, 28 Aug 2014 23:49:01 +0100
+Subject: [ImageJ-devel] Are there JavaDOC pages for ImgLib2 and if so
+ where are they?
+In-Reply-To: <8E8664F1-B15A-447C-B2AD-2D1D2A499902@dsuk.biz>
+References: <8E8664F1-B15A-447C-B2AD-2D1D2A499902@dsuk.biz>
+Message-ID: <CAPOrs_2vGhWNt85VXBQEL=XzKwd1_k+xLw_J3Y6K97Yow_1chA@mail.gmail.com>
+
+On 28 August 2014 22:05, Michael Ellis <michael.ellis at dsuk.biz> wrote:
+> Are there JavaDOC pages for ImgLib2 and if so where are they?
+>
+> I want to explore ImgLib2, I have looked at some of the examples but have further questions and I do not really want to have to go to source code to discover how to use it (or is that the only way?)
+
+See this handy page (looking for some javadoc?)
+
+  http://javadoc.imagej.net/
+
+which links to the docs of all this related projects.
+
+Carn?
+
+
+From michael.ellis at dsuk.biz  Fri Aug 29 06:09:01 2014
+From: michael.ellis at dsuk.biz (Michael Ellis)
+Date: Fri, 29 Aug 2014 12:09:01 +0100
+Subject: [ImageJ-devel] Using ImgLib2 with JavaFX and other questions.
+Message-ID: <BCF5FE94-7D4C-40CB-8ABA-333C63CE36EF@dsuk.biz>
+
+I am trying to learn about ImgLib2
+
+In particular I could do with help for the following:
+
+All my images will be 2D byte images typically of size 1300x1000.
+
+How do I get an Img into a format compatible for displaying within JavaFX (rather than using ImageJFunctions.show() )?
+Assuming there is no explicit JavaFX support in ImgLib2, I think this boils down to producing and 24 bit RGB or 32bit ARGB image where I can access the data. But how do I do this?
+
+How would I combine multiple 2D 8 bit image planes (up to 7 planes, each with own colour table) and combine them under programatic control into a single RGB image where every pixel in the destination image dest[x, y] is a function of the pixels at src[plane, x, y]?
+
+How would I  threshold a 2D Img producing a 1 bit Img?
+
+How would I fill holes in the binary thresholded Img?
+
+How could I identify and label objects in the binary thresholded Img and extract a concise description of the object boundaries (e.g. polygon, or chain code descriptions)?
+
+How can I register a multiple  Imgs using cross correlation image registration?
+
+Any help would be appreciated. I?m not looking for complete solutions to this and whilst this work is intended for a commercial product, I am happy to contribute all the source code examples I generate by way of investigating any of the above.
+
+? Michael Ellis
+Digital Scientific UK Ltd.
+
+
+
+
+
+
+

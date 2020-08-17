@@ -1,0 +1,210 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] IJ2 Plugin Proposal
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20IJ2%20Plugin%20Proposal&In-Reply-To=%3C4CED841F.4080808%40broadinstitute.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000259.html">
+   <LINK REL="Next"  HREF="000263.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] IJ2 Plugin Proposal</H1>
+    <B>Lee Kamentsky</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20IJ2%20Plugin%20Proposal&In-Reply-To=%3C4CED841F.4080808%40broadinstitute.org%3E"
+       TITLE="[ImageJ-devel] IJ2 Plugin Proposal">leek at broadinstitute.org
+       </A><BR>
+    <I>Wed Nov 24 15:31:11 CST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000259.html">[ImageJ-devel] IJ2 Plugin Proposal
+</A></li>
+        <LI>Next message: <A HREF="000263.html">[ImageJ-devel] IJ2 Plugin Proposal
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#261">[ date ]</a>
+              <a href="thread.html#261">[ thread ]</a>
+              <a href="subject.html#261">[ subject ]</a>
+              <a href="author.html#261">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Aivar,
+I'm sort of doing this with the @Parameter attributes now and 
+CellProfiler. I use reflection to get the class of the tagged variable. 
+The plugin's image inputs are variables of type ImagePlus (and probably 
+later, imglib's Image) that are not marked with output=true and the 
+outputs are the ones with output=true. Perhaps it's a bit of a hack to 
+infer that something is intended to be used as an image by its class 
+type, but that's what I did; the other possibility would be to indicate 
+that it is an image explicitly in @Parameter.
+
+CellProfiler works beautifully with this - maybe Curtis can show you how 
+it does with ImageJ plugins.
+
+I can imagine writing your tool (or using something like Knime) with the 
+current infrastructure. You have some sort of hookup gui (and Knime does 
+this for you) that allows you to attach image inputs to outputs and it's 
+up to the tool to figure out when a plugin's inputs are ready.
+
+--Lee
+
+On 11/24/2010 4:16 PM, Aivar Grislis wrote:
+&gt;<i> I'm proposing a more dynamic way of running plugins and sending images 
+</I>&gt;<i> from one plugin to another that would lend itself to workflows and 
+</I>&gt;<i> pipelines.  This could also be used within plugins and within IJ2 as 
+</I>&gt;<i> an architectural building block to chain chunks of image processing 
+</I>&gt;<i> code together.
+</I>&gt;<i>
+</I>&gt;<i> Basically I propose that a plugin can have multiple named input and 
+</I>&gt;<i> output images and that whenever an output image is ready it is passed 
+</I>&gt;<i> on to become the input image to the next plugin in the chain.
+</I>&gt;<i>
+</I>&gt;<i> IMPETUS
+</I>&gt;<i>
+</I>&gt;<i> I feel the need for this from a couple of plugins I have worked on 
+</I>&gt;<i> (actually my only plugins!).
+</I>&gt;<i>
+</I>&gt;<i> I worked on a Deep Zoom plugin.  This takes a huge image, tiles it, 
+</I>&gt;<i> then the tiles are written out in a particular directory/file name 
+</I>&gt;<i> structure.  Next we halve the original image and repeat, until the 
+</I>&gt;<i> image gets halved to a miniscule size.
+</I>&gt;<i>
+</I>&gt;<i> While working on this plugin I thought about writing the code to halve 
+</I>&gt;<i> the image and to tile it in the most general-purpose, reusable way.  
+</I>&gt;<i> Also I wanted to be memory-efficient: I didn't want to just make all 
+</I>&gt;<i> the halves, then go through them and make all the tiles, then go 
+</I>&gt;<i> throughout those and write out all the files.
+</I>&gt;<i>
+</I>&gt;<i> What I came up with at that time was a chainable plugin.  In pseudo-code:
+</I>&gt;<i>
+</I>&gt;<i> interface IChainablePlugin {
+</I>&gt;<i>
+</I>&gt;<i>   // chains one plugin to next; called from outside the plugin
+</I>&gt;<i>   public chain(IChainablePlugin plugin);
+</I>&gt;<i>
+</I>&gt;<i>   // gets the input image; called from within plugin
+</I>&gt;<i>   Image get();
+</I>&gt;<i>
+</I>&gt;<i>   // puts the output image; called from within plugin
+</I>&gt;<i>   put(Image image);
+</I>&gt;<i> }
+</I>&gt;<i>
+</I>&gt;<i> An abstract base class kept track of the next, chained plugin instance 
+</I>&gt;<i> and handed off the output image to that next plugin, using the same 
+</I>&gt;<i> thread.
+</I>&gt;<i>
+</I>&gt;<i> I wrote a chainable plugin class to halve the image, one to tile it, 
+</I>&gt;<i> and had a third one that was just an inner class to my Deep Zoom 
+</I>&gt;<i> plugin that handled the specifics of writing out the tiled image 
+</I>&gt;<i> files.  Presumably the first two classes would be reusable code and 
+</I>&gt;<i> the third was just specific to Deep Zoom.
+</I>&gt;<i>
+</I>&gt;<i> Obviously as-is this is limited to one input and one output.  I 
+</I>&gt;<i> started thinking about having an image dispatcher class that would 
+</I>&gt;<i> keep track of which images a plugin required and hand them off from 
+</I>&gt;<i> one plugin to another.
+</I>&gt;<i>
+</I>&gt;<i> I'll just briefly mention the SLIM plugin I am working on.  Since the 
+</I>&gt;<i> SLIM fitting process is time consuming I display a very coarse 
+</I>&gt;<i> colorized version of the fitted results that is refined as the fit 
+</I>&gt;<i> progresses.  So there I want to pass on my output image before the 
+</I>&gt;<i> plugin finishes and I want to put out successive versions of this 
+</I>&gt;<i> image.  This is similar to my wanting to process the individual tiles 
+</I>&gt;<i> before the whole image is tiled.
+</I>&gt;<i>
+</I>&gt;<i> PROPOSAL
+</I>&gt;<i>
+</I>&gt;<i> We could label the input and output images using Java annotations.  
+</I>&gt;<i> (Note that the current Declarative Plugin annotations allow one to 
+</I>&gt;<i> label input and output image member variables but the outputs are 
+</I>&gt;<i> harvested only once the plugin is finished. There is no way to put out 
+</I>&gt;<i> an output image within the plugin code.)
+</I>&gt;<i>
+</I>&gt;<i> Here is some sample code for what I'm proposing:
+</I>&gt;<i>
+</I>&gt;<i> &quot;@Input
+</I>&gt;<i> @Output({ @Img(Plugin1.BLUE), @Img(Plugin1.GREEN) })
+</I>&gt;<i> public class Plugin1 extends AbstractPlugin {
+</I>&gt;<i>   public static final String BLUE = &quot;Blue&quot;;
+</I>&gt;<i>   public static final String GREEN = &quot;Green&quot;;
+</I>&gt;<i>
+</I>&gt;<i>   void process() {
+</I>&gt;<i>       Image image = get();
+</I>&gt;<i>       put(BLUE, image);
+</I>&gt;<i>       put(GREEN, image);
+</I>&gt;<i>   }
+</I>&gt;<i> }&quot;
+</I>&gt;<i>
+</I>&gt;<i> Here the annotations result in an input name set of [&quot;Default&quot;] and an 
+</I>&gt;<i> output set of [&quot;Blue&quot;,&quot;Green&quot;].  (If there are no parameters the 
+</I>&gt;<i> default name is used.)  Of course, there could also be named input 
+</I>&gt;<i> images (i.e. &quot;get(ORANGE)&quot;) or default output images (i.e. &quot;put()&quot;).
+</I>&gt;<i>
+</I>&gt;<i> Instances of plugins such as these could be chained together:
+</I>&gt;<i>   plugin1.chain(Plugin1.BLUE, plugin2);  // named output goes to 
+</I>&gt;<i> default input
+</I>&gt;<i>   plugin1.chain(Plugin1.GREEN, plugin2, Plugin2.ORANGE); // named 
+</I>&gt;<i> output goes to named input
+</I>&gt;<i>   plugin2.chain(plugin3); // default output goes to default input
+</I>&gt;<i>   plugin2.chain(plugin4, Plugin4.PURPLE); // default output goes to 
+</I>&gt;<i> named input
+</I>&gt;<i>
+</I>&gt;<i> Using strings as identifiers might seem less than ideal.  However, the 
+</I>&gt;<i> strings are unique to the plugin they belong to.  If they are 
+</I>&gt;<i> specified as static constants, as above, that would prevent spelling 
+</I>&gt;<i> mismatches.  Once a chain of plugins is established and before we run 
+</I>&gt;<i> it we could make sure that all of the inputs have been chained to.  We 
+</I>&gt;<i> can detect if a plugin asks for an input or output that has not been 
+</I>&gt;<i> annotated and warn the plugin programmer.
+</I>&gt;<i>
+</I>&gt;<i> Of course, once we have named input and output images we could build 
+</I>&gt;<i> on that and give the IJ end-user ways to link up plugins in workflows 
+</I>&gt;<i> or pipelines, a la CellProfiler.
+</I>&gt;<i>
+</I>&gt;<i> I have a prototype implementation of this, so the sample code above 
+</I>&gt;<i> works, details upon request.
+</I>&gt;<i>
+</I>&gt;<i> Aivar
+</I>&gt;<i>
+</I>&gt;<i> (P.S. It's the Thanksgiving holiday in the U.S. so you might not hear 
+</I>&gt;<i> from us until Monday.  Happy Thanksgiving!)
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagejdev.org</A>
+</I>&gt;<i> <A HREF="http://imagejdev.org/mailman/listinfo/imagej-devel">http://imagejdev.org/mailman/listinfo/imagej-devel</A>
+</I>
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000259.html">[ImageJ-devel] IJ2 Plugin Proposal
+</A></li>
+	<LI>Next message: <A HREF="000263.html">[ImageJ-devel] IJ2 Plugin Proposal
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#261">[ date ]</a>
+              <a href="thread.html#261">[ thread ]</a>
+              <a href="subject.html#261">[ subject ]</a>
+              <a href="author.html#261">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

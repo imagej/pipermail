@@ -1,0 +1,4121 @@
+From ctrueden at wisc.edu  Wed Oct  6 17:02:19 2010
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Wed, 6 Oct 2010 17:02:19 -0500
+Subject: [ImageJ-devel] Design meeting notes
+Message-ID: <AANLkTinvB4PR=QHPztKCeF7FCNAYwL9rm-3mrLM=2iWC@mail.gmail.com>
+
+Hi everyone,
+
+A few of us met for several hours today to discuss some design issues for
+ImageJ 2.0. The original goal of the meeting was to begin defining a new
+core class hierarchy corresponding to many of ImageJ's historically most
+central classes: e.g., ImagePlus, ImageStack, ImageProcessor. However, we
+discussed several other architectural issues as well. I tried to take notes
+but they ended up being very terse. Nonetheless, I wanted to mention their
+availability at:
+
+
+https://docs.google.com/document/pub?id=13zVORIFldha5xT8C3wUPLPGr_ok30rh9whLrEsxYA_s
+
+There are not really any detailed class and/or interface definitions
+yet?when the design is that far along we will post details, diagrams, etc.
+to the imagejdev.org web site. But for the moment we are focusing on some
+concrete milestones within the existing ImageJ v1.x codebase, to present at
+the ImageJ conference later this month.
+
+-Curtis
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20101006/878b2191/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Wed Oct  6 17:42:46 2010
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Thu, 7 Oct 2010 00:42:46 +0200 (CEST)
+Subject: [ImageJ-devel] Design meeting notes
+In-Reply-To: <AANLkTinvB4PR=QHPztKCeF7FCNAYwL9rm-3mrLM=2iWC@mail.gmail.com>
+References: <AANLkTinvB4PR=QHPztKCeF7FCNAYwL9rm-3mrLM=2iWC@mail.gmail.com>
+Message-ID: <alpine.DEB.1.00.1010070035130.6395@bonsai2>
+
+Hi,
+
+On Wed, 6 Oct 2010, Curtis Rueden wrote:
+
+> A few of us met for several hours today to discuss some design issues 
+> for ImageJ 2.0. The original goal of the meeting was to begin defining a 
+> new core class hierarchy corresponding to many of ImageJ's historically 
+> most central classes: e.g., ImagePlus, ImageStack, ImageProcessor. 
+> However, we discussed several other architectural issues as well. I 
+> tried to take notes but they ended up being very terse. Nonetheless, I 
+> wanted to mention their availability at:
+> 
+> 
+> https://docs.google.com/document/pub?id=13zVORIFldha5xT8C3wUPLPGr_ok30rh9whLrEsxYA_s
+
+When you write that you want to kill ij.io.FileInfo, I hope you meant 
+"deprecate" instead. A number of plugins use this class.
+
+Also, I am wary of the MVC design discussions. This all sounds as if your 
+target was again a single-desktop application, and not an image processing 
+library extensible via plugins which just so happens to also have an 
+interactive backend for end users.
+
+In other words, I get the impression that not everybody understood what 
+the @parameter design is about. It is not about making writing plugins 
+simpler -- that is a side effect. It is solely to support CellProfiler, 
+KNIME, cluster and grid execution etc.
+
+Otherwise: impressive job.
+
+Ciao,
+Johannes
+
+
+
+
+From leek at broadinstitute.org  Thu Oct  7 08:40:18 2010
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Thu, 07 Oct 2010 09:40:18 -0400
+Subject: [ImageJ-devel] Design meeting notes
+In-Reply-To: <AANLkTinvB4PR=QHPztKCeF7FCNAYwL9rm-3mrLM=2iWC@mail.gmail.com>
+References: <AANLkTinvB4PR=QHPztKCeF7FCNAYwL9rm-3mrLM=2iWC@mail.gmail.com>
+Message-ID: <4CADCDC2.1070609@broadinstitute.org>
+
+  My notes on your notes - I'm not wedded to any of the positions taken 
+below, so if yours differ, try to convince me otherwise:
+
+*"Each plugin pushes the result forward in the chain using an image 
+dispatcher"*
+I'd recommend CellProfiler's approach and note that @parameter for 
+images could let any UI, along with the user, determine which images are 
+associated with which arguments. A UI should suggest any previous output 
+image as a possible input image for a later stage. For interactive 
+ImageJ, this is a list of whatever images are open, for a pipelined or 
+batch model, this is a list of the outputs of previous pipeline steps.
+
+*View: 8 GenericDialog
+*
+
+    * Is there any mechanism that lets a plugin validate the consistency
+      of its arguments? For instance, a certain combination of options
+      may not make sense - most typical case would be a minimum and
+      maximum numeric value with the maximum larger than the minimum.
+          o Related, some @parameters will be superfluous under some
+            circumstances: as an example, CellProfiler's mixture of
+            gaussians thresholding method asks "what percentage of the
+            image is foreground?", but the Otsu thresholding method does
+            not. CellProfiler does this by asking the module for the
+            settings to display (and the user doesn't have to implement
+            the method in which case all are displayed). How would such
+            a method in ImageJ name the parameters to display? (string
+            matching the field name? Tags in @parameters matching a
+            string array returned by the method?
+    * *How to specify choices*? For instance, our Otsu thresholding
+      method takes 2 or 3 classes or maximizes the inter-class variance
+      or entropy. (and there are about 8 thresholding algorithms to
+      choose from other than Otsu). I would recommend a "choices"
+      attribute in @parameter. I am hoping that you all can make the
+      architecturally elegant choice of how to link an ordered array of
+      strings to the attribute.
+    * Help annotations in @parameter - user-visible explanations of the
+      effect of each parameter. CellProfiler uses a bastardized HTML
+      here (limitations of our HTML control).
+    * "Nudge": the controller can nudge the view, possibly does not need
+      to nudge the model. UIs can be slow, in CellProfiler, the nudge is
+      pretty coarse: "View, completely reconstruct yourself".
+
+*Display plugin architecture*
+My prejudice here is to find ways to be clever and keep UI out of the 
+plugin. The trick is to imagine the plugin as being unable to concieve 
+of the concept of UI and you have to ask the stupid thing questions that 
+get past its lack of imagination: "Which of your parameters are relevant 
+for your operation?" = "what parameters should be displayed on screen". 
+If the plugin hankers to display something, maybe that's an output 
+parameter and maybe there are hints as to how it might be displayed, but 
+little more than that: histogram of a vector of values, scattergram of 
+pairs of values. I have my personal reasons for these choices (make it 
+work with CellProfiler), but the result of these choices is an 
+architecture that will not lock you into display particulars, will 
+regularize the appearance and interactions across plugins and will give 
+plugin developers easy to use tools to do the things they need to do.
+
+Be extremely clever here - it can be a game, how dumb can you make a 
+plugin? A plugin wants the user to select points or regions or wants to 
+draw on an image - the drawing, etc, is an input parameter to the 
+algorithm and it isn't the plugin's job to control the interaction.
+
+Maybe think of ways that plugin developers can add both controller and 
+display elements and reference them from their plugin - the developer's 
+package registers controller and display names that are used by the 
+plugin. This would encourage contribution of generic controller and 
+display code that would be reusable instead of buried in a single plugin.
+
+*Demo of CellProfiler
+
+*I think Curtis has either the binary or a link to one - trunk 
+CellProfiler build that is demoable for Tubeness. *Grant* is looking 
+over my mods to Tubeness - *Johannes*, you are a Tubeness author, my 
+mods to it are attached and you are welcome to correct my mistakes, also 
+if you have any other favorite plugins that you want to mod or have me 
+mod, I'd love that.
+
+*Action items
+
+*Lee: CellProfiler demo
+
+
+On 10/6/2010 6:02 PM, Curtis Rueden wrote:
+> Hi everyone,
+>
+> A few of us met for several hours today to discuss some design issues 
+> for ImageJ 2.0. The original goal of the meeting was to begin defining 
+> a new core class hierarchy corresponding to many of ImageJ's 
+> historically most central classes: e.g., ImagePlus, ImageStack, 
+> ImageProcessor. However, we discussed several other architectural 
+> issues as well. I tried to take notes but they ended up being very 
+> terse. Nonetheless, I wanted to mention their availability at:
+>
+> https://docs.google.com/document/pub?id=13zVORIFldha5xT8C3wUPLPGr_ok30rh9whLrEsxYA_s
+>
+> There are not really any detailed class and/or interface definitions 
+> yet?when the design is that far along we will post details, diagrams, 
+> etc. to the imagejdev.org <http://imagejdev.org> web site. But for the 
+> moment we are focusing on some concrete milestones within the existing 
+> ImageJ v1.x codebase, to present at the ImageJ conference later this 
+> month.
+>
+> -Curtis
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20101007/964e90e6/attachment.html>
+-------------- next part --------------
+An embedded and charset-unspecified text was scrubbed...
+Name: Tubeness_.java
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20101007/964e90e6/attachment.ksh>
+
+From ctrueden at wisc.edu  Thu Oct  7 15:25:22 2010
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Thu, 7 Oct 2010 15:25:22 -0500
+Subject: [ImageJ-devel] Design meeting notes
+In-Reply-To: <alpine.DEB.1.00.1010070035130.6395@bonsai2>
+References: <AANLkTinvB4PR=QHPztKCeF7FCNAYwL9rm-3mrLM=2iWC@mail.gmail.com>
+	<alpine.DEB.1.00.1010070035130.6395@bonsai2>
+Message-ID: <AANLkTikBcK9SHFs9-z3vmuvSrfH7QqBTtDh=Z_NeGAqy@mail.gmail.com>
+
+Hi Dscho,
+
+When you write that you want to kill ij.io.FileInfo, I hope you meant
+> "deprecate" instead. A number of plugins use this class.
+>
+
+Yes, sorry. The proposal remains to not change public API in ij.*, including
+FileInfo. By "kill" I meant, "no corellary for FileInfo in the imagej.*
+package structure." This is mainly because Bio-Formats provides a
+generalized mechanism for solving the same problems (and more) that FileInfo
+does.
+
+Also, I am wary of the MVC design discussions. This all sounds as if your
+> target was again a single-desktop application, and not an image processing
+> library extensible via plugins which just so happens to also have an
+> interactive backend for end users.
+>
+
+Unfortunately, the discussion wasn't well captured in the notes. Contrary to
+how it might have appeared, I think the desire for an MVC design actually
+illustrates our focus on "ImageJ as library." The reality is that much of
+the engineering challenge of ImageJ *does* come down to how the GUI is
+structured, since many developers do want to leverage portions of the GUI
+(as a library) in their applications. So there are many layers to
+consider...
+
+In other words, I get the impression that not everybody understood what
+> the @parameter design is about. It is not about making writing plugins
+> simpler -- that is a side effect. It is solely to support CellProfiler,
+> KNIME, cluster and grid execution etc.
+>
+
+I think Lee's quick usage of the design in CP definitely illustrates its
+power and convenience. We can chat more in person when I visit.
+
+Otherwise: impressive job.
+>
+
+I think the discussion served more to get us all on the same (or at least
+similar) page, and thinking about these topics, than it did to make any
+substantial design progress. We did settle on our priorities for the
+conference presentation, at least, so that is good.
+
+-Curtis
+
+On Wed, Oct 6, 2010 at 5:42 PM, Johannes Schindelin <
+Johannes.Schindelin at gmx.de> wrote:
+
+> Hi,
+>
+> On Wed, 6 Oct 2010, Curtis Rueden wrote:
+>
+> > A few of us met for several hours today to discuss some design issues
+> > for ImageJ 2.0. The original goal of the meeting was to begin defining a
+> > new core class hierarchy corresponding to many of ImageJ's historically
+> > most central classes: e.g., ImagePlus, ImageStack, ImageProcessor.
+> > However, we discussed several other architectural issues as well. I
+> > tried to take notes but they ended up being very terse. Nonetheless, I
+> > wanted to mention their availability at:
+> >
+> >
+> >
+> https://docs.google.com/document/pub?id=13zVORIFldha5xT8C3wUPLPGr_ok30rh9whLrEsxYA_s
+>
+> When you write that you want to kill ij.io.FileInfo, I hope you meant
+> "deprecate" instead. A number of plugins use this class.
+>
+> Also, I am wary of the MVC design discussions. This all sounds as if your
+> target was again a single-desktop application, and not an image processing
+> library extensible via plugins which just so happens to also have an
+> interactive backend for end users.
+>
+> In other words, I get the impression that not everybody understood what
+> the @parameter design is about. It is not about making writing plugins
+> simpler -- that is a side effect. It is solely to support CellProfiler,
+> KNIME, cluster and grid execution etc.
+>
+> Otherwise: impressive job.
+>
+> Ciao,
+> Johannes
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20101007/258f3a1a/attachment.html>
+
+From ctrueden at wisc.edu  Thu Oct  7 15:45:54 2010
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Thu, 7 Oct 2010 15:45:54 -0500
+Subject: [ImageJ-devel] Design meeting notes
+In-Reply-To: <4CADCDC2.1070609@broadinstitute.org>
+References: <AANLkTinvB4PR=QHPztKCeF7FCNAYwL9rm-3mrLM=2iWC@mail.gmail.com>
+	<4CADCDC2.1070609@broadinstitute.org>
+Message-ID: <AANLkTikk93hqnenbcuchL-es_1OyHACx1jHUs4i-MTwG@mail.gmail.com>
+
+Hi Lee,
+
+Thanks for your feedback!
+
+*"Each plugin pushes the result forward in the chain using an image
+> dispatcher"*
+>
+
+This was an idea that Aivar was trying to communicate to the rest of us,
+which I captured very badly in the notes. So unfortunately I am unable to
+elaborate further. As we continue to discuss the plugin architecture, I am
+sure it will come up again.
+
+I'd recommend CellProfiler's approach and note that @parameter for images
+> could let any UI, along with the user, determine which images are associated
+> with which arguments. A UI should suggest any previous output image as a
+> possible input image for a later stage. For interactive ImageJ, this is a
+> list of whatever images are open, for a pipelined or batch model, this is a
+> list of the outputs of previous pipeline steps.
+>
+
+This approach makes a lot of sense to me.
+
+Is there any mechanism that lets a plugin validate the consistency of its
+> arguments? For instance, a certain combination of options may not make sense
+> - most typical case would be a minimum and maximum numeric value with the
+> maximum larger than the minimum.
+>
+
+Nothing yet. At the moment the plugin itself would need to throw an
+exception or something in the run method.
+
+It would be better for the interface to have a method for checking whether
+the current combination of values is valid. Ideally, it would return some
+sort of data structure indicating, for each parameter, whether it is valid,
+and if not, an explanatory message indicating why not. If we had that, the
+UI code could do first class interactive input validation on the fly, a la
+many modern web forms, with e.g. a little red X and error message next to
+each invalid entry.
+
+Related, some @parameters will be superfluous under some circumstances: as
+> an example, CellProfiler's mixture of gaussians thresholding method asks
+> "what percentage of the image is foreground?", but the Otsu thresholding
+> method does not. CellProfiler does this by asking the module for the
+> settings to display (and the user doesn't have to implement the method in
+> which case all are displayed). How would such a method in ImageJ name the
+> parameters to display? (string matching the field name? Tags in @parameters
+> matching a string array returned by the method?
+>
+
+Hmm, sounds tricky. Maybe it work similarly to the idea above for
+validation, where an interface method exists that reports, for each
+parameter, whether it is currently relevant based on the values of other
+parameters. A nice demo for this functionality might be as simple as an
+"configure advanced options" checkbox that opens up a bunch more options.
+When the box is unchecked, the advanced options all disappear.
+
+Of course, allowing options to be grouped together would ease some of the
+declarative burden, since you could group all the advanced options into an
+explicit "advanced options" category.
+
+Johannes, have you considered any of these ideas?
+
+*How to specify choices*? For instance, our Otsu thresholding method takes 2
+> or 3 classes or maximizes the inter-class variance or entropy. (and there
+> are about 8 thresholding algorithms to choose from other than Otsu). I would
+> recommend a "choices" attribute in @parameter. I am hoping that you all can
+> make the architecturally elegant choice of how to link an ordered array of
+> strings to the attribute.
+>
+
+Right, the idea is to limit the valid selections to an enumeration. From a
+UI perspective we would use a Swing JComboBox, AWT Choice, or similar. Rick
+was working on it, and an initial version was commited:
+
+  http://dev.imagejdev.org/trac/imagej/changeset/1439
+
+Not perfect, but hopefully it does the job for the time being. Of course,
+every time we make improvements like this, the CellProfiler code also has to
+change to support it...
+
+Help annotations in @parameter - user-visible explanations of the effect of
+> each parameter. CellProfiler uses a bastardized HTML here (limitations of
+> our HTML control).
+>
+
+Yep, good idea.
+
+"Nudge": the controller can nudge the view, possibly does not need to nudge
+> the model. UIs can be slow, in CellProfiler, the nudge is pretty coarse:
+> "View, completely reconstruct yourself".
+>
+
+Right, that is the simplest possible update call, and is usually good/fast
+enough. We can think about edge cases where more performance is needed
+later.
+
+Maybe think of ways that plugin developers can add both controller and
+> display elements and reference them from their plugin - the developer's
+> package registers controller and display names that are used by the plugin.
+> This would encourage contribution of generic controller and display code
+> that would be reusable instead of buried in a single plugin.
+>
+
+Right, I agree that this is the sort of thing we should be striving to do.
+
+*Action items*
+> * *
+> * *Lee: CellProfiler demo
+>
+
+It is still in my queue to review the work you have done, as well as the
+poster, and the paper (the latter before tomorrow morning...).
+
+-Curtis
+
+On Thu, Oct 7, 2010 at 8:40 AM, Lee Kamentsky <leek at broadinstitute.org>wrote:
+
+>  My notes on your notes - I'm not wedded to any of the positions taken
+> below, so if yours differ, try to convince me otherwise:
+>
+> *"Each plugin pushes the result forward in the chain using an image
+> dispatcher"*
+> I'd recommend CellProfiler's approach and note that @parameter for images
+> could let any UI, along with the user, determine which images are associated
+> with which arguments. A UI should suggest any previous output image as a
+> possible input image for a later stage. For interactive ImageJ, this is a
+> list of whatever images are open, for a pipelined or batch model, this is a
+> list of the outputs of previous pipeline steps.
+>
+> *View: 8 GenericDialog
+> *
+>
+>    - Is there any mechanism that lets a plugin validate the consistency of
+>    its arguments? For instance, a certain combination of options may not make
+>    sense - most typical case would be a minimum and maximum numeric value with
+>    the maximum larger than the minimum.
+>       - Related, some @parameters will be superfluous under some
+>       circumstances: as an example, CellProfiler's mixture of gaussians
+>       thresholding method asks "what percentage of the image is foreground?", but
+>       the Otsu thresholding method does not. CellProfiler does this by asking the
+>       module for the settings to display (and the user doesn't have to implement
+>       the method in which case all are displayed). How would such a method in
+>       ImageJ name the parameters to display? (string matching the field name? Tags
+>       in @parameters matching a string array returned by the method?
+>        - *How to specify choices*? For instance, our Otsu thresholding
+>    method takes 2 or 3 classes or maximizes the inter-class variance or
+>    entropy. (and there are about 8 thresholding algorithms to choose from other
+>    than Otsu). I would recommend a "choices" attribute in @parameter. I am
+>    hoping that you all can make the architecturally elegant choice of how to
+>    link an ordered array of strings to the attribute.
+>     - Help annotations in @parameter - user-visible explanations of the
+>    effect of each parameter. CellProfiler uses a bastardized HTML here
+>    (limitations of our HTML control).
+>    - "Nudge": the controller can nudge the view, possibly does not need to
+>    nudge the model. UIs can be slow, in CellProfiler, the nudge is pretty
+>    coarse: "View, completely reconstruct yourself".
+>
+> *Display plugin architecture*
+> My prejudice here is to find ways to be clever and keep UI out of the
+> plugin. The trick is to imagine the plugin as being unable to concieve of
+> the concept of UI and you have to ask the stupid thing questions that get
+> past its lack of imagination: "Which of your parameters are relevant for
+> your operation?" = "what parameters should be displayed on screen". If the
+> plugin hankers to display something, maybe that's an output parameter and
+> maybe there are hints as to how it might be displayed, but little more than
+> that: histogram of a vector of values, scattergram of pairs of values. I
+> have my personal reasons for these choices (make it work with CellProfiler),
+> but the result of these choices is an architecture that will not lock you
+> into display particulars, will regularize the appearance and interactions
+> across plugins and will give plugin developers easy to use tools to do the
+> things they need to do.
+>
+> Be extremely clever here - it can be a game, how dumb can you make a
+> plugin? A plugin wants the user to select points or regions or wants to draw
+> on an image - the drawing, etc, is an input parameter to the algorithm and
+> it isn't the plugin's job to control the interaction.
+>
+> Maybe think of ways that plugin developers can add both controller and
+> display elements and reference them from their plugin - the developer's
+> package registers controller and display names that are used by the plugin.
+> This would encourage contribution of generic controller and display code
+> that would be reusable instead of buried in a single plugin.
+>
+> *Demo of CellProfiler
+>
+> *I think Curtis has either the binary or a link to one - trunk
+> CellProfiler build that is demoable for Tubeness. *Grant* is looking over
+> my mods to Tubeness - *Johannes*, you are a Tubeness author, my mods to it
+> are attached and you are welcome to correct my mistakes, also if you have
+> any other favorite plugins that you want to mod or have me mod, I'd love
+> that.
+>
+> *Action items
+>
+> *Lee: CellProfiler demo
+>
+>
+>
+> On 10/6/2010 6:02 PM, Curtis Rueden wrote:
+>
+> Hi everyone,
+>
+> A few of us met for several hours today to discuss some design issues for
+> ImageJ 2.0. The original goal of the meeting was to begin defining a new
+> core class hierarchy corresponding to many of ImageJ's historically most
+> central classes: e.g., ImagePlus, ImageStack, ImageProcessor. However, we
+> discussed several other architectural issues as well. I tried to take notes
+> but they ended up being very terse. Nonetheless, I wanted to mention their
+> availability at:
+>
+>
+> https://docs.google.com/document/pub?id=13zVORIFldha5xT8C3wUPLPGr_ok30rh9whLrEsxYA_s
+>
+> There are not really any detailed class and/or interface definitions
+> yet?when the design is that far along we will post details, diagrams, etc.
+> to the imagejdev.org web site. But for the moment we are focusing on some
+> concrete milestones within the existing ImageJ v1.x codebase, to present at
+> the ImageJ conference later this month.
+>
+> -Curtis
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing listImageJ-devel at imagejdev.orghttp://imagejdev.org/mailman/listinfo/imagej-devel
+>
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20101007/48c4c639/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Thu Oct  7 17:48:38 2010
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Fri, 8 Oct 2010 00:48:38 +0200 (CEST)
+Subject: [ImageJ-devel] Design meeting notes
+In-Reply-To: <AANLkTikBcK9SHFs9-z3vmuvSrfH7QqBTtDh=Z_NeGAqy@mail.gmail.com>
+References: <AANLkTinvB4PR=QHPztKCeF7FCNAYwL9rm-3mrLM=2iWC@mail.gmail.com>
+	<alpine.DEB.1.00.1010070035130.6395@bonsai2>
+	<AANLkTikBcK9SHFs9-z3vmuvSrfH7QqBTtDh=Z_NeGAqy@mail.gmail.com>
+Message-ID: <alpine.DEB.1.00.1010080044280.6395@bonsai2>
+
+Hi,
+
+On Thu, 7 Oct 2010, Curtis Rueden wrote:
+
+> > Also, I am wary of the MVC design discussions. This all sounds as if 
+> > your target was again a single-desktop application, and not an image 
+> > processing library extensible via plugins which just so happens to 
+> > also have an interactive backend for end users.
+> 
+> Unfortunately, the discussion wasn't well captured in the notes. 
+> Contrary to how it might have appeared, I think the desire for an MVC 
+> design actually illustrates our focus on "ImageJ as library."
+
+Good! That was my concern.
+
+> The reality is that much of the engineering challenge of ImageJ *does* 
+> come down to how the GUI is structured, since many developers do want to 
+> leverage portions of the GUI (as a library) in their applications. So 
+> there are many layers to consider...
+
+There are. But the most important is the lowest-level layer. And I think 
+with what Grant did (based on my @parameter proof-of-concept), things are 
+definitely moving into a good direction. Fiji (+plugins) will be very 
+usable, even from other frameworks/libraries.
+
+> > Otherwise: impressive job.
+>
+> I think the discussion served more to get us all on the same (or at 
+> least similar) page, and thinking about these topics, than it did to 
+> make any substantial design progress. We did settle on our priorities 
+> for the conference presentation, at least, so that is good.
+
+I agree. The overall direction is definitely good (not that I would expect 
+any project lead by you and Grant to go anywhere else...!)
+
+Ciao,
+Dscho
+
+
+
+
+From Johannes.Schindelin at gmx.de  Sat Oct  9 10:27:50 2010
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Sat, 9 Oct 2010 17:27:50 +0200 (CEST)
+Subject: [ImageJ-devel] Design meeting notes
+In-Reply-To: <4CADCDC2.1070609@broadinstitute.org>
+References: <AANLkTinvB4PR=QHPztKCeF7FCNAYwL9rm-3mrLM=2iWC@mail.gmail.com>
+	<4CADCDC2.1070609@broadinstitute.org>
+Message-ID: <alpine.DEB.1.00.1010091725530.1964@bonsai2>
+
+Hi Lee,
+
+thanks for your comments. I think that it is a very good thing for the 
+plugin design that you're looking at it from the point of view of a 
+different application wanting to be able to call ImageJ plugins without 
+using ImageJ's GUI.
+
+On Thu, 7 Oct 2010, Lee Kamentsky wrote:
+
+> *Johannes*, you are a Tubeness author, my mods to it are attached and 
+> you are welcome to correct my mistakes, also if you have any other 
+> favorite plugins that you want to mod or have me mod, I'd love that.
+
+As far as I can tell, your modifications are perfect!
+
+But looking at it, I wonder whether our AbstractPlugin should not get rid 
+of the "String ignored" parameter to the run() method...
+
+Ciao,
+Johannes
+
+
+
+From Johannes.Schindelin at gmx.de  Sat Oct  9 10:33:55 2010
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Sat, 9 Oct 2010 17:33:55 +0200 (CEST)
+Subject: [ImageJ-devel] Design meeting notes
+In-Reply-To: <AANLkTikk93hqnenbcuchL-es_1OyHACx1jHUs4i-MTwG@mail.gmail.com>
+References: <AANLkTinvB4PR=QHPztKCeF7FCNAYwL9rm-3mrLM=2iWC@mail.gmail.com>
+	<4CADCDC2.1070609@broadinstitute.org>
+	<AANLkTikk93hqnenbcuchL-es_1OyHACx1jHUs4i-MTwG@mail.gmail.com>
+Message-ID: <alpine.DEB.1.00.1010091730390.1964@bonsai2>
+
+Hi,
+
+sorry, I am really tight on time at the moment, so I am not able to put 
+much thought into this for now.
+
+On Thu, 7 Oct 2010, Curtis Rueden wrote:
+
+> > Related, some @parameters will be superfluous under some 
+> > circumstances: as an example, CellProfiler's mixture of gaussians 
+> > thresholding method asks "what percentage of the image is 
+> > foreground?", but the Otsu thresholding method does not. CellProfiler 
+> > does this by asking the module for the settings to display (and the 
+> > user doesn't have to implement the method in which case all are 
+> > displayed). How would such a method in ImageJ name the parameters to 
+> > display? (string matching the field name? Tags in @parameters matching 
+> > a string array returned by the method?
+> 
+> Hmm, sounds tricky. Maybe it work similarly to the idea above for 
+> validation, where an interface method exists that reports, for each 
+> parameter, whether it is currently relevant based on the values of other 
+> parameters. A nice demo for this functionality might be as simple as an 
+> "configure advanced options" checkbox that opens up a bunch more 
+> options. When the box is unchecked, the advanced options all disappear.
+> 
+> Of course, allowing options to be grouped together would ease some of 
+> the declarative burden, since you could group all the advanced options 
+> into an explicit "advanced options" category.
+> 
+> Johannes, have you considered any of these ideas?
+
+No. The time I spent on the plugin design since March, I have tried to 
+come up with a sensible architecture to handle something like "Keep aspect 
+ratio" feedback (without requiring the developer to provide a metric ton 
+of methods to that end). So far, I haven't been successful (a single check 
+method has the disadvantage that it cannot set the other number 
+automatically).
+
+Ciao,
+Dscho
+
+
+
+
+From Johannes.Schindelin at gmx.de  Mon Oct 11 04:07:12 2010
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Mon, 11 Oct 2010 11:07:12 +0200 (CEST)
+Subject: [ImageJ-devel] [fiji-devel] RegionOfInterestCursor considered
+	misnamed
+In-Reply-To: <000301cb6917$0b7c7060$22755120$@de>
+References: <alpine.DEB.1.00.1005041655080.17490@intel-tinevez-2-302>
+	<t2yb4be84b31005040904t154ad4d0oa05f167f27f56d97@mail.gmail.com>
+	<1273002175.16806.79.camel@saalfeld-laptop>
+	<alpine.DEB.1.00.1005050014320.7651@pacific.mpi-cbg.de>
+	<r2qb4be84b31005041521v12e9f6ddjd56fd4c77f949f0d@mail.gmail.com>
+	<alpine.DEB.1.00.1010102106590.1964@bonsai2>
+	<000301cb6917$0b7c7060$22755120$@de>
+Message-ID: <alpine.DEB.1.00.1010111105500.1964@bonsai2>
+
+Hi,
+
+I Cc:ed the ImageJ-devel group, as I fear that we are a bit segregated on 
+the imglib development, and they might not be aware of the things going on 
+here.
+
+As to the change in the design: I think this is a fantastic idea!
+
+Ciao,
+Johannes
+
+On Mon, 11 Oct 2010, Stephan Preibisch wrote:
+
+> Hi guys,
+> 
+> be aware that this cursor will become redundant soon. The plan is that
+> Image<T> becomes an interface. From that point onwards, also ROIs are images
+> that can create their own cursors, where the most simple cases are bounding
+> boxes and masks which we like to support right from the start....
+> 
+> Nice greetings,
+> Stephan & Stephan
+> 
+> -----Original Message-----
+> From: fiji-devel at googlegroups.com [mailto:fiji-devel at googlegroups.com] On
+> Behalf Of Johannes Schindelin
+> Sent: Monday, October 11, 2010 1:09 AM
+> To: Larry Lindsey
+> Cc: Stephan Saalfeld; fiji-devel at googlegroups.com
+> Subject: Re: [fiji-devel] RegionOfInterestCursor considered misnamed
+> 
+> Hi,
+> 
+> On Tue, 4 May 2010, Larry Lindsey wrote:
+> 
+> > On Tue, May 4, 2010 at 5:15 PM, Johannes Schindelin
+> > <Johannes.Schindelin at gmx.de> wrote:
+> > >
+> > > On Tue, 4 May 2010, Stephan Saalfeld wrote:
+> > >
+> > >> indeed, the ROICursor is what I would call FrameCursor or 
+> > >> WindowCursor,
+> > >
+> > > That gave me the idea "SubImageCursor". Hmm?
+> >
+> > I like it.  I also think that SubImageAlgorithm (or FrameAlgorithm or 
+> > WindowAlgorithm) makes more sense than ROIAlgorithm (which I named, and 
+> > so am to blame ;-] ).
+> 
+> Any progress on this?
+> 
+> Ciao,
+> Dscho
+> 
+> -- 
+> You received this message because you are subscribed to the Google Groups
+> "Fiji-devel" group.
+> To post to this group, send email to fiji-devel at googlegroups.com.
+> To unsubscribe from this group, send email to
+> fiji-devel+unsubscribe at googlegroups.com.
+> For more options, visit this group at
+> http://groups.google.com/group/fiji-devel?hl=en.
+> 
+> 
+
+
+
+From ctrueden at wisc.edu  Mon Oct 11 10:50:39 2010
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Mon, 11 Oct 2010 10:50:39 -0500
+Subject: [ImageJ-devel] [fiji-devel] RegionOfInterestCursor considered
+	misnamed
+In-Reply-To: <alpine.DEB.1.00.1010111105500.1964@bonsai2>
+References: <alpine.DEB.1.00.1005041655080.17490@intel-tinevez-2-302>
+	<t2yb4be84b31005040904t154ad4d0oa05f167f27f56d97@mail.gmail.com>
+	<1273002175.16806.79.camel@saalfeld-laptop>
+	<alpine.DEB.1.00.1005050014320.7651@pacific.mpi-cbg.de>
+	<r2qb4be84b31005041521v12e9f6ddjd56fd4c77f949f0d@mail.gmail.com>
+	<alpine.DEB.1.00.1010102106590.1964@bonsai2>
+	<000301cb6917$0b7c7060$22755120$@de>
+	<alpine.DEB.1.00.1010111105500.1964@bonsai2>
+Message-ID: <AANLkTinhC4ZRJcPx94qKkWfLkwdMncB3JrAAFmjAQmgx@mail.gmail.com>
+
+Hi Dscho,
+
+Thanks, I am following fiji-devel so I did notice Steffi's message about
+Image becoming an interface. Though it is the first I've heard of it, I am
+in favor because it makes unit testing much easier. When I visit later this
+month there should be time for me to hear about the latest imglib
+developments. I would like to see us all get unified back to master
+(including sampler & maven branches), and get the ij-2.0 code using imglib
+as correctly as possible.
+
+-Curtis
+
+On Mon, Oct 11, 2010 at 4:07 AM, Johannes Schindelin <
+Johannes.Schindelin at gmx.de> wrote:
+
+> Hi,
+>
+> I Cc:ed the ImageJ-devel group, as I fear that we are a bit segregated on
+> the imglib development, and they might not be aware of the things going on
+> here.
+>
+> As to the change in the design: I think this is a fantastic idea!
+>
+> Ciao,
+> Johannes
+>
+> On Mon, 11 Oct 2010, Stephan Preibisch wrote:
+>
+> > Hi guys,
+> >
+> > be aware that this cursor will become redundant soon. The plan is that
+> > Image<T> becomes an interface. From that point onwards, also ROIs are
+> images
+> > that can create their own cursors, where the most simple cases are
+> bounding
+> > boxes and masks which we like to support right from the start....
+> >
+> > Nice greetings,
+> > Stephan & Stephan
+> >
+> > -----Original Message-----
+> > From: fiji-devel at googlegroups.com [mailto:fiji-devel at googlegroups.com]
+> On
+> > Behalf Of Johannes Schindelin
+> > Sent: Monday, October 11, 2010 1:09 AM
+> > To: Larry Lindsey
+> > Cc: Stephan Saalfeld; fiji-devel at googlegroups.com
+> > Subject: Re: [fiji-devel] RegionOfInterestCursor considered misnamed
+> >
+> > Hi,
+> >
+> > On Tue, 4 May 2010, Larry Lindsey wrote:
+> >
+> > > On Tue, May 4, 2010 at 5:15 PM, Johannes Schindelin
+> > > <Johannes.Schindelin at gmx.de> wrote:
+> > > >
+> > > > On Tue, 4 May 2010, Stephan Saalfeld wrote:
+> > > >
+> > > >> indeed, the ROICursor is what I would call FrameCursor or
+> > > >> WindowCursor,
+> > > >
+> > > > That gave me the idea "SubImageCursor". Hmm?
+> > >
+> > > I like it.  I also think that SubImageAlgorithm (or FrameAlgorithm or
+> > > WindowAlgorithm) makes more sense than ROIAlgorithm (which I named, and
+> > > so am to blame ;-] ).
+> >
+> > Any progress on this?
+> >
+> > Ciao,
+> > Dscho
+> >
+> > --
+> > You received this message because you are subscribed to the Google Groups
+> > "Fiji-devel" group.
+> > To post to this group, send email to fiji-devel at googlegroups.com.
+> > To unsubscribe from this group, send email to
+> > fiji-devel+unsubscribe at googlegroups.com<fiji-devel%2Bunsubscribe at googlegroups.com>
+> .
+> > For more options, visit this group at
+> > http://groups.google.com/group/fiji-devel?hl=en.
+> >
+> >
+>
+> --
+> You received this message because you are subscribed to the Google Groups
+> "Fiji-devel" group.
+> To post to this group, send email to fiji-devel at googlegroups.com.
+> To unsubscribe from this group, send email to
+> fiji-devel+unsubscribe at googlegroups.com<fiji-devel%2Bunsubscribe at googlegroups.com>
+> .
+> For more options, visit this group at
+> http://groups.google.com/group/fiji-devel?hl=en.
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20101011/32dde2d8/attachment.html>
+
+From larry.f.lindsey at gmail.com  Mon Oct 11 10:09:26 2010
+From: larry.f.lindsey at gmail.com (Larry Lindsey)
+Date: Mon, 11 Oct 2010 10:09:26 -0500
+Subject: [ImageJ-devel] [fiji-devel] RegionOfInterestCursor considered
+	misnamed
+In-Reply-To: <alpine.DEB.1.00.1010111105500.1964@bonsai2>
+References: <alpine.DEB.1.00.1005041655080.17490@intel-tinevez-2-302>
+	<t2yb4be84b31005040904t154ad4d0oa05f167f27f56d97@mail.gmail.com>
+	<1273002175.16806.79.camel@saalfeld-laptop>
+	<alpine.DEB.1.00.1005050014320.7651@pacific.mpi-cbg.de>
+	<r2qb4be84b31005041521v12e9f6ddjd56fd4c77f949f0d@mail.gmail.com>
+	<alpine.DEB.1.00.1010102106590.1964@bonsai2>
+	<000301cb6917$0b7c7060$22755120$@de>
+	<alpine.DEB.1.00.1010111105500.1964@bonsai2>
+Message-ID: <AANLkTimKdVBK=SxB9T52EWZWX=TuBrDY_vOuAeWTiooo@mail.gmail.com>
+
+For what it's worth, I also am in favor.
+
+The purpose of ROIAlgorithm was to do the grunt-work involved with
+direct-filter-type operations (convolution/cross-correlation, and
+order statistic filters, for example).  Might this become obsolete?
+
+Cheers!
+
+Larry
+
+On Mon, Oct 11, 2010 at 4:07 AM, Johannes Schindelin
+<Johannes.Schindelin at gmx.de> wrote:
+> Hi,
+>
+> I Cc:ed the ImageJ-devel group, as I fear that we are a bit segregated on
+> the imglib development, and they might not be aware of the things going on
+> here.
+>
+> As to the change in the design: I think this is a fantastic idea!
+>
+> Ciao,
+> Johannes
+>
+> On Mon, 11 Oct 2010, Stephan Preibisch wrote:
+>
+>> Hi guys,
+>>
+>> be aware that this cursor will become redundant soon. The plan is that
+>> Image<T> becomes an interface. From that point onwards, also ROIs are images
+>> that can create their own cursors, where the most simple cases are bounding
+>> boxes and masks which we like to support right from the start....
+>>
+>> Nice greetings,
+>> Stephan & Stephan
+>>
+>> -----Original Message-----
+>> From: fiji-devel at googlegroups.com [mailto:fiji-devel at googlegroups.com] On
+>> Behalf Of Johannes Schindelin
+>> Sent: Monday, October 11, 2010 1:09 AM
+>> To: Larry Lindsey
+>> Cc: Stephan Saalfeld; fiji-devel at googlegroups.com
+>> Subject: Re: [fiji-devel] RegionOfInterestCursor considered misnamed
+>>
+>> Hi,
+>>
+>> On Tue, 4 May 2010, Larry Lindsey wrote:
+>>
+>> > On Tue, May 4, 2010 at 5:15 PM, Johannes Schindelin
+>> > <Johannes.Schindelin at gmx.de> wrote:
+>> > >
+>> > > On Tue, 4 May 2010, Stephan Saalfeld wrote:
+>> > >
+>> > >> indeed, the ROICursor is what I would call FrameCursor or
+>> > >> WindowCursor,
+>> > >
+>> > > That gave me the idea "SubImageCursor". Hmm?
+>> >
+>> > I like it. ?I also think that SubImageAlgorithm (or FrameAlgorithm or
+>> > WindowAlgorithm) makes more sense than ROIAlgorithm (which I named, and
+>> > so am to blame ;-] ).
+>>
+>> Any progress on this?
+>>
+>> Ciao,
+>> Dscho
+>>
+>> --
+>> You received this message because you are subscribed to the Google Groups
+>> "Fiji-devel" group.
+>> To post to this group, send email to fiji-devel at googlegroups.com.
+>> To unsubscribe from this group, send email to
+>> fiji-devel+unsubscribe at googlegroups.com.
+>> For more options, visit this group at
+>> http://groups.google.com/group/fiji-devel?hl=en.
+>>
+>>
+>
+
+
+
+From gharris at mbl.edu  Mon Oct 11 11:46:04 2010
+From: gharris at mbl.edu (Grant B. Harris)
+Date: Mon, 11 Oct 2010 12:46:04 -0400
+Subject: [ImageJ-devel] [fiji-devel] RegionOfInterestCursor considered
+ misnamed
+In-Reply-To: <AANLkTinhC4ZRJcPx94qKkWfLkwdMncB3JrAAFmjAQmgx@mail.gmail.com>
+References: <alpine.DEB.1.00.1005041655080.17490@intel-tinevez-2-302>	<t2yb4be84b31005040904t154ad4d0oa05f167f27f56d97@mail.gmail.com>	<1273002175.16806.79.camel@saalfeld-laptop>	<alpine.DEB.1.00.1005050014320.7651@pacific.mpi-cbg.de>	<r2qb4be84b31005041521v12e9f6ddjd56fd4c77f949f0d@mail.gmail.com>	<alpine.DEB.1.00.1010102106590.1964@bonsai2>	<000301cb6917$0b7c7060$22755120$@de>	<alpine.DEB.1.00.1010111105500.1964@bonsai2>
+	<AANLkTinhC4ZRJcPx94qKkWfLkwdMncB3JrAAFmjAQmgx@mail.gmail.com>
+Message-ID: <4CB33F4C.7050008@mbl.edu>
+
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20101011/7765b9ba/attachment.html>
+
+From ctrueden at wisc.edu  Mon Oct 11 11:54:59 2010
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Mon, 11 Oct 2010 11:54:59 -0500
+Subject: [ImageJ-devel] Naming [was: Re: [fiji-devel] RegionOfInterestCursor
+ considered misnamed]
+Message-ID: <AANLkTimm+FjmuEQQ63SHhOOOMyvjTiabnt7qp1EVrHxm@mail.gmail.com>
+
+Hi Grant,
+
+I agree with Grant. If the design is going to change and break existing
+code?which I think is fine at this stage?I would like to see a different
+name than "Image" to avoid clashing with java.awt.Image.
+
+-Curtis
+
+On Mon, Oct 11, 2010 at 11:46 AM, Grant B. Harris <gharris at mbl.edu> wrote:
+
+>  All --
+>
+> Agreed, I think it should be an interface.  But, and this may ignite a
+> firestorm, but (since this level of change is still in play) I'd like to
+> suggest that the interface "Image" not be used.  It is easily (if not
+> necessarily) confused with java.awt.Image, and isn't it the case that
+> imglib.Image is not an image?  It is a data representation that may be
+> rendered as an image or set of images or a visualization.  It is analogous
+> to the DataBuffer of a java.awt.Image.  How about calling it an "ImageSpace"
+> or better yet, a
+> "MultidimensionalImageDataBufferLikeThingThatIsNotReallyAnImage" ??
+>
+> -- Grant
+>
+>
+> On 10/11/2010 11:50 AM, Curtis Rueden wrote:
+>
+> Hi Dscho,
+>
+> Thanks, I am following fiji-devel so I did notice Steffi's message about
+> Image becoming an interface. Though it is the first I've heard of it, I am
+> in favor because it makes unit testing much easier. When I visit later this
+> month there should be time for me to hear about the latest imglib
+> developments. I would like to see us all get unified back to master
+> (including sampler & maven branches), and get the ij-2.0 code using imglib
+> as correctly as possible.
+>
+> -Curtis
+>
+> On Mon, Oct 11, 2010 at 4:07 AM, Johannes Schindelin <
+> Johannes.Schindelin at gmx.de> wrote:
+>
+>> Hi,
+>>
+>> I Cc:ed the ImageJ-devel group, as I fear that we are a bit segregated on
+>> the imglib development, and they might not be aware of the things going on
+>> here.
+>>
+>> As to the change in the design: I think this is a fantastic idea!
+>>
+>> Ciao,
+>> Johannes
+>>
+>> On Mon, 11 Oct 2010, Stephan Preibisch wrote:
+>>
+>> > Hi guys,
+>> >
+>> > be aware that this cursor will become redundant soon. The plan is that
+>> > Image<T> becomes an interface. From that point onwards, also ROIs are
+>> images
+>> > that can create their own cursors, where the most simple cases are
+>> bounding
+>> > boxes and masks which we like to support right from the start....
+>> >
+>> > Nice greetings,
+>> > Stephan & Stephan
+>> >
+>> > -----Original Message-----
+>> > From: fiji-devel at googlegroups.com [mailto:fiji-devel at googlegroups.com]
+>> On
+>> > Behalf Of Johannes Schindelin
+>> > Sent: Monday, October 11, 2010 1:09 AM
+>> > To: Larry Lindsey
+>> > Cc: Stephan Saalfeld; fiji-devel at googlegroups.com
+>> > Subject: Re: [fiji-devel] RegionOfInterestCursor considered misnamed
+>> >
+>> > Hi,
+>> >
+>> > On Tue, 4 May 2010, Larry Lindsey wrote:
+>> >
+>> > > On Tue, May 4, 2010 at 5:15 PM, Johannes Schindelin
+>> > > <Johannes.Schindelin at gmx.de> wrote:
+>> > > >
+>> > > > On Tue, 4 May 2010, Stephan Saalfeld wrote:
+>> > > >
+>> > > >> indeed, the ROICursor is what I would call FrameCursor or
+>> > > >> WindowCursor,
+>> > > >
+>> > > > That gave me the idea "SubImageCursor". Hmm?
+>> > >
+>> > > I like it.  I also think that SubImageAlgorithm (or FrameAlgorithm or
+>> > > WindowAlgorithm) makes more sense than ROIAlgorithm (which I named,
+>> and
+>> > > so am to blame ;-] ).
+>> >
+>> > Any progress on this?
+>> >
+>> > Ciao,
+>> > Dscho
+>> >
+>> > --
+>> > You received this message because you are subscribed to the Google
+>> Groups
+>> > "Fiji-devel" group.
+>> > To post to this group, send email to fiji-devel at googlegroups.com.
+>> > To unsubscribe from this group, send email to
+>> > fiji-devel+unsubscribe at googlegroups.com<fiji-devel%2Bunsubscribe at googlegroups.com>
+>> .
+>> > For more options, visit this group at
+>> > http://groups.google.com/group/fiji-devel?hl=en.
+>> >
+>> >
+>>
+>> --
+>> You received this message because you are subscribed to the Google Groups
+>> "Fiji-devel" group.
+>> To post to this group, send email to fiji-devel at googlegroups.com.
+>> To unsubscribe from this group, send email to
+>> fiji-devel+unsubscribe at googlegroups.com<fiji-devel%2Bunsubscribe at googlegroups.com>
+>> .
+>> For more options, visit this group at
+>> http://groups.google.com/group/fiji-devel?hl=en.
+>>
+>>
+>
+> _______________________________________________
+> ImageJ-devel mailing listImageJ-devel at imagejdev.orghttp://imagejdev.org/mailman/listinfo/imagej-devel
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20101011/f79c8b0b/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Mon Oct 11 12:32:37 2010
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Mon, 11 Oct 2010 19:32:37 +0200 (CEST)
+Subject: [ImageJ-devel] Naming [was: Re: [fiji-devel]
+ RegionOfInterestCursor considered misnamed]
+In-Reply-To: <AANLkTimm+FjmuEQQ63SHhOOOMyvjTiabnt7qp1EVrHxm@mail.gmail.com>
+References: <AANLkTimm+FjmuEQQ63SHhOOOMyvjTiabnt7qp1EVrHxm@mail.gmail.com>
+Message-ID: <alpine.DEB.1.00.1010111926200.2710@intel-tinevez-2-302>
+
+Hi,
+
+On Mon, 11 Oct 2010, Curtis Rueden wrote:
+
+> I agree with Grant. If the design is going to change and break existing 
+> code?which I think is fine at this stage?I would like to see a different 
+> name than "Image" to avoid clashing with java.awt.Image.
+
+Yes, I agree that nomenclature might be something we want to change, 
+but...
+
+> > "MultidimensionalImageDataBufferLikeThingThatIsNotReallyAnImage" ??
+
+... Grant, you're not German enough to be entitled to suggest such a 
+variable name :-)
+
+I do not like ImageSpace, though. It contradicts my perception of what the 
+class is about.
+
+After thinking about this, I am not really sure that I want to change the 
+name "Image", though. You should not use java.awt.Image and 
+mpicbg.imglib.image.Image in the same class to begin with.
+
+And in a sense, they _do_ mean the same. It's just that AWT is limited to 
+2 dimensions, why imglib isn't.
+
+There are other class names I'd love to see changed, but "Image" is not 
+one of them.
+
+Ciao,
+Johannes
+
+From ctrueden at wisc.edu  Mon Oct 11 12:34:12 2010
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Mon, 11 Oct 2010 12:34:12 -0500
+Subject: [ImageJ-devel] Design meeting notes
+In-Reply-To: <alpine.DEB.1.00.1010091730390.1964@bonsai2>
+References: <AANLkTinvB4PR=QHPztKCeF7FCNAYwL9rm-3mrLM=2iWC@mail.gmail.com>
+	<4CADCDC2.1070609@broadinstitute.org>
+	<AANLkTikk93hqnenbcuchL-es_1OyHACx1jHUs4i-MTwG@mail.gmail.com>
+	<alpine.DEB.1.00.1010091730390.1964@bonsai2>
+Message-ID: <AANLkTik9x6OJnM9RBN_4a-8CGN3=tWqS1Zbv-LAUZEFQ@mail.gmail.com>
+
+Hi Dscho,
+
+No. The time I spent on the plugin design since March, I have tried to
+> come up with a sensible architecture to handle something like "Keep aspect
+> ratio" feedback (without requiring the developer to provide a metric ton
+> of methods to that end). So far, I haven't been successful (a single check
+> method has the disadvantage that it cannot set the other number
+> automatically).
+>
+
+How about this:
+
+    @Parameter
+    public int width = 640;
+
+    @Parameter(label = "A double", digits = 3, columns = 5, units =
+"microns")
+    public int height = 480;
+
+    @Parameter(label = "Keep aspect ratio", callback = aspectRatioChanged)
+    public boolean keepAspectRatio = false;
+
+So that the developer defines their own callback methods for each parameter
+to which they want to react? Easy for each dialog implementation to attach
+listeners and callback by reflection, right?
+
+-Curtis
+
+On Sat, Oct 9, 2010 at 10:33 AM, Johannes Schindelin <
+Johannes.Schindelin at gmx.de> wrote:
+
+> Hi,
+>
+> sorry, I am really tight on time at the moment, so I am not able to put
+> much thought into this for now.
+>
+> On Thu, 7 Oct 2010, Curtis Rueden wrote:
+>
+> > > Related, some @parameters will be superfluous under some
+> > > circumstances: as an example, CellProfiler's mixture of gaussians
+> > > thresholding method asks "what percentage of the image is
+> > > foreground?", but the Otsu thresholding method does not. CellProfiler
+> > > does this by asking the module for the settings to display (and the
+> > > user doesn't have to implement the method in which case all are
+> > > displayed). How would such a method in ImageJ name the parameters to
+> > > display? (string matching the field name? Tags in @parameters matching
+> > > a string array returned by the method?
+> >
+> > Hmm, sounds tricky. Maybe it work similarly to the idea above for
+> > validation, where an interface method exists that reports, for each
+> > parameter, whether it is currently relevant based on the values of other
+> > parameters. A nice demo for this functionality might be as simple as an
+> > "configure advanced options" checkbox that opens up a bunch more
+> > options. When the box is unchecked, the advanced options all disappear.
+> >
+> > Of course, allowing options to be grouped together would ease some of
+> > the declarative burden, since you could group all the advanced options
+> > into an explicit "advanced options" category.
+> >
+> > Johannes, have you considered any of these ideas?
+>
+> No. The time I spent on the plugin design since March, I have tried to
+> come up with a sensible architecture to handle something like "Keep aspect
+> ratio" feedback (without requiring the developer to provide a metric ton
+> of methods to that end). So far, I haven't been successful (a single check
+> method has the disadvantage that it cannot set the other number
+> automatically).
+>
+> Ciao,
+> Dscho
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20101011/c25065a4/attachment.html>
+
+From ctrueden at wisc.edu  Mon Oct 11 12:43:50 2010
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Mon, 11 Oct 2010 12:43:50 -0500
+Subject: [ImageJ-devel] Naming [was: Re: [fiji-devel]
+ RegionOfInterestCursor considered misnamed]
+In-Reply-To: <alpine.DEB.1.00.1010111926200.2710@intel-tinevez-2-302>
+References: <AANLkTimm+FjmuEQQ63SHhOOOMyvjTiabnt7qp1EVrHxm@mail.gmail.com>
+	<alpine.DEB.1.00.1010111926200.2710@intel-tinevez-2-302>
+Message-ID: <AANLkTikb03Cz+ASJ2_y6rZsQefbrz8uy3pH3mRW7K=NV@mail.gmail.com>
+
+Hi Dscho,
+
+After thinking about this, I am not really sure that I want to change the
+> name "Image", though. You should not use java.awt.Image and
+> mpicbg.imglib.image.Image in the same class to begin with.
+>
+
+I do not think it is good to say "you should not" in cases like this. We
+don't know everything people are going to be doing with these classes. If
+someone writes a java.awt.Image -> mpicbg.imglib.image.Image converter, for
+example, they will surely end up with at least one class referencing both
+classes.
+
+And in a sense, they _do_ mean the same. It's just that AWT is limited to
+> 2 dimensions, why imglib isn't.
+>
+
+Sure. For me it a purely practical concern of two classes with the same name
+clashing.
+
+I do not like ImageSpace, though. It contradicts my perception of what the
+> class is about.
+>
+
+I don't really like it either. How about "Img" mirroring the "img" in
+"imglib"? Kind of ugly but at least it's unique. Otherwise we could use
+"IImage" or "NDImage" or "ILImage" or "HyperImage"...
+
+-Curtis
+
+On Mon, Oct 11, 2010 at 12:32 PM, Johannes Schindelin <
+Johannes.Schindelin at gmx.de> wrote:
+
+> Hi,
+>
+> On Mon, 11 Oct 2010, Curtis Rueden wrote:
+>
+> > I agree with Grant. If the design is going to change and break existing
+> > code?which I think is fine at this stage?I would like to see a different
+> > name than "Image" to avoid clashing with java.awt.Image.
+>
+> Yes, I agree that nomenclature might be something we want to change,
+> but...
+>
+> > > "MultidimensionalImageDataBufferLikeThingThatIsNotReallyAnImage" ??
+>
+> ... Grant, you're not German enough to be entitled to suggest such a
+> variable name :-)
+>
+> I do not like ImageSpace, though. It contradicts my perception of what the
+> class is about.
+>
+> After thinking about this, I am not really sure that I want to change the
+> name "Image", though. You should not use java.awt.Image and
+> mpicbg.imglib.image.Image in the same class to begin with.
+>
+> And in a sense, they _do_ mean the same. It's just that AWT is limited to
+> 2 dimensions, why imglib isn't.
+>
+> There are other class names I'd love to see changed, but "Image" is not
+> one of them.
+>
+> Ciao,
+> Johannes
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20101011/0aeab2fd/attachment.html>
+
+From sapristi at gmail.com  Mon Oct 11 12:51:23 2010
+From: sapristi at gmail.com (Albert Cardona)
+Date: Mon, 11 Oct 2010 19:51:23 +0200
+Subject: [ImageJ-devel] Naming [was: Re: [fiji-devel]
+ RegionOfInterestCursor considered misnamed]
+In-Reply-To: <AANLkTikb03Cz+ASJ2_y6rZsQefbrz8uy3pH3mRW7K=NV@mail.gmail.com>
+References: <AANLkTimm+FjmuEQQ63SHhOOOMyvjTiabnt7qp1EVrHxm@mail.gmail.com>
+	<alpine.DEB.1.00.1010111926200.2710@intel-tinevez-2-302>
+	<AANLkTikb03Cz+ASJ2_y6rZsQefbrz8uy3pH3mRW7K=NV@mail.gmail.com>
+Message-ID: <AANLkTimhL6K91s-REnCvDh0WbQ_W_70hsKXFZ_Ag_Vki@mail.gmail.com>
+
+> I don't really like it either. How about "Img" mirroring the "img" in
+> "imglib"? Kind of ugly but at least it's unique. Otherwise we could use
+> "IImage" or "NDImage" or "ILImage" or "HyperImage"...
+
+
+I vote for interface "Tensor".
+
+The misnamed "imglib" is a tensor lib.
+
+
+>From http://en.wikipedia.org/wiki/Tensor :
+
+"... tensors in general can be considered as a multidimensional array
+of numbers"
+
+
+Albert
+-- 
+http://albert.rierol.net
+
+
+
+From bdezonia at wisc.edu  Mon Oct 11 12:57:50 2010
+From: bdezonia at wisc.edu (Barry DeZonia)
+Date: Mon, 11 Oct 2010 12:57:50 -0500
+Subject: [ImageJ-devel] [fiji-devel] RegionOfInterestCursor considered
+ misnamed
+In-Reply-To: <4CB33F4C.7050008@mbl.edu>
+References: <alpine.DEB.1.00.1005041655080.17490@intel-tinevez-2-302>
+	<t2yb4be84b31005040904t154ad4d0oa05f167f27f56d97@mail.gmail.com>
+	<1273002175.16806.79.camel@saalfeld-laptop>
+	<alpine.DEB.1.00.1005050014320.7651@pacific.mpi-cbg.de>
+	<r2qb4be84b31005041521v12e9f6ddjd56fd4c77f949f0d@mail.gmail.com>
+	<alpine.DEB.1.00.1010102106590.1964@bonsai2>
+	<000301cb6917$0b7c7060$22755120$@de>
+	<alpine.DEB.1.00.1010111105500.1964@bonsai2>
+	<AANLkTinhC4ZRJcPx94qKkWfLkwdMncB3JrAAFmjAQmgx@mail.gmail.com>
+	<4CB33F4C.7050008@mbl.edu>
+Message-ID: <AANLkTik4z9p7FHZEXf8fcRPfiQ5J+KgLVnouYoojkzSn@mail.gmail.com>
+
+I agree that a name change is in order. It seems more like a set of data
+that may or may not be rendered. Its nothing more than data sample values,
+right? I had thought something like NumericDataset might work nicely.
+
+On Mon, Oct 11, 2010 at 11:46 AM, Grant B. Harris <gharris at mbl.edu> wrote:
+
+>  All --
+>
+> Agreed, I think it should be an interface.  But, and this may ignite a
+> firestorm, but (since this level of change is still in play) I'd like to
+> suggest that the interface "Image" not be used.  It is easily (if not
+> necessarily) confused with java.awt.Image, and isn't it the case that
+> imglib.Image is not an image?  It is a data representation that may be
+> rendered as an image or set of images or a visualization.  It is analogous
+> to the DataBuffer of a java.awt.Image.  How about calling it an "ImageSpace"
+> or better yet, a
+> "MultidimensionalImageDataBufferLikeThingThatIsNotReallyAnImage" ??
+>
+> -- Grant
+>
+>
+> On 10/11/2010 11:50 AM, Curtis Rueden wrote:
+>
+> Hi Dscho,
+>
+> Thanks, I am following fiji-devel so I did notice Steffi's message about
+> Image becoming an interface. Though it is the first I've heard of it, I am
+> in favor because it makes unit testing much easier. When I visit later this
+> month there should be time for me to hear about the latest imglib
+> developments. I would like to see us all get unified back to master
+> (including sampler & maven branches), and get the ij-2.0 code using imglib
+> as correctly as possible.
+>
+> -Curtis
+>
+> On Mon, Oct 11, 2010 at 4:07 AM, Johannes Schindelin <
+> Johannes.Schindelin at gmx.de> wrote:
+>
+>> Hi,
+>>
+>> I Cc:ed the ImageJ-devel group, as I fear that we are a bit segregated on
+>> the imglib development, and they might not be aware of the things going on
+>> here.
+>>
+>> As to the change in the design: I think this is a fantastic idea!
+>>
+>> Ciao,
+>> Johannes
+>>
+>> On Mon, 11 Oct 2010, Stephan Preibisch wrote:
+>>
+>> > Hi guys,
+>> >
+>> > be aware that this cursor will become redundant soon. The plan is that
+>> > Image<T> becomes an interface. From that point onwards, also ROIs are
+>> images
+>> > that can create their own cursors, where the most simple cases are
+>> bounding
+>> > boxes and masks which we like to support right from the start....
+>> >
+>> > Nice greetings,
+>> > Stephan & Stephan
+>> >
+>> > -----Original Message-----
+>> > From: fiji-devel at googlegroups.com [mailto:fiji-devel at googlegroups.com]
+>> On
+>> > Behalf Of Johannes Schindelin
+>> > Sent: Monday, October 11, 2010 1:09 AM
+>> > To: Larry Lindsey
+>> > Cc: Stephan Saalfeld; fiji-devel at googlegroups.com
+>> > Subject: Re: [fiji-devel] RegionOfInterestCursor considered misnamed
+>> >
+>> > Hi,
+>> >
+>> > On Tue, 4 May 2010, Larry Lindsey wrote:
+>> >
+>> > > On Tue, May 4, 2010 at 5:15 PM, Johannes Schindelin
+>> > > <Johannes.Schindelin at gmx.de> wrote:
+>> > > >
+>> > > > On Tue, 4 May 2010, Stephan Saalfeld wrote:
+>> > > >
+>> > > >> indeed, the ROICursor is what I would call FrameCursor or
+>> > > >> WindowCursor,
+>> > > >
+>> > > > That gave me the idea "SubImageCursor". Hmm?
+>> > >
+>> > > I like it.  I also think that SubImageAlgorithm (or FrameAlgorithm or
+>> > > WindowAlgorithm) makes more sense than ROIAlgorithm (which I named,
+>> and
+>> > > so am to blame ;-] ).
+>> >
+>> > Any progress on this?
+>> >
+>> > Ciao,
+>> > Dscho
+>> >
+>> > --
+>> > You received this message because you are subscribed to the Google
+>> Groups
+>> > "Fiji-devel" group.
+>> > To post to this group, send email to fiji-devel at googlegroups.com.
+>> > To unsubscribe from this group, send email to
+>> > fiji-devel+unsubscribe at googlegroups.com<fiji-devel%2Bunsubscribe at googlegroups.com>
+>> .
+>> > For more options, visit this group at
+>> > http://groups.google.com/group/fiji-devel?hl=en.
+>> >
+>> >
+>>
+>> --
+>> You received this message because you are subscribed to the Google Groups
+>> "Fiji-devel" group.
+>> To post to this group, send email to fiji-devel at googlegroups.com.
+>> To unsubscribe from this group, send email to
+>> fiji-devel+unsubscribe at googlegroups.com<fiji-devel%2Bunsubscribe at googlegroups.com>
+>> .
+>> For more options, visit this group at
+>> http://groups.google.com/group/fiji-devel?hl=en.
+>>
+>>
+>
+> _______________________________________________
+> ImageJ-devel mailing listImageJ-devel at imagejdev.orghttp://imagejdev.org/mailman/listinfo/imagej-devel
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20101011/8deb59ab/attachment.html>
+
+From ctrueden at wisc.edu  Mon Oct 11 13:01:24 2010
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Mon, 11 Oct 2010 13:01:24 -0500
+Subject: [ImageJ-devel] Naming [was: Re: [fiji-devel]
+ RegionOfInterestCursor considered misnamed]
+In-Reply-To: <AANLkTimhL6K91s-REnCvDh0WbQ_W_70hsKXFZ_Ag_Vki@mail.gmail.com>
+References: <AANLkTimm+FjmuEQQ63SHhOOOMyvjTiabnt7qp1EVrHxm@mail.gmail.com>
+	<alpine.DEB.1.00.1010111926200.2710@intel-tinevez-2-302>
+	<AANLkTikb03Cz+ASJ2_y6rZsQefbrz8uy3pH3mRW7K=NV@mail.gmail.com>
+	<AANLkTimhL6K91s-REnCvDh0WbQ_W_70hsKXFZ_Ag_Vki@mail.gmail.com>
+Message-ID: <AANLkTinVe_Uekfch7S8s+zbA+1AawLA=mP5yFBVjGW2q@mail.gmail.com>
+
+Hi Albert,
+
+
+> I vote for interface "Tensor".
+>
+
+Great, much better than the names I suggested!
+
+-Curtis
+
+On Mon, Oct 11, 2010 at 12:51 PM, Albert Cardona <sapristi at gmail.com> wrote:
+
+> > I don't really like it either. How about "Img" mirroring the "img" in
+> > "imglib"? Kind of ugly but at least it's unique. Otherwise we could use
+> > "IImage" or "NDImage" or "ILImage" or "HyperImage"...
+>
+>
+> I vote for interface "Tensor".
+>
+> The misnamed "imglib" is a tensor lib.
+>
+>
+> From http://en.wikipedia.org/wiki/Tensor :
+>
+> "... tensors in general can be considered as a multidimensional array
+> of numbers"
+>
+>
+> Albert
+> --
+> http://albert.rierol.net
+>
+> --
+> You received this message because you are subscribed to the Google Groups
+> "Fiji-devel" group.
+> To post to this group, send email to fiji-devel at googlegroups.com.
+> To unsubscribe from this group, send email to
+> fiji-devel+unsubscribe at googlegroups.com<fiji-devel%2Bunsubscribe at googlegroups.com>
+> .
+> For more options, visit this group at
+> http://groups.google.com/group/fiji-devel?hl=en.
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20101011/7a74b572/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Mon Oct 11 14:03:23 2010
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Mon, 11 Oct 2010 21:03:23 +0200 (CEST)
+Subject: [ImageJ-devel] Naming [was: Re: [fiji-devel]
+ RegionOfInterestCursor considered misnamed]
+In-Reply-To: <AANLkTikb03Cz+ASJ2_y6rZsQefbrz8uy3pH3mRW7K=NV@mail.gmail.com>
+References: <AANLkTimm+FjmuEQQ63SHhOOOMyvjTiabnt7qp1EVrHxm@mail.gmail.com>
+	<alpine.DEB.1.00.1010111926200.2710@intel-tinevez-2-302>
+	<AANLkTikb03Cz+ASJ2_y6rZsQefbrz8uy3pH3mRW7K=NV@mail.gmail.com>
+Message-ID: <alpine.DEB.1.00.1010112102010.2710@intel-tinevez-2-302>
+
+Hi,
+
+On Mon, 11 Oct 2010, Curtis Rueden wrote:
+
+> For me it a purely practical concern of two classes with the same name 
+> clashing.
+
+Yep, just like java.awt.List and java.util.List. Which I need to mix quite 
+a lot of times. But I survive ;-)
+
+> How about "Img" mirroring the "img" in "imglib"? Kind of ugly but at 
+> least it's unique.
+
+I actually like it. Two letters less to type!
+
+Ciao,
+Dscho
+
+
+
+From Johannes.Schindelin at gmx.de  Mon Oct 11 14:06:03 2010
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Mon, 11 Oct 2010 21:06:03 +0200 (CEST)
+Subject: [ImageJ-devel] Naming [was: Re: [fiji-devel]
+ RegionOfInterestCursor considered misnamed]
+In-Reply-To: <AANLkTinVe_Uekfch7S8s+zbA+1AawLA=mP5yFBVjGW2q@mail.gmail.com>
+References: <AANLkTimm+FjmuEQQ63SHhOOOMyvjTiabnt7qp1EVrHxm@mail.gmail.com>
+	<alpine.DEB.1.00.1010111926200.2710@intel-tinevez-2-302>
+	<AANLkTikb03Cz+ASJ2_y6rZsQefbrz8uy3pH3mRW7K=NV@mail.gmail.com>
+	<AANLkTimhL6K91s-REnCvDh0WbQ_W_70hsKXFZ_Ag_Vki@mail.gmail.com>
+	<AANLkTinVe_Uekfch7S8s+zbA+1AawLA=mP5yFBVjGW2q@mail.gmail.com>
+Message-ID: <alpine.DEB.1.00.1010112103440.2710@intel-tinevez-2-302>
+
+Hi,
+
+On Mon, 11 Oct 2010, Curtis Rueden wrote:
+
+> > I vote for interface "Tensor".
+> 
+> Great, much better than the names I suggested!
+
+Keep in mind that we're not necessarily targeting mathematicians. Rather, 
+our typical developer is some random scientist trying to get stuff done in 
+their respective field of research, such as biology.
+
+I have not met a biologist yet, for example, who understood without 
+explanation what I mean when I used the word 'tensor'.
+
+And we're still talking about image processing, not tensor processing.
+
+Sure, we could try to do the same as certain *cough cough* companies 
+introducing their own nomenclature. But I do not like this.
+
+Ciao,
+Dscho
+
+
+
+
+From Johannes.Schindelin at gmx.de  Mon Oct 11 14:11:21 2010
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Mon, 11 Oct 2010 21:11:21 +0200 (CEST)
+Subject: [ImageJ-devel] Design meeting notes
+In-Reply-To: <AANLkTik9x6OJnM9RBN_4a-8CGN3=tWqS1Zbv-LAUZEFQ@mail.gmail.com>
+References: <AANLkTinvB4PR=QHPztKCeF7FCNAYwL9rm-3mrLM=2iWC@mail.gmail.com>
+	<4CADCDC2.1070609@broadinstitute.org>
+	<AANLkTikk93hqnenbcuchL-es_1OyHACx1jHUs4i-MTwG@mail.gmail.com>
+	<alpine.DEB.1.00.1010091730390.1964@bonsai2>
+	<AANLkTik9x6OJnM9RBN_4a-8CGN3=tWqS1Zbv-LAUZEFQ@mail.gmail.com>
+Message-ID: <alpine.DEB.1.00.1010112109410.2710@intel-tinevez-2-302>
+
+Hi,
+
+On Mon, 11 Oct 2010, Curtis Rueden wrote:
+
+> > No. The time I spent on the plugin design since March, I have tried to 
+> > come up with a sensible architecture to handle something like "Keep 
+> > aspect ratio" feedback (without requiring the developer to provide a 
+> > metric ton of methods to that end). So far, I haven't been successful 
+> > (a single check method has the disadvantage that it cannot set the 
+> > other number automatically).
+> 
+> How about this:
+> 
+>     @Parameter
+>     public int width = 640;
+> 
+>     @Parameter(label = "A double", digits = 3, columns = 5, units = "microns")
+>     public int height = 480;
+> 
+>     @Parameter(label = "Keep aspect ratio", callback = aspectRatioChanged)
+>     public boolean keepAspectRatio = false;
+> 
+> So that the developer defines their own callback methods for each 
+> parameter to which they want to react? Easy for each dialog 
+> implementation to attach listeners and callback by reflection, right?
+
+That was my first idea. But how would the user interface tell the callback 
+without String or java.lang.reflect.Field ugliness which input was 
+modified by the user (and by that, what field should be changed 
+accordingly), and how would the callback tell that it changed something, 
+and what?
+
+Ciao,
+Dscho
+
+
+
+
+From ctrueden at wisc.edu  Mon Oct 11 15:03:51 2010
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Mon, 11 Oct 2010 15:03:51 -0500
+Subject: [ImageJ-devel] Naming [was: Re: [fiji-devel]
+ RegionOfInterestCursor considered misnamed]
+In-Reply-To: <alpine.DEB.1.00.1010112102010.2710@intel-tinevez-2-302>
+References: <AANLkTimm+FjmuEQQ63SHhOOOMyvjTiabnt7qp1EVrHxm@mail.gmail.com>
+	<alpine.DEB.1.00.1010111926200.2710@intel-tinevez-2-302>
+	<AANLkTikb03Cz+ASJ2_y6rZsQefbrz8uy3pH3mRW7K=NV@mail.gmail.com>
+	<alpine.DEB.1.00.1010112102010.2710@intel-tinevez-2-302>
+Message-ID: <AANLkTi=2buJ2hUH_FsbQxrG0LmNXnarAaKJebSFEoYiD@mail.gmail.com>
+
+Hi Dscho,
+
+Yep, just like java.awt.List and java.util.List. Which I need to mix quite
+> a lot of times. But I survive ;-)
+>
+
+Right?don't you wish they hadn't done that? :-) And in our case it's worse
+because it is easier to type "java.util" than "mpicbg.imglib.image." Let's
+change it now while we still can.
+
+Keep in mind that we're not necessarily targeting mathematicians. Rather,
+> our typical developer is some random scientist trying to get stuff done in
+> their respective field of research, such as biology.
+>
+
+By that same argument, Java name clashes are very confusing to a casual
+programmer.
+
+> How about "Img" mirroring the "img" in "imglib"? Kind of ugly but at
+> > least it's unique.
+>
+> I actually like it. Two letters less to type!
+>
+
+So we now have two reasonable possibilities, Img and Tensor. Stephan &
+Stephan, what do you guys think?
+
+-Curtis
+
+On Mon, Oct 11, 2010 at 2:03 PM, Johannes Schindelin <
+Johannes.Schindelin at gmx.de> wrote:
+
+> Hi,
+>
+> On Mon, 11 Oct 2010, Curtis Rueden wrote:
+>
+> > For me it a purely practical concern of two classes with the same name
+> > clashing.
+>
+> Yep, just like java.awt.List and java.util.List. Which I need to mix quite
+> a lot of times. But I survive ;-)
+>
+> > How about "Img" mirroring the "img" in "imglib"? Kind of ugly but at
+> > least it's unique.
+>
+> I actually like it. Two letters less to type!
+>
+> Ciao,
+> Dscho
+>
+> --
+> You received this message because you are subscribed to the Google Groups
+> "Fiji-devel" group.
+> To post to this group, send email to fiji-devel at googlegroups.com.
+> To unsubscribe from this group, send email to
+> fiji-devel+unsubscribe at googlegroups.com<fiji-devel%2Bunsubscribe at googlegroups.com>
+> .
+> For more options, visit this group at
+> http://groups.google.com/group/fiji-devel?hl=en.
+>
+>
+
+
+On Mon, Oct 11, 2010 at 2:06 PM, Johannes Schindelin <
+Johannes.Schindelin at gmx.de> wrote:
+
+> Hi,
+>
+> On Mon, 11 Oct 2010, Curtis Rueden wrote:
+>
+> > > I vote for interface "Tensor".
+> >
+> > Great, much better than the names I suggested!
+>
+> Keep in mind that we're not necessarily targeting mathematicians. Rather,
+> our typical developer is some random scientist trying to get stuff done in
+> their respective field of research, such as biology.
+>
+> I have not met a biologist yet, for example, who understood without
+> explanation what I mean when I used the word 'tensor'.
+>
+> And we're still talking about image processing, not tensor processing.
+>
+> Sure, we could try to do the same as certain *cough cough* companies
+> introducing their own nomenclature. But I do not like this.
+>
+> Ciao,
+> Dscho
+>
+> --
+> You received this message because you are subscribed to the Google Groups
+> "Fiji-devel" group.
+> To post to this group, send email to fiji-devel at googlegroups.com.
+> To unsubscribe from this group, send email to
+> fiji-devel+unsubscribe at googlegroups.com<fiji-devel%2Bunsubscribe at googlegroups.com>
+> .
+> For more options, visit this group at
+> http://groups.google.com/group/fiji-devel?hl=en.
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20101011/f5990167/attachment.html>
+
+From saalfeld at mpi-cbg.de  Mon Oct 11 15:17:51 2010
+From: saalfeld at mpi-cbg.de (Stephan Saalfeld)
+Date: Mon, 11 Oct 2010 22:17:51 +0200
+Subject: [ImageJ-devel] Naming [was: Re: [fiji-devel]
+ RegionOfInterestCursor considered misnamed]
+In-Reply-To: <AANLkTimhL6K91s-REnCvDh0WbQ_W_70hsKXFZ_Ag_Vki@mail.gmail.com>
+References: <AANLkTimm+FjmuEQQ63SHhOOOMyvjTiabnt7qp1EVrHxm@mail.gmail.com>
+	<alpine.DEB.1.00.1010111926200.2710@intel-tinevez-2-302>
+	<AANLkTikb03Cz+ASJ2_y6rZsQefbrz8uy3pH3mRW7K=NV@mail.gmail.com>
+	<AANLkTimhL6K91s-REnCvDh0WbQ_W_70hsKXFZ_Ag_Vki@mail.gmail.com>
+Message-ID: <1286828271.2146.142.camel@saalfeld-laptop>
+
+Hi,
+
+> I vote for interface "Tensor".
+> 
+> The misnamed "imglib" is a tensor lib.
+> 
+> 
+> From http://en.wikipedia.org/wiki/Tensor :
+> 
+> "... tensors in general can be considered as a multidimensional array
+> of numbers"
+> 
+
+... which is true for only the most basic concepts to be expressed by
+the intended interface `Image'.  Already a sparsely sampled space is not
+a tensor any more, neither is a 3d-scene description or a
+hyper-spherical mask (actually anything that is not a box and discrete).
+Yes, you can sample these Images in a discrete raster but you don't have
+to.  Positionables in real space (Interpolators) are the most trivial
+example.  The Iterator already does it's own magic.
+
+The true meaning of the interface Image is that it spans and limits a
+function-space or domain, so we could call it `Function', `Space' or
+`Domain', great for math-agnostic developers learning the API (though
+not as horrible as LocalizableByDimCursor ;)).  `Tensors' could then be
+a sub-interface that guarantees that the samples are on a discrete
+regular grid of a box.
+
+I completely agree that it sucks to collide with java.awt.Image.
+Besides, I am quite sure that, in the global Java namespace, there is
+little room for non-colliding names except we call it a silly name.  I
+am pro:
+
+Img (favorite), Domain (promising collisions), Space, Scene, Function
+(best choice but promising collisions and missleading expectations).
+
+The most recent developments are tracked in the branch sampler-link
+(which stems from sampler but got rid of the links...) where development
+was recently stopped for too long time by the silly CellContainer bug
+that came from master but I was searching in the changes...
+
+
+Best,
+Stephan
+
+> 
+> Albert
+
+
+
+
+From tomancak at mpi-cbg.de  Mon Oct 11 15:14:11 2010
+From: tomancak at mpi-cbg.de (tomancak)
+Date: Mon, 11 Oct 2010 22:14:11 +0200
+Subject: [ImageJ-devel] Naming [was: Re: [fiji-devel]
+	RegionOfInterestCursor considered misnamed]
+In-Reply-To: <AANLkTi=2buJ2hUH_FsbQxrG0LmNXnarAaKJebSFEoYiD@mail.gmail.com>
+References: <AANLkTimm+FjmuEQQ63SHhOOOMyvjTiabnt7qp1EVrHxm@mail.gmail.com>
+	<alpine.DEB.1.00.1010111926200.2710@intel-tinevez-2-302>
+	<AANLkTikb03Cz+ASJ2_y6rZsQefbrz8uy3pH3mRW7K=NV@mail.gmail.com>
+	<alpine.DEB.1.00.1010112102010.2710@intel-tinevez-2-302>
+	<AANLkTi=2buJ2hUH_FsbQxrG0LmNXnarAaKJebSFEoYiD@mail.gmail.com>
+Message-ID: <896F7C6A-FF1D-4669-8C41-54CAB18B1A95@mpi-cbg.de>
+
+Just my five cents. While I understand the motivation behind the use  
+of Tensor I do think its too mathematical for biologists.
+
+Its true that this stuff will be used by programmers who should  
+know.....
+
+Lets see what the S & S reckon.
+
+PAvel
+
+On Oct 11, 2010, at 10:03 PM, Curtis Rueden wrote:
+
+> Hi Dscho,
+>
+> Yep, just like java.awt.List and java.util.List. Which I need to mix  
+> quite
+> a lot of times. But I survive ;-)
+>
+> Right?don't you wish they hadn't done that? :-) And in our case it's  
+> worse because it is easier to type "java.util" than  
+> "mpicbg.imglib.image." Let's change it now while we still can.
+>
+> Keep in mind that we're not necessarily targeting mathematicians.  
+> Rather,
+> our typical developer is some random scientist trying to get stuff  
+> done in
+> their respective field of research, such as biology.
+>
+> By that same argument, Java name clashes are very confusing to a  
+> casual programmer.
+>
+> > How about "Img" mirroring the "img" in "imglib"? Kind of ugly but at
+> > least it's unique.
+>
+> I actually like it. Two letters less to type!
+>
+> So we now have two reasonable possibilities, Img and Tensor. Stephan  
+> & Stephan, what do you guys think?
+>
+> -Curtis
+>
+> On Mon, Oct 11, 2010 at 2:03 PM, Johannes Schindelin <Johannes.Schindelin at gmx.de 
+> > wrote:
+> Hi,
+>
+> On Mon, 11 Oct 2010, Curtis Rueden wrote:
+>
+> > For me it a purely practical concern of two classes with the same  
+> name
+> > clashing.
+>
+> Yep, just like java.awt.List and java.util.List. Which I need to mix  
+> quite
+> a lot of times. But I survive ;-)
+>
+> > How about "Img" mirroring the "img" in "imglib"? Kind of ugly but at
+> > least it's unique.
+>
+> I actually like it. Two letters less to type!
+>
+> Ciao,
+> Dscho
+>
+> --
+> You received this message because you are subscribed to the Google  
+> Groups "Fiji-devel" group.
+> To post to this group, send email to fiji-devel at googlegroups.com.
+> To unsubscribe from this group, send email to fiji-devel+unsubscribe at googlegroups.com 
+> .
+> For more options, visit this group at http://groups.google.com/group/fiji-devel?hl=en 
+> .
+>
+>
+>
+>
+> On Mon, Oct 11, 2010 at 2:06 PM, Johannes Schindelin <Johannes.Schindelin at gmx.de 
+> > wrote:
+> Hi,
+>
+> On Mon, 11 Oct 2010, Curtis Rueden wrote:
+>
+> > > I vote for interface "Tensor".
+> >
+> > Great, much better than the names I suggested!
+>
+> Keep in mind that we're not necessarily targeting mathematicians.  
+> Rather,
+> our typical developer is some random scientist trying to get stuff  
+> done in
+> their respective field of research, such as biology.
+>
+> I have not met a biologist yet, for example, who understood without
+> explanation what I mean when I used the word 'tensor'.
+>
+> And we're still talking about image processing, not tensor processing.
+>
+> Sure, we could try to do the same as certain *cough cough* companies
+> introducing their own nomenclature. But I do not like this.
+>
+> Ciao,
+> Dscho
+>
+> --
+> You received this message because you are subscribed to the Google  
+> Groups "Fiji-devel" group.
+> To post to this group, send email to fiji-devel at googlegroups.com.
+> To unsubscribe from this group, send email to fiji-devel+unsubscribe at googlegroups.com 
+> .
+> For more options, visit this group at http://groups.google.com/group/fiji-devel?hl=en 
+> .
+>
+>
+>
+>
+> -- 
+> You received this message because you are subscribed to the Google  
+> Groups "Fiji-devel" group.
+> To post to this group, send email to fiji-devel at googlegroups.com.
+> To unsubscribe from this group, send email to fiji-devel+unsubscribe at googlegroups.com 
+> .
+> For more options, visit this group at http://groups.google.com/group/fiji-devel?hl=en 
+> .
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20101011/0ef8756c/attachment.html>
+
+From ctrueden at wisc.edu  Mon Oct 11 16:48:58 2010
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Mon, 11 Oct 2010 16:48:58 -0500
+Subject: [ImageJ-devel] Imglib project organization & Bio-Formats support
+In-Reply-To: <alpine.DEB.1.00.1009300246330.1887@bonsai2>
+References: <AANLkTim6c_sUjCAerJg4B=TdWcb4eDWSxhm3F6WvNewc@mail.gmail.com>
+	<1285779787.1976.20.camel@saalfeld-laptop>
+	<alpine.DEB.1.00.1009300246330.1887@bonsai2>
+Message-ID: <AANLkTimERYzm1sAXXT5MEZ8j6EdeitEacp-4Tuf9Rk7N@mail.gmail.com>
+
+Hi Dscho,
+
+I also like the separation (obviously!).
+>
+
+Great!
+
+As to Maven: when I had to use it last time, it was very slow, but I am
+> known to be impatient.
+>
+
+Right, these full-featured build systems can be relatively slow when invoked
+from the command line. But they have amazing tools support, and integrate
+really well into IDEs. When developing with e.g. Eclipse, its incremental
+build feature is really fast and interactive, and you only need to invoke
+the Maven targets from the command line occasionally, so it's no big deal.
+And you can have a continuous integration system (e.g., Hudson) doing it on
+every commit for you, so you don't have to spend time testing it.
+
+As usual for a command-line-based workflow with a text editor like vim or
+Emacs, there are many possible solutions, but not one "standard" one. Maybe
+it would make sense to get something like continuous background compilation
+working (e.g., http://chm.duquesne.free.fr/blog/?p=137). Or you can jump
+back to an IDE to check compile errors, then edit/fix in your editor of
+choice. Or for pure raw speed, you can set your classpath recursively to
+everything in ~/.m2, set :mak to run javac on the current file, and use an
+appropriate errorformat.
+
+I agree, though, that it solves an important problem: every source code
+> repository of a non-trivial library seems to come with precompiled
+> 3rd-party components.
+
+
+Right, one of the great things is that you no longer have to keep all these
+JAR files bogging down your SCM repository. Instead you have a separate
+binary Maven repository intended for storing things like JARs.
+
+And if you use several of such libraries, you may
+> end up with different versions of the same 3rd-party component in the
+> classpath. Not good (remember the JNA cleanup I did recently? That was
+> _exactly_ that issue: jruby.jar's jna was hopelessly obsolete).
+>
+
+*nod* With Maven the dependencies are all stated very explicitly and it is
+easy to check when this sort of thing starts happening. You can also easily
+ask Maven to check whether the declared dependencies match the actual ones
+(i.e., which projects import and use each other in practice).
+
+Since we have not heard much from others, perhaps it would be easiest to get
+the imglib branches merged back together when I visit.
+
+-Curtis
+
+On Wed, Sep 29, 2010 at 7:52 PM, Johannes Schindelin <
+Johannes.Schindelin at gmx.de> wrote:
+
+> Hi,
+>
+> On Wed, 29 Sep 2010, Stephan Saalfeld wrote:
+>
+> > I like the separation and I am looking forward to check maven as a
+> > builder.  What about you, Steffi and Johannes?
+>
+> I also like the separation (obviously!).
+>
+> As to Maven: when I had to use it last time, it was very slow, but I am
+> known to be impatient.
+>
+> I agree, though, that it solves an important problem: every source code
+> repository of a non-trivial library seems to come with precompiled
+> 3rd-party components. And if you use several of such libraries, you may
+> end up with different versions of the same 3rd-party component in the
+> classpath. Not good (remember the JNA cleanup I did recently? That was
+> _exactly_ that issue: jruby.jar's jna was hopelessly obsolete).
+>
+> So I provided a script in Fiji (bin/maven.sh) which downloads and runs
+> maven, exactly because it will be useful in the future.
+>
+> Ciao,
+> Dscho
+>
+> P.S.: if you're interested why I made that script originally: I did it
+> between when Albert mentioned that clojure-contrib is a Maven'ized Git
+> repository now, and when Albert mentioned that clojure-contrib is no
+> longer necessary for our Clojure stuff... ;-)
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20101011/ad936f69/attachment.html>
+
+From ctrueden at wisc.edu  Mon Oct 11 17:31:06 2010
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Mon, 11 Oct 2010 17:31:06 -0500
+Subject: [ImageJ-devel] CellProfiler 2.0 / ImageJ 2.0
+In-Reply-To: <4C9B9D26.9020404@broadinstitute.org>
+References: <4C9B9D26.9020404@broadinstitute.org>
+Message-ID: <AANLkTikR-LEG3bi56XF1qay+TgfwpKyM_WEjrvZM=qjw@mail.gmail.com>
+
+Hi Lee,
+
+Great, I tested both pipelines and they work like a charm on my Windows XP
+system with the build you sent. I took some screenshots and will incorporate
+into my talk.
+
+-Curtis
+
+On Thu, Sep 23, 2010 at 1:32 PM, Lee Kamentsky <leek at broadinstitute.org>wrote:
+
+>  OK, I just finished 4 days of hacking to get CellProfiler to read the
+> @parameter tags. I also took the plugin that we use the most, "Tubeness",
+> and converted it to use the tags and removed its gui code (dialog stuff +
+> image display). The result: CellProfiler runs an ImageJ plugin, displaying
+> the parameters (including input and output images) as settings in our
+> module. In this case, "InputImage", "Sigma", "Use calibration" and "Output
+> image" are the parameters. The result appears below, totally seamless.
+>
+> Curtis, I'll probably give you two pipelines: one that runs on the current
+> CellProfiler release with the old ImageJ and one that is my personal build
+> with a bleeding-edge ImageJ 2.0 build. This reinforces the message we want
+> to send:
+>
+> Your plugin is the manifestation of your method or algorithm which is
+> what's important to you.
+> Your plugin conforms to the ImageJ 2.0 standard.
+> Your method can be used by any software that accepts ImageJ 2.0 plugins.
+>
+> How cool.
+>
+> --Lee
+>
+> [image: ImageJ 2.0 / CellProfiler 2.0]
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20101011/fcf5af3f/attachment.html>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: image/png
+Size: 234684 bytes
+Desc: not available
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20101011/fcf5af3f/attachment.png>
+
+From gharris at mbl.edu  Mon Oct 11 20:34:16 2010
+From: gharris at mbl.edu (Grant B. Harris)
+Date: Mon, 11 Oct 2010 21:34:16 -0400
+Subject: [ImageJ-devel] Naming [was: Re: [fiji-devel]
+ RegionOfInterestCursor considered misnamed]
+In-Reply-To: <1286828271.2146.142.camel@saalfeld-laptop>
+References: <AANLkTimm+FjmuEQQ63SHhOOOMyvjTiabnt7qp1EVrHxm@mail.gmail.com>	
+	<alpine.DEB.1.00.1010111926200.2710@intel-tinevez-2-302>	
+	<AANLkTikb03Cz+ASJ2_y6rZsQefbrz8uy3pH3mRW7K=NV@mail.gmail.com>	
+	<AANLkTimhL6K91s-REnCvDh0WbQ_W_70hsKXFZ_Ag_Vki@mail.gmail.com>
+	<1286828271.2146.142.camel@saalfeld-laptop>
+Message-ID: <4CB3BB18.3060400@mbl.edu>
+
+  Stephan,
+
+"Domain" is appealing in that it can be interpreted broadly - images and 
+signals can "be in" the spatial domain, frequency domain, or wavelet 
+domain.  And it doesn't have any implied dimensionality (unlike "space" 
+which has some connotation of only 3-D).
+
+Also, I like the idea of a sub-interface called `Tensors' for a discrete 
+regular grid.
+
+- Grant
+
+
+On 10/11/2010 4:17 PM, Stephan Saalfeld wrote:
+> Hi,
+>
+>> I vote for interface "Tensor".
+>>
+>> The misnamed "imglib" is a tensor lib.
+>>
+>>
+>>  From http://en.wikipedia.org/wiki/Tensor :
+>>
+>> "... tensors in general can be considered as a multidimensional array
+>> of numbers"
+>>
+> ... which is true for only the most basic concepts to be expressed by
+> the intended interface `Image'.  Already a sparsely sampled space is not
+> a tensor any more, neither is a 3d-scene description or a
+> hyper-spherical mask (actually anything that is not a box and discrete).
+> Yes, you can sample these Images in a discrete raster but you don't have
+> to.  Positionables in real space (Interpolators) are the most trivial
+> example.  The Iterator already does it's own magic.
+>
+> The true meaning of the interface Image is that it spans and limits a
+> function-space or domain, so we could call it `Function', `Space' or
+> `Domain', great for math-agnostic developers learning the API (though
+> not as horrible as LocalizableByDimCursor ;)).  `Tensors' could then be
+> a sub-interface that guarantees that the samples are on a discrete
+> regular grid of a box.
+>
+> I completely agree that it sucks to collide with java.awt.Image.
+> Besides, I am quite sure that, in the global Java namespace, there is
+> little room for non-colliding names except we call it a silly name.  I
+> am pro:
+>
+> Img (favorite), Domain (promising collisions), Space, Scene, Function
+> (best choice but promising collisions and missleading expectations).
+>
+> The most recent developments are tracked in the branch sampler-link
+> (which stems from sampler but got rid of the links...) where development
+> was recently stopped for too long time by the silly CellContainer bug
+> that came from master but I was searching in the changes...
+>
+>
+> Best,
+> Stephan
+>
+>> Albert
+
+
+
+From akmaier at stanford.edu  Mon Oct 11 20:36:26 2010
+From: akmaier at stanford.edu (Andreas Maier)
+Date: Mon, 11 Oct 2010 18:36:26 -0700
+Subject: [ImageJ-devel] Naming [was: Re: [fiji-devel]
+ RegionOfInterestCursor considered misnamed]
+In-Reply-To: <4CB3BB18.3060400@mbl.edu>
+References: <AANLkTimm+FjmuEQQ63SHhOOOMyvjTiabnt7qp1EVrHxm@mail.gmail.com>		<alpine.DEB.1.00.1010111926200.2710@intel-tinevez-2-302>		<AANLkTikb03Cz+ASJ2_y6rZsQefbrz8uy3pH3mRW7K=NV@mail.gmail.com>		<AANLkTimhL6K91s-REnCvDh0WbQ_W_70hsKXFZ_Ag_Vki@mail.gmail.com>	<1286828271.2146.142.camel@saalfeld-laptop>
+	<4CB3BB18.3060400@mbl.edu>
+Message-ID: <4CB3BB9A.80402@stanford.edu>
+
+Hi,
+
+why not use the term "grid"?
+
+Best,
+
+Andreas
+
+Am 11.10.2010 18:34, schrieb Grant B. Harris:
+>  Stephan,
+>
+> "Domain" is appealing in that it can be interpreted broadly - images 
+> and signals can "be in" the spatial domain, frequency domain, or 
+> wavelet domain.  And it doesn't have any implied dimensionality 
+> (unlike "space" which has some connotation of only 3-D).
+>
+> Also, I like the idea of a sub-interface called `Tensors' for a 
+> discrete regular grid.
+>
+> - Grant
+>
+>
+> On 10/11/2010 4:17 PM, Stephan Saalfeld wrote:
+>> Hi,
+>>
+>>> I vote for interface "Tensor".
+>>>
+>>> The misnamed "imglib" is a tensor lib.
+>>>
+>>>
+>>>  From http://en.wikipedia.org/wiki/Tensor :
+>>>
+>>> "... tensors in general can be considered as a multidimensional array
+>>> of numbers"
+>>>
+>> ... which is true for only the most basic concepts to be expressed by
+>> the intended interface `Image'.  Already a sparsely sampled space is not
+>> a tensor any more, neither is a 3d-scene description or a
+>> hyper-spherical mask (actually anything that is not a box and discrete).
+>> Yes, you can sample these Images in a discrete raster but you don't have
+>> to.  Positionables in real space (Interpolators) are the most trivial
+>> example.  The Iterator already does it's own magic.
+>>
+>> The true meaning of the interface Image is that it spans and limits a
+>> function-space or domain, so we could call it `Function', `Space' or
+>> `Domain', great for math-agnostic developers learning the API (though
+>> not as horrible as LocalizableByDimCursor ;)).  `Tensors' could then be
+>> a sub-interface that guarantees that the samples are on a discrete
+>> regular grid of a box.
+>>
+>> I completely agree that it sucks to collide with java.awt.Image.
+>> Besides, I am quite sure that, in the global Java namespace, there is
+>> little room for non-colliding names except we call it a silly name.  I
+>> am pro:
+>>
+>> Img (favorite), Domain (promising collisions), Space, Scene, Function
+>> (best choice but promising collisions and missleading expectations).
+>>
+>> The most recent developments are tracked in the branch sampler-link
+>> (which stems from sampler but got rid of the links...) where development
+>> was recently stopped for too long time by the silly CellContainer bug
+>> that came from master but I was searching in the changes...
+>>
+>>
+>> Best,
+>> Stephan
+>>
+>>> Albert
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+
+
+
+
+From preibisch at mpi-cbg.de  Mon Oct 11 21:48:08 2010
+From: preibisch at mpi-cbg.de (Stephan Preibisch)
+Date: Tue, 12 Oct 2010 04:48:08 +0200
+Subject: [ImageJ-devel] Naming [was: Re: [fiji-devel]
+	RegionOfInterestCursor considered misnamed]
+In-Reply-To: <4CB3BB9A.80402@stanford.edu>
+References: <AANLkTimm+FjmuEQQ63SHhOOOMyvjTiabnt7qp1EVrHxm@mail.gmail.com>		<alpine.DEB.1.00.1010111926200.2710@intel-tinevez-2-302>		<AANLkTikb03Cz+ASJ2_y6rZsQefbrz8uy3pH3mRW7K=NV@mail.gmail.com>		<AANLkTimhL6K91s-REnCvDh0WbQ_W_70hsKXFZ_Ag_Vki@mail.gmail.com>	<1286828271.2146.142.camel@saalfeld-laptop>	<4CB3BB18.3060400@mbl.edu>
+	<4CB3BB9A.80402@stanford.edu>
+Message-ID: <005201cb69b7$e746f570$b5d4e050$@de>
+
+Hi everybody,
+
+First of all, I do not like "grid" too much as it assumes uniformly arranged
+data which is not necessarily true. Although it is right now to be fair :) 
+At the end it also not necessarily an image, it might as well be a DNA
+sequence for example. So if we try to be exact, we should rather name it
+something more generic like Collection, maybe something from
+http://www.dict.cc/?s=ansammlung? Right now, I find "pool" appealing...
+
+Let's discuss it next week when Curtis is in Dresden...I am optimistic we
+will find a solution!
+
+Have a nice day,
+Steffi
+
+-----Original Message-----
+From: imagej-devel-bounces at imagejdev.org
+[mailto:imagej-devel-bounces at imagejdev.org] On Behalf Of Andreas Maier
+Sent: Tuesday, October 12, 2010 3:36 AM
+To: imagej-devel at imagejdev.org
+Subject: Re: [ImageJ-devel] Naming [was: Re: [fiji-devel]
+RegionOfInterestCursor considered misnamed]
+
+Hi,
+
+why not use the term "grid"?
+
+Best,
+
+Andreas
+
+Am 11.10.2010 18:34, schrieb Grant B. Harris:
+>  Stephan,
+>
+> "Domain" is appealing in that it can be interpreted broadly - images 
+> and signals can "be in" the spatial domain, frequency domain, or 
+> wavelet domain.  And it doesn't have any implied dimensionality 
+> (unlike "space" which has some connotation of only 3-D).
+>
+> Also, I like the idea of a sub-interface called `Tensors' for a 
+> discrete regular grid.
+>
+> - Grant
+>
+>
+> On 10/11/2010 4:17 PM, Stephan Saalfeld wrote:
+>> Hi,
+>>
+>>> I vote for interface "Tensor".
+>>>
+>>> The misnamed "imglib" is a tensor lib.
+>>>
+>>>
+>>>  From http://en.wikipedia.org/wiki/Tensor :
+>>>
+>>> "... tensors in general can be considered as a multidimensional array
+>>> of numbers"
+>>>
+>> ... which is true for only the most basic concepts to be expressed by
+>> the intended interface `Image'.  Already a sparsely sampled space is not
+>> a tensor any more, neither is a 3d-scene description or a
+>> hyper-spherical mask (actually anything that is not a box and discrete).
+>> Yes, you can sample these Images in a discrete raster but you don't have
+>> to.  Positionables in real space (Interpolators) are the most trivial
+>> example.  The Iterator already does it's own magic.
+>>
+>> The true meaning of the interface Image is that it spans and limits a
+>> function-space or domain, so we could call it `Function', `Space' or
+>> `Domain', great for math-agnostic developers learning the API (though
+>> not as horrible as LocalizableByDimCursor ;)).  `Tensors' could then be
+>> a sub-interface that guarantees that the samples are on a discrete
+>> regular grid of a box.
+>>
+>> I completely agree that it sucks to collide with java.awt.Image.
+>> Besides, I am quite sure that, in the global Java namespace, there is
+>> little room for non-colliding names except we call it a silly name.  I
+>> am pro:
+>>
+>> Img (favorite), Domain (promising collisions), Space, Scene, Function
+>> (best choice but promising collisions and missleading expectations).
+>>
+>> The most recent developments are tracked in the branch sampler-link
+>> (which stems from sampler but got rid of the links...) where development
+>> was recently stopped for too long time by the silly CellContainer bug
+>> that came from master but I was searching in the changes...
+>>
+>>
+>> Best,
+>> Stephan
+>>
+>>> Albert
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+
+
+_______________________________________________
+ImageJ-devel mailing list
+ImageJ-devel at imagejdev.org
+http://imagejdev.org/mailman/listinfo/imagej-devel
+
+
+
+
+From bdezonia at wisc.edu  Mon Oct 11 23:28:08 2010
+From: bdezonia at wisc.edu (Barry DeZonia)
+Date: Mon, 11 Oct 2010 23:28:08 -0500
+Subject: [ImageJ-devel] Naming [was: Re: [fiji-devel]
+ RegionOfInterestCursor considered misnamed]
+In-Reply-To: <005201cb69b7$e746f570$b5d4e050$@de>
+References: <AANLkTimm+FjmuEQQ63SHhOOOMyvjTiabnt7qp1EVrHxm@mail.gmail.com>
+	<alpine.DEB.1.00.1010111926200.2710@intel-tinevez-2-302>
+	<AANLkTikb03Cz+ASJ2_y6rZsQefbrz8uy3pH3mRW7K=NV@mail.gmail.com>
+	<AANLkTimhL6K91s-REnCvDh0WbQ_W_70hsKXFZ_Ag_Vki@mail.gmail.com>
+	<1286828271.2146.142.camel@saalfeld-laptop> <4CB3BB18.3060400@mbl.edu>
+	<4CB3BB9A.80402@stanford.edu> <005201cb69b7$e746f570$b5d4e050$@de>
+Message-ID: <AANLkTi=wYG5DjtosgHA2cx3DKisPcLymmj1Pwm_JSY72@mail.gmail.com>
+
+I sent this to the wrong list earlier. Apologies if this is noise. I had
+proposed something simple like NumericDataset as an alternative.
+
+On Mon, Oct 11, 2010 at 9:48 PM, Stephan Preibisch <preibisch at mpi-cbg.de>wrote:
+
+> Hi everybody,
+>
+> First of all, I do not like "grid" too much as it assumes uniformly
+> arranged
+> data which is not necessarily true. Although it is right now to be fair :)
+> At the end it also not necessarily an image, it might as well be a DNA
+> sequence for example. So if we try to be exact, we should rather name it
+> something more generic like Collection, maybe something from
+> http://www.dict.cc/?s=ansammlung? Right now, I find "pool" appealing...
+>
+> Let's discuss it next week when Curtis is in Dresden...I am optimistic we
+> will find a solution!
+>
+> Have a nice day,
+> Steffi
+>
+> -----Original Message-----
+> From: imagej-devel-bounces at imagejdev.org
+> [mailto:imagej-devel-bounces at imagejdev.org] On Behalf Of Andreas Maier
+> Sent: Tuesday, October 12, 2010 3:36 AM
+> To: imagej-devel at imagejdev.org
+> Subject: Re: [ImageJ-devel] Naming [was: Re: [fiji-devel]
+> RegionOfInterestCursor considered misnamed]
+>
+> Hi,
+>
+> why not use the term "grid"?
+>
+> Best,
+>
+> Andreas
+>
+> Am 11.10.2010 18:34, schrieb Grant B. Harris:
+> >  Stephan,
+> >
+> > "Domain" is appealing in that it can be interpreted broadly - images
+> > and signals can "be in" the spatial domain, frequency domain, or
+> > wavelet domain.  And it doesn't have any implied dimensionality
+> > (unlike "space" which has some connotation of only 3-D).
+> >
+> > Also, I like the idea of a sub-interface called `Tensors' for a
+> > discrete regular grid.
+> >
+> > - Grant
+> >
+> >
+> > On 10/11/2010 4:17 PM, Stephan Saalfeld wrote:
+> >> Hi,
+> >>
+> >>> I vote for interface "Tensor".
+> >>>
+> >>> The misnamed "imglib" is a tensor lib.
+> >>>
+> >>>
+> >>>  From http://en.wikipedia.org/wiki/Tensor :
+> >>>
+> >>> "... tensors in general can be considered as a multidimensional array
+> >>> of numbers"
+> >>>
+> >> ... which is true for only the most basic concepts to be expressed by
+> >> the intended interface `Image'.  Already a sparsely sampled space is not
+> >> a tensor any more, neither is a 3d-scene description or a
+> >> hyper-spherical mask (actually anything that is not a box and discrete).
+> >> Yes, you can sample these Images in a discrete raster but you don't have
+> >> to.  Positionables in real space (Interpolators) are the most trivial
+> >> example.  The Iterator already does it's own magic.
+> >>
+> >> The true meaning of the interface Image is that it spans and limits a
+> >> function-space or domain, so we could call it `Function', `Space' or
+> >> `Domain', great for math-agnostic developers learning the API (though
+> >> not as horrible as LocalizableByDimCursor ;)).  `Tensors' could then be
+> >> a sub-interface that guarantees that the samples are on a discrete
+> >> regular grid of a box.
+> >>
+> >> I completely agree that it sucks to collide with java.awt.Image.
+> >> Besides, I am quite sure that, in the global Java namespace, there is
+> >> little room for non-colliding names except we call it a silly name.  I
+> >> am pro:
+> >>
+> >> Img (favorite), Domain (promising collisions), Space, Scene, Function
+> >> (best choice but promising collisions and missleading expectations).
+> >>
+> >> The most recent developments are tracked in the branch sampler-link
+> >> (which stems from sampler but got rid of the links...) where development
+> >> was recently stopped for too long time by the silly CellContainer bug
+> >> that came from master but I was searching in the changes...
+> >>
+> >>
+> >> Best,
+> >> Stephan
+> >>
+> >>> Albert
+> >
+> > _______________________________________________
+> > ImageJ-devel mailing list
+> > ImageJ-devel at imagejdev.org
+> > http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20101011/66052ac8/attachment.html>
+
+From akmaier at stanford.edu  Tue Oct 12 02:20:55 2010
+From: akmaier at stanford.edu (Andreas Maier)
+Date: Tue, 12 Oct 2010 00:20:55 -0700
+Subject: [ImageJ-devel] Naming [was: Re: [fiji-devel]
+ RegionOfInterestCursor considered misnamed]
+In-Reply-To: <005201cb69b7$e746f570$b5d4e050$@de>
+References: <AANLkTimm+FjmuEQQ63SHhOOOMyvjTiabnt7qp1EVrHxm@mail.gmail.com>		<alpine.DEB.1.00.1010111926200.2710@intel-tinevez-2-302>		<AANLkTikb03Cz+ASJ2_y6rZsQefbrz8uy3pH3mRW7K=NV@mail.gmail.com>		<AANLkTimhL6K91s-REnCvDh0WbQ_W_70hsKXFZ_Ag_Vki@mail.gmail.com>	<1286828271.2146.142.camel@saalfeld-laptop>	<4CB3BB18.3060400@mbl.edu>
+	<4CB3BB9A.80402@stanford.edu> <005201cb69b7$e746f570$b5d4e050$@de>
+Message-ID: <4CB40C57.7070200@stanford.edu>
+
+Sounds like a good idea. By the way, I personally like 
+"accumulativeness". ;)
+
+Andreas
+
+Am 11.10.2010 19:48, schrieb Stephan Preibisch:
+> Hi everybody,
+>
+> First of all, I do not like "grid" too much as it assumes uniformly arranged
+> data which is not necessarily true. Although it is right now to be fair :)
+> At the end it also not necessarily an image, it might as well be a DNA
+> sequence for example. So if we try to be exact, we should rather name it
+> something more generic like Collection, maybe something from
+> http://www.dict.cc/?s=ansammlung? Right now, I find "pool" appealing...
+>
+> Let's discuss it next week when Curtis is in Dresden...I am optimistic we
+> will find a solution!
+>
+> Have a nice day,
+> Steffi
+>
+> -----Original Message-----
+> From: imagej-devel-bounces at imagejdev.org
+> [mailto:imagej-devel-bounces at imagejdev.org] On Behalf Of Andreas Maier
+> Sent: Tuesday, October 12, 2010 3:36 AM
+> To: imagej-devel at imagejdev.org
+> Subject: Re: [ImageJ-devel] Naming [was: Re: [fiji-devel]
+> RegionOfInterestCursor considered misnamed]
+>
+> Hi,
+>
+> why not use the term "grid"?
+>
+> Best,
+>
+> Andreas
+>
+> Am 11.10.2010 18:34, schrieb Grant B. Harris:
+>    
+>>   Stephan,
+>>
+>> "Domain" is appealing in that it can be interpreted broadly - images
+>> and signals can "be in" the spatial domain, frequency domain, or
+>> wavelet domain.  And it doesn't have any implied dimensionality
+>> (unlike "space" which has some connotation of only 3-D).
+>>
+>> Also, I like the idea of a sub-interface called `Tensors' for a
+>> discrete regular grid.
+>>
+>> - Grant
+>>
+>>
+>> On 10/11/2010 4:17 PM, Stephan Saalfeld wrote:
+>>      
+>>> Hi,
+>>>
+>>>        
+>>>> I vote for interface "Tensor".
+>>>>
+>>>> The misnamed "imglib" is a tensor lib.
+>>>>
+>>>>
+>>>>   From http://en.wikipedia.org/wiki/Tensor :
+>>>>
+>>>> "... tensors in general can be considered as a multidimensional array
+>>>> of numbers"
+>>>>
+>>>>          
+>>> ... which is true for only the most basic concepts to be expressed by
+>>> the intended interface `Image'.  Already a sparsely sampled space is not
+>>> a tensor any more, neither is a 3d-scene description or a
+>>> hyper-spherical mask (actually anything that is not a box and discrete).
+>>> Yes, you can sample these Images in a discrete raster but you don't have
+>>> to.  Positionables in real space (Interpolators) are the most trivial
+>>> example.  The Iterator already does it's own magic.
+>>>
+>>> The true meaning of the interface Image is that it spans and limits a
+>>> function-space or domain, so we could call it `Function', `Space' or
+>>> `Domain', great for math-agnostic developers learning the API (though
+>>> not as horrible as LocalizableByDimCursor ;)).  `Tensors' could then be
+>>> a sub-interface that guarantees that the samples are on a discrete
+>>> regular grid of a box.
+>>>
+>>> I completely agree that it sucks to collide with java.awt.Image.
+>>> Besides, I am quite sure that, in the global Java namespace, there is
+>>> little room for non-colliding names except we call it a silly name.  I
+>>> am pro:
+>>>
+>>> Img (favorite), Domain (promising collisions), Space, Scene, Function
+>>> (best choice but promising collisions and missleading expectations).
+>>>
+>>> The most recent developments are tracked in the branch sampler-link
+>>> (which stems from sampler but got rid of the links...) where development
+>>> was recently stopped for too long time by the silly CellContainer bug
+>>> that came from master but I was searching in the changes...
+>>>
+>>>
+>>> Best,
+>>> Stephan
+>>>
+>>>        
+>>>> Albert
+>>>>          
+>> _______________________________________________
+>> ImageJ-devel mailing list
+>> ImageJ-devel at imagejdev.org
+>> http://imagejdev.org/mailman/listinfo/imagej-devel
+>>      
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+>    
+
+
+
+
+From sapristi at gmail.com  Tue Oct 12 02:29:56 2010
+From: sapristi at gmail.com (Albert Cardona)
+Date: Tue, 12 Oct 2010 09:29:56 +0200
+Subject: [ImageJ-devel] Naming [was: Re: [fiji-devel]
+ RegionOfInterestCursor considered misnamed]
+In-Reply-To: <4CB40C57.7070200@stanford.edu>
+References: <AANLkTimm+FjmuEQQ63SHhOOOMyvjTiabnt7qp1EVrHxm@mail.gmail.com>
+	<alpine.DEB.1.00.1010111926200.2710@intel-tinevez-2-302>
+	<AANLkTikb03Cz+ASJ2_y6rZsQefbrz8uy3pH3mRW7K=NV@mail.gmail.com>
+	<AANLkTimhL6K91s-REnCvDh0WbQ_W_70hsKXFZ_Ag_Vki@mail.gmail.com>
+	<1286828271.2146.142.camel@saalfeld-laptop> <4CB3BB18.3060400@mbl.edu>
+	<4CB3BB9A.80402@stanford.edu> <005201cb69b7$e746f570$b5d4e050$@de>
+	<4CB40C57.7070200@stanford.edu>
+Message-ID: <AANLkTikCNQfckdgYbc1aoJCyM+Jfdm+DggN35LvTssFK@mail.gmail.com>
+
+Having heard all reasons against Tensor, I'd go for something that
+resembles Image:
+
+ * ImageN
+ * Img  (too short, reads like a variable)
+ * NDImage
+
+... and leave Image<?> as an existing, yet deprecated interface--avoid
+breaking existing programs for no reason.
+
+Albert
+-- 
+http://albert.rierol.net
+
+
+
+From leek at broadinstitute.org  Tue Oct 12 07:52:03 2010
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Tue, 12 Oct 2010 08:52:03 -0400
+Subject: [ImageJ-devel] Design meeting notes
+In-Reply-To: <alpine.DEB.1.00.1010112109410.2710@intel-tinevez-2-302>
+References: <AANLkTinvB4PR=QHPztKCeF7FCNAYwL9rm-3mrLM=2iWC@mail.gmail.com>
+	<4CADCDC2.1070609@broadinstitute.org>
+	<AANLkTikk93hqnenbcuchL-es_1OyHACx1jHUs4i-MTwG@mail.gmail.com>
+	<alpine.DEB.1.00.1010091730390.1964@bonsai2>
+	<AANLkTik9x6OJnM9RBN_4a-8CGN3=tWqS1Zbv-LAUZEFQ@mail.gmail.com>
+	<alpine.DEB.1.00.1010112109410.2710@intel-tinevez-2-302>
+Message-ID: <4CB459F3.4010600@broadinstitute.org>
+
+  On 10/11/2010 3:11 PM, Johannes Schindelin wrote:
+> Hi,
+...
+>>      @Parameter(label = "Keep aspect ratio", callback = aspectRatioChanged)
+>>      public boolean keepAspectRatio = false;
+>>
+>> So that the developer defines their own callback methods for each
+>> parameter to which they want to react? Easy for each dialog
+>> implementation to attach listeners and callback by reflection, right?
+> That was my first idea. But how would the user interface tell the callback
+> without String or java.lang.reflect.Field ugliness which input was
+> modified by the user (and by that, what field should be changed
+> accordingly), and how would the callback tell that it changed something,
+> and what?
+>
+I'd pick a signature that was pretty generic. The callback 
+implementation strategy might be to reevaluate everything when anything 
+changed. For the above, if there were aspect ratio and some other 
+parameter, say, "intensity" with log and linear options, you'd redo the 
+whole image, applying the new aspect ratio and the new intensity transform.
+
+Hopefully, the plugin would get the context by specifying different 
+callbacks for each parameter?
+
+You could also put in some sort of validation mechanism - the callback 
+can throw an exception to reject the proposed change...
+> Ciao,
+> Dscho
+>
+
+
+
+
+From G.Landini at bham.ac.uk  Tue Oct 12 07:57:16 2010
+From: G.Landini at bham.ac.uk (Gabriel Landini)
+Date: Tue, 12 Oct 2010 13:57:16 +0100
+Subject: [ImageJ-devel] Naming [was: Re: [fiji-devel]
+	RegionOfInterestCursor considered misnamed]
+In-Reply-To: <AANLkTikCNQfckdgYbc1aoJCyM+Jfdm+DggN35LvTssFK@mail.gmail.com>
+References: <AANLkTimm+FjmuEQQ63SHhOOOMyvjTiabnt7qp1EVrHxm@mail.gmail.com>
+	<4CB40C57.7070200@stanford.edu>
+	<AANLkTikCNQfckdgYbc1aoJCyM+Jfdm+DggN35LvTssFK@mail.gmail.com>
+Message-ID: <201010121357.16706.G.Landini@bham.ac.uk>
+
+On Tuesday 12 Oct 2010  13:56:18 Albert Cardona wrote:
+> Having heard all reasons against Tensor, I'd go for something that
+> resembles Image:
+> 
+>  * ImageN
+>  * Img  (too short, reads like a variable)
+>  * NDImage
+> 
+> ... and leave Image<?> as an existing, yet deprecated interface--avoid
+> breaking existing programs for no reason.
+
+Or to be very exclusive, what about "IJImage"?
+
+Cheers
+
+Gabriel
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20101012/56a79cfb/attachment.html>
+
+From sapristi at gmail.com  Tue Oct 12 08:13:05 2010
+From: sapristi at gmail.com (Albert Cardona)
+Date: Tue, 12 Oct 2010 15:13:05 +0200
+Subject: [ImageJ-devel] Naming [was: Re: [fiji-devel]
+ RegionOfInterestCursor considered misnamed]
+In-Reply-To: <201010121357.16706.G.Landini@bham.ac.uk>
+References: <AANLkTimm+FjmuEQQ63SHhOOOMyvjTiabnt7qp1EVrHxm@mail.gmail.com>
+	<4CB40C57.7070200@stanford.edu>
+	<AANLkTikCNQfckdgYbc1aoJCyM+Jfdm+DggN35LvTssFK@mail.gmail.com>
+	<201010121357.16706.G.Landini@bham.ac.uk>
+Message-ID: <AANLkTinWMmxtw1tmHLKZQaHt6rX9-JwiwKqwUdAwqk_i@mail.gmail.com>
+
+> Or to be very exclusive, what about "IJImage"?
+>
+> Cheers
+>
+> Gabriel
+
+
+The Imglib is ImageJ-agnostic.
+
+Albert
+
+-- 
+http://albert.rierol.net
+
+
+
+From preibisch at mpi-cbg.de  Tue Oct 12 08:51:22 2010
+From: preibisch at mpi-cbg.de (Stephan Preibisch)
+Date: Tue, 12 Oct 2010 15:51:22 +0200
+Subject: [ImageJ-devel] Naming [was: Re: [fiji-devel]
+	RegionOfInterestCursor considered misnamed]
+In-Reply-To: <AANLkTi=wYG5DjtosgHA2cx3DKisPcLymmj1Pwm_JSY72@mail.gmail.com>
+References: <AANLkTimm+FjmuEQQ63SHhOOOMyvjTiabnt7qp1EVrHxm@mail.gmail.com>
+	<alpine.DEB.1.00.1010111926200.2710@intel-tinevez-2-302>
+	<AANLkTikb03Cz+ASJ2_y6rZsQefbrz8uy3pH3mRW7K=NV@mail.gmail.com>
+	<AANLkTimhL6K91s-REnCvDh0WbQ_W_70hsKXFZ_Ag_Vki@mail.gmail.com>
+	<1286828271.2146.142.camel@saalfeld-laptop>
+	<4CB3BB18.3060400@mbl.edu> <4CB3BB9A.80402@stanford.edu>
+	<005201cb69b7$e746f570$b5d4e050$@de>
+	<AANLkTi=wYG5DjtosgHA2cx3DKisPcLymmj1Pwm_JSY72@mail.gmail.com>
+Message-ID: <007401cb6a14$8e4fdd80$aaef9880$@de>
+
+Hi Barry,
+
+ 
+
+I do not like NumericDataset because the it is not necessarily numeric, it
+can be everything, including labels, sequences and so on..
+
+ 
+
+But if we simply remove it just "Dataset"  remains - this is what it
+basically is. Maybe this is not a bad idea..
+
+ 
+
+Steffi
+
+ 
+
+From: Barry DeZonia [mailto:bdezonia at wisc.edu] 
+Sent: Tuesday, October 12, 2010 6:28 AM
+To: Stephan Preibisch
+Cc: Andreas Maier; imagej-devel at imagejdev.org
+Subject: Re: [ImageJ-devel] Naming [was: Re: [fiji-devel]
+RegionOfInterestCursor considered misnamed]
+
+ 
+
+I sent this to the wrong list earlier. Apologies if this is noise. I had
+proposed something simple like NumericDataset as an alternative.
+
+On Mon, Oct 11, 2010 at 9:48 PM, Stephan Preibisch <preibisch at mpi-cbg.de>
+wrote:
+
+Hi everybody,
+
+First of all, I do not like "grid" too much as it assumes uniformly arranged
+data which is not necessarily true. Although it is right now to be fair :)
+At the end it also not necessarily an image, it might as well be a DNA
+sequence for example. So if we try to be exact, we should rather name it
+something more generic like Collection, maybe something from
+http://www.dict.cc/?s=ansammlung? Right now, I find "pool" appealing...
+
+Let's discuss it next week when Curtis is in Dresden...I am optimistic we
+will find a solution!
+
+Have a nice day,
+Steffi
+
+
+-----Original Message-----
+From: imagej-devel-bounces at imagejdev.org
+[mailto:imagej-devel-bounces at imagejdev.org] On Behalf Of Andreas Maier
+Sent: Tuesday, October 12, 2010 3:36 AM
+To: imagej-devel at imagejdev.org
+Subject: Re: [ImageJ-devel] Naming [was: Re: [fiji-devel]
+RegionOfInterestCursor considered misnamed]
+
+Hi,
+
+why not use the term "grid"?
+
+Best,
+
+Andreas
+
+Am 11.10.2010 18:34, schrieb Grant B. Harris:
+>  Stephan,
+>
+> "Domain" is appealing in that it can be interpreted broadly - images
+> and signals can "be in" the spatial domain, frequency domain, or
+> wavelet domain.  And it doesn't have any implied dimensionality
+> (unlike "space" which has some connotation of only 3-D).
+>
+> Also, I like the idea of a sub-interface called `Tensors' for a
+> discrete regular grid.
+>
+> - Grant
+>
+>
+> On 10/11/2010 4:17 PM, Stephan Saalfeld wrote:
+>> Hi,
+>>
+>>> I vote for interface "Tensor".
+>>>
+>>> The misnamed "imglib" is a tensor lib.
+>>>
+>>>
+>>>  From http://en.wikipedia.org/wiki/Tensor :
+>>>
+>>> "... tensors in general can be considered as a multidimensional array
+>>> of numbers"
+>>>
+>> ... which is true for only the most basic concepts to be expressed by
+>> the intended interface `Image'.  Already a sparsely sampled space is not
+>> a tensor any more, neither is a 3d-scene description or a
+>> hyper-spherical mask (actually anything that is not a box and discrete).
+>> Yes, you can sample these Images in a discrete raster but you don't have
+>> to.  Positionables in real space (Interpolators) are the most trivial
+>> example.  The Iterator already does it's own magic.
+>>
+>> The true meaning of the interface Image is that it spans and limits a
+>> function-space or domain, so we could call it `Function', `Space' or
+>> `Domain', great for math-agnostic developers learning the API (though
+>> not as horrible as LocalizableByDimCursor ;)).  `Tensors' could then be
+>> a sub-interface that guarantees that the samples are on a discrete
+>> regular grid of a box.
+>>
+>> I completely agree that it sucks to collide with java.awt.Image.
+>> Besides, I am quite sure that, in the global Java namespace, there is
+>> little room for non-colliding names except we call it a silly name.  I
+>> am pro:
+>>
+>> Img (favorite), Domain (promising collisions), Space, Scene, Function
+>> (best choice but promising collisions and missleading expectations).
+>>
+>> The most recent developments are tracked in the branch sampler-link
+>> (which stems from sampler but got rid of the links...) where development
+>> was recently stopped for too long time by the silly CellContainer bug
+>> that came from master but I was searching in the changes...
+>>
+>>
+>> Best,
+>> Stephan
+>>
+>>> Albert
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+
+
+_______________________________________________
+ImageJ-devel mailing list
+ImageJ-devel at imagejdev.org
+http://imagejdev.org/mailman/listinfo/imagej-devel
+
+
+_______________________________________________
+ImageJ-devel mailing list
+ImageJ-devel at imagejdev.org
+http://imagejdev.org/mailman/listinfo/imagej-devel
+
+ 
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20101012/2da7910c/attachment.html>
+
+From leek at broadinstitute.org  Tue Oct 12 08:56:36 2010
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Tue, 12 Oct 2010 09:56:36 -0400
+Subject: [ImageJ-devel] Naming [was: Re:
+ [fiji-devel]	RegionOfInterestCursor considered misnamed]
+In-Reply-To: <201010121357.16706.G.Landini@bham.ac.uk>
+References: <AANLkTimm+FjmuEQQ63SHhOOOMyvjTiabnt7qp1EVrHxm@mail.gmail.com>	<4CB40C57.7070200@stanford.edu>	<AANLkTikCNQfckdgYbc1aoJCyM+Jfdm+DggN35LvTssFK@mail.gmail.com>
+	<201010121357.16706.G.Landini@bham.ac.uk>
+Message-ID: <4CB46914.80708@broadinstitute.org>
+
+  FWIW - my vote is for IJImage: I can remember it and relate it to the 
+concept.
+
+On 10/12/2010 8:57 AM, Gabriel Landini wrote:
+>
+> On Tuesday 12 Oct 2010 13:56:18 Albert Cardona wrote:
+>
+> > Having heard all reasons against Tensor, I'd go for something that
+>
+> > resembles Image:
+>
+> >
+>
+> > * ImageN
+>
+> > * Img (too short, reads like a variable)
+>
+> > * NDImage
+>
+> >
+>
+> > ... and leave Image<?> as an existing, yet deprecated interface--avoid
+>
+> > breaking existing programs for no reason.
+>
+> Or to be very exclusive, what about "IJImage"?
+>
+> Cheers
+>
+>
+> Gabriel
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20101012/119a4b0a/attachment.html>
+
+From ctrueden at wisc.edu  Tue Oct 12 09:07:00 2010
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Tue, 12 Oct 2010 09:07:00 -0500
+Subject: [ImageJ-devel] Design meeting notes
+In-Reply-To: <4CB459F3.4010600@broadinstitute.org>
+References: <AANLkTinvB4PR=QHPztKCeF7FCNAYwL9rm-3mrLM=2iWC@mail.gmail.com>
+	<4CADCDC2.1070609@broadinstitute.org>
+	<AANLkTikk93hqnenbcuchL-es_1OyHACx1jHUs4i-MTwG@mail.gmail.com>
+	<alpine.DEB.1.00.1010091730390.1964@bonsai2>
+	<AANLkTik9x6OJnM9RBN_4a-8CGN3=tWqS1Zbv-LAUZEFQ@mail.gmail.com>
+	<alpine.DEB.1.00.1010112109410.2710@intel-tinevez-2-302>
+	<4CB459F3.4010600@broadinstitute.org>
+Message-ID: <AANLkTimkWHdwb5W=a_+ajtoGGoJVgGNwiPuo9xxwC_Jf@mail.gmail.com>
+
+Hi Lee,
+
+Hopefully, the plugin would get the context by specifying different
+> callbacks for each parameter?
+>
+
+Yep, I think it would work.
+
+You could also put in some sort of validation mechanism - the callback can
+> throw an exception to reject the proposed change...
+>
+
+Good idea?solves both problems with one parameter.
+
+The only tricky thing about this approach is how to handle programmatically
+generated changes. For example, if widget A's value depends on widget B, and
+both have callbacks... when user changes B, callbackB is called, which
+programmatically changes A... should callbackA then be invoked? Either way
+works?but if so, you have to be careful not to code mutual dependencies in a
+way that generates infinite recursion.
+
+-Curtis
+
+On Tue, Oct 12, 2010 at 7:52 AM, Lee Kamentsky <leek at broadinstitute.org>wrote:
+
+>  On 10/11/2010 3:11 PM, Johannes Schindelin wrote:
+>
+>> Hi,
+>>
+> ...
+>
+>      @Parameter(label = "Keep aspect ratio", callback = aspectRatioChanged)
+>>>     public boolean keepAspectRatio = false;
+>>>
+>>> So that the developer defines their own callback methods for each
+>>> parameter to which they want to react? Easy for each dialog
+>>> implementation to attach listeners and callback by reflection, right?
+>>>
+>> That was my first idea. But how would the user interface tell the callback
+>> without String or java.lang.reflect.Field ugliness which input was
+>> modified by the user (and by that, what field should be changed
+>> accordingly), and how would the callback tell that it changed something,
+>> and what?
+>>
+>>  I'd pick a signature that was pretty generic. The callback implementation
+> strategy might be to reevaluate everything when anything changed. For the
+> above, if there were aspect ratio and some other parameter, say, "intensity"
+> with log and linear options, you'd redo the whole image, applying the new
+> aspect ratio and the new intensity transform.
+>
+> Hopefully, the plugin would get the context by specifying different
+> callbacks for each parameter?
+>
+> You could also put in some sort of validation mechanism - the callback can
+> throw an exception to reject the proposed change...
+>
+>> Ciao,
+>> Dscho
+>>
+>>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20101012/66d218e1/attachment.html>
+
+From ctrueden at wisc.edu  Tue Oct 12 09:12:06 2010
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Tue, 12 Oct 2010 09:12:06 -0500
+Subject: [ImageJ-devel] Design meeting notes
+In-Reply-To: <alpine.DEB.1.00.1010112109410.2710@intel-tinevez-2-302>
+References: <AANLkTinvB4PR=QHPztKCeF7FCNAYwL9rm-3mrLM=2iWC@mail.gmail.com>
+	<4CADCDC2.1070609@broadinstitute.org>
+	<AANLkTikk93hqnenbcuchL-es_1OyHACx1jHUs4i-MTwG@mail.gmail.com>
+	<alpine.DEB.1.00.1010091730390.1964@bonsai2>
+	<AANLkTik9x6OJnM9RBN_4a-8CGN3=tWqS1Zbv-LAUZEFQ@mail.gmail.com>
+	<alpine.DEB.1.00.1010112109410.2710@intel-tinevez-2-302>
+Message-ID: <AANLkTin--s5drdGcAnsveOxoh-dn701tv5UC_r_8mLn9@mail.gmail.com>
+
+Hi Dscho,
+
+That was my first idea. But how would the user interface tell the callback
+> without String or java.lang.reflect.Field ugliness which input was
+> modified by the user (and by that, what field should be changed
+> accordingly), and how would the callback tell that it changed something,
+> and what?
+>
+
+Each parameter has its own callback method, invoked when that particular
+parameter changes. So as Lee said, which method is called indicates which
+parameter was changed. (Perhaps it would be better to call the attribute
+something like "onChange" instead.)
+
+Does that clarify it? Or is there a problem I'm not seeing?
+
+-Curtis
+
+On Mon, Oct 11, 2010 at 2:11 PM, Johannes Schindelin <
+Johannes.Schindelin at gmx.de> wrote:
+
+> Hi,
+>
+> On Mon, 11 Oct 2010, Curtis Rueden wrote:
+>
+> > > No. The time I spent on the plugin design since March, I have tried to
+> > > come up with a sensible architecture to handle something like "Keep
+> > > aspect ratio" feedback (without requiring the developer to provide a
+> > > metric ton of methods to that end). So far, I haven't been successful
+> > > (a single check method has the disadvantage that it cannot set the
+> > > other number automatically).
+> >
+> > How about this:
+> >
+> >     @Parameter
+> >     public int width = 640;
+> >
+> >     @Parameter(label = "A double", digits = 3, columns = 5, units =
+> "microns")
+> >     public int height = 480;
+> >
+> >     @Parameter(label = "Keep aspect ratio", callback =
+> aspectRatioChanged)
+> >     public boolean keepAspectRatio = false;
+> >
+> > So that the developer defines their own callback methods for each
+> > parameter to which they want to react? Easy for each dialog
+> > implementation to attach listeners and callback by reflection, right?
+>
+> That was my first idea. But how would the user interface tell the callback
+> without String or java.lang.reflect.Field ugliness which input was
+> modified by the user (and by that, what field should be changed
+> accordingly), and how would the callback tell that it changed something,
+> and what?
+>
+> Ciao,
+> Dscho
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20101012/e0e07b4e/attachment.html>
+
+From gharris at mbl.edu  Tue Oct 12 09:19:31 2010
+From: gharris at mbl.edu (Grant B. Harris)
+Date: Tue, 12 Oct 2010 10:19:31 -0400
+Subject: [ImageJ-devel] Naming [was: Re:
+ [fiji-devel]	RegionOfInterestCursor considered misnamed]
+In-Reply-To: <4CB46914.80708@broadinstitute.org>
+References: <AANLkTimm+FjmuEQQ63SHhOOOMyvjTiabnt7qp1EVrHxm@mail.gmail.com>	<4CB40C57.7070200@stanford.edu>	<AANLkTikCNQfckdgYbc1aoJCyM+Jfdm+DggN35LvTssFK@mail.gmail.com>	<201010121357.16706.G.Landini@bham.ac.uk>
+	<4CB46914.80708@broadinstitute.org>
+Message-ID: <4CB46E73.40706@mbl.edu>
+
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20101012/fb429e8b/attachment.html>
+
+From leek at broadinstitute.org  Tue Oct 12 09:56:21 2010
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Tue, 12 Oct 2010 10:56:21 -0400
+Subject: [ImageJ-devel] Design meeting notes
+In-Reply-To: <AANLkTimkWHdwb5W=a_+ajtoGGoJVgGNwiPuo9xxwC_Jf@mail.gmail.com>
+References: <AANLkTinvB4PR=QHPztKCeF7FCNAYwL9rm-3mrLM=2iWC@mail.gmail.com>
+	<4CADCDC2.1070609@broadinstitute.org>
+	<AANLkTikk93hqnenbcuchL-es_1OyHACx1jHUs4i-MTwG@mail.gmail.com>
+	<alpine.DEB.1.00.1010091730390.1964@bonsai2>
+	<AANLkTik9x6OJnM9RBN_4a-8CGN3=tWqS1Zbv-LAUZEFQ@mail.gmail.com>
+	<alpine.DEB.1.00.1010112109410.2710@intel-tinevez-2-302>
+	<4CB459F3.4010600@broadinstitute.org>
+	<AANLkTimkWHdwb5W=a_+ajtoGGoJVgGNwiPuo9xxwC_Jf@mail.gmail.com>
+Message-ID: <4CB47715.2010306@broadinstitute.org>
+
+  On 10/12/2010 10:07 AM, Curtis Rueden wrote:
+> Hi Lee,
+>
+>
+...
+> The only tricky thing about this approach is how to handle 
+> programmatically generated changes. For example, if widget A's value 
+> depends on widget B, and both have callbacks... when user changes B, 
+> callbackB is called, which programmatically changes A... should 
+> callbackA then be invoked? Either way works?but if so, you have to be 
+> careful not to code mutual dependencies in a way that generates 
+> infinite recursion.
+>
+I'll use CellProfiler as an example here: the UI repaints itself after 
+any change, with the validation callbacks fired, but the validation 
+callbacks aren't allowed to change parameter values. The exception that 
+they throw indicates the parameter that's most at fault for the problem, 
+and some hopefully informative message about why.
+
+So call depth = 1, respect the user's choice of parameters (which may be 
+transitory if they are editing several at once) and indicate, but not 
+prevent misconfiguration.
+
+---Lee
+
+
+
+
+From ctrueden at wisc.edu  Tue Oct 12 10:31:21 2010
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Tue, 12 Oct 2010 10:31:21 -0500
+Subject: [ImageJ-devel] Design meeting notes
+In-Reply-To: <4CB47715.2010306@broadinstitute.org>
+References: <AANLkTinvB4PR=QHPztKCeF7FCNAYwL9rm-3mrLM=2iWC@mail.gmail.com>
+	<4CADCDC2.1070609@broadinstitute.org>
+	<AANLkTikk93hqnenbcuchL-es_1OyHACx1jHUs4i-MTwG@mail.gmail.com>
+	<alpine.DEB.1.00.1010091730390.1964@bonsai2>
+	<AANLkTik9x6OJnM9RBN_4a-8CGN3=tWqS1Zbv-LAUZEFQ@mail.gmail.com>
+	<alpine.DEB.1.00.1010112109410.2710@intel-tinevez-2-302>
+	<4CB459F3.4010600@broadinstitute.org>
+	<AANLkTimkWHdwb5W=a_+ajtoGGoJVgGNwiPuo9xxwC_Jf@mail.gmail.com>
+	<4CB47715.2010306@broadinstitute.org>
+Message-ID: <AANLkTim67hg445P80Ge+5Akqb93eSGe5w28PC9maoCkj@mail.gmail.com>
+
+ Hi Lee,
+
+So call depth = 1, respect the user's choice of parameters (which may be
+> transitory if they are editing several at once) and indicate, but not
+> prevent misconfiguration.
+>
+
+I agree that often it is best to err on the side of simply reporting invalid
+inputs, rather than using convoluted schemes to prevent certain inputs
+altogether.
+
+However, in general we probably need to allow slightly more flexibility. The
+example Johannes gave is a "Constrain aspect ratio" checkbox that forces the
+width and height to retain a particular ratio. So all three parameters
+(width, height and the aspect ratio checkbox) would need callback methods
+that adjust either the width or the height depending on the checkbox's
+status.
+
+-Curtis
+
+On Tue, Oct 12, 2010 at 9:56 AM, Lee Kamentsky <leek at broadinstitute.org>wrote:
+
+>  On 10/12/2010 10:07 AM, Curtis Rueden wrote:
+>
+>> Hi Lee,
+>>
+>>
+>>  ...
+>
+>  The only tricky thing about this approach is how to handle
+>> programmatically generated changes. For example, if widget A's value depends
+>> on widget B, and both have callbacks... when user changes B, callbackB is
+>> called, which programmatically changes A... should callbackA then be
+>> invoked? Either way works?but if so, you have to be careful not to code
+>> mutual dependencies in a way that generates infinite recursion.
+>>
+>>  I'll use CellProfiler as an example here: the UI repaints itself after
+> any change, with the validation callbacks fired, but the validation
+> callbacks aren't allowed to change parameter values. The exception that they
+> throw indicates the parameter that's most at fault for the problem, and some
+> hopefully informative message about why.
+>
+> So call depth = 1, respect the user's choice of parameters (which may be
+> transitory if they are editing several at once) and indicate, but not
+> prevent misconfiguration.
+>
+> ---Lee
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20101012/a886f682/attachment.html>
+
+From grislis at wisc.edu  Tue Oct 12 11:48:31 2010
+From: grislis at wisc.edu (Aivar Grislis)
+Date: Tue, 12 Oct 2010 11:48:31 -0500
+Subject: [ImageJ-devel] Naming [was: Re:
+	[fiji-devel]	RegionOfInterestCursor considered misnamed]
+In-Reply-To: <007401cb6a14$8e4fdd80$aaef9880$@de>
+References: <AANLkTimm+FjmuEQQ63SHhOOOMyvjTiabnt7qp1EVrHxm@mail.gmail.com>
+	<alpine.DEB.1.00.1010111926200.2710@intel-tinevez-2-302>
+	<AANLkTikb03Cz+ASJ2_y6rZsQefbrz8uy3pH3mRW7K=NV@mail.gmail.com>
+	<AANLkTimhL6K91s-REnCvDh0WbQ_W_70hsKXFZ_Ag_Vki@mail.gmail.com>
+	<1286828271.2146.142.camel@saalfeld-laptop> <4CB3BB18.3060400@mbl.edu>
+	<4CB3BB9A.80402@stanford.edu> <005201cb69b7$e746f570$b5d4e050$@de>
+	<AANLkTi=wYG5DjtosgHA2cx3DKisPcLymmj1Pwm_JSY72@mail.gmail.com>
+	<007401cb6a14$8e4fdd80$aaef9880$@de>
+Message-ID: <4CB4915F.2070104@wisc.edu>
+
+Maybe ImageDataset?  (ImagingDataset?)  Otherwise it sounds like it 
+might be a database library.
+
+On 10/12/10 8:51 AM, Stephan Preibisch wrote:
+>
+> Hi Barry,
+>
+> I do not like NumericDataset because the it is not necessarily 
+> numeric, it can be everything, including labels, sequences and so on....
+>
+> But if we simply remove it just "Dataset"  remains -- this is what it 
+> basically is. Maybe this is not a bad idea....
+>
+> Steffi
+>
+> *From:* Barry DeZonia [mailto:bdezonia at wisc.edu]
+> *Sent:* Tuesday, October 12, 2010 6:28 AM
+> *To:* Stephan Preibisch
+> *Cc:* Andreas Maier; imagej-devel at imagejdev.org
+> *Subject:* Re: [ImageJ-devel] Naming [was: Re: [fiji-devel] 
+> RegionOfInterestCursor considered misnamed]
+>
+> I sent this to the wrong list earlier. Apologies if this is noise. I 
+> had proposed something simple like NumericDataset as an alternative.
+>
+> On Mon, Oct 11, 2010 at 9:48 PM, Stephan Preibisch 
+> <preibisch at mpi-cbg.de <mailto:preibisch at mpi-cbg.de>> wrote:
+>
+> Hi everybody,
+>
+> First of all, I do not like "grid" too much as it assumes uniformly 
+> arranged
+> data which is not necessarily true. Although it is right now to be fair :)
+> At the end it also not necessarily an image, it might as well be a DNA
+> sequence for example. So if we try to be exact, we should rather name it
+> something more generic like Collection, maybe something from
+> http://www.dict.cc/?s=ansammlung? Right now, I find "pool" appealing...
+>
+> Let's discuss it next week when Curtis is in Dresden...I am optimistic we
+> will find a solution!
+>
+> Have a nice day,
+> Steffi
+>
+>
+> -----Original Message-----
+> From: imagej-devel-bounces at imagejdev.org 
+> <mailto:imagej-devel-bounces at imagejdev.org>
+> [mailto:imagej-devel-bounces at imagejdev.org 
+> <mailto:imagej-devel-bounces at imagejdev.org>] On Behalf Of Andreas Maier
+> Sent: Tuesday, October 12, 2010 3:36 AM
+> To: imagej-devel at imagejdev.org <mailto:imagej-devel at imagejdev.org>
+> Subject: Re: [ImageJ-devel] Naming [was: Re: [fiji-devel]
+> RegionOfInterestCursor considered misnamed]
+>
+> Hi,
+>
+> why not use the term "grid"?
+>
+> Best,
+>
+> Andreas
+>
+> Am 11.10.2010 18:34, schrieb Grant B. Harris:
+> >  Stephan,
+> >
+> > "Domain" is appealing in that it can be interpreted broadly - images
+> > and signals can "be in" the spatial domain, frequency domain, or
+> > wavelet domain.  And it doesn't have any implied dimensionality
+> > (unlike "space" which has some connotation of only 3-D).
+> >
+> > Also, I like the idea of a sub-interface called `Tensors' for a
+> > discrete regular grid.
+> >
+> > - Grant
+> >
+> >
+> > On 10/11/2010 4:17 PM, Stephan Saalfeld wrote:
+> >> Hi,
+> >>
+> >>> I vote for interface "Tensor".
+> >>>
+> >>> The misnamed "imglib" is a tensor lib.
+> >>>
+> >>>
+> >>>  From http://en.wikipedia.org/wiki/Tensor :
+> >>>
+> >>> "... tensors in general can be considered as a multidimensional array
+> >>> of numbers"
+> >>>
+> >> ... which is true for only the most basic concepts to be expressed by
+> >> the intended interface `Image'.  Already a sparsely sampled space 
+> is not
+> >> a tensor any more, neither is a 3d-scene description or a
+> >> hyper-spherical mask (actually anything that is not a box and 
+> discrete).
+> >> Yes, you can sample these Images in a discrete raster but you don't 
+> have
+> >> to.  Positionables in real space (Interpolators) are the most trivial
+> >> example.  The Iterator already does it's own magic.
+> >>
+> >> The true meaning of the interface Image is that it spans and limits a
+> >> function-space or domain, so we could call it `Function', `Space' or
+> >> `Domain', great for math-agnostic developers learning the API (though
+> >> not as horrible as LocalizableByDimCursor ;)).  `Tensors' could then be
+> >> a sub-interface that guarantees that the samples are on a discrete
+> >> regular grid of a box.
+> >>
+> >> I completely agree that it sucks to collide with java.awt.Image.
+> >> Besides, I am quite sure that, in the global Java namespace, there is
+> >> little room for non-colliding names except we call it a silly name.  I
+> >> am pro:
+> >>
+> >> Img (favorite), Domain (promising collisions), Space, Scene, Function
+> >> (best choice but promising collisions and missleading expectations).
+> >>
+> >> The most recent developments are tracked in the branch sampler-link
+> >> (which stems from sampler but got rid of the links...) where 
+> development
+> >> was recently stopped for too long time by the silly CellContainer bug
+> >> that came from master but I was searching in the changes...
+> >>
+> >>
+> >> Best,
+> >> Stephan
+> >>
+> >>> Albert
+> >
+> > _______________________________________________
+> > ImageJ-devel mailing list
+> > ImageJ-devel at imagejdev.org <mailto:ImageJ-devel at imagejdev.org>
+> > http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org <mailto:ImageJ-devel at imagejdev.org>
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org <mailto:ImageJ-devel at imagejdev.org>
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+>    
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20101012/051a3cad/attachment.html>
+
+From G.Landini at bham.ac.uk  Tue Oct 12 11:53:02 2010
+From: G.Landini at bham.ac.uk (Gabriel Landini)
+Date: Tue, 12 Oct 2010 17:53:02 +0100
+Subject: [ImageJ-devel] Naming [was: Re:
+	[fiji-devel]	RegionOfInterestCursor considered misnamed]
+In-Reply-To: <4CB4915F.2070104@wisc.edu>
+References: <AANLkTimm+FjmuEQQ63SHhOOOMyvjTiabnt7qp1EVrHxm@mail.gmail.com>
+	<007401cb6a14$8e4fdd80$aaef9880$@de> <4CB4915F.2070104@wisc.edu>
+Message-ID: <201010121753.02899.G.Landini@bham.ac.uk>
+
+
+So many names mentioned.... was ImageData suggested?
+
+Cheers
+
+G.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20101012/c92d303a/attachment.html>
+
+From adam.n.fraser at gmail.com  Tue Oct 12 15:58:04 2010
+From: adam.n.fraser at gmail.com (Adam Fraser)
+Date: Tue, 12 Oct 2010 16:58:04 -0400
+Subject: [ImageJ-devel] Naming [was: Re: [fiji-devel]
+ RegionOfInterestCursor considered misnamed]
+In-Reply-To: <201010121753.02899.G.Landini@bham.ac.uk>
+References: <AANLkTimm+FjmuEQQ63SHhOOOMyvjTiabnt7qp1EVrHxm@mail.gmail.com>
+	<007401cb6a14$8e4fdd80$aaef9880$@de> <4CB4915F.2070104@wisc.edu>
+	<201010121753.02899.G.Landini@bham.ac.uk>
+Message-ID: <AANLkTinwx0GadLDq1DPVh0+DYh_u5k7Hw577jhR4BrG6@mail.gmail.com>
+
+I'm with Albert. It should sound like it's an image. To me, to call it a
+Tensor is nearly as general as calling it an Object.
+
+PRO:
+IJImage
+NDImage
+ImageND
+ImageN
+Img
+
+Cheers,
+Adam
+
+@Gabriel: sorry, about the duplicate, forgot to "reply all"
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20101012/d3c2ff97/attachment.html>
+
+From ctrueden at wisc.edu  Tue Oct 12 16:39:05 2010
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Tue, 12 Oct 2010 16:39:05 -0500
+Subject: [ImageJ-devel] Naming [was: Re: [fiji-devel]
+ RegionOfInterestCursor considered misnamed]
+In-Reply-To: <AANLkTinwx0GadLDq1DPVh0+DYh_u5k7Hw577jhR4BrG6@mail.gmail.com>
+References: <AANLkTimm+FjmuEQQ63SHhOOOMyvjTiabnt7qp1EVrHxm@mail.gmail.com>
+	<007401cb6a14$8e4fdd80$aaef9880$@de> <4CB4915F.2070104@wisc.edu>
+	<201010121753.02899.G.Landini@bham.ac.uk>
+	<AANLkTinwx0GadLDq1DPVh0+DYh_u5k7Hw577jhR4BrG6@mail.gmail.com>
+Message-ID: <AANLkTikHaZj8ZxnF2_+7G0LfQSVZ90qPTr2m_qaRpxUD@mail.gmail.com>
+
+Hi everyone,
+
+After thinking about it, I agree with Albert & Adam, and also like Gabriel's
+suggestion of "ImageData." As Stephan said, we can discuss further when I
+visit in a few days.
+
+-Curtis
+
+On Tue, Oct 12, 2010 at 3:58 PM, Adam Fraser <adam.n.fraser at gmail.com>wrote:
+
+> I'm with Albert. It should sound like it's an image. To me, to call it a
+> Tensor is nearly as general as calling it an Object.
+>
+> PRO:
+> IJImage
+> NDImage
+> ImageND
+> ImageN
+> Img
+>
+> Cheers,
+> Adam
+>
+> @Gabriel: sorry, about the duplicate, forgot to "reply all"
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20101012/103b5142/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Tue Oct 12 21:50:53 2010
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Tue, 12 Oct 2010 19:50:53 -0700 (PDT)
+Subject: [ImageJ-devel] Design meeting notes
+In-Reply-To: <AANLkTin--s5drdGcAnsveOxoh-dn701tv5UC_r_8mLn9@mail.gmail.com>
+References: <AANLkTinvB4PR=QHPztKCeF7FCNAYwL9rm-3mrLM=2iWC@mail.gmail.com>
+	<4CADCDC2.1070609@broadinstitute.org>
+	<AANLkTikk93hqnenbcuchL-es_1OyHACx1jHUs4i-MTwG@mail.gmail.com>
+	<alpine.DEB.1.00.1010091730390.1964@bonsai2>
+	<AANLkTik9x6OJnM9RBN_4a-8CGN3=tWqS1Zbv-LAUZEFQ@mail.gmail.com>
+	<alpine.DEB.1.00.1010112109410.2710@intel-tinevez-2-302>
+	<AANLkTin--s5drdGcAnsveOxoh-dn701tv5UC_r_8mLn9@mail.gmail.com>
+Message-ID: <alpine.DEB.1.00.1010121948220.1964@bonsai2>
+
+Hi,
+
+On Tue, 12 Oct 2010, Curtis Rueden wrote:
+
+> > That was my first idea. But how would the user interface tell the 
+> > callback without String or java.lang.reflect.Field ugliness which 
+> > input was modified by the user (and by that, what field should be 
+> > changed accordingly), and how would the callback tell that it changed 
+> > something, and what?
+> 
+> Each parameter has its own callback method, invoked when that particular 
+> parameter changes. So as Lee said, which method is called indicates 
+> which parameter was changed. (Perhaps it would be better to call the 
+> attribute something like "onChange" instead.)
+> 
+> Does that clarify it? Or is there a problem I'm not seeing?
+
+Just the infinite recursion thing (which is harder than meets the eye; 
+you'd have to build a graph and detect circles).
+
+It's also not clear how the callback would signal to the dialog (be that 
+an ImageJ, or a KNIME or CellProfiler dialog) _what_ value was changed by 
+the callback. (Just think of the user changing the width, and the callback 
+wanting to modify the height _iff_ "keep aspect-ratio" is checked.)
+
+Ciao,
+Dscho
+
+
+
+
+From leek at broadinstitute.org  Wed Oct 13 07:35:46 2010
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Wed, 13 Oct 2010 08:35:46 -0400
+Subject: [ImageJ-devel] Design meeting notes
+In-Reply-To: <alpine.DEB.1.00.1010121948220.1964@bonsai2>
+References: <AANLkTinvB4PR=QHPztKCeF7FCNAYwL9rm-3mrLM=2iWC@mail.gmail.com>
+	<4CADCDC2.1070609@broadinstitute.org>
+	<AANLkTikk93hqnenbcuchL-es_1OyHACx1jHUs4i-MTwG@mail.gmail.com>
+	<alpine.DEB.1.00.1010091730390.1964@bonsai2>
+	<AANLkTik9x6OJnM9RBN_4a-8CGN3=tWqS1Zbv-LAUZEFQ@mail.gmail.com>
+	<alpine.DEB.1.00.1010112109410.2710@intel-tinevez-2-302>
+	<AANLkTin--s5drdGcAnsveOxoh-dn701tv5UC_r_8mLn9@mail.gmail.com>
+	<alpine.DEB.1.00.1010121948220.1964@bonsai2>
+Message-ID: <4CB5A7A2.6090208@broadinstitute.org>
+
+  On 10/12/2010 10:50 PM, Johannes Schindelin wrote:
+> Hi,
+>
+> On Tue, 12 Oct 2010, Curtis Rueden wrote:
+>
+>>> That was my first idea. But how would the user interface tell the
+>>> callback without String or java.lang.reflect.Field ugliness which
+>>> input was modified by the user (and by that, what field should be
+>>> changed accordingly), and how would the callback tell that it changed
+>>> something, and what?
+>> Each parameter has its own callback method, invoked when that particular
+>> parameter changes. So as Lee said, which method is called indicates
+>> which parameter was changed. (Perhaps it would be better to call the
+>> attribute something like "onChange" instead.)
+>>
+>> Does that clarify it? Or is there a problem I'm not seeing?
+> Just the infinite recursion thing (which is harder than meets the eye;
+> you'd have to build a graph and detect circles).
+>
+> It's also not clear how the callback would signal to the dialog (be that
+> an ImageJ, or a KNIME or CellProfiler dialog) _what_ value was changed by
+> the callback. (Just think of the user changing the width, and the callback
+> wanting to modify the height _iff_ "keep aspect-ratio" is checked.)
+>
+The obvious unique ID (signaling what changed) would be the field's name 
+- I have enough Java reflection tools in CellProfiler at this point to 
+be able to pick out the field name and include it in an event. Similarly 
+with the value: I could include both the old and new values if 
+necessary. Here, you could present the plugin developer with lots of 
+information, anticipating that most developers would choose to ignore 
+most or all of it.
+
+I'm not as familiar with Java as you all, but perhaps it's best to 
+either mimic the behavior of some existing model or use that model 
+wholesale - 3 examples that come to mind are Java beans (has a property 
+change event / listener / veto system), AWT events and Swing events.
+> Ciao,
+> Dscho
+>
+--Lee
+
+
+
+From Johannes.Schindelin at gmx.de  Wed Oct 13 10:06:05 2010
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Wed, 13 Oct 2010 08:06:05 -0700 (PDT)
+Subject: [ImageJ-devel] Design meeting notes
+In-Reply-To: <4CB5A7A2.6090208@broadinstitute.org>
+References: <AANLkTinvB4PR=QHPztKCeF7FCNAYwL9rm-3mrLM=2iWC@mail.gmail.com>
+	<4CADCDC2.1070609@broadinstitute.org>
+	<AANLkTikk93hqnenbcuchL-es_1OyHACx1jHUs4i-MTwG@mail.gmail.com>
+	<alpine.DEB.1.00.1010091730390.1964@bonsai2>
+	<AANLkTik9x6OJnM9RBN_4a-8CGN3=tWqS1Zbv-LAUZEFQ@mail.gmail.com>
+	<alpine.DEB.1.00.1010112109410.2710@intel-tinevez-2-302>
+	<AANLkTin--s5drdGcAnsveOxoh-dn701tv5UC_r_8mLn9@mail.gmail.com>
+	<alpine.DEB.1.00.1010121948220.1964@bonsai2>
+	<4CB5A7A2.6090208@broadinstitute.org>
+Message-ID: <alpine.DEB.1.00.1010130805210.1964@bonsai2>
+
+Hi,
+
+On Wed, 13 Oct 2010, Lee Kamentsky wrote:
+
+>  On 10/12/2010 10:50 PM, Johannes Schindelin wrote:
+>
+> > On Tue, 12 Oct 2010, Curtis Rueden wrote:
+> >
+> > > > That was my first idea. But how would the user interface tell the 
+> > > > callback without String or java.lang.reflect.Field ugliness which 
+> > > > input was modified by the user (and by that, what field should be 
+> > > > changed accordingly), and how would the callback tell that it 
+> > > > changed something, and what?
+> > > Each parameter has its own callback method, invoked when that 
+> > > particular parameter changes. So as Lee said, which method is called 
+> > > indicates which parameter was changed. (Perhaps it would be better 
+> > > to call the attribute something like "onChange" instead.)
+> > >
+> > > Does that clarify it? Or is there a problem I'm not seeing?
+> > Just the infinite recursion thing (which is harder than meets the eye; 
+> > you'd have to build a graph and detect circles).
+> >
+> > It's also not clear how the callback would signal to the dialog (be 
+> > that an ImageJ, or a KNIME or CellProfiler dialog) _what_ value was 
+> > changed by the callback. (Just think of the user changing the width, 
+> > and the callback wanting to modify the height _iff_ "keep 
+> > aspect-ratio" is checked.)
+> >
+> The obvious unique ID (signaling what changed) would be the field's name 
+> - I have enough Java reflection tools in CellProfiler at this point to 
+> be able to pick out the field name and include it in an event.
+
+The problem I have with this solution: it does not catch problems at 
+compile time, but at runtime.
+
+Ciao,
+Johannes
+
+
+
+From leek at broadinstitute.org  Wed Oct 13 10:12:45 2010
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Wed, 13 Oct 2010 11:12:45 -0400
+Subject: [ImageJ-devel] Design meeting notes
+In-Reply-To: <alpine.DEB.1.00.1010130805210.1964@bonsai2>
+References: <AANLkTinvB4PR=QHPztKCeF7FCNAYwL9rm-3mrLM=2iWC@mail.gmail.com>
+	<4CADCDC2.1070609@broadinstitute.org>
+	<AANLkTikk93hqnenbcuchL-es_1OyHACx1jHUs4i-MTwG@mail.gmail.com>
+	<alpine.DEB.1.00.1010091730390.1964@bonsai2>
+	<AANLkTik9x6OJnM9RBN_4a-8CGN3=tWqS1Zbv-LAUZEFQ@mail.gmail.com>
+	<alpine.DEB.1.00.1010112109410.2710@intel-tinevez-2-302>
+	<AANLkTin--s5drdGcAnsveOxoh-dn701tv5UC_r_8mLn9@mail.gmail.com>
+	<alpine.DEB.1.00.1010121948220.1964@bonsai2>
+	<4CB5A7A2.6090208@broadinstitute.org>
+	<alpine.DEB.1.00.1010130805210.1964@bonsai2>
+Message-ID: <4CB5CC6D.9030606@broadinstitute.org>
+
+  On 10/13/2010 11:06 AM, Johannes Schindelin wrote:
+>>
+>> The obvious unique ID (signaling what changed) would be the field's name
+>> - I have enough Java reflection tools in CellProfiler at this point to
+>> be able to pick out the field name and include it in an event.
+> The problem I have with this solution: it does not catch problems at
+> compile time, but at runtime.
+>
+OK I am laughing now because, for now, I'm a Python programmer and all 
+our problems happen at runtime. As far as design, it should be 
+Java-centric and you guys are the experts.
+> Ciao,
+> Johannes
+
+
+
+
+From ctrueden at wisc.edu  Thu Oct 14 11:39:56 2010
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Thu, 14 Oct 2010 11:39:56 -0500
+Subject: [ImageJ-devel] Design meeting notes
+In-Reply-To: <alpine.DEB.1.00.1010121948220.1964@bonsai2>
+References: <AANLkTinvB4PR=QHPztKCeF7FCNAYwL9rm-3mrLM=2iWC@mail.gmail.com>
+	<4CADCDC2.1070609@broadinstitute.org>
+	<AANLkTikk93hqnenbcuchL-es_1OyHACx1jHUs4i-MTwG@mail.gmail.com>
+	<alpine.DEB.1.00.1010091730390.1964@bonsai2>
+	<AANLkTik9x6OJnM9RBN_4a-8CGN3=tWqS1Zbv-LAUZEFQ@mail.gmail.com>
+	<alpine.DEB.1.00.1010112109410.2710@intel-tinevez-2-302>
+	<AANLkTin--s5drdGcAnsveOxoh-dn701tv5UC_r_8mLn9@mail.gmail.com>
+	<alpine.DEB.1.00.1010121948220.1964@bonsai2>
+Message-ID: <AANLkTimgvaB48R5ZgofnO8HOKGsP2OPmRU_DzAKKE=uq@mail.gmail.com>
+
+Hi Dscho,
+
+Just the infinite recursion thing (which is harder than meets the eye;
+> you'd have to build a graph and detect circles).
+>
+
+Or we could invoke the callback only when the GUI changes by user action.
+
+It's also not clear how the callback would signal to the dialog (be that
+> an ImageJ, or a KNIME or CellProfiler dialog) _what_ value was changed by
+> the callback. (Just think of the user changing the width, and the callback
+> wanting to modify the height _iff_ "keep aspect-ratio" is checked.)
+>
+
+A given parameter's callback would be called only when the linked parameter
+changes.
+
+So the aspect ratio example might look like:
+
+@Parameter(callback="widthChanged")
+public int width;
+
+@Parameter(callback="heightChanged")
+public int height;
+
+@Parameter(label="Maintain aspect ratio", callback="aspectRatioToggled")
+public boolean aspectRatio;
+
+/** The plugin must populate these with the current/initial width and height
+choices. */
+private int originalWidth, originalHeight;
+
+/** Invoked when width text field changes. */
+public void widthChanged() {
+  if (aspectRatio) constrainHeight();
+}
+
+/** Invoked when height text field changes. */
+public void heightChanged() {
+  if (aspectRatio) constrainWidth();
+}
+
+public void aspectRatioToggled() {
+  if (aspectRatio) constrainHeight(); // arbitrarily change height, rather
+than width
+}
+
+/** Adjusts width to match original aspect ratio. */
+private void constrainWidth() {
+  width = originalWidth * height / originalHeight;
+}
+
+/** Adjusts height to match original aspect ratio. */
+private void constrainHeight() {
+  height = originalHeight * width / originalWidth;
+}
+
+After invoking the callback, the plugin infrastructure updates all dialog
+fields to the latest values (and this update does not itself trigger any
+additional callbacks).
+
+-Curtis
+
+On Tue, Oct 12, 2010 at 9:50 PM, Johannes Schindelin <
+Johannes.Schindelin at gmx.de> wrote:
+
+> Hi,
+>
+> On Tue, 12 Oct 2010, Curtis Rueden wrote:
+>
+> > > That was my first idea. But how would the user interface tell the
+> > > callback without String or java.lang.reflect.Field ugliness which
+> > > input was modified by the user (and by that, what field should be
+> > > changed accordingly), and how would the callback tell that it changed
+> > > something, and what?
+> >
+> > Each parameter has its own callback method, invoked when that particular
+> > parameter changes. So as Lee said, which method is called indicates
+> > which parameter was changed. (Perhaps it would be better to call the
+> > attribute something like "onChange" instead.)
+> >
+> > Does that clarify it? Or is there a problem I'm not seeing?
+>
+> Just the infinite recursion thing (which is harder than meets the eye;
+> you'd have to build a graph and detect circles).
+>
+> It's also not clear how the callback would signal to the dialog (be that
+> an ImageJ, or a KNIME or CellProfiler dialog) _what_ value was changed by
+> the callback. (Just think of the user changing the width, and the callback
+> wanting to modify the height _iff_ "keep aspect-ratio" is checked.)
+>
+> Ciao,
+> Dscho
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20101014/9ac164af/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Thu Oct 14 17:48:17 2010
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Thu, 14 Oct 2010 15:48:17 -0700 (PDT)
+Subject: [ImageJ-devel] Design meeting notes
+In-Reply-To: <AANLkTimgvaB48R5ZgofnO8HOKGsP2OPmRU_DzAKKE=uq@mail.gmail.com>
+References: <AANLkTinvB4PR=QHPztKCeF7FCNAYwL9rm-3mrLM=2iWC@mail.gmail.com>
+	<4CADCDC2.1070609@broadinstitute.org>
+	<AANLkTikk93hqnenbcuchL-es_1OyHACx1jHUs4i-MTwG@mail.gmail.com>
+	<alpine.DEB.1.00.1010091730390.1964@bonsai2>
+	<AANLkTik9x6OJnM9RBN_4a-8CGN3=tWqS1Zbv-LAUZEFQ@mail.gmail.com>
+	<alpine.DEB.1.00.1010112109410.2710@intel-tinevez-2-302>
+	<AANLkTin--s5drdGcAnsveOxoh-dn701tv5UC_r_8mLn9@mail.gmail.com>
+	<alpine.DEB.1.00.1010121948220.1964@bonsai2>
+	<AANLkTimgvaB48R5ZgofnO8HOKGsP2OPmRU_DzAKKE=uq@mail.gmail.com>
+Message-ID: <alpine.DEB.1.00.1010141547281.6982@bonsai2>
+
+Hi,
+
+On Thu, 14 Oct 2010, Curtis Rueden wrote:
+
+> > Just the infinite recursion thing (which is harder than meets the eye; 
+> > you'd have to build a graph and detect circles).
+> 
+> Or we could invoke the callback only when the GUI changes by user 
+> action.
+
+That was the intention, but I actually wanted to avoid having to write so 
+much code (as in your example). But I fear that you're right, and this is 
+the only way to go forward.
+
+Ciao,
+Dscho
+
+
+
+From ctrueden at wisc.edu  Mon Oct 18 11:38:15 2010
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Mon, 18 Oct 2010 11:38:15 -0500
+Subject: [ImageJ-devel] Design meeting notes
+In-Reply-To: <alpine.DEB.1.00.1010141547281.6982@bonsai2>
+References: <AANLkTinvB4PR=QHPztKCeF7FCNAYwL9rm-3mrLM=2iWC@mail.gmail.com>
+	<4CADCDC2.1070609@broadinstitute.org>
+	<AANLkTikk93hqnenbcuchL-es_1OyHACx1jHUs4i-MTwG@mail.gmail.com>
+	<alpine.DEB.1.00.1010091730390.1964@bonsai2>
+	<AANLkTik9x6OJnM9RBN_4a-8CGN3=tWqS1Zbv-LAUZEFQ@mail.gmail.com>
+	<alpine.DEB.1.00.1010112109410.2710@intel-tinevez-2-302>
+	<AANLkTin--s5drdGcAnsveOxoh-dn701tv5UC_r_8mLn9@mail.gmail.com>
+	<alpine.DEB.1.00.1010121948220.1964@bonsai2>
+	<AANLkTimgvaB48R5ZgofnO8HOKGsP2OPmRU_DzAKKE=uq@mail.gmail.com>
+	<alpine.DEB.1.00.1010141547281.6982@bonsai2>
+Message-ID: <AANLkTimz1HKxscTuA2wKNXnQhwB2XQpF1tc3gBrZ29Cg@mail.gmail.com>
+
+Hi Dscho,
+
+That was the intention, but I actually wanted to avoid having to write so
+> much code (as in your example). But I fear that you're right, and this is
+> the only way to go forward.
+>
+
+Compared to GUI-laden event handling (e.g., Swing), I think the amount of
+code is quite reasonable. And it maintains the primary design goal of saying
+what you actually mean (since you update the parameter values directly),
+rather than being obfuscated by implementation details (such as setting text
+field values).
+
+Now we just have to find some time to implement it!
+
+-Curtis
+
+On Thu, Oct 14, 2010 at 5:48 PM, Johannes Schindelin <
+Johannes.Schindelin at gmx.de> wrote:
+
+> Hi,
+>
+> On Thu, 14 Oct 2010, Curtis Rueden wrote:
+>
+> > > Just the infinite recursion thing (which is harder than meets the eye;
+> > > you'd have to build a graph and detect circles).
+> >
+> > Or we could invoke the callback only when the GUI changes by user
+> > action.
+>
+> That was the intention, but I actually wanted to avoid having to write so
+> much code (as in your example). But I fear that you're right, and this is
+> the only way to go forward.
+>
+> Ciao,
+> Dscho
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20101018/22374346/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Tue Oct 19 11:57:50 2010
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Tue, 19 Oct 2010 09:57:50 -0700 (PDT)
+Subject: [ImageJ-devel] [fiji-devel] ImgLib algorithms require Jama now (fwd)
+Message-ID: <alpine.DEB.1.00.1010190957410.2303@bonsai2>
+
+FYI
+
+---------- Forwarded message ----------
+Date: Tue, 19 Oct 2010 18:26:50 +0200
+From: Stephan Preibisch <preibisch at mpi-cbg.de>
+To: fiji-devel at googlegroups.com
+Subject: [fiji-devel] ImgLib algorithms require Jama now
+
+Hi guys,
+
+ 
+
+I added a n-dimensional scale space implementation, and the Subpixel
+localization is based on Jama. In order to compile it you will need Jama,
+which is included in Fiji.
+
+ 
+
+Nice greetings,
+
+Steffi
+
+-- 
+You received this message because you are subscribed to the Google Groups "Fiji-devel" group.
+To post to this group, send email to fiji-devel at googlegroups.com.
+To unsubscribe from this group, send email to fiji-devel+unsubscribe at googlegroups.com.
+For more options, visit this group at http://groups.google.com/group/fiji-devel?hl=en.
+
+
+
+
+From ctrueden at wisc.edu  Tue Oct 19 15:12:20 2010
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Tue, 19 Oct 2010 15:12:20 -0500
+Subject: [ImageJ-devel] [fiji-devel] ImgLib algorithms require Jama now
+	(fwd)
+In-Reply-To: <alpine.DEB.1.00.1010190957410.2303@bonsai2>
+References: <alpine.DEB.1.00.1010190957410.2303@bonsai2>
+Message-ID: <AANLkTimiUNPhh7mWKxZqnXZFhfBc8H+SHgKaDpxW6aP8@mail.gmail.com>
+
+Thanks Johannes. Adding Jama using Maven is easy. Steffi, if you have time,
+I'll show you how it works when I visit later this week. Hopefully we can
+get the various imglib branches merged again while I'm there.
+
+-Curtis
+
+On Tue, Oct 19, 2010 at 11:57 AM, Johannes Schindelin <
+Johannes.Schindelin at gmx.de> wrote:
+
+> FYI
+>
+> ---------- Forwarded message ----------
+> Date: Tue, 19 Oct 2010 18:26:50 +0200
+> From: Stephan Preibisch <preibisch at mpi-cbg.de>
+> To: fiji-devel at googlegroups.com
+> Subject: [fiji-devel] ImgLib algorithms require Jama now
+>
+> Hi guys,
+>
+>
+>
+> I added a n-dimensional scale space implementation, and the Subpixel
+> localization is based on Jama. In order to compile it you will need Jama,
+> which is included in Fiji.
+>
+>
+>
+> Nice greetings,
+>
+> Steffi
+>
+> --
+> You received this message because you are subscribed to the Google Groups
+> "Fiji-devel" group.
+> To post to this group, send email to fiji-devel at googlegroups.com.
+> To unsubscribe from this group, send email to
+> fiji-devel+unsubscribe at googlegroups.com<fiji-devel%2Bunsubscribe at googlegroups.com>
+> .
+> For more options, visit this group at
+> http://groups.google.com/group/fiji-devel?hl=en.
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20101019/7f7c3229/attachment.html>
+

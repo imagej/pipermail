@@ -1,0 +1,304 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-bugs] [Bug 969] New: &quot;Analyse particles&quot; - potential bug if applied to 4-dimensional stack
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%20969%5D%20New%3A%20%22Analyse%20particles%22%20-%20potential%20bug%20if%0A%20applied%20to%204-dimensional%20stack&In-Reply-To=%3Cbug-969-19%40http.fiji.sc/bugzilla/%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000572.html">
+   <LINK REL="Next"  HREF="000547.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-bugs] [Bug 969] New: &quot;Analyse particles&quot; - potential bug if applied to 4-dimensional stack</H1>
+    <B>bugzilla at fiji.sc</B> 
+    <A HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%20969%5D%20New%3A%20%22Analyse%20particles%22%20-%20potential%20bug%20if%0A%20applied%20to%204-dimensional%20stack&In-Reply-To=%3Cbug-969-19%40http.fiji.sc/bugzilla/%3E"
+       TITLE="[ImageJ-bugs] [Bug 969] New: &quot;Analyse particles&quot; - potential bug if applied to 4-dimensional stack">bugzilla at fiji.sc
+       </A><BR>
+    <I>Sun Dec  7 16:45:59 CST 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000572.html">[ImageJ-bugs] [Bug 968] Relative paths in command like broken.
+</A></li>
+        <LI>Next message: <A HREF="000547.html">[ImageJ-bugs] [Bug 969] &quot;Analyse particles&quot; - potential bug if applied to 4-dimensional stack
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#546">[ date ]</a>
+              <a href="thread.html#546">[ thread ]</a>
+              <a href="subject.html#546">[ subject ]</a>
+              <a href="author.html#546">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE><A HREF="http://fiji.sc/bugzilla/show_bug.cgi?id=969">http://fiji.sc/bugzilla/show_bug.cgi?id=969</A>
+
+            Bug ID: 969
+           Summary: &quot;Analyse particles&quot; - potential bug if applied to
+                    4-dimensional stack
+           Product: Fiji
+           Version: unspecified
+          Hardware: PC
+                OS: Windows
+            Status: NEW
+          Severity: normal
+          Priority: P4
+         Component: Plugins
+          Assignee: <A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">imagej-bugs at imagej.net</A>
+          Reporter: <A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">k.schink at gmail.com</A>
+                CC: <A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">k.schink at gmail.com</A>
+
+Hi,
+
+I have recently come across a problem in the &quot;Analyse Particles&quot; function which
+I think might be a bug in handling of hyperstacks or ROI position handling. 
+
+I analyse a thresholded timeseries (Z + T) and add identified particles to the
+ROI manager. I should note that I get the time series by the &quot;Duplicate&quot;
+command from a composite image.
+
+At the first timepoint, ROIs are added to the ROI manager for each for each of
+the Z-Planes. 
+However, problems start to occur once the stack reaches the last z-plane of
+timepoint 1. I would expect that now the ROIs from timepoint 2 should be added
+to the manager. 
+
+However, when reaching the end of the Z-Stack of timepoint 1, the ROI positions
+jump not to timepoint 2, but rather to the next timepoint that would come after
+the Z-Stack, e.g. if the z-stack has 5 planes, the next added ROIs will be
+localized to Timepoint 6, Z-Position 5.  After this, the ROI-Positions will
+cycle not through the Z-planes, but rather through the time-axis until the end
+is reached. After this, the time-axis jumps to a later timepoint (in the case
+of the &quot;Mitosis 5D&quot; sample timeseries to timepoint 11) and from there on
+behaves as expected, e.g. ROIs are added first to z-planes and when the
+last-Z-plane is reached, ROIs will be added to the first Z-plane of the next
+timepoint..
+I do not think that the problem is with the definition of the ROIs as such,
+since the shape of the ROIs corresponds to the segmented particles at the
+expected timepoints. I rather think that wrong position info is written to the
+ROIs when adding them to the ROI manager. 
+The problem occurs both in FIJI and in plain ImageJ, both in a current version
+and in the FIJI lifeline version.
+I use Windows 7 64bit version, and run ImageJ / Fiji in 64 bit. However, I have
+tested the plain ImageJ 32 bit version and find the same behaviour.
+
+I have attached a minimal macro (see below) that calls the &quot;Mitosis&quot; sample,
+extracts the first channel, applies a threshold  and then runs the Particle
+analyser which adds the ROIs to the manager. Then the positions of the ROIs in
+question are printed to the log in order to illustrate the problem.
+
+Thanks a lot for your help
+
+Kay
+
+
+
+// Begin sample macro
+
+run(&quot;Mitosis (26MB, 5D stack)&quot;);
+run(&quot;Duplicate...&quot;, &quot;duplicate channels=1&quot;);
+//run(&quot;Threshold...&quot;);
+setAutoThreshold(&quot;Triangle dark&quot;);
+setOption(&quot;BlackBackground&quot;, true);
+run(&quot;Convert to Mask&quot;, &quot;method=Triangle background=Dark black&quot;);
+
+run(&quot;Analyze Particles...&quot;, &quot;size=1-Infinity add stack&quot;);
+
+// Printing of the ROI positions to the log, not necessary for bug 
+
+roiManager(&quot;Select&quot;, 0);
+Stack.getPosition(channel, slice, frame);
+print(&quot;Position (C, Z, T): &quot;+channel+&quot;, &quot;+slice+&quot;, &quot;+frame);
+roiManager(&quot;Select&quot;, 1);
+Stack.getPosition(channel, slice, frame);
+print(&quot;Position (C, Z, T): &quot;+channel+&quot;, &quot;+slice+&quot;, &quot;+frame);
+roiManager(&quot;Select&quot;, 2);
+Stack.getPosition(channel, slice, frame);
+print(&quot;Position (C, Z, T): &quot;+channel+&quot;, &quot;+slice+&quot;, &quot;+frame);
+roiManager(&quot;Select&quot;, 3);
+Stack.getPosition(channel, slice, frame);
+print(&quot;Position (C, Z, T): &quot;+channel+&quot;, &quot;+slice+&quot;, &quot;+frame);
+roiManager(&quot;Select&quot;, 4);
+Stack.getPosition(channel, slice, frame);
+print(&quot;Position (C, Z, T): &quot;+channel+&quot;, &quot;+slice+&quot;, &quot;+frame);
+//normal behaviour until here, then the &quot;Frame&quot; position jumps not to Frame &quot;2&quot;
+but to Frame 6 (continues from the &quot;Z&quot; position).
+roiManager(&quot;Select&quot;, 5);
+Stack.getPosition(channel, slice, frame);
+print(&quot;Position (C, Z, T): &quot;+channel+&quot;, &quot;+slice+&quot;, &quot;+frame);
+roiManager(&quot;Select&quot;, 6);
+Stack.getPosition(channel, slice, frame);
+print(&quot;Position (C, Z, T): &quot;+channel+&quot;, &quot;+slice+&quot;, &quot;+frame);
+
+//end of the Timeseries for Z=5 reached, jumps to T=11 and Z=1
+
+roiManager(&quot;Select&quot;, 51);
+Stack.getPosition(channel, slice, frame);
+print(&quot;Position (C, Z, T): &quot;+channel+&quot;, &quot;+slice+&quot;, &quot;+frame);
+roiManager(&quot;Select&quot;, 52);
+Stack.getPosition(channel, slice, frame);
+print(&quot;Position (C, Z, T): &quot;+channel+&quot;, &quot;+slice+&quot;, &quot;+frame);
+roiManager(&quot;Select&quot;, 53);
+Stack.getPosition(channel, slice, frame);
+print(&quot;Position (C, Z, T): &quot;+channel+&quot;, &quot;+slice+&quot;, &quot;+frame);
+
+Information about your version of Java:
+
+  os.arch =&gt; amd64
+  os.name =&gt; Windows 7
+  os.version =&gt; 6.1
+  java.version =&gt; 1.6.0_24
+  java.vendor =&gt; Sun Microsystems Inc.
+  java.runtime.name =&gt; Java(TM) SE Runtime Environment
+  java.runtime.version =&gt; 1.6.0_24-b07
+  java.vm.name =&gt; Java HotSpot(TM) 64-Bit Server VM
+  java.vm.version =&gt; 19.1-b02
+  java.vm.vendor =&gt; Sun Microsystems Inc.
+  java.vm.info =&gt; mixed mode
+  java.awt.graphicsenv =&gt; sun.awt.Win32GraphicsEnvironment
+  java.specification.name =&gt; Java Platform API Specification
+  java.specification.version =&gt; 1.6
+  sun.cpu.endian =&gt; little
+  sun.desktop =&gt; windows
+  file.separator =&gt; \
+
+The up-to-date check says: UP_TO_DATE
+
+Information relevant to JAVA_HOME related problems:
+
+  JAVA_HOME is set to: D:\Fiji.app/java/win64/jdk1.6.0_24//jre
+  imagej.dir =&gt; D:\Fiji.app
+
+Information about the version of each plugin:
+
+Activated update sites:
+ImageJ: <A HREF="http://update.imagej.net/">http://update.imagej.net/</A> (last check:20141126221327)
+Fiji: <A HREF="http://fiji.sc/update/">http://fiji.sc/update/</A> (last check:20141125171145)
+BigDataViewer: <A HREF="http://sites.imagej.net/Pietzsch/">http://sites.imagej.net/Pietzsch/</A> (last check:20141126120148)
+BioVoxxel: <A HREF="http://sites.imagej.net/BioVoxxel/">http://sites.imagej.net/BioVoxxel/</A> (last check:20141201130413)
+CMCI-EMBL: <A HREF="http://sites.imagej.net/Miura/">http://sites.imagej.net/Miura/</A> (last check:20140718160940)
+GDSC: <A HREF="http://sites.imagej.net/GDSC/">http://sites.imagej.net/GDSC/</A> (last check:20141118185052)
+GDSC-SMLM: <A HREF="http://sites.imagej.net/GDSC-SMLM/">http://sites.imagej.net/GDSC-SMLM/</A> (last check:20140918121334)
+NucleusJ: <A HREF="http://sites.imagej.net/PouletAxel/">http://sites.imagej.net/PouletAxel/</A> (last check:20141101103602)
+
+Files not up-to-date:
+  8c286564 (LOCAL_ONLY) 20141111230316 macros/BatchMacro.ijm
+  ec6d8e8c (LOCAL_ONLY) 20141111182043 macros/Measure_Nuclei.ijm
+  10411e90 (LOCAL_ONLY) 20141015104827 plugins/Calc_TIRF.class
+  011c812b (LOCAL_ONLY) 20141009112831 plugins/Drop_Script-1.0.0.jar
+  ec17890b (LOCAL_ONLY) 20131104145444 plugins/Omero/omero/JHotDraw.jar
+  91ece67d (LOCAL_ONLY) 20140714110424 plugins/Omero/omero/JWlz.jar
+  36cb5c0a (LOCAL_ONLY) 20131104145444 plugins/Omero/omero/TableLayout.jar
+  ff61a1b4 (LOCAL_ONLY) 20131104145444 plugins/Omero/omero/ai_path.jar
+  c3a86bd0 (LOCAL_ONLY) 20140714110424 plugins/Omero/omero/assumeng.jar
+  364315a9 (LOCAL_ONLY) 20131104145444 plugins/Omero/omero/axis.jar
+  0af1624e (LOCAL_ONLY) 20140714110422
+plugins/Omero/omero/backport-util-concurrent.jar
+  52e3b543 (LOCAL_ONLY) 20140805165734 plugins/Omero/omero/blitz-javadoc.jar
+  d336fa64 (LOCAL_ONLY) 20140805165708 plugins/Omero/omero/blitz-sources.jar
+  28e0f97f (LOCAL_ONLY) 20140805165740 plugins/Omero/omero/blitz.jar
+  189f61fa (LOCAL_ONLY) 20131104145444 plugins/Omero/omero/bufr.jar
+  a2a2616b (LOCAL_ONLY) 20140805165522 plugins/Omero/omero/common-javadoc.jar
+  793e910c (LOCAL_ONLY) 20140805165520 plugins/Omero/omero/common-sources.jar
+  d7cff6e6 (LOCAL_ONLY) 20140805165522 plugins/Omero/omero/common.jar
+  940245e0 (LOCAL_ONLY) 20140714110222 plugins/Omero/omero/commons-codec.jar
+  64d8a654 (LOCAL_ONLY) 20131104145444
+plugins/Omero/omero/commons-collections.jar
+  86ab9004 (LOCAL_ONLY) 20131104145444 plugins/Omero/omero/commons-digester.jar
+  9e9eb622 (LOCAL_ONLY) 20131104145444
+plugins/Omero/omero/commons-discovery.jar
+  c62bea1b (LOCAL_ONLY) 20131104145444
+plugins/Omero/omero/commons-httpclient.jar
+  d59d3e4c (LOCAL_ONLY) 20131104145444 plugins/Omero/omero/commons-io.jar
+  f6139801 (LOCAL_ONLY) 20131104145444 plugins/Omero/omero/commons-lang.jar
+  7018824c (LOCAL_ONLY) 20131104145444 plugins/Omero/omero/commons-logging.jar
+  60a83b54 (LOCAL_ONLY) 20131104145444
+plugins/Omero/omero/commons-validator.jar
+  abf211c5 (LOCAL_ONLY) 20140714110422 plugins/Omero/omero/ehcache-core.jar
+  991b5e8a (LOCAL_ONLY) 20131104145444 plugins/Omero/omero/gicentreUtils.jar
+  dbcde867 (LOCAL_ONLY) 20131104145444 plugins/Omero/omero/gluegen-rt.jar
+  e33cecc2 (LOCAL_ONLY) 20131104145444 plugins/Omero/omero/grib.jar
+  69cd59e7 (LOCAL_ONLY) 20120802213046 plugins/Omero/omero/guava.jar
+  85c28658 (LOCAL_ONLY) 20131104145444
+plugins/Omero/omero/hibernate-jpa-2.0-api.jar
+  1911c9e1 (LOCAL_ONLY) 20140714110422 plugins/Omero/omero/ice-glacier2.jar
+  b1d709fb (LOCAL_ONLY) 20140714110422 plugins/Omero/omero/ice-grid.jar
+  c49b8fa2 (LOCAL_ONLY) 20140714110422 plugins/Omero/omero/ice-storm.jar
+  53aa5393 (LOCAL_ONLY) 20140714110422 plugins/Omero/omero/ice.jar
+  6e7614ee (LOCAL_ONLY) 20131104145444 plugins/Omero/omero/ij.jar
+  6ce638fb (LOCAL_ONLY) 20131104145444 plugins/Omero/omero/ini4j.jar
+  f1b65457 (LOCAL_ONLY) 20131104145444 plugins/Omero/omero/java-getopt.jar
+  c827227f (LOCAL_ONLY) 20131104145444
+plugins/Omero/omero/java-image-scaling.jar
+  e72f9b2b (LOCAL_ONLY) 20131104145444 plugins/Omero/omero/jaxrpc.jar
+  4156c7b5 (LOCAL_ONLY) 20131104145444 plugins/Omero/omero/jcommon.jar
+  c57f20b0 (LOCAL_ONLY) 20131104145444 plugins/Omero/omero/jfreechart.jar
+  df7a0b63 (LOCAL_ONLY) 20131104145444 plugins/Omero/omero/jna.jar
+  4c09d41c (LOCAL_ONLY) 20140714110424 plugins/Omero/omero/joda-time.jar
+  9a9b947a (LOCAL_ONLY) 20131104145444 plugins/Omero/omero/jogl.jar
+  d2af3ac9 (LOCAL_ONLY) 20140714110424 plugins/Omero/omero/kryo.jar
+  b2911375 (LOCAL_ONLY) 20140805165430 plugins/Omero/omero/lwf-stubs.jar
+  19da6ad6 (LOCAL_ONLY) 20140805165516
+plugins/Omero/omero/model-psql-javadoc.jar
+  0a346f32 (LOCAL_ONLY) 20140805165508
+plugins/Omero/omero/model-psql-sources.jar
+  407db314 (LOCAL_ONLY) 20140805165516 plugins/Omero/omero/model-psql.jar
+  a127d67c (LOCAL_ONLY) 20131104145444 plugins/Omero/omero/nanoxml.jar
+  6c7ec21f (LOCAL_ONLY) 20140714110424
+plugins/Omero/omero/native-lib-loader.jar
+  a51a31db (LOCAL_ONLY) 20140714110424 plugins/Omero/omero/netcdf.jar
+  e665d66a (LOCAL_ONLY) 20131104145444 plugins/Omero/omero/ols-client.jar
+  18382f06 (LOCAL_ONLY) 20131104145444 plugins/Omero/omero/ome-java.jar
+  7af6ddeb (LOCAL_ONLY) 20131104145522 plugins/Omero/omero/perf4j.jar
+  6340be70 (LOCAL_ONLY) 20131104145444 plugins/Omero/omero/physics.jar
+  b3056152 (LOCAL_ONLY) 20131104145444 plugins/Omero/omero/platform.jar
+  4ef2cfd3 (LOCAL_ONLY) 20131104145444 plugins/Omero/omero/poi.jar
+  af4b3176 (LOCAL_ONLY) 20131104145444
+plugins/Omero/omero/processing-controlP5.jar
+  1cb045e1 (LOCAL_ONLY) 20131104145444 plugins/Omero/omero/processing-core.jar
+  2e6cf711 (LOCAL_ONLY) 20131104145444 plugins/Omero/omero/saaj.jar
+  eedc0cd9 (LOCAL_ONLY) 20131104145444 plugins/Omero/omero/serializer.jar
+  5085d943 (LOCAL_ONLY) 20140714110424 plugins/Omero/omero/slf4j-api.jar
+  1deeabc9 (LOCAL_ONLY) 20140805165428 plugins/Omero/omero/specification.jar
+  ba32bfdf (LOCAL_ONLY) 20131104145444 plugins/Omero/omero/swingx.jar
+  7c4005e7 (LOCAL_ONLY) 20131104145444 plugins/Omero/omero/wsdl4j.jar
+  c8694e76 (LOCAL_ONLY) 20131104145444 plugins/Omero/omero/xalan.jar
+  8c81f781 (LOCAL_ONLY) 20140805170144 plugins/Omero/omero_ij.jar
+  46cc7ddc (LOCAL_ONLY) 20141029210256 plugins/SaveAsMovie_win64.jar
+  b2afde18 (LOCAL_ONLY) 20141113134553 plugins/cell_counter.jar
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-bugs/attachments/20141207/a95cf868/attachment.html">http://imagej.net/pipermail/imagej-bugs/attachments/20141207/a95cf868/attachment.html</A>&gt;
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000572.html">[ImageJ-bugs] [Bug 968] Relative paths in command like broken.
+</A></li>
+	<LI>Next message: <A HREF="000547.html">[ImageJ-bugs] [Bug 969] &quot;Analyse particles&quot; - potential bug if applied to 4-dimensional stack
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#546">[ date ]</a>
+              <a href="thread.html#546">[ thread ]</a>
+              <a href="subject.html#546">[ subject ]</a>
+              <a href="author.html#546">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-bugs">More information about the Imagej-bugs
+mailing list</a><br>
+</body></html>

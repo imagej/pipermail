@@ -1,0 +1,121 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] CPU usage
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20CPU%20usage&In-Reply-To=%3CCADN69ykg_Wiqgdm5mBDVPrB5_rNq_PTUyMa0roiEv7%2B31K3%3D1g%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000497.html">
+   <LINK REL="Next"  HREF="000498.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] CPU usage</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20CPU%20usage&In-Reply-To=%3CCADN69ykg_Wiqgdm5mBDVPrB5_rNq_PTUyMa0roiEv7%2B31K3%3D1g%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] CPU usage">ctrueden at wisc.edu
+       </A><BR>
+    <I>Wed Sep 21 12:27:25 CDT 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000497.html">[ImageJ-devel] CPU usage
+</A></li>
+        <LI>Next message: <A HREF="000498.html">[ImageJ-devel] CPU usage
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#495">[ date ]</a>
+              <a href="thread.html#495">[ thread ]</a>
+              <a href="subject.html#495">[ subject ]</a>
+              <a href="author.html#495">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Grant,
+
+Anyone else seeing the CPU usage stuck at +12% ofter opening an image in
+&gt;<i> IJ2?  Or is it just me?
+</I>&gt;<i>
+</I>(Related: has anyone tried profiling the app?  I'm having trouble doing so
+&gt;<i> in NetBeans... going to try VirtualVM next.)
+</I>&gt;<i>
+</I>
+If you run ImageJ from the command line (see
+<A HREF="http://imagejdev.org/command-line">http://imagejdev.org/command-line</A>) then press Ctrl+Pause (Ctrl+\ on
+non-Windows platforms) from the command prompt, you will get a full stack
+trace for all threads, which will be enlightening as to the cause.
+
+I just tested on my machine here and am seeing 100% CPU usage (of one CPU)
+on my system, after opening Blobs.
+
+The stack trace reveals that there is a recursive loop going on with the
+options synchronization. Relevant portion is:
+
+    at imagej.event.EventService.publish(EventService.java:72)
+    at imagej.event.Events.publish(Events.java:61)
+    at imagej.ext.options.OptionsPlugin.run(OptionsPlugin.java:116)
+    at imagej.ext.plugin.PluginModule.run(PluginModule.java:163)
+    at imagej.ext.options.OptionsService.setOption(OptionsService.java:178)
+    at imagej.ext.options.OptionsService.setOption(OptionsService.java:153)
+    at imagej.legacy.patches.PrefsMethods.set(PrefsMethods.java:90)
+    at ij.Prefs.set(Prefs.java:455)
+    at ij.Prefs.set(Prefs.java:461)
+    at
+imagej.legacy.OptionsSynchronizer.arrowOptions(OptionsSynchronizer.java:171)
+    at
+imagej.legacy.OptionsSynchronizer.updateIJ1SettingsFromIJ2(OptionsSynchronizer.java:82)
+    at imagej.legacy.LegacyService.updateIJ1Settings(LegacyService.java:143)
+    at imagej.legacy.LegacyService$2.onEvent(LegacyService.java:194)
+    at imagej.legacy.LegacyService$2.onEvent(LegacyService.java:190)
+    at
+org.bushe.swing.event.ThreadSafeEventService.publish(ThreadSafeEventService.java:971)
+    at
+org.bushe.swing.event.ThreadSafeEventService.publish(ThreadSafeEventService.java:904)
+    at imagej.event.EventService.publish(EventService.java:72)
+    at imagej.event.Events.publish(Events.java:61)
+    at imagej.ext.options.OptionsPlugin.run(OptionsPlugin.java:116)
+    at imagej.ext.plugin.PluginModule.run(PluginModule.java:163)
+    at imagej.ext.options.OptionsService.setOption(OptionsService.java:178)
+    at imagej.ext.options.OptionsService.setOption(OptionsService.java:153)
+    at imagej.legacy.patches.PrefsMethods.set(PrefsMethods.java:90)
+    at ij.Prefs.set(Prefs.java:455)
+    at ij.Prefs.set(Prefs.java:461)
+    at
+imagej.legacy.OptionsSynchronizer.arrowOptions(OptionsSynchronizer.java:171)
+    at
+imagej.legacy.OptionsSynchronizer.updateIJ1SettingsFromIJ2(OptionsSynchronizer.java:82)
+    at imagej.legacy.LegacyService.updateIJ1Settings(LegacyService.java:143)
+    at imagej.legacy.LegacyService$2.onEvent(LegacyService.java:194)
+    at imagej.legacy.LegacyService$2.onEvent(LegacyService.java:190)
+    at
+org.bushe.swing.event.ThreadSafeEventService.publish(ThreadSafeEventService.java:971)
+
+Barry is out today but I will investigate this afternoon and hopefully have
+a fix soon.
+
+-Curtis
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20110921/c6343a93/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20110921/c6343a93/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000497.html">[ImageJ-devel] CPU usage
+</A></li>
+	<LI>Next message: <A HREF="000498.html">[ImageJ-devel] CPU usage
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#495">[ date ]</a>
+              <a href="thread.html#495">[ thread ]</a>
+              <a href="subject.html#495">[ subject ]</a>
+              <a href="author.html#495">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

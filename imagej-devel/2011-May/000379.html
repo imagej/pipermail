@@ -1,0 +1,144 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] imglib positionables for dimension 0
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20imglib%20positionables%20for%20dimension%200&In-Reply-To=%3C006801cc10ae%2463ef8fe0%242bceafa0%24%40de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000378.html">
+   <LINK REL="Next"  HREF="000380.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] imglib positionables for dimension 0</H1>
+    <B>Stephan Preibisch</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20imglib%20positionables%20for%20dimension%200&In-Reply-To=%3C006801cc10ae%2463ef8fe0%242bceafa0%24%40de%3E"
+       TITLE="[ImageJ-devel] imglib positionables for dimension 0">preibisch at mpi-cbg.de
+       </A><BR>
+    <I>Thu May 12 09:10:47 CDT 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000378.html">[ImageJ-devel] imglib positionables for dimension 0
+</A></li>
+        <LI>Next message: <A HREF="000380.html">[ImageJ-devel] recording commands
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#379">[ date ]</a>
+              <a href="thread.html#379">[ thread ]</a>
+              <a href="subject.html#379">[ subject ]</a>
+              <a href="author.html#379">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Stephan,
+
+I like this way of realizing it, maybe we could also implement it on ImgFactory level. If a Img implements RandomAccessible1D, the factory could also have a special create( long size ) method (in e.g. RandomAccessible1DFactory) which returns for example &lt;I extends ArrayImg&lt;T,?&gt; &amp; RandomAccessible1D&gt;, so no unchecked casts are necessary...
+
+Stephan
+
+-----Original Message-----
+From: Stephan Saalfeld [mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">saalfeld at mpi-cbg.de</A>] 
+Sent: Thursday, May 12, 2011 3:41 PM
+To: Stephan Preibisch
+Cc: 'Johannes Schindelin'; 'Tobias Pietzsch'; 'Fiji-devel'; 'Imagejdev.org Developers'
+Subject: RE: [ImageJ-devel] imglib positionables for dimension 0
+
+Hi,
+
+I wrote a note into the Wiki.  I agree about the need for a faster
+controlled jump in a 1D structure.  I would prefer a specialized
+RandomAccess1D implementation for those Img variants where it makes
+sense.  That RandomAccess1D would be returned by that Img if n=1.  We
+have done similarly for the PlanarImg to speed up iteration in the 1D
+and 2D cases.  That way, you would need to implement it only where it
+makes sense.  In case you know that you were using an ArrayImg or
+CellImg (which you should decide yourself for temporary data holding),
+you could cast to the respective RandomAccess1D and get the most inlined
+speed possible.
+
+I do not like the idea to add setPosition0 to the
+Positionable/RandomAccess interface since it clutters it and does not
+make sense in many situations.
+
+What do you think?
+
+Best,
+Stephan
+
+
+
+
+
+On Thu, 2011-05-12 at 14:07 +0200, Stephan Preibisch wrote: 
+&gt;<i> I think for many (n-dimensional) algorithms 1-dimensional temporary arrays
+</I>&gt;<i> of &lt;T&gt; are necessary in some form, as it is now for example in Gaussian
+</I>&gt;<i> Convolution and Fourier Transform. It is no overhead for any other
+</I>&gt;<i> container. If you do not want to implement it you could simply write:
+</I>&gt;<i> 
+</I>&gt;<i> setPosition(long)
+</I>&gt;<i> {
+</I>&gt;<i>    // call existing but maybe slower method which does the same
+</I>&gt;<i>    setPosition(long,0);
+</I>&gt;<i> }
+</I>&gt;<i> 
+</I>&gt;<i> But as temporary Img, where you know it is one-dimensional it gives you a
+</I>&gt;<i> clear benefit. And of course, if I make a temp 1-d Img&lt;T&gt; I would only use
+</I>&gt;<i> ArrayImg&lt;T&gt; - or CellImg&lt;T&gt; if a dimension is larger than
+</I>&gt;<i> Integer.MAX_VALUE/EntitiesPerPixel. It would also be fine with me if only
+</I>&gt;<i> those two do it and implement a special new interface.
+</I>&gt;<i> 
+</I>&gt;<i> Steffi
+</I>&gt;<i> 
+</I>&gt;<i> -----Original Message-----
+</I>&gt;<i> From: Johannes Schindelin [mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">Johannes.Schindelin at gmx.de</A>] 
+</I>&gt;<i> Sent: Thursday, May 12, 2011 1:55 PM
+</I>&gt;<i> To: Stephan Preibisch
+</I>&gt;<i> Cc: <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">saalfeld at mpi-cbg.de</A>; 'Tobias Pietzsch'; 'Fiji-devel'; 'Imagejdev.org
+</I>&gt;<i> Developers'
+</I>&gt;<i> Subject: Re: [ImageJ-devel] imglib positionables for dimension 0
+</I>&gt;<i> 
+</I>&gt;<i> Hi,
+</I>&gt;<i> 
+</I>&gt;<i> On Thu, 12 May 2011, Stephan Preibisch wrote:
+</I>&gt;<i> 
+</I>&gt;<i> &gt; what do you think about that:
+</I>&gt;<i> &gt;
+</I>&gt;<i> &lt;<A HREF="http://pacific.mpi-cbg.de/wiki/index.php/ImgLib2_Discussion#Positionables">http://pacific.mpi-cbg.de/wiki/index.php/ImgLib2_Discussion#Positionables</A>&gt;
+</I>&gt;<i> &gt; <A HREF="http://pacific.mpi-cbg.de/wiki/index.php/ImgLib2_Discussion#Positionables">http://pacific.mpi-cbg.de/wiki/index.php/ImgLib2_Discussion#Positionables</A>
+</I>&gt;<i> 
+</I>&gt;<i> I understand the reasoning, but wouldn't it be better to make that a new 
+</I>&gt;<i> interface? For most truly n-dimensional algorithms, setPosition(long) 
+</I>&gt;<i> would not be needed, and I could imagine that at least for some containers 
+</I>&gt;<i> (think Hilbert-curve) setPosition(long) could be pretty complicated for no 
+</I>&gt;<i> clear benefit.
+</I>&gt;<i> 
+</I>&gt;<i> Ciao,
+</I>&gt;<i> Dscho
+</I>&gt;<i> 
+</I>
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000378.html">[ImageJ-devel] imglib positionables for dimension 0
+</A></li>
+	<LI>Next message: <A HREF="000380.html">[ImageJ-devel] recording commands
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#379">[ date ]</a>
+              <a href="thread.html#379">[ thread ]</a>
+              <a href="subject.html#379">[ subject ]</a>
+              <a href="author.html#379">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,705 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [fiji-devel] Re: Build failed in Jenkins: ImgLib	#667
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20Re%3A%20Build%20failed%20in%20Jenkins%3A%20ImgLib%0A%09%23667&In-Reply-To=%3CCADN69yk1Ozaf3OtjBkvk8axkfRWP6TGicM%3DvSQbg4EaGn9g%3DiQ%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000794.html">
+   <LINK REL="Next"  HREF="000791.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [fiji-devel] Re: Build failed in Jenkins: ImgLib	#667</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20Re%3A%20Build%20failed%20in%20Jenkins%3A%20ImgLib%0A%09%23667&In-Reply-To=%3CCADN69yk1Ozaf3OtjBkvk8axkfRWP6TGicM%3DvSQbg4EaGn9g%3DiQ%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] [fiji-devel] Re: Build failed in Jenkins: ImgLib	#667">ctrueden at wisc.edu
+       </A><BR>
+    <I>Wed Apr  4 12:01:13 CDT 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000794.html">[ImageJ-devel] [fiji-devel] Re: Build failed in Jenkins: ImgLib	#667
+</A></li>
+        <LI>Next message: <A HREF="000791.html">[ImageJ-devel] Build failed in Jenkins: ImgLib #668
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#795">[ date ]</a>
+              <a href="thread.html#795">[ thread ]</a>
+              <a href="subject.html#795">[ subject ]</a>
+              <a href="author.html#795">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Stephan,
+
+
+ImageOpener.&lt;ExplicitType&gt; openImg(...);
+&gt;<i>
+</I>
+Interesting, I had not seen this syntax before. Thanks for that!
+
+I tried it, but unfortunately, I do not think it solves the problem. You
+still have to get the T from somewhere further up the chain. The compiler
+cannot deduce it in a vacuum, and in the case of ImgOpener you do not know
+a priori what the type of the resultant object is going to be.
+
+
+In the context of Dataset which anyway erases T to RealType, you may
+&gt;<i> also just open ImgPlus without T, suppress the warnings and on demand
+</I>&gt;<i> cast back.
+</I>&gt;<i>
+</I>
+Right, using raw types seemed like the easy choice, but Javac still rejects
+it, similar to the error reported by Jenkins:
+
+AnisotropicDiffusion3DExample.java:[51,32] invalid inferred types for T;
+&gt;<i> inferred type does not conform to declared bound(s) inferred:
+</I>&gt;<i> java.lang.Object
+</I>&gt;<i> bound(s):
+</I>&gt;<i> java.lang.Object,net.imglib2.type.numeric.RealType&lt;java.lang.Object&gt;,net.imglib2.type.NativeType&lt;java.lang.Object&gt;
+</I>&gt;<i>
+</I>
+The code in question is already using a raw type:
+
+Img image = createExampleImage();
+&gt;<i>
+</I>
+Anyway, for now it is moot because I fixed it a different way last night:
+   <A HREF="https://github.com/imagej/imglib/commit/42bd9efa">https://github.com/imagej/imglib/commit/42bd9efa</A>
+
+Dscho and I played with a few ways around the ImgOpener problem, and found
+a couple of hacky solutions we are considering, but we shelved it for now
+until the release is finished. More later!
+
+Regards,
+Curtis
+
+
+On Wed, Apr 4, 2012 at 10:45 AM, Stephan Saalfeld &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">saalfeld at mpi-cbg.de</A>&gt;wrote:
+
+&gt;<i> Hi Curtis,
+</I>&gt;<i>
+</I>&gt;<i> have you tried to help javac to infer T by calling the method with an
+</I>&gt;<i> explicit parameter?  E.g.:
+</I>&gt;<i>
+</I>&gt;<i> ImageOpener.&lt;ExplicitType&gt;openImg(...);
+</I>&gt;<i>
+</I>&gt;<i> In the context of Dataset which anyway erases T to RealType, you may
+</I>&gt;<i> also just open ImgPlus without T, suppress the warnings and on demand
+</I>&gt;<i> cast back.
+</I>&gt;<i>
+</I>&gt;<i> Best,
+</I>&gt;<i> Stephan
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On Tue, 2012-04-03 at 15:08 -0500, Curtis Rueden wrote:
+</I>&gt;<i> &gt; Hi everyone,
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; [INFO] Compilation failure
+</I>&gt;<i> &gt; &gt; AnisotropicDiffusion3DExample.java:[51,32] invalid inferred types for
+</I>&gt;<i> T;
+</I>&gt;<i> &gt; &gt; inferred type does not conform to declared bound(s)
+</I>&gt;<i> &gt; &gt; inferred: java.lang.Object
+</I>&gt;<i> &gt; &gt; bound(s):
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> java.lang.Object,net.imglib2.type.numeric.RealType&lt;java.lang.Object&gt;,net.imglib2.type.NativeType&lt;java.lang.Object&gt;
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; I have no idea how to fix this error message, though I have seen it a few
+</I>&gt;<i> &gt; times before in ImageJ2. The problem comes up when a method has a T
+</I>&gt;<i> &gt; parameter that cannot be resolved from the method arguments, but instead
+</I>&gt;<i> &gt; must be passed forward some other way. In the case of ImageJ2, it comes
+</I>&gt;<i> up
+</I>&gt;<i> &gt; a lot with the ImgOpener.openImg(String) method that has a T parameter in
+</I>&gt;<i> &gt; the return type.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Here is an example of an ugly hack I recently did to avoid this issue:
+</I>&gt;<i> &gt;     <A HREF="http://trac.imagej.net/changeset/5224">http://trac.imagej.net/changeset/5224</A>
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; But that is really bad, since I really do not want the IOService to have
+</I>&gt;<i> a
+</I>&gt;<i> &gt; type parameter at all.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Does anyone more intimately familiar with generics know how to deal with
+</I>&gt;<i> &gt; this situation in a better way?
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Regards,
+</I>&gt;<i> &gt; Curtis
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; On Tue, Apr 3, 2012 at 2:03 PM, &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">jenkins at imagej.net</A>&gt; wrote:
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; &gt; See &lt;<A HREF="http://jenkins.imagej.net/job/ImgLib/667/changes">http://jenkins.imagej.net/job/ImgLib/667/changes</A>&gt;
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> &gt; &gt; Changes:
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> &gt; &gt; [Jean-Yves Tinevez] Fix compilation error in Jenkis for the anisotropic
+</I>&gt;<i> &gt; &gt; diffusion example
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> &gt; &gt; ------------------------------------------
+</I>&gt;<i> &gt; &gt; [...truncated 1867 lines...]
+</I>&gt;<i> &gt; &gt; 72/161K
+</I>&gt;<i> &gt; &gt; 76/161K
+</I>&gt;<i> &gt; &gt; 80/161K
+</I>&gt;<i> &gt; &gt; 84/161K
+</I>&gt;<i> &gt; &gt; 88/161K
+</I>&gt;<i> &gt; &gt; 92/161K
+</I>&gt;<i> &gt; &gt; 96/161K
+</I>&gt;<i> &gt; &gt; 100/161K
+</I>&gt;<i> &gt; &gt; 104/161K
+</I>&gt;<i> &gt; &gt; 108/161K
+</I>&gt;<i> &gt; &gt; 112/161K
+</I>&gt;<i> &gt; &gt; 116/161K
+</I>&gt;<i> &gt; &gt; 120/161K
+</I>&gt;<i> &gt; &gt; 124/161K
+</I>&gt;<i> &gt; &gt; 128/161K
+</I>&gt;<i> &gt; &gt; 132/161K
+</I>&gt;<i> &gt; &gt; 136/161K
+</I>&gt;<i> &gt; &gt; 140/161K
+</I>&gt;<i> &gt; &gt; 144/161K
+</I>&gt;<i> &gt; &gt; 148/161K
+</I>&gt;<i> &gt; &gt; 152/161K
+</I>&gt;<i> &gt; &gt; 156/161K
+</I>&gt;<i> &gt; &gt; 160/161K
+</I>&gt;<i> &gt; &gt; 161/161K
+</I>&gt;<i> &gt; &gt; 161K uploaded  (imglib2-scripting-2.0-20120403.190159-275.jar)
+</I>&gt;<i> &gt; &gt; [INFO] Retrieving previous metadata from imagej.snapshots
+</I>&gt;<i> &gt; &gt; [INFO] Uploading repository metadata for: 'snapshot
+</I>&gt;<i> &gt; &gt; net.imglib2:imglib2-scripting:2.0-SNAPSHOT'
+</I>&gt;<i> &gt; &gt; Apr 3, 2012 2:03:27 PM
+</I>&gt;<i> &gt; &gt; org.apache.commons.httpclient.auth.AuthChallengeProcessor
+</I>&gt;<i> selectAuthScheme
+</I>&gt;<i> &gt; &gt; INFO: basic authentication scheme selected
+</I>&gt;<i> &gt; &gt; [INFO] Retrieving previous metadata from imagej.snapshots
+</I>&gt;<i> &gt; &gt; [INFO] Uploading repository metadata for: 'artifact
+</I>&gt;<i> &gt; &gt; net.imglib2:imglib2-scripting'
+</I>&gt;<i> &gt; &gt; Apr 3, 2012 2:03:27 PM
+</I>&gt;<i> &gt; &gt; org.apache.commons.httpclient.auth.AuthChallengeProcessor
+</I>&gt;<i> selectAuthScheme
+</I>&gt;<i> &gt; &gt; INFO: basic authentication scheme selected
+</I>&gt;<i> &gt; &gt; [INFO] Uploading project information for imglib2-scripting
+</I>&gt;<i> &gt; &gt; 2.0-20120403.190159-275
+</I>&gt;<i> &gt; &gt; Apr 3, 2012 2:03:27 PM
+</I>&gt;<i> &gt; &gt; org.apache.commons.httpclient.auth.AuthChallengeProcessor
+</I>&gt;<i> selectAuthScheme
+</I>&gt;<i> &gt; &gt; INFO: basic authentication scheme selected
+</I>&gt;<i> &gt; &gt; [INFO]
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> ------------------------------------------------------------------------
+</I>&gt;<i> &gt; &gt; [INFO] Building ImgLib2 Tests
+</I>&gt;<i> &gt; &gt; [INFO]    task-segment: [clean, deploy]
+</I>&gt;<i> &gt; &gt; [INFO]
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> ------------------------------------------------------------------------
+</I>&gt;<i> &gt; &gt; [INFO] [clean:clean {execution: default-clean}]
+</I>&gt;<i> &gt; &gt; [INFO] Deleting
+</I>&gt;<i> &gt; &gt; /data/devel/jenkins/jobs/ImgLib/workspace/imglib2/tests/target
+</I>&gt;<i> &gt; &gt; [debug] execute contextualize
+</I>&gt;<i> &gt; &gt; [INFO] [resources:resources {execution: default-resources}]
+</I>&gt;<i> &gt; &gt; [INFO] Using 'UTF-8' encoding to copy filtered resources.
+</I>&gt;<i> &gt; &gt; [INFO] skip non existing resourceDirectory
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> /data/devel/jenkins/jobs/ImgLib/workspace/imglib2/tests/src/main/resources
+</I>&gt;<i> &gt; &gt; [INFO] [compiler:compile {execution: default-compile}]
+</I>&gt;<i> &gt; &gt; [INFO] No sources to compile
+</I>&gt;<i> &gt; &gt; [debug] execute contextualize
+</I>&gt;<i> &gt; &gt; [INFO] [resources:testResources {execution: default-testResources}]
+</I>&gt;<i> &gt; &gt; [INFO] Using 'UTF-8' encoding to copy filtered resources.
+</I>&gt;<i> &gt; &gt; [INFO] skip non existing resourceDirectory
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> /data/devel/jenkins/jobs/ImgLib/workspace/imglib2/tests/src/test/resources
+</I>&gt;<i> &gt; &gt; [INFO] [compiler:testCompile {execution: default-testCompile}]
+</I>&gt;<i> &gt; &gt; [INFO] Compiling 23 source files to
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> /data/devel/jenkins/jobs/ImgLib/workspace/imglib2/tests/target/test-classes
+</I>&gt;<i> &gt; &gt; [INFO] -------------------------------------------------------------
+</I>&gt;<i> &gt; &gt; [ERROR] COMPILATION ERROR :
+</I>&gt;<i> &gt; &gt; [INFO] -------------------------------------------------------------
+</I>&gt;<i> &gt; &gt; [ERROR] AnisotropicDiffusion3DExample.java:[51,32] invalid inferred
+</I>&gt;<i> types
+</I>&gt;<i> &gt; &gt; for T; inferred type does not conform to declared bound(s)
+</I>&gt;<i> &gt; &gt; inferred: java.lang.Object
+</I>&gt;<i> &gt; &gt; bound(s):
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> java.lang.Object,net.imglib2.type.numeric.RealType&lt;java.lang.Object&gt;,net.imglib2.type.NativeType&lt;java.lang.Object&gt;
+</I>&gt;<i> &gt; &gt; [INFO] 1 error
+</I>&gt;<i> &gt; &gt; [INFO] -------------------------------------------------------------
+</I>&gt;<i> &gt; &gt; [INFO]
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> ------------------------------------------------------------------------
+</I>&gt;<i> &gt; &gt; [ERROR] BUILD FAILURE
+</I>&gt;<i> &gt; &gt; [INFO]
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> ------------------------------------------------------------------------
+</I>&gt;<i> &gt; &gt; [INFO] Compilation failure
+</I>&gt;<i> &gt; &gt; AnisotropicDiffusion3DExample.java:[51,32] invalid inferred types for
+</I>&gt;<i> T;
+</I>&gt;<i> &gt; &gt; inferred type does not conform to declared bound(s)
+</I>&gt;<i> &gt; &gt; inferred: java.lang.Object
+</I>&gt;<i> &gt; &gt; bound(s):
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> java.lang.Object,net.imglib2.type.numeric.RealType&lt;java.lang.Object&gt;,net.imglib2.type.NativeType&lt;java.lang.Object&gt;
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> &gt; &gt; [INFO]
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> ------------------------------------------------------------------------
+</I>&gt;<i> &gt; &gt; [INFO] For more information, run Maven with the -e switch
+</I>&gt;<i> &gt; &gt; [INFO]
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> ------------------------------------------------------------------------
+</I>&gt;<i> &gt; &gt; [INFO] Total time: 1 minute 33 seconds
+</I>&gt;<i> &gt; &gt; [INFO] Finished at: Tue Apr 03 14:03:28 CDT 2012
+</I>&gt;<i> &gt; &gt; [INFO] Final Memory: 173M/950M
+</I>&gt;<i> &gt; &gt; [INFO]
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> ------------------------------------------------------------------------
+</I>&gt;<i> &gt; &gt; Archiving artifacts
+</I>&gt;<i> &gt; &gt; Performance: No threshold configured for making the test unstable
+</I>&gt;<i> &gt; &gt; Performance: No threshold configured for making the test failure
+</I>&gt;<i> &gt; &gt; Performance: Recording JUnit reports '**/TEST-*.xml'
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file TEST-HistogramTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-tests.labeling.AllConnectedComponentsTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-tests.labeling.WatershedTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file TEST-tests.BasicTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-tests.TestSortedGrayLevelIterator.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> TEST-tests.labeling.LabelingTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file TEST-SquareTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-imglib.ops.Rev2FunctionalIdeasTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> TEST-script.imglib.test.TestPlot.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.algorithm.kdtree.VolumetricSearchTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-tests.labeling.AllConnectedComponentsTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-tests.labeling.WatershedTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.algorithm.region.BresenhamLineTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> TEST-net.imglib2.algorithm.region.localneighborhood.DomainCursorTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.IterableIntervalSubsetTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file TEST-net.imglib2.PointTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> TEST-net.imglib2.RealPointTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.TestAbstractRealLocalizable.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.collection.RealPointSampleListTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.img.cell.CellContainerFactoryTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.img.cell.CellContainerTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.img.cell.CellCursorTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.img.cell.CellTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.img.cell.CopyTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.img.list.CopyTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.img.planar.CopyTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.img.transform.ImgTranslationAdapterTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.nearestneighbor.KDTreeTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> TEST-net.imglib2.nearestneighbor.NearestNeighborSearchOnIterableRealIntervalTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.outofbounds.OutOfBoundsMirrorDoubleBoundaryTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.outofbounds.OutOfBoundsMirrorSingleBoundaryTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.outofbounds.OutOfBoundsPeriodicTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.position.transform.FloorOffsetTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.roi.BinaryMaskRegionOfInterestTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.roi.CompositeRegionOfInterestTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.roi.EllipseRegionOfInterestTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.roi.PolygonRegionOfInterestTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.roi.RectangleRegionOfInterestTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.sampler.special.TestConstantRandomAccessible.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.sampler.special.TestConstantRealRandomAccessible.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.util.ImgUtilTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.util.KthElementTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.util.PartitionTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.view.RandomAccessTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.view.RandomAccessibleIntervalCursorTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.view.SequentializeTransformTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file TEST-tests.BasicTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-tests.labeling.LabelingOutOfBoundsTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> TEST-tests.labeling.LabelingTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-tests.roi.TestAbstractRegionOfInterest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file TEST-net.imglib2.img.ImgTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.io.img.virtual.VirtualImgTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.example.Example10Test.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.example.Example11Test.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.example.Example12Test.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.example.Example1Test.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.example.Example2Test.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.example.Example3Test.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.example.Example4Test.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.example.Example5Test.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.example.Example6Test.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.example.Example7Test.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.example.Example8Test.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.example.Example9Test.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.operation.binary.bool.BinaryAndNotTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.operation.binary.bool.BinaryXorTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.operation.binary.complex.ComplexAddTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.operation.binary.complex.ComplexAvgTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.operation.binary.complex.ComplexCopyLeftTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.operation.binary.complex.ComplexCopyRightTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.operation.binary.complex.ComplexDifferenceTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.operation.binary.complex.ComplexDivideTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.operation.binary.complex.ComplexMultiplyTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.operation.binary.complex.ComplexPowerTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.operation.binary.complex.ComplexSubtractTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.operation.unary.complex.ComplexExpTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> TEST-net.imglib2.ops.operation.unary.complex.ComplexIntegerPowerTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.operation.unary.complex.ComplexLogTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.operation.unary.complex.ComplexReciprocalTest.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-script.imglib.test.TestExtend.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-script.imglib.test.TestIntegralImage.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-script.imglib.test.TestIntegralImagePerformance.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-script.imglib.test.TestReduce.xml
+</I>&gt;<i> &gt; &gt; Performance: Parsing JUnit report file
+</I>&gt;<i> &gt; &gt; TEST-script.imglib.test.TestTransformations.xml
+</I>&gt;<i> &gt; &gt; Performance: File TEST-HistogramTest.xml reported 0.0% of errors
+</I>&gt;<i> &gt; &gt; [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-tests.labeling.AllConnectedComponentsTest.xml
+</I>&gt;<i> &gt; &gt; reported 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-tests.labeling.WatershedTest.xml reported 0.0%
+</I>&gt;<i> of
+</I>&gt;<i> &gt; &gt; errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-tests.BasicTest.xml reported 0.0% of errors
+</I>&gt;<i> &gt; &gt; [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-tests.TestSortedGrayLevelIterator.xml reported
+</I>&gt;<i> 0.0%
+</I>&gt;<i> &gt; &gt; of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-tests.labeling.LabelingTest.xml reported 0.0% of
+</I>&gt;<i> &gt; &gt; errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-SquareTest.xml reported 0.0% of errors
+</I>&gt;<i> [SUCCESS].
+</I>&gt;<i> &gt; &gt; Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-imglib.ops.Rev2FunctionalIdeasTest.xml reported
+</I>&gt;<i> &gt; &gt; 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-script.imglib.test.TestPlot.xml reported 0.0% of
+</I>&gt;<i> &gt; &gt; errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.algorithm.kdtree.VolumetricSearchTest.xml reported
+</I>&gt;<i> 0.0% of
+</I>&gt;<i> &gt; &gt; errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-tests.labeling.AllConnectedComponentsTest.xml
+</I>&gt;<i> &gt; &gt; reported 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-tests.labeling.WatershedTest.xml reported 0.0%
+</I>&gt;<i> of
+</I>&gt;<i> &gt; &gt; errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File
+</I>&gt;<i> TEST-net.imglib2.algorithm.region.BresenhamLineTest.xml
+</I>&gt;<i> &gt; &gt; reported 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> TEST-net.imglib2.algorithm.region.localneighborhood.DomainCursorTest.xml
+</I>&gt;<i> &gt; &gt; reported 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-net.imglib2.IterableIntervalSubsetTest.xml
+</I>&gt;<i> reported
+</I>&gt;<i> &gt; &gt; 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-net.imglib2.PointTest.xml reported 0.0% of
+</I>&gt;<i> errors
+</I>&gt;<i> &gt; &gt; [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-net.imglib2.RealPointTest.xml reported 0.0% of
+</I>&gt;<i> &gt; &gt; errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-net.imglib2.TestAbstractRealLocalizable.xml
+</I>&gt;<i> &gt; &gt; reported 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File
+</I>&gt;<i> TEST-net.imglib2.collection.RealPointSampleListTest.xml
+</I>&gt;<i> &gt; &gt; reported 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File
+</I>&gt;<i> TEST-net.imglib2.img.cell.CellContainerFactoryTest.xml
+</I>&gt;<i> &gt; &gt; reported 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-net.imglib2.img.cell.CellContainerTest.xml
+</I>&gt;<i> reported
+</I>&gt;<i> &gt; &gt; 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-net.imglib2.img.cell.CellCursorTest.xml reported
+</I>&gt;<i> &gt; &gt; 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-net.imglib2.img.cell.CellTest.xml reported 0.0%
+</I>&gt;<i> of
+</I>&gt;<i> &gt; &gt; errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-net.imglib2.img.cell.CopyTest.xml reported 0.0%
+</I>&gt;<i> of
+</I>&gt;<i> &gt; &gt; errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-net.imglib2.img.list.CopyTest.xml reported 0.0%
+</I>&gt;<i> of
+</I>&gt;<i> &gt; &gt; errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-net.imglib2.img.planar.CopyTest.xml reported
+</I>&gt;<i> 0.0%
+</I>&gt;<i> &gt; &gt; of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.img.transform.ImgTranslationAdapterTest.xml reported
+</I>&gt;<i> 0.0%
+</I>&gt;<i> &gt; &gt; of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-net.imglib2.nearestneighbor.KDTreeTest.xml
+</I>&gt;<i> reported
+</I>&gt;<i> &gt; &gt; 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> TEST-net.imglib2.nearestneighbor.NearestNeighborSearchOnIterableRealIntervalTest.xml
+</I>&gt;<i> &gt; &gt; reported 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.outofbounds.OutOfBoundsMirrorDoubleBoundaryTest.xml
+</I>&gt;<i> &gt; &gt; reported 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.outofbounds.OutOfBoundsMirrorSingleBoundaryTest.xml
+</I>&gt;<i> &gt; &gt; reported 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File
+</I>&gt;<i> TEST-net.imglib2.outofbounds.OutOfBoundsPeriodicTest.xml
+</I>&gt;<i> &gt; &gt; reported 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File
+</I>&gt;<i> TEST-net.imglib2.position.transform.FloorOffsetTest.xml
+</I>&gt;<i> &gt; &gt; reported 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File
+</I>&gt;<i> TEST-net.imglib2.roi.BinaryMaskRegionOfInterestTest.xml
+</I>&gt;<i> &gt; &gt; reported 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File
+</I>&gt;<i> TEST-net.imglib2.roi.CompositeRegionOfInterestTest.xml
+</I>&gt;<i> &gt; &gt; reported 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-net.imglib2.roi.EllipseRegionOfInterestTest.xml
+</I>&gt;<i> &gt; &gt; reported 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-net.imglib2.roi.PolygonRegionOfInterestTest.xml
+</I>&gt;<i> &gt; &gt; reported 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File
+</I>&gt;<i> TEST-net.imglib2.roi.RectangleRegionOfInterestTest.xml
+</I>&gt;<i> &gt; &gt; reported 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.sampler.special.TestConstantRandomAccessible.xml
+</I>&gt;<i> reported
+</I>&gt;<i> &gt; &gt; 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.sampler.special.TestConstantRealRandomAccessible.xml
+</I>&gt;<i> &gt; &gt; reported 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-net.imglib2.util.ImgUtilTest.xml reported 0.0%
+</I>&gt;<i> of
+</I>&gt;<i> &gt; &gt; errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-net.imglib2.util.KthElementTest.xml reported
+</I>&gt;<i> 0.0%
+</I>&gt;<i> &gt; &gt; of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-net.imglib2.util.PartitionTest.xml reported
+</I>&gt;<i> 0.0% of
+</I>&gt;<i> &gt; &gt; errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-net.imglib2.view.RandomAccessTest.xml reported
+</I>&gt;<i> 0.0%
+</I>&gt;<i> &gt; &gt; of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.view.RandomAccessibleIntervalCursorTest.xml reported
+</I>&gt;<i> 0.0%
+</I>&gt;<i> &gt; &gt; of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-net.imglib2.view.SequentializeTransformTest.xml
+</I>&gt;<i> &gt; &gt; reported 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-tests.BasicTest.xml reported 0.0% of errors
+</I>&gt;<i> &gt; &gt; [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-tests.labeling.LabelingOutOfBoundsTest.xml
+</I>&gt;<i> reported
+</I>&gt;<i> &gt; &gt; 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-tests.labeling.LabelingTest.xml reported 0.0% of
+</I>&gt;<i> &gt; &gt; errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-tests.roi.TestAbstractRegionOfInterest.xml
+</I>&gt;<i> reported
+</I>&gt;<i> &gt; &gt; 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-net.imglib2.img.ImgTest.xml reported 0.0% of
+</I>&gt;<i> errors
+</I>&gt;<i> &gt; &gt; [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-net.imglib2.io.img.virtual.VirtualImgTest.xml
+</I>&gt;<i> &gt; &gt; reported 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-net.imglib2.ops.example.Example10Test.xml
+</I>&gt;<i> reported
+</I>&gt;<i> &gt; &gt; 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-net.imglib2.ops.example.Example11Test.xml
+</I>&gt;<i> reported
+</I>&gt;<i> &gt; &gt; 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-net.imglib2.ops.example.Example12Test.xml
+</I>&gt;<i> reported
+</I>&gt;<i> &gt; &gt; 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-net.imglib2.ops.example.Example1Test.xml
+</I>&gt;<i> reported
+</I>&gt;<i> &gt; &gt; 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-net.imglib2.ops.example.Example2Test.xml
+</I>&gt;<i> reported
+</I>&gt;<i> &gt; &gt; 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-net.imglib2.ops.example.Example3Test.xml
+</I>&gt;<i> reported
+</I>&gt;<i> &gt; &gt; 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-net.imglib2.ops.example.Example4Test.xml
+</I>&gt;<i> reported
+</I>&gt;<i> &gt; &gt; 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-net.imglib2.ops.example.Example5Test.xml
+</I>&gt;<i> reported
+</I>&gt;<i> &gt; &gt; 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-net.imglib2.ops.example.Example6Test.xml
+</I>&gt;<i> reported
+</I>&gt;<i> &gt; &gt; 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-net.imglib2.ops.example.Example7Test.xml
+</I>&gt;<i> reported
+</I>&gt;<i> &gt; &gt; 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-net.imglib2.ops.example.Example8Test.xml
+</I>&gt;<i> reported
+</I>&gt;<i> &gt; &gt; 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-net.imglib2.ops.example.Example9Test.xml
+</I>&gt;<i> reported
+</I>&gt;<i> &gt; &gt; 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.operation.binary.bool.BinaryAndNotTest.xml
+</I>&gt;<i> reported
+</I>&gt;<i> &gt; &gt; 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.operation.binary.bool.BinaryXorTest.xml reported
+</I>&gt;<i> 0.0%
+</I>&gt;<i> &gt; &gt; of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.operation.binary.complex.ComplexAddTest.xml
+</I>&gt;<i> reported
+</I>&gt;<i> &gt; &gt; 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.operation.binary.complex.ComplexAvgTest.xml
+</I>&gt;<i> reported
+</I>&gt;<i> &gt; &gt; 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.operation.binary.complex.ComplexCopyLeftTest.xml
+</I>&gt;<i> &gt; &gt; reported 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.operation.binary.complex.ComplexCopyRightTest.xml
+</I>&gt;<i> &gt; &gt; reported 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.operation.binary.complex.ComplexDifferenceTest.xml
+</I>&gt;<i> &gt; &gt; reported 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.operation.binary.complex.ComplexDivideTest.xml
+</I>&gt;<i> &gt; &gt; reported 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.operation.binary.complex.ComplexMultiplyTest.xml
+</I>&gt;<i> &gt; &gt; reported 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.operation.binary.complex.ComplexPowerTest.xml
+</I>&gt;<i> reported
+</I>&gt;<i> &gt; &gt; 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.operation.binary.complex.ComplexSubtractTest.xml
+</I>&gt;<i> &gt; &gt; reported 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.operation.unary.complex.ComplexExpTest.xml
+</I>&gt;<i> reported
+</I>&gt;<i> &gt; &gt; 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> TEST-net.imglib2.ops.operation.unary.complex.ComplexIntegerPowerTest.xml
+</I>&gt;<i> &gt; &gt; reported 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.operation.unary.complex.ComplexLogTest.xml
+</I>&gt;<i> reported
+</I>&gt;<i> &gt; &gt; 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File
+</I>&gt;<i> &gt; &gt; TEST-net.imglib2.ops.operation.unary.complex.ComplexReciprocalTest.xml
+</I>&gt;<i> &gt; &gt; reported 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-script.imglib.test.TestExtend.xml reported 0.0%
+</I>&gt;<i> of
+</I>&gt;<i> &gt; &gt; errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-script.imglib.test.TestIntegralImage.xml
+</I>&gt;<i> reported
+</I>&gt;<i> &gt; &gt; 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File
+</I>&gt;<i> TEST-script.imglib.test.TestIntegralImagePerformance.xml
+</I>&gt;<i> &gt; &gt; reported 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-script.imglib.test.TestReduce.xml reported 0.0%
+</I>&gt;<i> of
+</I>&gt;<i> &gt; &gt; errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt; Performance: File TEST-script.imglib.test.TestTransformations.xml
+</I>&gt;<i> reported
+</I>&gt;<i> &gt; &gt; 0.0% of errors [SUCCESS]. Build status is: FAILURE
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> &gt;
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20120404/be450069/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20120404/be450069/attachment-0001.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000794.html">[ImageJ-devel] [fiji-devel] Re: Build failed in Jenkins: ImgLib	#667
+</A></li>
+	<LI>Next message: <A HREF="000791.html">[ImageJ-devel] Build failed in Jenkins: ImgLib #668
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#795">[ date ]</a>
+              <a href="thread.html#795">[ thread ]</a>
+              <a href="subject.html#795">[ subject ]</a>
+              <a href="author.html#795">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

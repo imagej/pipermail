@@ -1,0 +1,136 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Labeling / segmentation proposal for imglib
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Labeling%20/%20segmentation%20proposal%20for%20imglib&In-Reply-To=%3C201011171635.44197.G.Landini%40bham.ac.uk%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000246.html">
+   <LINK REL="Next"  HREF="000249.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Labeling / segmentation proposal for imglib</H1>
+    <B>Gabriel Landini</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Labeling%20/%20segmentation%20proposal%20for%20imglib&In-Reply-To=%3C201011171635.44197.G.Landini%40bham.ac.uk%3E"
+       TITLE="[ImageJ-devel] Labeling / segmentation proposal for imglib">G.Landini at bham.ac.uk
+       </A><BR>
+    <I>Wed Nov 17 10:35:44 CST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000246.html">[ImageJ-devel] Labeling / segmentation proposal for imglib
+</A></li>
+        <LI>Next message: <A HREF="000249.html">[ImageJ-devel] Labeling / segmentation proposal for imglib
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#248">[ date ]</a>
+              <a href="thread.html#248">[ thread ]</a>
+              <a href="subject.html#248">[ subject ]</a>
+              <a href="author.html#248">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Lee,
+
+On Wednesday 17 Nov 2010  14:48:03 Lee Kamentsky wrote:
+&gt;<i> Do you think the specification should include a cursor that iterates
+</I>&gt;<i> along the pixels on the perimeter? That would save everyone the trouble
+</I>&gt;<i> of reimplementing Chang. 
+</I>
+Do you mean to: given an XStart YStart, this cursor would go round the blob 
+and compute a collection of parameters?
+If so, yes it might be a really good idea.
+
+&gt;<i> It's somewhat trivial for me to include the
+</I>&gt;<i> start coordinates in the interface (I'm guessing something like &quot;int []
+</I>&gt;<i> Start(T label);&quot; or &quot;int Start(T label, int dim) instead of or in
+</I>&gt;<i> addition to &quot;int Start[X,Y,Z](T label)&quot; to align to the imglib spirit)
+</I>&gt;<i> if they're of general use.
+</I>
+Good. Yes, there is a definite advantage one has all the blobs labelled to be 
+able to target each one from a table of positions rather than going all over 
+the image. I mentioned StartZ (I realised now that in IJ these are called 
+XStart, etc) but currently there is no native method to isolate 3D blobs.
+
+&gt;<i> The outline pixels can be recovered from a list of pixel coordinates for
+</I>&gt;<i> each label by sorting the coordinates by x then y and finding the ones
+</I>&gt;<i> without y neighbors on either side, and then sorting by y, then x and
+</I>&gt;<i> repeating, although labeling using Chang is clearly more efficient if
+</I>&gt;<i> you have a binary thresholding of the image.
+</I>
+Here is where Freeman's algorithm (walking around each blob) is efficient 
+because it gives the boundary already sorted in the sequence along of the 
+walk. Currently IJ uses a different algorithm to compute the perimeter length. 
+(results for large blobs are similar to Freeman's but if I recall correctly 
+there is some discrepancy for small ones). Also IJ uses the number of pixels 
+as &quot;area&quot;. While some might not bother too much about this detail, others 
+might think differently (me included :-) ). If a pixel is a point, the area 
+cannot be 1 and it should have no perimeter and no circularity, etc. Freeman's 
+encoding solves this, I think, a bit better and we should try to provide both, 
+area inside the bounding perimeter and number of pixels in the blob.
+
+Also one wants that perimeter sorted for a number of other reasons. For 
+example one can compute the yardstick fractal dimension using this sorted list 
+of coordinates. And one can also use this list and save the blob outlines as a 
+chain encoded profile (this is used by some imaging systems). The file size is 
+minuscule as it encodes one of the 8 possible positions of the next pixel and 
+one can pack several &quot;next positions&quot; per byte).
+After going round the profile and one reaches the starting pixel (plus 
+checking that the pixel at x-1, y+1 is either visited or empty, if not one 
+still has some boundary to walk) one already has the perimeter and the area 
+under the enclosed perimeter. So one can compute circularity in one operation.  
+The cursor could return the perimeter length and the area enclosed by the 
+perimeter. But now that the perimeter has been computer, one can also extract 
+the convex hull from the sorted list, and the convex area, and once you have 
+the convex hull, the feret diameter is computed easily, and its angle with the 
+horizontal frame, and the breadth. Furthermore, the centroid can be computed 
+as the average of all the coordinates in one of those passes too.
+The other family of morphological parameters relates to the labelling of the 
+pixels. These include the number of pixels, and all the greyscale statistics 
+of the blob (for example via redirection to an image holding the greyscale 
+values) and the centre of mass. There is an advantage in computing this whole 
+block together too, as the code for computing the mean grey level is already 
+almost there to allow computing the standard deviation, skewness, kurtosis, 
+etc. One accesses each pixel in the blob only once.
+
+&gt;<i> We do have a use case in which pixels are multiply labeled (current
+</I>&gt;<i> research has images of objects that cross and share pixels) which means
+</I>&gt;<i> that the most general case can't use reconstruction of a binary image to
+</I>&gt;<i> recover the labeling.
+</I>
+I see, well yes that brings in new issues. Perhaps one could implement a 
+cursor that processes binary images and which is very fast, while multi-label 
+images require some special treatment?
+
+We might want to keep in mind that it is useful to have both 8- and 4-
+connected particle encodings for the analysis of blobs.
+
+Thanks for listening! 
+Regards
+
+Gabriel
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000246.html">[ImageJ-devel] Labeling / segmentation proposal for imglib
+</A></li>
+	<LI>Next message: <A HREF="000249.html">[ImageJ-devel] Labeling / segmentation proposal for imglib
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#248">[ date ]</a>
+              <a href="thread.html#248">[ thread ]</a>
+              <a href="subject.html#248">[ subject ]</a>
+              <a href="author.html#248">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

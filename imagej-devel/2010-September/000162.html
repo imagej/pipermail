@@ -1,0 +1,117 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Imglib project organization &amp; Bio-Formats support
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Imglib%20project%20organization%20%26%20Bio-Formats%20support&In-Reply-To=%3CAANLkTim6c_sUjCAerJg4B%3DTdWcb4eDWSxhm3F6WvNewc%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000161.html">
+   <LINK REL="Next"  HREF="000163.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Imglib project organization &amp; Bio-Formats support</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Imglib%20project%20organization%20%26%20Bio-Formats%20support&In-Reply-To=%3CAANLkTim6c_sUjCAerJg4B%3DTdWcb4eDWSxhm3F6WvNewc%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Imglib project organization &amp; Bio-Formats support">ctrueden at wisc.edu
+       </A><BR>
+    <I>Mon Sep 27 12:27:27 CDT 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000161.html">[ImageJ-devel] CellProfiler 2.0 / ImageJ 2.0
+</A></li>
+        <LI>Next message: <A HREF="000163.html">[ImageJ-devel] Imglib project organization &amp; Bio-Formats support
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#162">[ date ]</a>
+              <a href="thread.html#162">[ thread ]</a>
+              <a href="subject.html#162">[ subject ]</a>
+              <a href="author.html#162">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi everyone,
+
+I have created a new branch on imglib.git called maven, which does two
+things:
+
+1) It reorganizes imglib as a Maven project.
+
+2) To achieve cleaner dependencies, it splits imglib into several
+subprojects:
+  * imglib &#8211; core imglib infrastructure [dependencies: mpicbg]
+  * imglib-algorithms &#8211; algorithm implementations [dependencies: imglib,
+mpicbg, mines-jtk]
+  * imglib-imagej &#8211; ImageJ-specific display logic [dependencies: imglib,
+imglib-algorithms, imagej, mpicbg]
+  * imglib-io &#8211; S&amp;S's Bio-Formats support for imglib [dependencies: imglib,
+imglib-imagej, bio-formats]
+
+One major reason to do this is to avoid a circular dependency between imglib
+and ij, since we want ij-2.0 to depend on imglib core.
+
+Also, I have implemented a new imglib Bio-Formats reader at:
+  <A HREF="http://dev.imagejdev.org/svn/imagej/trunk/bf-imglib">http://dev.imagejdev.org/svn/imagej/trunk/bf-imglib</A>
+
+Unlike imglib-io, it fully supports N-dimensional data in imglib, and
+without any dependency on ImageJ. However, I am still polishing it a bit&#8212;it
+needs to do everything that imglib-io did, including setting physical XYZ
+calibration. Once it is ready, if you all agree, I could replace the old
+imglib-io implementation.
+
+Regarding Maven: I think it makes development in Eclipse much better (using
+the m2eclipse &amp; m2eclipse Extras plugins). Project dependencies in Eclipse
+with Maven are extremely smart. For example: let's say I have bf-imglib open
+alone. For the dependencies (ij.jar and imglib.jar), Eclipse uses the ij.jar
+and imglib.jar present in the local Maven repository. But let's say I want
+to fix a bug in ImageJ that affects bf-imglib. I just open the ij Maven
+project, and the bf-imglib dependency magically becomes an Eclipse project
+reference rather than a binary JAR reference.
+
+Maven also solves the Eclipse configuration wars with conflicting .project,
+.classpath and .settings files being committed to the repository from
+various machines&#8212;you simply add these files to .gitignore and the files are
+generated locally when you first import the Maven project using m2eclipse.
+After that you can tweak your local project settings however you like.
+
+My questions are:
+
+1) Do you like this split project organization for imglib?
+
+2) What do you think of imglib using Maven in this way?
+
+3) Any initial thoughts on the bf-imglib implementation?
+
+If people are happy with these changes, I would like to merge the imglib
+maven branch to master, and maybe also move bf-imglib into the imglib git
+repository. If people have concerns, let's discuss them to find a better
+solution that works for everyone.
+
+Thanks,
+Curtis
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20100927/31ffc534/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20100927/31ffc534/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000161.html">[ImageJ-devel] CellProfiler 2.0 / ImageJ 2.0
+</A></li>
+	<LI>Next message: <A HREF="000163.html">[ImageJ-devel] Imglib project organization &amp; Bio-Formats support
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#162">[ date ]</a>
+              <a href="thread.html#162">[ thread ]</a>
+              <a href="subject.html#162">[ subject ]</a>
+              <a href="author.html#162">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

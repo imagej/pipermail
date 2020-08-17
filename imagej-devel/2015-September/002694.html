@@ -1,0 +1,292 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Qeustion regarding labeling and regions of interest	in imglib2
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Qeustion%20regarding%20labeling%20and%20regions%20of%20interest%0A%09in%20imglib2&In-Reply-To=%3C55EEEC8A.8010008%40mpi-cbg.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002701.html">
+   <LINK REL="Next"  HREF="002696.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Qeustion regarding labeling and regions of interest	in imglib2</H1>
+    <B>Robert Haase</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Qeustion%20regarding%20labeling%20and%20regions%20of%20interest%0A%09in%20imglib2&In-Reply-To=%3C55EEEC8A.8010008%40mpi-cbg.de%3E"
+       TITLE="[ImageJ-devel] Qeustion regarding labeling and regions of interest	in imglib2">rhaase at mpi-cbg.de
+       </A><BR>
+    <I>Tue Sep  8 09:11:22 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002701.html">[ImageJ-devel] Disable automatic showing of command output
+</A></li>
+        <LI>Next message: <A HREF="002696.html">[ImageJ-devel] Qeustion regarding labeling and regions of	interest in imglib2
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2694">[ date ]</a>
+              <a href="thread.html#2694">[ thread ]</a>
+              <a href="subject.html#2694">[ subject ]</a>
+              <a href="author.html#2694">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi All,
+
+I'm quite new in developing imagej-plugins using imglib2. I ran in some 
+issues working with Labeling and Regions in imglib2. Hopefully, somebody 
+of you can help me. This is what I would like to do:
+
+I have an image(Plus) where pixel values correspond to the desired 
+labeling. Thus, all pixels with value 1 belong to label 1, all pixels 
+with value 2 belong to label 2 and so on. Labelled regions cannot 
+overlap. Now, I would like to create an ImgLabeling from the given 
+ImagePlus to manage the corresponding regions of interest in imglib2 and 
+to do the analysis using this library.
+I was able to create some functions which appear to do the 
+transformation, however, the results are not fully understandable for 
+me. On bottom of this email you find &quot;minimal&quot; example code (which runs 
+fine in eclipse set up for ImageJ-development) which creates a 
+labelmap-ImagePlus, transforms it into ImgLabeling and displays binary 
+images corresponding to the regions. However, when I input a label with 
+100 pixels, the corresponding output region may or may not have the same 
+number of pixels. So the output of the program is:
+
+Number of input pixels in label 0: 9400
+Number of input pixels in label 1: 100
+Number of input pixels in label 2: 200
+Number of input pixels in label 3: 300
+Number of input pixels in label 4: 0
+Number of out pixels in region: 10000
+Number of out pixels in region: 600
+Number of out pixels in region: 500
+Number of out pixels in region: 300
+
+As you can see, the number of read-in pixels is not equal to the number 
+of pixels which are positive afterwards in the corresponding region. The 
+program visualises the images as well. The mistake in the result is 
+obvious. My mistake in the code is not that obvious to me.
+
+I guess, I interpret the meaning of regions and/or labels wrong. 
+Hopefully somebody of you may point me in the right direction to do the 
+above mentioned transformation properly.
+
+Thanks a lot in advance!
+Robert
+
+LabelingExample.java ----------------------------
+
+
+import ij.ImagePlus;
+import ij.gui.NewImage;
+import ij.process.ImageProcessor;
+
+import java.awt.Rectangle;
+import java.io.IOException;
+import java.util.Set;
+
+import net.imglib2.Cursor;
+import net.imglib2.RandomAccess;
+import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.img.Img;
+import net.imglib2.img.array.ArrayImgs;
+import net.imglib2.img.display.imagej.ImageJFunctions;
+import net.imglib2.roi.labeling.ImgLabeling;
+import net.imglib2.roi.labeling.LabelRegion;
+import net.imglib2.roi.labeling.LabelRegionCursor;
+import net.imglib2.roi.labeling.LabelRegions;
+import net.imglib2.roi.labeling.LabelingType;
+import net.imglib2.type.logic.BitType;
+import net.imglib2.type.logic.BoolType;
+import net.imglib2.type.numeric.integer.IntType;
+import net.imglib2.type.numeric.real.FloatType;
+
+public class LabelingExample {
+     LabelingExample()
+     {
+         new ij.ImageJ();
+
+         //Create and show a simple test image, 100x100
+         ImagePlus imp = createTestImage();
+         imp.show();
+
+         //Create an ImgLabeling from the ImagePlus
+         ImgLabeling&lt;Integer, IntType&gt; labeling = 
+getIntIntImgLabellingFromLabelMapImagePlus(imp);
+
+         //Read out regions and labelNames
+         LabelRegions&lt;Integer&gt; regions = new 
+LabelRegions&lt;Integer&gt;(labeling);
+         Set&lt;Integer&gt; labelNames = labeling.getMapping().getLabels();
+
+         //Visualise the labels as binary images.
+         for (Integer labelName : labelNames )
+         {
+             LabelRegion&lt;Integer&gt; lr = regions.getLabelRegion(labelName);
+             ImageJFunctions.show(labelRegionToBinaryImage(lr, 
+(Img&lt;IntType&gt;)labeling.getIndexImg()));
+         }
+     }
+
+     //Create an image with three labels (+background)
+     //The three labels have an area of 100, 200 and 300.
+     private ImagePlus createTestImage()
+     {
+         ImagePlus imp = NewImage.createByteImage(&quot;Test iamge&quot;, 100, 
+100, 1, NewImage.FILL_BLACK);
+         ImageProcessor ip = imp.getProcessor();
+         ip.setRoi(new Rectangle(10, 10, 10, 10));
+         ip.setColor(1);
+         ip.fill();
+         ip.setRoi(new Rectangle(20, 20, 10, 20));
+         ip.setColor(2);
+         ip.fill();
+         ip.setRoi(new Rectangle(40, 40, 10, 30));
+         ip.setColor(3);
+         ip.fill();
+
+         return imp;
+     }
+
+     //Transform an ImagePlus to a Labeling Imp. The original pixel 
+value should be the label afterwards.
+     public static ImgLabeling&lt;Integer, IntType&gt; 
+getIntIntImgLabellingFromLabelMapImagePlus(ImagePlus labelMap)
+     {
+         final RandomAccessibleInterval&lt; IntType &gt; img = 
+ImageJFunctions.wrapNumeric(labelMap);
+         Img&lt; FloatType &gt; img2 = ImageJFunctions.convertFloat(labelMap);
+         final long[] dims = new long[ img.numDimensions() ];
+
+         ImgLabeling&lt; Integer, IntType &gt; labeling = new ImgLabeling&lt; 
+Integer, IntType &gt;( img );
+
+         Cursor&lt;LabelingType&lt;Integer&gt;&gt; labelCursor = labeling.cursor();
+         RandomAccess&lt;FloatType&gt; imageRA = img2.randomAccess();
+
+         // Go through the whole image again and again for every single 
+label, until no more label is found.
+         // If you know a more efficient way to do this, tell me...
+         int currentLabel = 0;
+         boolean anythingFound = true;
+         while (anythingFound)
+         {
+             anythingFound = false;
+             labelCursor.reset();
+
+             //Go through the whole image and add every pixel, that 
+belongs to the currently processed label
+             int count = 0;
+             while (labelCursor.hasNext())
+             {
+                 LabelingType&lt;Integer&gt; element = labelCursor.next();
+                 imageRA.setPosition(labelCursor);
+
+                 int i = (int)(imageRA.get().get());
+                 if (i == currentLabel)
+                 {
+                     element.add(i);
+                     anythingFound = true;
+                     count ++;
+                 }
+             }
+             System.out.println(&quot;Number of input pixels in label &quot; + 
+currentLabel + &quot;: &quot; + count);
+             currentLabel++;
+         }
+         ImageJFunctions.show(labeling.getIndexImg());
+         return labeling;
+     }
+
+     //Transform a Region to a binary image, which can be displayed
+     public static &lt; T, F &gt; Img&lt;BitType&gt; 
+labelRegionToBinaryImage(LabelRegion&lt;T&gt; region, Img&lt;F&gt; img)
+     {
+         final long[] pos = new long[ img.numDimensions() ];
+         final long[] dims = new long[ img.numDimensions() ];
+         img.dimensions( dims );
+
+         final Img&lt; BitType &gt; newImage = ArrayImgs.bits( dims );
+
+         RandomAccess&lt;BitType&gt; imageRA = newImage.randomAccess();
+         LabelRegionCursor regionCursor = region.cursor();
+
+         int count = 0;
+         while (regionCursor.hasNext())
+         {
+             //Read yes/no from region
+             BoolType regionElement = regionCursor.next();
+             regionCursor.localize(pos);
+             imageRA.setPosition(pos);
+             BitType imageElement = imageRA.get();
+
+             //Draw binary image pixel by pixel
+             if (regionElement.get())
+             {
+                 count++;
+                 imageElement.set(true);
+             }
+             else
+             {
+                 imageElement.set(false);
+             }
+         }
+         System.out.println(&quot;Number of output pixels in region: &quot; + count);
+         return newImage;
+     }
+
+
+
+     //Just to run it
+     public static void main(final String... args) throws IOException
+     {
+         new LabelingExample();
+     }
+}
+
+
+
+
+-- 
+Robert Haase
+Bio-Image informatics, Scientific Computing Facility
+
+Max Planck Institute CBG
+Pfotenhauer Str. 108, 01307 Dresden
+room: 106 (s)
+phone: +49 351 210 2972
+fax:   +49 351 210 1689
+
+
+</PRE>
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002701.html">[ImageJ-devel] Disable automatic showing of command output
+</A></li>
+	<LI>Next message: <A HREF="002696.html">[ImageJ-devel] Qeustion regarding labeling and regions of	interest in imglib2
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2694">[ date ]</a>
+              <a href="thread.html#2694">[ thread ]</a>
+              <a href="subject.html#2694">[ subject ]</a>
+              <a href="author.html#2694">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,160 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] another enforcer problem
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20another%20enforcer%20problem&In-Reply-To=%3CCA%2BB%3DmGp_1uC%2Bt9e5_tarbKt02po89RxzsgouZ6qrNhi64P_QFQ%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002311.html">
+   <LINK REL="Next"  HREF="002313.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] another enforcer problem</H1>
+    <B>Mark Hiner</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20another%20enforcer%20problem&In-Reply-To=%3CCA%2BB%3DmGp_1uC%2Bt9e5_tarbKt02po89RxzsgouZ6qrNhi64P_QFQ%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] another enforcer problem">hiner at wisc.edu
+       </A><BR>
+    <I>Mon Nov 17 10:27:33 CST 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002311.html">[ImageJ-devel] how does -Dscijava.enforce.skip work?
+</A></li>
+        <LI>Next message: <A HREF="002313.html">[ImageJ-devel] Where do I find the Fiji parent pom?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2312">[ date ]</a>
+              <a href="thread.html#2312">[ thread ]</a>
+              <a href="subject.html#2312">[ subject ]</a>
+              <a href="author.html#2312">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Tobias,
+
+ Argh... I added an exclude for this
+&lt;<A HREF="https://github.com/scijava/pom-scijava/commit/0b45545817d29c4ed95897bcc48b96722a6438e7">https://github.com/scijava/pom-scijava/commit/0b45545817d29c4ed95897bcc48b96722a6438e7</A>&gt;
+in pom-scijava 5.1, which would just make it necessary to release a
+pom-imglib2 5.1 and update algorithm-gpl to use it...
+
+ BUT my fix was incomplete because the scijava.enforcer.rules profile also
+declares enforceBytecodeVersion excludes, which then destructively
+overrides the default configuration.
+
+ This problem will resolve itself when the scijava.enforcer.rules profile
+is removed and we just have one master list of excludes for each enforcer
+rule.
+
+Best,
+Mark
+
+On Mon, Nov 17, 2014 at 9:44 AM, Tobias Pietzsch &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">tobias.pietzsch at gmail.com</A>&gt;
+wrote:
+
+&gt;<i> Hi again,
+</I>&gt;<i>
+</I>&gt;<i> I just noticed another thing with the enforcer rules, now building
+</I>&gt;<i> &quot;imglib2-algorithm-gpl&#8221;.
+</I>&gt;<i> It makes the build depend on the JDK version used to build:
+</I>&gt;<i> With JDK 1.7 I get this error:
+</I>&gt;<i>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pietzsch at tomancak-mac-17</A>:~/workspace/imglib/imglib2-algorithm-gpl
+</I>&gt;<i> (master)$ mvn clean install
+</I>&gt;<i> [INFO] Scanning for projects...
+</I>&gt;<i> [INFO]
+</I>&gt;<i> [INFO]
+</I>&gt;<i> ------------------------------------------------------------------------
+</I>&gt;<i> [INFO] Building ImgLib2 Algorithms (GPL) 0.1.2-SNAPSHOT
+</I>&gt;<i> [INFO]
+</I>&gt;<i> ------------------------------------------------------------------------
+</I>&gt;<i> [INFO]
+</I>&gt;<i> [INFO] --- maven-clean-plugin:2.5:clean (default-clean) @
+</I>&gt;<i> imglib2-algorithm-gpl ---
+</I>&gt;<i> [INFO] Deleting
+</I>&gt;<i> /Users/pietzsch/workspace/imglib/imglib2-algorithm-gpl/target
+</I>&gt;<i> [INFO]
+</I>&gt;<i> [INFO] --- maven-enforcer-plugin:1.3.1:enforce (enforce-rules) @
+</I>&gt;<i> imglib2-algorithm-gpl ---
+</I>&gt;<i> [INFO] Adding ignorable dependency: null:jcodings:null
+</I>&gt;<i> [INFO]   Adding ignore: org/jcodings/*
+</I>&gt;<i> [INFO] Adding ignorable dependency: null:jnr-constants:null
+</I>&gt;<i> [INFO]   Adding ignore: com/kenai/constantine/*
+</I>&gt;<i> [INFO]   Adding ignore: jnr/constants/*
+</I>&gt;<i> [INFO] Adding ignorable dependency: null:jnr-ffi:null
+</I>&gt;<i> [INFO]   Adding ignore: jnr/ffi/*
+</I>&gt;<i> [INFO] Restricted to JDK 1.6 yet com.sun:tools:jar:1.4.2:system contains
+</I>&gt;<i> sun/tools/asm/ArrayData.class targeted to JDK 1.7
+</I>&gt;<i> [WARNING] Rule 1: org.apache.maven.plugins.enforcer.EnforceBytecodeVersion
+</I>&gt;<i> failed with message:
+</I>&gt;<i> Found Banned Dependency: com.sun:tools:jar:1.4.2
+</I>&gt;<i> Use 'mvn dependency:tree' to locate the source of the banned dependencies.
+</I>&gt;<i> [INFO]
+</I>&gt;<i> ------------------------------------------------------------------------
+</I>&gt;<i> [INFO] BUILD FAILURE
+</I>&gt;<i> [INFO]
+</I>&gt;<i> ------------------------------------------------------------------------
+</I>&gt;<i> [INFO] Total time: 1.865s
+</I>&gt;<i> [INFO] Finished at: Mon Nov 17 16:27:05 CET 2014
+</I>&gt;<i> [INFO] Final Memory: 9M/310M
+</I>&gt;<i> [INFO]
+</I>&gt;<i> ------------------------------------------------------------------------
+</I>&gt;<i> [ERROR] Failed to execute goal
+</I>&gt;<i> org.apache.maven.plugins:maven-enforcer-plugin:1.3.1:enforce
+</I>&gt;<i> (enforce-rules) on project imglib2-algorithm-gpl: Some Enforcer rules have
+</I>&gt;<i> failed. Look above for specific messages explaining why the rule failed. -&gt;
+</I>&gt;<i> [Help 1]
+</I>&gt;<i> [ERROR]
+</I>&gt;<i> [ERROR] To see the full stack trace of the errors, re-run Maven with the
+</I>&gt;<i> -e switch.
+</I>&gt;<i> [ERROR] Re-run Maven using the -X switch to enable full debug logging.
+</I>&gt;<i> [ERROR]
+</I>&gt;<i> [ERROR] For more information about the errors and possible solutions,
+</I>&gt;<i> please read the following articles:
+</I>&gt;<i> [ERROR] [Help 1]
+</I>&gt;<i> <A HREF="http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException">http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException</A>
+</I>&gt;<i>
+</I>&gt;<i> To avoid it, I need to use JDK 1.6 to make it find the &#8220;right&#8221;
+</I>&gt;<i> com.sun:tools:jar:1.4.2.
+</I>&gt;<i> This is very inconvenient because it requires everybody who want&#8217;s to
+</I>&gt;<i> build it to install JDK 1.6, although JDK 1.7 or 1.8 are perfectly able to
+</I>&gt;<i> build for the 1.6 target.
+</I>&gt;<i> Is there a way to modify the enforcer setup such that these core jdk jars
+</I>&gt;<i> are ignored?
+</I>&gt;<i>
+</I>&gt;<i> best regards,
+</I>&gt;<i> Tobias
+</I>&gt;<i>
+</I>&gt;<i> PS:
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20141117/1e56fcd4/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20141117/1e56fcd4/attachment.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002311.html">[ImageJ-devel] how does -Dscijava.enforce.skip work?
+</A></li>
+	<LI>Next message: <A HREF="002313.html">[ImageJ-devel] Where do I find the Fiji parent pom?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2312">[ date ]</a>
+              <a href="thread.html#2312">[ thread ]</a>
+              <a href="subject.html#2312">[ subject ]</a>
+              <a href="author.html#2312">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

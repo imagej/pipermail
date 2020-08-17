@@ -1,0 +1,228 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [fiji-devel] Significant change to ImgOpener - or - why ImgOpener.openImg() cannot return a T
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20Significant%20change%20to%20ImgOpener%20-%0A%20or%20-%20why%20ImgOpener.openImg%28%29%20cannot%20return%20a%20T&In-Reply-To=%3CCAKcvfuSSjqh%2BXQdFhe28_3NSucKZBqy1z9Qjt8SvE7SV4XzaRg%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001139.html">
+   <LINK REL="Next"  HREF="001143.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [fiji-devel] Significant change to ImgOpener - or - why ImgOpener.openImg() cannot return a T</H1>
+    <B>Barry DeZonia</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20Significant%20change%20to%20ImgOpener%20-%0A%20or%20-%20why%20ImgOpener.openImg%28%29%20cannot%20return%20a%20T&In-Reply-To=%3CCAKcvfuSSjqh%2BXQdFhe28_3NSucKZBqy1z9Qjt8SvE7SV4XzaRg%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] [fiji-devel] Significant change to ImgOpener - or - why ImgOpener.openImg() cannot return a T">bdezonia at gmail.com
+       </A><BR>
+    <I>Tue Jul 31 16:28:09 CDT 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001139.html">[ImageJ-devel] [fiji-devel] Significant change to ImgOpener - or - why ImgOpener.openImg() cannot return a T
+</A></li>
+        <LI>Next message: <A HREF="001143.html">[ImageJ-devel] [fiji-devel] Significant change to ImgOpener - or - why ImgOpener.openImg() cannot return a T
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1141">[ date ]</a>
+              <a href="thread.html#1141">[ thread ]</a>
+              <a href="subject.html#1141">[ subject ]</a>
+              <a href="author.html#1141">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Steffi,
+
+I remember running into this when originally interfacing IJ2 to Imglib. We
+did decided to go with Img&lt;? extends RealType&lt;?&gt; as that seemed the most
+safe at the time.
+
+What I'm wondering about with your solution is that it seems to contradict
+other people's description as to what is legal to do in Java.
+
+As a contrived example think of the animal cage example:
+
+We have a Animal class and a Lion class derived from it. And a Cage class
+that is defined Cage&lt;T extends Animal&gt;.
+
+Though Lion is instanceof Animal its not the case that Cage&lt;Lion&gt;
+instanceof Cage&lt;Animal&gt;. This is counterintuitive but many people mention
+it.
+
+If it was the case you could write code like this:
+
+Cage&lt;Animal&gt; animals;
+Cage&lt;Lion&gt; lions;
+animals = lions; // This assignment is not allowed
+animals.add(rat); // If this executed, we'd have a Rat in a Cage&lt;Lion&gt;
+
+
+This is just an example I've pulled from the web but it seems to imply that
+an Img&lt;UnsignedByteType&gt; is not safely considered an Img&lt;RealType&gt;. We may
+be avoiding all such cases where it could be a problem but is it safe going
+forward? I can't say I know.
+
+
+On Tue, Jul 17, 2012 at 4:08 PM, Stephan Preibisch &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">preibisch at mpi-cbg.de</A>&gt;wrote:
+
+&gt;<i> Hi guys,
+</I>&gt;<i>
+</I>&gt;<i> this became a massive explanation. I suggest this as as solution to a
+</I>&gt;<i> problem we have been only partly aware of. I hope you enjoy reading ;)
+</I>&gt;<i>
+</I>&gt;<i> Steffi
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> As the ImageJ conference is approaching I was talking with Johannes and we
+</I>&gt;<i> agreed that the ImgOpener needs to be finished. However, since its first
+</I>&gt;<i> version there has been a major design fault.
+</I>&gt;<i>
+</I>&gt;<i> But first the good news:
+</I>&gt;<i> --------------------------------
+</I>&gt;<i> It works perfectly fine if you say &quot;open me an Image as float&quot; or &quot;...as
+</I>&gt;<i> UnsignedByte&quot; or whatever, classically called by the method
+</I>&gt;<i> -&gt; new ImgOpener.openImg( String id, ImgFactory&lt;T&gt; factory, T type );
+</I>&gt;<i> It can, without any problems, return you an Img&lt;T&gt;, and it requires that T
+</I>&gt;<i> is RealType (and not anymore NativeType, see at the end). So far, so good.
+</I>&gt;<i> Note that &quot;T&quot; is NOT a return parameter, but something you give to the
+</I>&gt;<i> openAs method.
+</I>&gt;<i>
+</I>&gt;<i> Now the bad news.
+</I>&gt;<i> --------------------------
+</I>&gt;<i> If you say &quot;open this image as whatever RealType it is&quot;, it can do that,
+</I>&gt;<i> but it cannot assign a &quot;T&quot; to it - because T is not a return parameter. We
+</I>&gt;<i> made an ugly hack inside so that it seems as if it would work, but it does
+</I>&gt;<i> not. Now you might ask, why change it if it worked so far? Well, here is an
+</I>&gt;<i> easy example that would cause a ClassCastException on run time
+</I>&gt;<i>
+</I>&gt;<i> public static &lt;T extends RealType&lt; T &gt;&gt; void main( String[] args )
+</I>&gt;<i> {
+</I>&gt;<i>         Img&lt; T &gt; img1 = new ImgOpener.openImg( &quot;somepic_8bit.tif&quot; ); //
+</I>&gt;<i> 8-bit unsigned
+</I>&gt;<i>         Img&lt; T &gt; img2 = new ImgOpener.openImg( &quot;somepic_32bit.tif&quot; ); //
+</I>&gt;<i> 32-bit float
+</I>&gt;<i>
+</I>&gt;<i>         img1.firstElement().set( img2.firstElement() ); // run-time crash
+</I>&gt;<i> }
+</I>&gt;<i>
+</I>&gt;<i> It will throw a ClassCastException because img1 is of UnsignedByteType and
+</I>&gt;<i> img2 of FloatType. But as we cast it in a dirty way, it compiles just fine.
+</I>&gt;<i> So, we cannot return a &quot;T&quot;, but what we can return is Img&lt; which is at
+</I>&gt;<i> least a RealType &gt;. And this is for sure always true, but img1 and img2 are
+</I>&gt;<i> not necessarily the same RealType (as above).
+</I>&gt;<i>
+</I>&gt;<i> The correct way (which doesn't work)
+</I>&gt;<i> --------------------------------------------------
+</I>&gt;<i> What we should return is an Img&lt; ? extends RealType&lt; ? &gt; &gt;. However, it is
+</I>&gt;<i> not ensured that the two &quot;?&quot; are the same, so an Img of this type is
+</I>&gt;<i> basically incompatible with everything else, which means an unchecked cast
+</I>&gt;<i> is necessary. So although correct, maybe not a good idea. And it is really
+</I>&gt;<i> ugly to write if necessary.
+</I>&gt;<i>
+</I>&gt;<i> The still somehow correct way
+</I>&gt;<i> -----------------------------------------
+</I>&gt;<i> Instead, it returns now an Img&lt; RealType &gt;. This is kind of a tradeoff. On
+</I>&gt;<i> one hand, this is very easy to write and will give you compile errors where
+</I>&gt;<i> it should, for example
+</I>&gt;<i>
+</I>&gt;<i>         img1.firstElement().set( img2.firstElement() ); // COMPILE ERROR
+</I>&gt;<i> (not the same RealType realization)
+</I>&gt;<i>
+</I>&gt;<i> OR
+</I>&gt;<i>
+</I>&gt;<i>        public &lt;T extends RealType&lt; T &gt;&gt; void add( IterableInterval&lt; T &gt;
+</I>&gt;<i> i1, IterableInterval&lt; T &gt; i2 ) { .... }
+</I>&gt;<i>        add( img1, img2 ); // COMPILE ERROR (not the same RealType
+</I>&gt;<i> realization)
+</I>&gt;<i>
+</I>&gt;<i> BUT
+</I>&gt;<i>
+</I>&gt;<i>         Gauss.inFloatInPlace( 2.0 , img1 ); // FINE (just one RealType
+</I>&gt;<i> realization required, inside it will be always the same &quot;T&quot;)
+</I>&gt;<i>         Gauss.inFloatInPlace( 2.0 , img2 ); // FINE (just one RealType
+</I>&gt;<i> realization required, inside it will be always the same &quot;T&quot;)
+</I>&gt;<i>
+</I>&gt;<i>         public &lt; T extends RealType&lt; T &gt; &gt; void add1( Img&lt; T &gt; img1,
+</I>&gt;<i> double value ) { ... }
+</I>&gt;<i>         add1( img1, 5 ); // FINE (just one RealType realization required,
+</I>&gt;<i> inside it will be always the same &quot;T&quot;)
+</I>&gt;<i>
+</I>&gt;<i>         public &lt; T extends RealType&lt; T &gt;, S extends RealType&lt; S &gt; &gt; void
+</I>&gt;<i> add2( Img&lt; T &gt; img1, Img&lt; S &gt; img2 ) { ... }
+</I>&gt;<i>         add2( img1, img2 ); // FINE (explicitly two different RealType
+</I>&gt;<i> realizations are allowed)
+</I>&gt;<i>
+</I>&gt;<i>         public void add3( Img&lt; RealType &gt; img1, Img&lt; RealType &gt; img2 ) {
+</I>&gt;<i> ... }
+</I>&gt;<i>         add3( img1, img2 ); // FINE (both are just some kind of RealType,
+</I>&gt;<i> but gives a warning)
+</I>&gt;<i>
+</I>&gt;<i> On the other hand it gives a lot of Warnings because RealType should be
+</I>&gt;<i> more specified.
+</I>&gt;<i>
+</I>&gt;<i> Why not Img&lt; RealType&lt; ? &gt; &gt;
+</I>&gt;<i> ------------------------------------------
+</I>&gt;<i> Similar problem as in &lt;? extends RealType&lt; ? &gt; &gt;. RealType&lt; ? &gt; is not a
+</I>&gt;<i> valid substitute for any construct like &lt; T extends RealType &lt; T &gt; &gt;. One
+</I>&gt;<i> would have to cast to Img&lt; RealType &gt;, so we can take this one right away
+</I>&gt;<i> as it is less writing.
+</I>&gt;<i>
+</I>&gt;<i> Where did NativeType go?
+</I>&gt;<i> ------------------------------------
+</I>&gt;<i> I do not see any reason why we should enforce a NativeType. There is no
+</I>&gt;<i> objection to load an image into a (hypothetical) ListImg&lt; BigDecimalType &gt;.
+</I>&gt;<i>
+</I>&gt;<i> What are the implications?
+</I>&gt;<i> -----------------------------------
+</I>&gt;<i> We should write NOTHING except the method opening files for Img&lt; RealType
+</I>&gt;<i> &gt;. And also only if it is really required - quite often it is not. But if,
+</I>&gt;<i> Img&lt; RealType &gt; It is a completely valid input for any generic algorithm as
+</I>&gt;<i> show above for Gauss, add, etc.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> I implemented the changes on a branch called 'newimgopener'. It also
+</I>&gt;<i> contains four static convenience opening methods and a speed improvement.
+</I>&gt;<i>
+</I>&gt;<i> Any comments are very welcome. If somebody has a better idea how to solve
+</I>&gt;<i> the problem ... I am all ears ...
+</I>&gt;<i>
+</I>&gt;<i> Bye bye,
+</I>&gt;<i> Steffi
+</I>&gt;<i>
+</I>&gt;<i> --
+</I>&gt;<i> Please avoid top-posting, and please make sure to reply-to-all!
+</I>&gt;<i>
+</I>&gt;<i> Mailing list web interface: <A HREF="http://groups.google.com/group/fiji-devel">http://groups.google.com/group/fiji-devel</A>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20120731/1c358297/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20120731/1c358297/attachment.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001139.html">[ImageJ-devel] [fiji-devel] Significant change to ImgOpener - or - why ImgOpener.openImg() cannot return a T
+</A></li>
+	<LI>Next message: <A HREF="001143.html">[ImageJ-devel] [fiji-devel] Significant change to ImgOpener - or - why ImgOpener.openImg() cannot return a T
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1141">[ date ]</a>
+              <a href="thread.html#1141">[ thread ]</a>
+              <a href="subject.html#1141">[ subject ]</a>
+              <a href="author.html#1141">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

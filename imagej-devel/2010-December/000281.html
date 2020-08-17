@@ -1,0 +1,129 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] ImageOpener always giving me three channels when these is only one.
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImageOpener%20always%20giving%20me%20three%20channels%20when%0A%20these%20is%20only%20one.&In-Reply-To=%3C4D062331.1020406%40broadinstitute.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000280.html">
+   <LINK REL="Next"  HREF="000282.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] ImageOpener always giving me three channels when these is only one.</H1>
+    <B>Lee Kamentsky</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImageOpener%20always%20giving%20me%20three%20channels%20when%0A%20these%20is%20only%20one.&In-Reply-To=%3C4D062331.1020406%40broadinstitute.org%3E"
+       TITLE="[ImageJ-devel] ImageOpener always giving me three channels when these is only one.">leek at broadinstitute.org
+       </A><BR>
+    <I>Mon Dec 13 07:44:17 CST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000280.html">[ImageJ-devel] ImageOpener always giving me three channels when	these is only one.
+</A></li>
+        <LI>Next message: <A HREF="000282.html">[ImageJ-devel] ImageOpener always giving me three channels when	these is only one.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#281">[ date ]</a>
+              <a href="thread.html#281">[ thread ]</a>
+              <a href="subject.html#281">[ subject ]</a>
+              <a href="author.html#281">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi all,
+It would be nice, I suppose, to save the LUT in the spirit of not 
+destroying information, but I agree that the primary objects of interest 
+are the color indices. I have a feeling that people will save 
+segmentation results this way, designating one color as background 
+(typically zero = black) and then assigning colors from a color map to 
+each value in the indexing range. One interesting possibility is to pick 
+a handful of colors that are distant from each other and assign each to 
+several possible index values (imagine 4 color theorem, but there are 
+easy algorithms if you're allowed to use a few more - don't assign 
+nearby or touching objects to the same color). The significant 
+information in that case is the index, not the color.
+
+Obviously, this scheme would fall apart if you had 256 or more objects 
+in a 256-color indexed image; perhaps it's up to &quot;segmentation&quot; to 
+interpret an image a segmentation result and reconstruct a labeling by 
+identifying the unique colors in an image and assigning all pixels with 
+the same color to the same object. This highlights one of the problems - 
+the image opener doesn't have information on the use of the image, so it 
+can't make the proper interpretation for the derived format and, in my 
+opinion, it should not make any interpretation and instead try to 
+preserve the information in the image file with as much fidelity as is 
+possible and leave the interpretation to code downstream.
+
+--Lee
+
+On 12/13/2010 4:52 AM, Johannes Schindelin wrote:
+&gt;<i> Hi,
+</I>&gt;<i>
+</I>&gt;<i> On Mon, 13 Dec 2010, Gabriel Landini wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> On Sunday 12 December 2010 22:33:55 Curtis Rueden wrote:
+</I>&gt;&gt;&gt;<i> FYI, ImageJ has a &quot;feature&quot; where if the LUT is totally grayscale,
+</I>&gt;&gt;&gt;<i> ImageJ ignores it and declares the file to be a regular 8-bit image,
+</I>&gt;&gt;&gt;<i> rather than &quot;RGB color.&quot; Unfortunately, this makes it difficult to
+</I>&gt;&gt;&gt;<i> tell if the image has a &quot;hidden&quot; color table. Still, you could
+</I>&gt;&gt;&gt;<i> probably eliminate the LUT by resaving as TIFF again from ImageJ.
+</I>&gt;&gt;<i> Just imagine you are working with an 8 bit image, then you want to see
+</I>&gt;&gt;<i> some contrast enhanced and apply a false colour LUT and then go back to
+</I>&gt;&gt;<i> the greyscale LUT. If I saved this image which is now greyscale with the
+</I>&gt;&gt;<i> grey.lut, would this be re-opened as RGB? Maybe this is not such a good
+</I>&gt;&gt;<i> idea.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I do not know how IJ tests the LUT, but I guess it would be trivial:
+</I>&gt;&gt;<i> loop through the 256 entries and see if they are r=g=b in the expected
+</I>&gt;&gt;<i> sequential order. If so, then treat as 8bit greyscale image. Checking
+</I>&gt;&gt;<i> the table would tell you if there are any hidden colours.
+</I>&gt;<i> IMHO an index-color image is _not_ of a numeric type. So to properly
+</I>&gt;<i> support index-color images, one would need to make a &quot;CategoricalType&quot;
+</I>&gt;<i> that still uses bytes or shorts, but that cannot add/multiply/whatever.
+</I>&gt;<i>
+</I>&gt;<i> OTOH if the LUT is just a view mode (as it should always be seen in
+</I>&gt;<i> scientific imaging), then the LUT is not part of the image and should not
+</I>&gt;<i> be saved in the first place. I often catch users insisting on the DAPI
+</I>&gt;<i> channel being colored blue, when they should know fully well (because I
+</I>&gt;<i> told them) that the DAPI channel is the result of a range of frequencies,
+</I>&gt;<i> not blue.
+</I>&gt;<i>
+</I>&gt;<i> In short: in most cases I hear people want index-color images, it turns
+</I>&gt;<i> out that they really want numeric images with lookup tables instead. Since
+</I>&gt;<i> we want to analyze the samples of which those images were taken, it is
+</I>&gt;<i> really, really important to keep the distinction in mind.
+</I>&gt;<i>
+</I>&gt;<i> Ciao,
+</I>&gt;<i> Johannes
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagejdev.org</A>
+</I>&gt;<i> <A HREF="http://imagejdev.org/mailman/listinfo/imagej-devel">http://imagejdev.org/mailman/listinfo/imagej-devel</A>
+</I>
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000280.html">[ImageJ-devel] ImageOpener always giving me three channels when	these is only one.
+</A></li>
+	<LI>Next message: <A HREF="000282.html">[ImageJ-devel] ImageOpener always giving me three channels when	these is only one.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#281">[ date ]</a>
+              <a href="thread.html#281">[ thread ]</a>
+              <a href="subject.html#281">[ subject ]</a>
+              <a href="author.html#281">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

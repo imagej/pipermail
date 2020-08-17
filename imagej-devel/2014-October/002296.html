@@ -1,0 +1,238 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [fiji-devel] Lock-free bit fields,	was Re:  What's left to do for ImgLib2
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20Lock-free%20bit%20fields%2C%0A%09was%20Re%3A%20%20What%27s%20left%20to%20do%20for%20ImgLib2&In-Reply-To=%3C64D882A4-F3A5-4FF3-92D4-85158085AE73%40mpi-cbg.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002295.html">
+   <LINK REL="Next"  HREF="002288.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [fiji-devel] Lock-free bit fields,	was Re:  What's left to do for ImgLib2</H1>
+    <B>Tobias Pietzsch</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20Lock-free%20bit%20fields%2C%0A%09was%20Re%3A%20%20What%27s%20left%20to%20do%20for%20ImgLib2&In-Reply-To=%3C64D882A4-F3A5-4FF3-92D4-85158085AE73%40mpi-cbg.de%3E"
+       TITLE="[ImageJ-devel] [fiji-devel] Lock-free bit fields,	was Re:  What's left to do for ImgLib2">pietzsch at mpi-cbg.de
+       </A><BR>
+    <I>Fri Oct 31 12:20:52 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002295.html">[ImageJ-devel] [fiji-devel] Lock-free bit fields, was Re:  What's left to do for ImgLib2
+</A></li>
+        <LI>Next message: <A HREF="002288.html">[ImageJ-devel] [fiji-devel] Lock-free bit fields, was Re:  What's left to do for ImgLib2
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2296">[ date ]</a>
+              <a href="thread.html#2296">[ thread ]</a>
+              <a href="subject.html#2296">[ subject ]</a>
+              <a href="author.html#2296">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Albert,
+
+I like that idea.
+I&#8217;m not 100% sure, but I think it should be possible to have Views.synchronized(), Views.unsynchronized() methods that would change the Type between sychronized and unsynchronized versions (if available).
+To properly define the signatures of these methods would probably require to make BitType an interface that is extended by the unsynchronized and synchronized implementations such that Views.(un)synchronize(RandomAccessible&lt;T&gt;) can return RandomAccessible&lt;T&gt;. This might incur additional cost for polymorphism if both BitType implementations are used at runtime but this might be alleviated using None, for example.
+
+best regards,
+Tobias
+
+
+On 30 Oct 2014, at 19:44, Albert Cardona &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">cardonaa at janelia.hhmi.org</A>&gt; wrote:
+
+&gt;<i> Hi Tobias,
+</I>&gt;<i> 
+</I>&gt;<i> woudn't the easiest be to rename the current BitType instances as Unsynchronized+name, and then the actual class extend the corresponding unsynchronized class, with one method overriden to synchronize access to the pixels?
+</I>&gt;<i> 
+</I>&gt;<i> This way one gets both: the default is safe (synchronized), and if one knows what one is doing, one can get the Unsynchronized* version to avoid the cost.
+</I>&gt;<i> 
+</I>&gt;<i> Albert
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> On 10/30/2014 02:39 PM, Tobias Pietzsch wrote:
+</I>&gt;&gt;<i> Hi Stephan,
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> Getting the &#8216;unsafe&#8217; interval for a specific location is certainly possible. But how would that be effectively used in an algorithm if the interval changes from location to location?
+</I>&gt;&gt;<i> Alternatively, RandomAccessibles and IterableIntervals could offer methods to chop them up into &#8216;safe&#8217; parts for multithreading. However there are many different &#8217;safe' subdivision and it depends on the algorithm which one is preferrable. Also these subdivisions (as well as the &#8216;unsafe&#8217; interval) would need to be propagated correctly through Views and RealViews which might get rather involved.
+</I>&gt;&gt;<i> I&#8217;m happy to discuss ideas in this direction, but I don&#8217;t think it is a viable short-term solution.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> For practical reasons, I would stick with &#8220;You are safe as long as multiple threads write to different pixels&#8221;.
+</I>&gt;&gt;<i> This is the contract that we have been implicitly following all along. A lot of code relies on it. Even if we come up with a nice alternative, we do not have the man-power to fix all code that relies on the old contract and that we would break along the way. Therefore my preferred short-term solution is to synchronize( dataAccess ){&#8230;} the fractioned-type writes, as Johannes suggested.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> best regards,
+</I>&gt;&gt;<i> Tobias
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> On 30 Oct 2014, at 18:57, Stephan Saalfeld &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">saalfelds at janelia.hhmi.org</A>&gt; wrote:
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> Hi Tobias,
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> I agree that the constraint is easier if the fraction reduces to an
+</I>&gt;&gt;&gt;<i> integer.  However, it's not exactly the same for fraction=1 or
+</I>&gt;&gt;&gt;<i> fraction&gt;1 either.  It would be great if we could identify a common
+</I>&gt;&gt;&gt;<i> scheme that covers all cases without much interference.
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> Is may be a disk-based, memory cached CellImg the same thing as a
+</I>&gt;&gt;&gt;<i> fractioned NativeImg?  Writing into different pixels in the same cell
+</I>&gt;&gt;&gt;<i> may lead to confusing results when written to disk.
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> What about a method in RandomAccess that returns an `unsafe' interval
+</I>&gt;&gt;&gt;<i> for its location?  Generally, that would be (1^n), in case of fraction
+</I>&gt;&gt;&gt;<i> types, it would be the box surrounding all pixels served by the same
+</I>&gt;&gt;&gt;<i> primitive type (which is horrible at the end of a row or cell-row where
+</I>&gt;&gt;&gt;<i> pixels in the next row are affected), and in case of cached cells it
+</I>&gt;&gt;&gt;<i> could be the cell.
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> With a method of this flavor, we can make educated decisions on
+</I>&gt;&gt;&gt;<i> construction time of the multi-threaded code that, internally, would not
+</I>&gt;&gt;&gt;<i> synchronize, i.e. be fast.
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> Best,
+</I>&gt;&gt;&gt;<i> Stephan
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> On Thu, 2014-10-30 at 18:29 +0100, Tobias Pietzsch wrote:
+</I>&gt;&gt;&gt;&gt;<i> Hi Stephan,
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> I think it would be nice to have getLock() but I also think it will be rarely needed in practice.
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> We must be careful not to conflate two problems here:
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> The first one is that writes to e.g. ComplexType are not atomic and therefore strange things may happen if two ComplexTypes are used that actually refer to the same ComplexType pixel value in the image.
+</I>&gt;&gt;&gt;&gt;<i> As Albert suggested, algorithms that need this feature need to take special care to synchronize access.
+</I>&gt;&gt;&gt;&gt;<i> However, for many parallelizable algorithms this is not actually a problem. In most image-to-image operations (e.g. FFT, convolution, etc&#8230;) every output pixel is written only once by only one thread. Threads maybe read the same input pixels, but reading is fine.
+</I>&gt;&gt;&gt;&gt;<i> The getLock() method would be a welcome addition for those algorithms that do not follow this pattern and need to synchronize.
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> The second problem is different. For BitType, writes to BitType pixels at different locations in the image may influence each other. And this should be avoided by default in my opinion.
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> I think: &#8220;You are safe as long as multiple threads write to different pixels&#8221; is a good contract to have.
+</I>&gt;&gt;&gt;&gt;<i> Diverging from that with BitType, Unsigned12BitType, etc would add overhead for many algorithms that is in most cases not required (e.g. for FloatType, ComplexDoubleType, etc. the synchronization overhead would be wasted).
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> best regards,
+</I>&gt;&gt;&gt;&gt;<i> Tobias
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> On 30 Oct 2014, at 16:18, Stephan Saalfeld &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">saalfelds at janelia.hhmi.org</A>&gt; wrote:
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> Thanks for the articles!
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> I have more comments on the matter.  In fact, all types have the same
+</I>&gt;&gt;&gt;&gt;&gt;<i> problem.  Even for a non-native ComplexType read and write would not be
+</I>&gt;&gt;&gt;&gt;&gt;<i> atomic and thus not thread-safe.  The problem is that, for non-native
+</I>&gt;&gt;&gt;&gt;&gt;<i> types, it is sufficient for multi-threaded code to synchronize on the
+</I>&gt;&gt;&gt;&gt;&gt;<i> type instance itself.  For native types (e.g. ComplexDoubleType) and for
+</I>&gt;&gt;&gt;&gt;&gt;<i> other proxy mechanisms such as Composites or ReadWriteConverters, this
+</I>&gt;&gt;&gt;&gt;&gt;<i> doesn't work.  How about a getLock() (or getMonitor()) method as part of
+</I>&gt;&gt;&gt;&gt;&gt;<i> Type whose purpose is to return a lock that enables synchronization on
+</I>&gt;&gt;&gt;&gt;&gt;<i> that particular's type content.  Should that lock be constant for a
+</I>&gt;&gt;&gt;&gt;&gt;<i> type's lifetime?  Proxy types for which access is atomic could return
+</I>&gt;&gt;&gt;&gt;&gt;<i> themselves, just as Types that actually contain their content.
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> I like Tobias' proposal with a Hash of locks for NativeTypes, something
+</I>&gt;&gt;&gt;&gt;&gt;<i> similar is necessary for other writable proxies.
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> Best,
+</I>&gt;&gt;&gt;&gt;&gt;<i> Stephan
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> On Thu, 2014-10-30 at 14:51 +0100, Adrian Daerr wrote:
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> Hi,
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> By lock-free I mean setting the value and then checking whether the
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> value is actually what was expected (and if not, retry).
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> A na&#239;ve implementation of this technique could easily result in a very
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> nasty ping-pong effect: if one thread tries to clear a bit and the next
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> thread tries to set it, it is very to run into a trap when not leaving a
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> way for one thread to win.
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> The safest way to resolve this issue is to reinstate the lock-on-write
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> method that was in place earlier
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> [..]
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> An alternative might be to give up lock-freedom in favor of wait-freedom
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> [*2*]. In this regard, a more performant version might be
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> [..]
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> to use Optimistic Concurrency Control [*3*]:
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> 	final long original = dataAccess.getValue(i1);
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> 	if ( value ) {
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> 		final long newValue = original | (1l &lt;&lt; shift);
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> 		dataAccess.setValue(i1, newValue);
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> 		if ( newValue != dataAccess.getValue( i1 ) ) {
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> 			synchronized (dataAccess) {
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> 				dataAccess.setValue( i1, dataAccess.getValue(i1) | (1l &lt;&lt; shift) );
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> 			}
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> 		}
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> 	}
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> [snip]
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> Hum, I do not if this is really a comparable situation, but it looks a
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> lot like the double-checked locking (DCL) idiom, which is broken [1].
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> FWIW,
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> cheers and good luck,
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> Adrian
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> [1]
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> TL;DR : You cannot have as-if-serial semantics across threads unless you
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> use synchronized.
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> &quot;Double-checked locking: Clever, but broken
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> Do you know what synchronized really means?&quot; By Brian Goetz
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> <A HREF="http://www.javaworld.com/article/2074979/java-concurrency/double-checked-locking--clever--but-broken.html">http://www.javaworld.com/article/2074979/java-concurrency/double-checked-locking--clever--but-broken.html</A>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> and its follow-up article
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> &quot;Can double-checked locking be fixed?
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> No matter how you rig it, double-checked locking still fails&quot; (also by
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> Brian Goetz)
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> <A HREF="http://www.javaworld.com/article/2075306/java-concurrency/can-double-checked-locking-be-fixed-.html">http://www.javaworld.com/article/2075306/java-concurrency/can-double-checked-locking-be-fixed-.html</A>
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;<i> 
+</I>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20141031/7e6e2543/attachment.pgp">http://imagej.net/pipermail/imagej-devel/attachments/20141031/7e6e2543/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002295.html">[ImageJ-devel] [fiji-devel] Lock-free bit fields, was Re:  What's left to do for ImgLib2
+</A></li>
+	<LI>Next message: <A HREF="002288.html">[ImageJ-devel] [fiji-devel] Lock-free bit fields, was Re:  What's left to do for ImgLib2
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2296">[ date ]</a>
+              <a href="thread.html#2296">[ thread ]</a>
+              <a href="subject.html#2296">[ subject ]</a>
+              <a href="author.html#2296">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,358 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] @parameter choice update in component callback
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%40parameter%20choice%20update%20in%20component%20callback&In-Reply-To=%3CCADN69ymOX27DZWkbCsQmnzwoo8-4w89uhMsCjfGGed6DrtPdZQ%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002687.html">
+   <LINK REL="Next"  HREF="002664.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] @parameter choice update in component callback</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%40parameter%20choice%20update%20in%20component%20callback&In-Reply-To=%3CCADN69ymOX27DZWkbCsQmnzwoo8-4w89uhMsCjfGGed6DrtPdZQ%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] @parameter choice update in component callback">ctrueden at wisc.edu
+       </A><BR>
+    <I>Thu Aug 27 16:33:03 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002687.html">[ImageJ-devel] @parameter choice update in component callback
+</A></li>
+        <LI>Next message: <A HREF="002664.html">[ImageJ-devel] Tables / TableDisplays / ResultsTables as input	parameters
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2688">[ date ]</a>
+              <a href="thread.html#2688">[ thread ]</a>
+              <a href="subject.html#2688">[ subject ]</a>
+              <a href="author.html#2688">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Adrian,
+
+&gt;<i> <A HREF="https://gitlab.com/pendant-drop/pendant-drop.git">https://gitlab.com/pendant-drop/pendant-drop.git</A>
+</I>&gt;<i> (checkout branch overlay_issue (commit 2887f8ec))
+</I>&gt;<i>
+</I>&gt;<i> This is a MVCE that has parameters
+</I>
+Thanks, I was able to replicate the problems using your code.
+
+I tried to reproduce using a script with various parameter combinations
+mirroring yours, but was initially unsuccessful. It seems the problem is a
+little subtle.
+
+It is likely related to the syncing of IJ1 and IJ2 data structures. So I'm
+not going to worry about further for the time being&#8212;that logic will be
+revised in the future anyway.
+
+&gt;<i> More than a tutorial I missed some explanations on the technical
+</I>&gt;<i> design of, and the interplay between, the different parts that now
+</I>&gt;<i> make up ImageJ2.
+</I>
+The best I have to offer right now is:
+* <A HREF="http://imagej.net/Architecture">http://imagej.net/Architecture</A>
+* <A HREF="http://imagej.net/Development">http://imagej.net/Development</A>
+
+&gt;<i> I just opened a sheet in an editor on which I will jot down notes as I
+</I>&gt;<i> go ahead with my plugin, about problems, discoveries and things I
+</I>&gt;<i> suddenly understand. Maybe this can be a starting point or
+</I>&gt;<i> contribution for a transition guide.
+</I>
+That would be fantastic! It is physically impossible for Mark and me to
+write the entire wiki...
+
+Regards,
+Curtis
+
+On Thu, Aug 27, 2015 at 2:18 PM, Adrian Daerr &lt;
+<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">adrian.daerr at univ-paris-diderot.fr</A>&gt; wrote:
+
+&gt;<i> Hello Curtis,
+</I>&gt;<i>
+</I>&gt;<i> @Parameter(persist = false) private RectangleOverlay roi;
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> which appears to be populated only after the initializer is called
+</I>&gt;&gt;&gt;<i> (its value is null in the initializer and valid in the run() method).
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Hmm, that should not be the case. [..]
+</I>&gt;&gt;<i> The issue might be typing-related: try using Overlay instead of
+</I>&gt;&gt;<i> RectangleOverlay and see if that makes a difference.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Alternately: can you post an MVCE [3, 4] illustrating the issue?
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> <A HREF="https://gitlab.com/pendant-drop/pendant-drop.git">https://gitlab.com/pendant-drop/pendant-drop.git</A>
+</I>&gt;<i> (checkout branch overlay_issue (commit 2887f8ec))
+</I>&gt;<i>
+</I>&gt;<i> This is a MVCE that has parameters
+</I>&gt;<i>
+</I>&gt;<i>     @Parameter
+</I>&gt;<i>     private ImagePlus imp;
+</I>&gt;<i>
+</I>&gt;<i>     @Parameter(persist = false)
+</I>&gt;<i>     private RectangleOverlay region;
+</I>&gt;<i>
+</I>&gt;<i>     @Parameter(persist = false)
+</I>&gt;<i>     private Overlay overlay;
+</I>&gt;<i>
+</I>&gt;<i> It compiles and executes with
+</I>&gt;<i>
+</I>&gt;<i> mvn -o package &amp;&amp; fiji --class-path \
+</I>&gt;<i> target/pendant_drop-2.0.0-SNAPSHOT.jar Goutte_pendante.class
+</I>&gt;<i>
+</I>&gt;<i> and logs the following to the console:
+</I>&gt;<i>
+</I>&gt;<i> [INFO] imp parameter in initializer(): non-null
+</I>&gt;<i> [INFO] region parameter in initializer(): null
+</I>&gt;<i> [INFO] overlay parameter in initializer(): null
+</I>&gt;<i> [INFO] imp parameter in preview(): non-null
+</I>&gt;<i> [INFO] region parameter in preview(): non-null
+</I>&gt;<i> [INFO] overlay parameter in preview(): non-null
+</I>&gt;<i> [INFO] imp parameter in run(): non-null
+</I>&gt;<i> [INFO] region parameter in run(): non-null
+</I>&gt;<i> [INFO] overlay parameter in run(): non-null
+</I>&gt;<i> [ERROR] Module threw exception
+</I>&gt;<i> java.lang.NullPointerException
+</I>&gt;<i>         at ij.plugin.frame.Recorder.addQuotes(Recorder.java:612)
+</I>&gt;<i> ...
+</I>&gt;<i>
+</I>&gt;<i> Note 1) Since I switched to the OverlayService.getSelectionBounds()
+</I>&gt;<i> solution you suggested in another thread, do not bother looking into
+</I>&gt;<i> this for me. I just submit this MVCE in case the issue is more
+</I>&gt;<i> important than I suspect.
+</I>&gt;<i>
+</I>&gt;<i> Note 2) It appears (RectangleOverlay).toString() returns null in any
+</I>&gt;<i> case.
+</I>&gt;<i>
+</I>&gt;<i> Note 3) Overlay and RectangleOverlay have the same issue with respect
+</I>&gt;<i> to initialization, but the reason I used RectangleOverlay is that I
+</I>&gt;<i> did not see how to get the bounds of an Overlay.
+</I>&gt;<i>
+</I>&gt;<i> I am sorry&#8212;the tutorials need to be improved. What sort of tutorial do you
+</I>&gt;&gt;<i> think would aid your understanding here?
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> More than a tutorial I missed some explanations on the technical
+</I>&gt;<i> design of, and the interplay between, the different parts that now
+</I>&gt;<i> make up ImageJ2. Instead of one single place to find the API and
+</I>&gt;<i> Source of ij.*, things are split up into packages (org.scijava.*,
+</I>&gt;<i> net.imagej.*, imglib) and it takes a bit to figure out how things are
+</I>&gt;<i> organized and why this division of labour makes sense. So deciding
+</I>&gt;<i> e.g. where to look for ROI/Overlay related stuff was not easy
+</I>&gt;<i> (net.imagej? imglib? both seem to have bits). For someone used to the
+</I>&gt;<i> often static, in any case ultra specific ImageJ1 API, understanding
+</I>&gt;<i> what a context is, what Services are good for, how menus, views, even
+</I>&gt;<i> whole GUIs are flexibly handled, how roughly plugins are recognized,
+</I>&gt;<i> how and when annotations are parsed (what's an annotation anyway from
+</I>&gt;<i> a Java perspective ?) and how they are instantiated and executed, well
+</I>&gt;<i> all this is quite a lot of new stuff. Not to speak about understanding
+</I>&gt;<i> how the new Dataset/ImageDisplay/Views classes replacing ImageJ1's
+</I>&gt;<i> ImagePlus/ImageWindow/.. work together, and why some of them are
+</I>&gt;<i> already deprecated ;-)
+</I>&gt;<i>
+</I>&gt;<i> Now this very design still seems to be changing, so I understand
+</I>&gt;<i> writing up something might be a bit early. Besides, it's a good thing
+</I>&gt;<i> not to pin it down to early, and producing documentation wikis that
+</I>&gt;<i> may soon prove outdated can be not only a waste of time, but even
+</I>&gt;<i> prove quite perturbing later when they contradict reality. Even if I'd
+</I>&gt;<i> like to see some gently (but technically oriented) introduction to the
+</I>&gt;<i> class zoo and ecosystem of ImageJ2, and also a guide to plugin
+</I>&gt;<i> programming specifically for the ImageJ1 veteran (with, for now, your
+</I>&gt;<i> recommendation to just take advantage of the parameter harvesting
+</I>&gt;<i> features but to stick to IJ1 data structures), I think this is
+</I>&gt;<i> probably too early to do. But I just opened a sheet in an editor on
+</I>&gt;<i> which I will jot down notes as I go ahead with my plugin, about
+</I>&gt;<i> problems, discoveries and things I suddenly understand. Maybe this can
+</I>&gt;<i> be a starting point or contribution for a transition guide.
+</I>&gt;<i>
+</I>&gt;<i> If I do have ideas about specific programming examples for the
+</I>&gt;<i> imagej-tutorials, I'll voice them of course.
+</I>&gt;<i>
+</I>&gt;<i> In any case your reactivity on this list is simply invaluable, thanks
+</I>&gt;<i> a lot for adding communication efforts to your programming mission.
+</I>&gt;<i>
+</I>&gt;<i> best regards,
+</I>&gt;<i> Adrian
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On Mon, 24 Aug 2015 10:25:59 -0500
+</I>&gt;<i>  Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt; wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> Hi Adrian,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Thanks for the suggestion, which almost does the job, except that the
+</I>&gt;&gt;&gt;<i> initialization also depends on a parameter
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> @Parameter(persist = false) private RectangleOverlay roi;
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> which appears to be populated only after the initializer is called
+</I>&gt;&gt;&gt;<i> (its value is null in the initializer and valid in the run() method).
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Hmm, that should not be the case. Commands that include a single overlay
+</I>&gt;&gt;<i> parameter should automatically draw from the active image's active
+</I>&gt;&gt;<i> overlay,
+</I>&gt;&gt;<i> when possible [1]. This happens _before_ the initializers are called [2]
+</I>&gt;&gt;<i> (because Priority.VERY_HIGH_PRIORITY &gt; Priority.HIGH_PRIORITY).
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> The issue might be typing-related: try using Overlay instead of
+</I>&gt;&gt;<i> RectangleOverlay and see if that makes a difference. If so, it is probably
+</I>&gt;&gt;<i> a limitation of the ActiveOverlayPreprocessor [1]; patches welcome.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Alternately: can you post an MVCE [3, 4] illustrating the issue?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> do I have to write a Preprocessor of some sorts
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> This is certainly possible to do, but I would hope not necessary.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> can the initializer 'manually' call the code which normally harvest
+</I>&gt;&gt;&gt;<i> the RectangleOverlay parameter later on ?
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Sure, you can always code in whatever logic you want to the plugin
+</I>&gt;&gt;<i> initializer method. But again, hopefully not necessary in this case.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> even after some reading of the tutorials and the scijava source code
+</I>&gt;&gt;&gt;<i> around org.scijava.command.CommandInfo my understanding of how the
+</I>&gt;&gt;&gt;<i> plugin initialisation works is still poor.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I am sorry&#8212;the tutorials need to be improved. What sort of tutorial do you
+</I>&gt;&gt;<i> think would aid your understanding here? The &quot;execute-commands&quot; and
+</I>&gt;&gt;<i> &quot;custom-preprocessor-plugin&quot; tutorials are probably touch on these topics
+</I>&gt;&gt;<i> most closely, although neither provides a real overview of the
+</I>&gt;&gt;<i> pre-/post-processing chain in conjunction with module execution.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Would it make sense to distinguish (by an annotation ?) parameters
+</I>&gt;&gt;&gt;<i> that are to be initialized from the context (i.e. services, active
+</I>&gt;&gt;&gt;<i> image, roi etc), and whose lack should be immediately fatal to the
+</I>&gt;&gt;&gt;<i> plugin (no UI harvesting, and in exchange can be assumed final for the
+</I>&gt;&gt;&gt;<i> rest of the command execution), from parameters that, if they cannot
+</I>&gt;&gt;&gt;<i> be populated from already available data, should be harvested through
+</I>&gt;&gt;&gt;<i> a dialog (and may change several times) ?
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Potentially, yes. Feel free to comment on the issue on GitHub!
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Regards,
+</I>&gt;&gt;<i> Curtis
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> [1]
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> <A HREF="https://github.com/imagej/imagej-common/blob/imagej-common-0.15.1/src/main/java/net/imagej/display/process/ActiveOverlayPreprocessor.java#L57">https://github.com/imagej/imagej-common/blob/imagej-common-0.15.1/src/main/java/net/imagej/display/process/ActiveOverlayPreprocessor.java#L57</A>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> [2]
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> <A HREF="https://github.com/scijava/scijava-common/blob/scijava-common-2.44.2/src/main/java/org/scijava/module/process/InitPreprocessor.java#L49">https://github.com/scijava/scijava-common/blob/scijava-common-2.44.2/src/main/java/org/scijava/module/process/InitPreprocessor.java#L49</A>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> [3] <A HREF="http://imagej.net/Bug_reporting_best_practices">http://imagej.net/Bug_reporting_best_practices</A>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> [4] <A HREF="http://stackoverflow.com/help/mcve">http://stackoverflow.com/help/mcve</A>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> On Mon, Aug 24, 2015 at 9:07 AM, Adrian Daerr &lt;
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">adrian.daerr at univ-paris-diderot.fr</A>&gt; wrote:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Hi Curtis,
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> I have parameters a, b, c whose initialisation depend on a common
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> calculation (depending on the image gotten through a previous
+</I>&gt;&gt;&gt;&gt;&gt;<i> @Parameter ImagePlus imp): can I do this calculation in the
+</I>&gt;&gt;&gt;&gt;&gt;<i> initialiser for the first parameter a, and then in the initialisers of
+</I>&gt;&gt;&gt;&gt;&gt;<i> b
+</I>&gt;&gt;&gt;&gt;&gt;<i> and c rely on the fact that the calculation was already done ?
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> Perhaps simplest at the moment would be to give your command a global
+</I>&gt;&gt;&gt;&gt;<i> initializer -- i.e., set the initializer method in the
+</I>&gt;&gt;&gt;&gt;<i> @Plugin annotation itself, rather than on specific parameters.
+</I>&gt;&gt;&gt;&gt;<i> The ImagePlus will be populated by a preprocessor _before_ the
+</I>&gt;&gt;&gt;&gt;<i> initialize method is called, so when your global initializer gets
+</I>&gt;&gt;&gt;&gt;<i> called you will already have access to the ImagePlus.
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Thanks for the suggestion, which almost does the job, except that the
+</I>&gt;&gt;&gt;<i> initialization also depends on a parameter
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> @Parameter(persist = false) private RectangleOverlay roi;
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> which appears to be populated only after the initializer is called (its
+</I>&gt;&gt;&gt;<i> value is null in the initializer and valid in the run() method).
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> I am not sure how to solve this: do I have to write a Preprocessor of
+</I>&gt;&gt;&gt;<i> some
+</I>&gt;&gt;&gt;<i> sorts, or can the initializer 'manually' call the code which normally
+</I>&gt;&gt;&gt;<i> harvest the RectangleOverlay parameter later on ? Somehow the fact that
+</I>&gt;&gt;&gt;<i> ImagePlus is populated by a Preprocessor but RectangleOverlay isn't,
+</I>&gt;&gt;&gt;<i> seems
+</I>&gt;&gt;&gt;<i> linked to issues that I mentionned in another post[1], but even after
+</I>&gt;&gt;&gt;<i> some
+</I>&gt;&gt;&gt;<i> reading of the tutorials and the scijava source code around
+</I>&gt;&gt;&gt;<i> org.scijava.command.CommandInfo my understanding of how the plugin
+</I>&gt;&gt;&gt;<i> initialisation works is still poor.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> [1]
+</I>&gt;&gt;&gt;<i> (e.g. that the Overlay appears in the harvesting dialog, or that an
+</I>&gt;&gt;&gt;<i> Exception is thrown because of the overlay after command execution)
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> <A HREF="http://imagej-devel.54429.x6.nabble.com/Masking-Parameter-from-GUI-harvesting-td1098.html">http://imagej-devel.54429.x6.nabble.com/Masking-Parameter-from-GUI-harvesting-td1098.html</A>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> But again, scijava/scijava-common#181 is very relevant here.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Would it make sense to distinguish (by an annotation ?) parameters that
+</I>&gt;&gt;&gt;<i> are to be initialized from the context (i.e. services, active image, roi
+</I>&gt;&gt;&gt;<i> etc), and whose lack should be immediately fatal to the plugin (no UI
+</I>&gt;&gt;&gt;<i> harvesting, and in exchange can be assumed final for the rest of the
+</I>&gt;&gt;&gt;<i> command execution), from parameters that, if they cannot be populated
+</I>&gt;&gt;&gt;<i> from
+</I>&gt;&gt;&gt;<i> already available data, should be harvested through a dialog (and may
+</I>&gt;&gt;&gt;<i> change several times) ?
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> cheers,
+</I>&gt;&gt;&gt;<i> Adrian
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;<i> --
+</I>&gt;<i> <A HREF="http://www.msc.univ-paris-diderot.fr/~daerr/">http://www.msc.univ-paris-diderot.fr/~daerr/</A>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20150827/850e279c/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20150827/850e279c/attachment-0001.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002687.html">[ImageJ-devel] @parameter choice update in component callback
+</A></li>
+	<LI>Next message: <A HREF="002664.html">[ImageJ-devel] Tables / TableDisplays / ResultsTables as input	parameters
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2688">[ date ]</a>
+              <a href="thread.html#2688">[ thread ]</a>
+              <a href="subject.html#2688">[ subject ]</a>
+              <a href="author.html#2688">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

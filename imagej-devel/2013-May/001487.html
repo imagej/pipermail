@@ -1,0 +1,265 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [icy] Re: .MRXS files in ICY
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bicy%5D%20Re%3A%20.MRXS%20files%20in%20ICY&In-Reply-To=%3C20130501222502.GA18255%40medusa%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="001488.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [icy] Re: .MRXS files in ICY</H1>
+    <B>Melissa Linkert</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bicy%5D%20Re%3A%20.MRXS%20files%20in%20ICY&In-Reply-To=%3C20130501222502.GA18255%40medusa%3E"
+       TITLE="[ImageJ-devel] [icy] Re: .MRXS files in ICY">melissa at glencoesoftware.com
+       </A><BR>
+    <I>Wed May  1 17:25:02 CDT 2013</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="001488.html">[ImageJ-devel] experiments with a new ops framework for imglib2
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1487">[ date ]</a>
+              <a href="thread.html#1487">[ thread ]</a>
+              <a href="subject.html#1487">[ subject ]</a>
+              <a href="author.html#1487">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Stephane,
+
+&gt;<i> Thanks for the information.
+</I>&gt;<i> We are currently testing the following method to open image tile by tile:
+</I>&gt;<i>    byte[] openBytes(int no, byte[] buf, int x, int y, int w, int h)
+</I>&gt;<i> 
+</I>&gt;<i> but it appears that all reader do not support it very well, we tested both 
+</I>&gt;<i> on JPEG and NDPI reader and obtained errors in both case.
+</I>
+&gt;<i> Is there any way 
+</I>&gt;<i> to know how much this method is supported ?
+</I>
+Your best bet is to ask on ome-devel and/or look at the open tickets:
+
+<A HREF="http://trac.openmicroscopy.org.uk/ome/query?status=accepted&amp;status=new&amp;status=reopened&amp;component=Bio-Formats&amp;col=id&amp;col=summary&amp;col=status&amp;col=type&amp;col=priority&amp;col=milestone&amp;col=component&amp;order=priority">http://trac.openmicroscopy.org.uk/ome/query?status=accepted&amp;status=new&amp;status=reopened&amp;component=Bio-Formats&amp;col=id&amp;col=summary&amp;col=status&amp;col=type&amp;col=priority&amp;col=milestone&amp;col=component&amp;order=priority</A>
+
+In general, pretty much everything except for JPEG-based formats (JPEG,
+NDPI, Hamamatsu VMS) will work in the latest stable version; for very
+large images those won't work because the entire image needs to be
+decoded in order to get a tile.  Support for NDPI and VMS is much better on
+the develop branch (i.e.  trunk builds), but opening tiles from a JPEG still
+requires that the entire image be decoded first.
+
+Regards,
+-Melissa
+
+On Mon, Apr 29, 2013 at 09:09:37AM -0700, Stephane wrote:
+&gt;<i> Hi Curtis,
+</I>&gt;<i> 
+</I>&gt;<i> Thanks for the information.
+</I>&gt;<i> We are currently testing the following method to open image tile by tile:
+</I>&gt;<i>    byte[] openBytes(int no, byte[] buf, int x, int y, int w, int h)
+</I>&gt;<i> 
+</I>&gt;<i> but it appears that all reader do not support it very well, we tested both 
+</I>&gt;<i> on JPEG and NDPI reader and obtained errors in both case. Is there any way 
+</I>&gt;<i> to know how much this method is supported ?
+</I>&gt;<i> 
+</I>&gt;<i> Glad to hear about the IJ2 work on smart image disk caching, i am impatient 
+</I>&gt;<i> to see that in action :)
+</I>&gt;<i> 
+</I>&gt;<i> Cheers,
+</I>&gt;<i> 
+</I>&gt;<i> - Stephane
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> Le lundi 29 avril 2013 17:40:21 UTC+2, Curtis Rueden a &#233;crit :
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Hi Stephane &amp; everyone,
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; &gt; We are also developing a plugin which may be used to split very large
+</I>&gt;<i> &gt; &gt; images in tiles but again we are very dependant to what the
+</I>&gt;<i> &gt; &gt; Bio-Formats library is able to do so it could be limited in some way.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Bio-Formats provides an API for opening very large image planes in tiles:
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;     byte[] openBytes(int no, int x, int y, int w, int h)
+</I>&gt;<i> &gt;     byte[] openBytes(int no, byte[] buf, int x, int y, int w, int h)
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Any valid tile width and height should behave correctly, but for optimal 
+</I>&gt;<i> &gt; performance you can ask for the data's ideal tile size using:
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;     int getOptimalTileWidth()
+</I>&gt;<i> &gt;     int getOptimalTileHeight()
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; So hopefully it would not be too difficult for Icy to provide a &quot;crop 
+</I>&gt;<i> &gt; image on import&quot; sort of feature -- and maybe eventually a tile-based image 
+</I>&gt;<i> &gt; viewer. Please let us know if you have any trouble with it!
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Regards,
+</I>&gt;<i> &gt; Curtis
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; P.S. This week, the ImageJ2 team will be working on the underpinnings in 
+</I>&gt;<i> &gt; ImgLib2 for a SCIFIO-driven CellImg with intelligent disk caching. Once 
+</I>&gt;<i> &gt; this work is ready, and if Icy becomes capable of using ImgLib2 data 
+</I>&gt;<i> &gt; structures at the interface level, you could potentially harness this 
+</I>&gt;<i> &gt; feature for tile-based image support.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; On Mon, Apr 29, 2013 at 9:59 AM, Stephane &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">stephane.da... at pasteur.fr</A>&lt;javascript:&gt;
+</I>&gt;<i> &gt; &gt; wrote:
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;&gt; Hi,
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; Generally that type of microscope generate multi series image (with 
+</I>&gt;<i> &gt;&gt; different resolution) so even if Icy can't open the full resolution, you 
+</I>&gt;<i> &gt;&gt; should be able to open a sub resolution of the image.
+</I>&gt;<i> &gt;&gt; We are also developing a plugin which may be used to split very large 
+</I>&gt;<i> &gt;&gt; images in tiles but again we are very dependant to what the Bio-Formats 
+</I>&gt;<i> &gt;&gt; library is able to do so it could be limited in some way. Did you try to re 
+</I>&gt;<i> &gt;&gt; open your image with the last version of Bio-Format ? you should have 
+</I>&gt;<i> &gt;&gt; received an automatic update last friday.
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; Cheers,
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; - Stephane
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; Le lundi 29 avril 2013 13:56:45 UTC+2, henrik aamodt a &#233;crit :
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt;  Hi again, thank You for Your reply. Is there a quick way to reduce the 
+</I>&gt;<i> &gt;&gt;&gt; X/Y in images, or has that to be done *before* importing them to ICY or 
+</I>&gt;<i> &gt;&gt;&gt; maybe even when the slides are beeing scanned?
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt; sincerly
+</I>&gt;<i> &gt;&gt;&gt; Henrik Aamodt
+</I>&gt;<i> &gt;&gt;&gt; Oslo University Hospital
+</I>&gt;<i> &gt;&gt;&gt; Norway
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt; Den 29.04.13 13:15, skrev Stephane: 
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt; Hi,
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt; 4 or 5 GB is really huge image, if the X/Y dimension is too large (&gt; 
+</I>&gt;<i> &gt;&gt;&gt; 32000x32000) then you may experience problems to open them.
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt; Le vendredi 26 avril 2013 22:00:16 UTC+2, Henrik Aamodt a &#233;crit : 
+</I>&gt;<i> &gt;&gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt;&gt;  hi, thanks for Your reply. we will be able to scan to .tiff soon, 
+</I>&gt;<i> &gt;&gt;&gt;&gt; that should resolve the issue. FYI the mirax files are aprox 4.5-5 GB, dont 
+</I>&gt;<i> &gt;&gt;&gt;&gt; have the x/y
+</I>&gt;<i> &gt;&gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt;&gt;  henrik aamodt
+</I>&gt;<i> &gt;&gt;&gt;&gt; norway
+</I>&gt;<i> &gt;&gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt;&gt; Den 26. apr. 2013 kl. 21:38 skrev Stephane &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">stephane.da... at pasteur.fr</A>&gt;:
+</I>&gt;<i> &gt;&gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt;&gt;  Hello,
+</I>&gt;<i> &gt;&gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt;&gt; Sorry for the delay !
+</I>&gt;<i> &gt;&gt;&gt;&gt; Actually mirax format is not yet supported by Bio-Formats (the library 
+</I>&gt;<i> &gt;&gt;&gt;&gt; we use to open image files) :
+</I>&gt;<i> &gt;&gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt;&gt; <A HREF="http://www.openmicroscopy.org/**site/support/bio-formats/**">http://www.openmicroscopy.org/**site/support/bio-formats/**</A>
+</I>&gt;<i> &gt;&gt;&gt;&gt; supported-formats.html&lt;<A HREF="http://www.openmicroscopy.org/site/support/bio-formats/supported-formats.html">http://www.openmicroscopy.org/site/support/bio-formats/supported-formats.html</A>&gt;
+</I>&gt;<i> &gt;&gt;&gt;&gt; <A HREF="http://trac.openmicroscopy.**org.uk/ome/ticket/4121&lt;http://trac.openmicroscopy.org.uk/ome/ticket/4121">http://trac.openmicroscopy.**org.uk/ome/ticket/4121&lt;http://trac.openmicroscopy.org.uk/ome/ticket/4121</A>&gt;
+</I>&gt;<i> &gt;&gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt;&gt; But at some point they will add support for it.
+</I>&gt;<i> &gt;&gt;&gt;&gt; From the error message we counld think your image is too big to be 
+</I>&gt;<i> &gt;&gt;&gt;&gt; laoded, do you know the size (X / Y dimension) of your image ?
+</I>&gt;<i> &gt;&gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt;&gt; - Stephane
+</I>&gt;<i> &gt;&gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt;&gt; Le lundi 22 avril 2013 19:38:00 UTC+2, <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">hen... at broadpark.no</A> a &#233;crit : 
+</I>&gt;<i> &gt;&gt;&gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt;&gt;&gt; Hi, anyone know a way to import .MRXS image files to ICY? I tried but 
+</I>&gt;<i> &gt;&gt;&gt;&gt;&gt; got &quot;image plane too large&quot;.  
+</I>&gt;<i> &gt;&gt;&gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt;&gt;&gt;  thanks
+</I>&gt;<i> &gt;&gt;&gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt;&gt; -- 
+</I>&gt;<i> &gt;&gt;&gt;&gt; You received this message because you are subscribed to a topic in the 
+</I>&gt;<i> &gt;&gt;&gt;&gt; Google Groups &quot;Icy imaging&quot; group.
+</I>&gt;<i> &gt;&gt;&gt;&gt; To unsubscribe from this topic, visit <A HREF="https://groups.google.com/d/**">https://groups.google.com/d/**</A>
+</I>&gt;<i> &gt;&gt;&gt;&gt; topic/icy-software/**utQCSLMvr1Y/unsubscribe?hl=en&lt;<A HREF="https://groups.google.com/d/topic/icy-software/utQCSLMvr1Y/unsubscribe?hl=en">https://groups.google.com/d/topic/icy-software/utQCSLMvr1Y/unsubscribe?hl=en</A>&gt;
+</I>&gt;<i> &gt;&gt;&gt;&gt; .
+</I>&gt;<i> &gt;&gt;&gt;&gt; To unsubscribe from this group and all its topics, send an email to 
+</I>&gt;<i> &gt;&gt;&gt;&gt; <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">icy-software... at googlegroups.</A>**com.
+</I>&gt;<i> &gt;&gt;&gt;&gt; To post to this group, send email to <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">icy-so... at googlegroups.com.</A>
+</I>&gt;<i> &gt;&gt;&gt;&gt; To view this discussion on the web visit <A HREF="https://groups.google.com/d/**">https://groups.google.com/d/**</A>
+</I>&gt;<i> &gt;&gt;&gt;&gt; msg/icy-software/-/**CrqZqyNHJAgJ&lt;<A HREF="https://groups.google.com/d/msg/icy-software/-/CrqZqyNHJAgJ">https://groups.google.com/d/msg/icy-software/-/CrqZqyNHJAgJ</A>&gt;
+</I>&gt;<i> &gt;&gt;&gt;&gt; .
+</I>&gt;<i> &gt;&gt;&gt;&gt; For more options, visit <A HREF="https://groups.google.com/**groups/opt_out&lt;https://groups.google.com/groups/opt_out">https://groups.google.com/**groups/opt_out&lt;https://groups.google.com/groups/opt_out</A>&gt;
+</I>&gt;<i> &gt;&gt;&gt;&gt; .
+</I>&gt;<i> &gt;&gt;&gt;&gt;  
+</I>&gt;<i> &gt;&gt;&gt;&gt;  
+</I>&gt;<i> &gt;&gt;&gt;&gt;  
+</I>&gt;<i> &gt;&gt;&gt;&gt;  -- 
+</I>&gt;<i> &gt;&gt;&gt; You received this message because you are subscribed to a topic in the 
+</I>&gt;<i> &gt;&gt;&gt; Google Groups &quot;Icy imaging&quot; group.
+</I>&gt;<i> &gt;&gt;&gt; To unsubscribe from this topic, visit <A HREF="https://groups.google.com/d/**">https://groups.google.com/d/**</A>
+</I>&gt;<i> &gt;&gt;&gt; topic/icy-software/**utQCSLMvr1Y/unsubscribe?hl=en&lt;<A HREF="https://groups.google.com/d/topic/icy-software/utQCSLMvr1Y/unsubscribe?hl=en">https://groups.google.com/d/topic/icy-software/utQCSLMvr1Y/unsubscribe?hl=en</A>&gt;
+</I>&gt;<i> &gt;&gt;&gt; .
+</I>&gt;<i> &gt;&gt;&gt; To unsubscribe from this group and all its topics, send an email to 
+</I>&gt;<i> &gt;&gt;&gt; icy-software...@**googlegroups.com.
+</I>&gt;<i> &gt;&gt;&gt; To post to this group, send email to <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">icy-so... at googlegroups.com.</A>
+</I>&gt;<i> &gt;&gt;&gt; To view this discussion on the web visit <A HREF="https://groups.google.com/d/**">https://groups.google.com/d/**</A>
+</I>&gt;<i> &gt;&gt;&gt; msg/icy-software/-/2YDns-**bhefAJ&lt;<A HREF="https://groups.google.com/d/msg/icy-software/-/2YDns-bhefAJ">https://groups.google.com/d/msg/icy-software/-/2YDns-bhefAJ</A>&gt;
+</I>&gt;<i> &gt;&gt;&gt; .
+</I>&gt;<i> &gt;&gt;&gt; For more options, visit <A HREF="https://groups.google.com/**groups/opt_out&lt;https://groups.google.com/groups/opt_out">https://groups.google.com/**groups/opt_out&lt;https://groups.google.com/groups/opt_out</A>&gt;
+</I>&gt;<i> &gt;&gt;&gt; .
+</I>&gt;<i> &gt;&gt;&gt;  
+</I>&gt;<i> &gt;&gt;&gt;  
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt;   -- 
+</I>&gt;<i> &gt;&gt; You received this message because you are subscribed to the Google Groups 
+</I>&gt;<i> &gt;&gt; &quot;Icy imaging&quot; group.
+</I>&gt;<i> &gt;&gt; To unsubscribe from this group and stop receiving emails from it, send an 
+</I>&gt;<i> &gt;&gt; email to <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">icy-software... at googlegroups.com</A> &lt;javascript:&gt;.
+</I>&gt;<i> &gt;&gt; To post to this group, send email to <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">icy-so... at googlegroups.com</A>&lt;javascript:&gt;
+</I>&gt;<i> &gt;&gt; .
+</I>&gt;<i> &gt;&gt; To view this discussion on the web visit 
+</I>&gt;<i> &gt;&gt; <A HREF="https://groups.google.com/d/msg/icy-software/-/l-yO979eP_MJ.">https://groups.google.com/d/msg/icy-software/-/l-yO979eP_MJ.</A>
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; For more options, visit <A HREF="https://groups.google.com/groups/opt_out.">https://groups.google.com/groups/opt_out.</A>
+</I>&gt;<i> &gt;&gt;  
+</I>&gt;<i> &gt;&gt;  
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;
+</I>
+&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>
+
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="001488.html">[ImageJ-devel] experiments with a new ops framework for imglib2
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1487">[ date ]</a>
+              <a href="thread.html#1487">[ thread ]</a>
+              <a href="subject.html#1487">[ subject ]</a>
+              <a href="author.html#1487">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

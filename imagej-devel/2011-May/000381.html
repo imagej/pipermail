@@ -1,0 +1,252 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Auto-Documentation of Processing Chain: Extension of @Parameter Annotation
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Auto-Documentation%20of%20Processing%20Chain%3A%0A%20Extension%20of%20%40Parameter%20Annotation&In-Reply-To=%3C1305726135.1887.14.camel%40localhost%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000382.html">
+   <LINK REL="Next"  HREF="000383.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Auto-Documentation of Processing Chain: Extension of @Parameter Annotation</H1>
+    <B>Oliver Gress</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Auto-Documentation%20of%20Processing%20Chain%3A%0A%20Extension%20of%20%40Parameter%20Annotation&In-Reply-To=%3C1305726135.1887.14.camel%40localhost%3E"
+       TITLE="[ImageJ-devel] Auto-Documentation of Processing Chain: Extension of @Parameter Annotation">oliver.gress at informatik.uni-halle.de
+       </A><BR>
+    <I>Wed May 18 08:42:15 CDT 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000382.html">[ImageJ-devel] recording commands
+</A></li>
+        <LI>Next message: <A HREF="000383.html">[ImageJ-devel] Auto-Documentation of Processing Chain:	Extension of @Parameter Annotation
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#381">[ date ]</a>
+              <a href="thread.html#381">[ thread ]</a>
+              <a href="subject.html#381">[ subject ]</a>
+              <a href="author.html#381">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi everybody,
+
+sorry for the long silence on our side, other projects had priority :-(
+
+&gt;<i> First, a little background: as Johannes mentioned, there has been
+</I>initial
+&gt;<i> development of a &quot;workflow engine&quot; for ImageJ2:
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i>
+</I><A HREF="http://dev.imagejdev.org/trac/imagej/browser/trunk/extra/workflow/src/main/java/imagej/workflow">http://dev.imagejdev.org/trac/imagej/browser/trunk/extra/workflow/src/main/java/imagej/workflow</A>
+&gt;<i> 
+</I>&gt;<i> We have begun a reconciliation of the workflow engine with the plugin
+</I>&gt;<i> framework. Essentially, the toplevel idea is that of a &quot;module&quot; with
+</I>inputs
+&gt;<i> and outputs; see:
+</I>&gt;<i> 
+</I>&gt;<i> LINES DELETED ..
+</I>&gt;<i>
+</I>&gt;<i> Anyway, none of this work precludes your implementation from being
+</I>useful as
+&gt;<i> well, since our focus was not on data provenance at all yet (though we
+</I>are
+&gt;<i> very interested in supporting it).
+</I>
+The IJ ideas of modules and work flows definitely seem to be related to
+our automatic documentation framework Alida. 
+However, we started with the idea to automatically create a
+documentation of the data manipulations which gave rise to a given
+(image) data object persistently stored (e.g., in files). E.g., for an
+image on disk we want to know, how this image was generated. This means,
+to trace back - potentially through different interactive (IJ) sessions
+and/or processing started from command line - which operations
+(including their parameter settings and software version) were applied
+(in which sequence).
+Of course, with proper manual documentation one can achieve this kind of
+documentation as well, which however is cumbersome and error prone.
+
+Another thread was to be able to use plugins/operations from within
+other plugins and operations,
+which for our feeling was not easy to accomplish in IJ1.
+Furthermore, we like to be able to execute each plugin also from command
+line (or rather shell scripts), to process large amounts of data sets or
+to e.g. do grid search for parameters of our algorithms.
+And preferable to be able to do so without programming efforts, e.g. to
+generically execute plugins from command line.
+
+These wishes led us to a framework of operators as the only place of
+processing (which probably are very similar to IJ2 modules) and a
+generic way to describe there interface (input and output data, control
+parameter, supplemental parameters like verbose flag or flags to control
+visualization of intermediate results), very similar to the @Parameter
+annotation.
+
+At this point naturally the idea of visual programming came into play,
+however, only thoughts (or rather dreams) for now.
+
+&gt;<i> Would it be possible to extend or modify the @Parameter annotation to
+</I>&gt;<i> &gt; categorize a field as input, output, parameter or supplemental?
+</I>&gt;<i> &gt;
+</I>&gt;<i> Certainly! How about a &quot;visibility&quot; enum with values: NORMAL
+</I>(default),
+&gt;<i> TRANSIENT (for no history), and INVISIBLE (for no recording nor
+</I>history). If
+&gt;<i> anyone has an idea for better names, I'm all ears. In the meantime, I
+</I>have
+&gt;<i> committed an initial version of this enum to SVN and updated the
+</I>Parameter
+
+First let us make sure whether we understand this correctly. An input
+and/or output image would be NORMAL, whereas, e.g., a mask size or
+stddev of a Gaussian would be TRANSIENT?
+Is there a sensible situation for a transient output parameter,
+which we can not conceive of?
+
+If this is correct, we would suggest something like DATAFLOW  
+in place of NORMAL, and e.g. CONTROL instead of TRANSIENT.
+This might be more intuitive for programmers, as parameters like mask
+size are, of course, &quot;normal&quot;, too, and we have the association of data
+flow and the control of plugins.
+
+Two more issues regarding the @Parameter annotation from our side:
+- we would strongly prefer to let have the @Parameter annotation the
+  @Documented annotation so as to yield a complete javadoc
+  describing the interface of the plugin/workflow
+
+- How to cope with operations which modifiy their input
+  data in place, and this modified data is the result of the plugin
+  (like Smooth or Sharpen in the Process menue of IJ)?
+  If we annotate such a plugin with one input parameter 
+  we cannot (automatically) infer the complete data flow,
+  as it is not evident, which data enters and leaves the plugin.
+
+  Within the current framework this could be expressed using a second
+  member annotated as output parameter, and the run method just assigns
+  the input to the output member.
+  Another option is to introduce (instead of the binary choice input or 
+  ouput) the choice input or output or inoutput (maybe inputoutput)
+
+  Conceptionally we prefer the second possibility, as it clearly 
+  expresses what really happens (i.e. the input is modified, where I 
+  assume by default that inputs are not modified).
+  Pragmatically the first option might be advantageous as it does not
+  require a change of the @Parameter annotation
+  (but would ask the programmer to add the annotated output member and 
+  the assign statement)
+
+&gt;<i> We would really like to merge these annotations, because the
+</I>processing
+&gt;<i> &gt; chain documentation could be easily employed by IJ plugins that use
+</I>the
+&gt;<i> &gt; @Parameter annotation and no additional annotation would be
+</I>necessary.
+&gt;<i> &gt;
+</I>&gt;<i> 
+</I>&gt;<i> Great, please let us know what else you need to make this happen!
+</I>
+we integrated our automatic documentation experimentally into IJ2.
+Essentially 
+(i) we introduced a few lines of code into the PluginRunner
+    to either execute the Plugin's run() method or to pipe this
+    through Alida's operator framework (depending on the alida.run 
+    property given to the jvm).
+    Besides adding some plugins this is the only modification of IJ
+    (assuming the PluginRunner is the only place were a plugin is 
+    generically started from within IJ)
+
+    Probably this could be done nicer using the events as published by 
+    the plugin runner
+(ii) we added a Alida Plugin Wrapper - used in (i) - which essentially
+    converts IJ's module info to its Alida counterpart
+
+    However: currently we take the @Parameter annotations from the 
+    ModuleInfo which excludes presets, thus, might get not all annotated
+    parameters (which we should change) 
+
+For testing
+(iii) we added a plugin WriteHistory which takes an image and a
+      file(name) as input and writes Alida's processing history of the  
+      image as enhanced graphml (i.e. xml) to the file (if properly 
+      integrated this step would go to FileReader and FileSaver and 
+      thus is transparent to the user)
+(iv)  we derived plugins 
+    - from IJs SharpenDataValues (which does not modify the input image,
+      but rather a cloned version) and 
+    - SmoothDataValues (with an additonal output assign from the input, 
+      see input/output issue above) and added plugins
+    - ALDDemo which internally used Alida operators
+    - ALDDemo2 which internally first used the modified 
+      SharpenDataValues-plugin and on the result the modfied 
+      SmoothDataValues
+        
+The resulting IJ snapshot may be downloaded from
+
+<A HREF="http://www2.informatik.uni-halle.de/agprbio/alida/downloads/imagej-2.0-SNAPSHOT-application-alida.zip">http://www2.informatik.uni-halle.de/agprbio/alida/downloads/imagej-2.0-SNAPSHOT-application-alida.zip</A>
+(Note: you need to start the JVM with the property alida.run set)
+
+This zip contains in addition
+- a README-ALIDA with some more details as well as
+- a sample Alida History File (sample.ald) and a screen shot thereof.
+- the source files mentioned above (alida-ij-sources.zip)
+
+We tested only under Linux.
+
+This .ald file may be viewed with Chipory, which we derived from the
+graph editing and visualization tool Chisio. Chipory is available for
+linux system as a zip file and for windows as a self extracting archive.
+
+Both along with more details on and source code of Alida as well as
+Chipory is available at Alidas home page
+	<A HREF="http://www2.informatik.uni-halle.de/agprbio/alida">http://www2.informatik.uni-halle.de/agprbio/alida</A>
+	(soon: www.informatik.uni-halle.de/alida)
+
+We welcome to test the stuff and we are hoping for comments and
+suggestions from any side!
+
+BTW: Is there a intended scheme to invoke a plugin from within another
+plugin? (In the above sketched integration we create an instance of a
+PluginEntry using a class object and the classname (as a string) and use
+this entry to instantiate a PluginModule (which is than run as an
+AlidaOperator)
+
+&gt;<i> Lastly, I will second Johannes's question: are you planning to open
+</I>source
+&gt;<i> this work? Or is it already available somewhere? Would you be
+</I>interested in
+&gt;<i> integrating it into ImageJ2 core?
+</I>
+we just made Alida available under the GPL (soon
+www.informatik.uni-halle.de/alida) and of course we are also interested
+to integrate it into the ImageJ2 core.
+
+
+Best - Oliver, Stefan on behalf of the complete Alida team.
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000382.html">[ImageJ-devel] recording commands
+</A></li>
+	<LI>Next message: <A HREF="000383.html">[ImageJ-devel] Auto-Documentation of Processing Chain:	Extension of @Parameter Annotation
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#381">[ date ]</a>
+              <a href="thread.html#381">[ thread ]</a>
+              <a href="subject.html#381">[ subject ]</a>
+              <a href="author.html#381">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

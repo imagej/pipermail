@@ -1,0 +1,175 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Save/write image with SCIFIO/BF in python script
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Save/write%20image%20with%20SCIFIO/BF%20in%20python%20script&In-Reply-To=%3CCAEpSnnaNWiJ35VRsVbOQHOE4oAKrOMgk%2B0o0up3zukr_NeS%2BQA%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002399.html">
+   <LINK REL="Next"  HREF="002386.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Save/write image with SCIFIO/BF in python script</H1>
+    <B>Hadrien Mary</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Save/write%20image%20with%20SCIFIO/BF%20in%20python%20script&In-Reply-To=%3CCAEpSnnaNWiJ35VRsVbOQHOE4oAKrOMgk%2B0o0up3zukr_NeS%2BQA%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Save/write image with SCIFIO/BF in python script">hadrien.mary at gmail.com
+       </A><BR>
+    <I>Thu Jan  8 14:18:48 CST 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002399.html">[ImageJ-devel] plugin development for ImageJ2 or ImageJ1?
+</A></li>
+        <LI>Next message: <A HREF="002386.html">[ImageJ-devel] Save/write image with SCIFIO/BF in python script
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2385">[ date ]</a>
+              <a href="thread.html#2385">[ thread ]</a>
+              <a href="subject.html#2385">[ subject ]</a>
+              <a href="author.html#2385">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+I am writing a python macro which iterate over all rois in ROI Manager
+and then use setCropRegion function from bioformat plugin to open a
+cropped region of an image.
+
+I tried to use SCIFIO to write cropped image on disk but it doesn not work.
+
+(I am using an updated version of Fiji.)
+
+Here is my script:
+
+from ij.plugin.frame import RoiManager
+from ij import IJ
+from io.scif.img import ImgSaver
+
+from loci.plugins import BF
+from loci.plugins.in import ImporterOptions
+from loci.common import Region
+
+import os
+
+# Get current image filename
+imp = IJ.getImage()
+f = imp.getOriginalFileInfo()
+fname = os.path.join(f.directory, f.fileName)
+
+IJ.log('Image filename is %s' % fname)
+
+# Iterate over all ROIs from ROI Manager
+rois = RoiManager.getInstance().getRoisAsArray()
+for i, roi in enumerate(rois):
+
+    crop_id = i +1
+    IJ.log(&quot;Opening crop %i / %i&quot; % (crop_id, len(rois)))
+
+    bounds = roi.getBounds()
+
+    x = bounds.x
+    y = bounds.y
+    w = bounds.width
+    h = bounds.height
+
+    # Import only cropped region of the image
+    options = ImporterOptions()
+    options.setCrop(True)
+    options.setCropRegion(0, Region(x, y, w, h))
+    options.setId(fname)
+    imps = BF.openImagePlus(options)
+
+    imp = imps[0]
+    imp.show()
+
+    crop_basename = &quot;crop%i_%s&quot; % (crop_id, f.fileName)
+    crop_fname = os.path.join(f.directory, crop_basename)
+    imp.setTitle(crop_basename)
+
+    # Save image
+    IJ.log(&quot;Saving crop to %s&quot; % crop_fname)
+    saver = ImgSaver()
+    saver.saveImg(crop_basename, imp)
+
+IJ.log('Done')
+
+It fails with this error:
+
+Traceback (most recent call last):
+  File &quot;/home/hadim/local/Fiji.app/plugins/Crop_Multi_Roi.py&quot;, line
+49, in &lt;module&gt;
+    saver.saveImg(crop_basename, imp)
+TypeError: saveImg(): 1st arg can't be coerced to io.scif.Writer, String
+
+at org.python.core.Py.TypeError(Py.java:235)
+at org.python.core.PyReflectedFunction.throwError(PyReflectedFunction.java:209)
+at org.python.core.PyReflectedFunction.throwBadArgError(PyReflectedFunction.java:312)
+at org.python.core.PyReflectedFunction.throwError(PyReflectedFunction.java:321)
+at org.python.core.PyReflectedFunction.__call__(PyReflectedFunction.java:167)
+at org.python.core.PyReflectedFunction.__call__(PyReflectedFunction.java:204)
+at org.python.core.PyObject.__call__(PyObject.java:422)
+at org.python.core.PyObject.__call__(PyObject.java:426)
+at org.python.core.PyMethod.__call__(PyMethod.java:139)
+at org.python.pycode._pyx7.f$0(/home/hadim/local/Fiji.app/plugins/Crop_Multi_Roi.py:51)
+at org.python.pycode._pyx7.call_function(/home/hadim/local/Fiji.app/plugins/Crop_Multi_Roi.py)
+at org.python.core.PyTableCode.call(PyTableCode.java:165)
+at org.python.core.PyCode.call(PyCode.java:18)
+at org.python.core.Py.runCode(Py.java:1275)
+at org.scijava.plugins.scripting.jython.JythonScriptEngine.eval(JythonScriptEngine.java:76)
+at org.scijava.script.ScriptModule.run(ScriptModule.java:175)
+at org.scijava.module.ModuleRunner.run(ModuleRunner.java:167)
+at org.scijava.module.ModuleRunner.call(ModuleRunner.java:126)
+at org.scijava.module.ModuleRunner.call(ModuleRunner.java:65)
+at org.scijava.thread.DefaultThreadService$2.call(DefaultThreadService.java:164)
+at java.util.concurrent.FutureTask.run(FutureTask.java:262)
+at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+at java.lang.Thread.run(Thread.java:745)
+
+Three questions:
+
+how can I write cropped image (I need to write them as OME Tiff so I
+need BF or SCIFIO).
+Is there is any &#8220;easy&#8221; alternative to BF setCropRegion function in SCIFIO ?
+I am currently using RoiManager.getInstance().getRoisAsArray() to
+retrieve all rois. How can I directly get a ROIManager instance from
+RoiSet.zip file ?
+
+Any help would be very appreciated.
+
+Thanks !
+
+&#8212;
+Hadrien Mary
+
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002399.html">[ImageJ-devel] plugin development for ImageJ2 or ImageJ1?
+</A></li>
+	<LI>Next message: <A HREF="002386.html">[ImageJ-devel] Save/write image with SCIFIO/BF in python script
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2385">[ date ]</a>
+              <a href="thread.html#2385">[ thread ]</a>
+              <a href="subject.html#2385">[ subject ]</a>
+              <a href="author.html#2385">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

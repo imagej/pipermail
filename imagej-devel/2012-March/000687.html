@@ -1,0 +1,191 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Labeling - Revised Branch
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Labeling%20-%20Revised%20Branch&In-Reply-To=%3C4F68FCD5.1030808%40mpi-cbg.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000682.html">
+   <LINK REL="Next"  HREF="000679.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Labeling - Revised Branch</H1>
+    <B>Tobias Pietzsch</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Labeling%20-%20Revised%20Branch&In-Reply-To=%3C4F68FCD5.1030808%40mpi-cbg.de%3E"
+       TITLE="[ImageJ-devel] Labeling - Revised Branch">pietzsch at mpi-cbg.de
+       </A><BR>
+    <I>Tue Mar 20 16:55:33 CDT 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000682.html">[ImageJ-devel] Labeling - Revised Branch
+</A></li>
+        <LI>Next message: <A HREF="000679.html">[ImageJ-devel] Labeling - Revised Branch
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#687">[ date ]</a>
+              <a href="thread.html#687">[ thread ]</a>
+              <a href="subject.html#687">[ subject ]</a>
+              <a href="author.html#687">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+On 03/20/2012 06:55 PM, Christian Dietz wrote:
+&gt;<i> Hi Tobi,
+</I>&gt;<i>
+</I>&gt;<i> About the SamplerConverter:
+</I>&gt;<i> this is only one method call more I guess? In the case of get() on the
+</I>&gt;<i> cursor there is no overhead at all.
+</I>&gt;<i> Anyway, I just tested it _very_ briefly using a Labeling with (Int.MAX_VALUE
+</I>&gt;<i> / 200) entries and iterated 10000 times over it using a Cursor with the
+</I>&gt;<i> current Labeling and the revised-Labeling implementations.
+</I>&gt;<i> There is really no difference in runtime (Average runtime in both cases ~66
+</I>&gt;<i> seconds).
+</I>
+It would be great, if you could push this test to the 
+&quot;labeling-revised-revised&quot; branch as a JUnit test, like Johannes proposed.
+
+I guess it is likely, that your change of the Labeling-list index from
+&quot;N extends Number&quot; to &quot;int&quot; increased performance. Maybe that levels out
+the SamplerConverter overhead? I don't know, it's a possibility.
+
+
+&gt;<i> About RandomAccessibleInterval&lt;? extends IntegerType&lt;?&gt;&gt;:
+</I>&gt;<i> Yes sure thats an good idea! But: shouldn't it still be an
+</I>&gt;<i> IterableInterval&lt;? extends IntegerType&lt;?&gt;&gt;: In the case of an Img for
+</I>&gt;<i> example, if I would create an IterableRandomAccessibleInterval&lt;? extends
+</I>&gt;<i> IntegerType&lt;?&gt;&gt;  using the Img as  RandomAccessibleInterval&lt;? extends
+</I>&gt;<i> IntegerType&lt;?&gt;&gt;  I would have a much slower cursor than the &quot;native&quot; Cursor
+</I>&gt;<i> provided by the Img, right? If this is not the case it would be completely
+</I>&gt;<i> fine to use a RandomAccessibleInterval&lt;? extends IntegerType&lt;?&gt;&gt;  and create
+</I>&gt;<i> the Cursor using IterableRandomAccessibleInterval&lt;? extends IntegerType&lt;?&gt;&gt;
+</I>&gt;<i> then.
+</I>
+There is a solution to this now.
+There is a method
+
+public static &lt; T &gt; IterableInterval&lt; T &gt; iterable( final 
+RandomAccessibleInterval&lt; T &gt; randomAccessibleInterval )
+
+in Views.
+It simply returns randomAccessibleInterval if it is an IterableInterval. 
+Otherwise it is wrapped into a
+IterableRandomAccessibleInterval.
+
+So, one should now use this method, when one needs to make a
+RandomAccessibleInterval iterable. If the Labeling has been constructed
+with an Img, you will get the &quot;native&quot; Cursor.
+
+best regards,
+Tobias
+
+&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Maybe we're completely wrong here ;)
+</I>&gt;<i>
+</I>&gt;<i> Martin&amp;  Christian
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> -----Original Message-----
+</I>&gt;<i> From: Tobias Pietzsch [mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pietzsch at mpi-cbg.de</A>]
+</I>&gt;<i> Sent: Dienstag, 20. M&#228;rz 2012 17:27
+</I>&gt;<i> To: Christian Dietz; <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">martin.horn at uni-konstanz.de</A>
+</I>&gt;<i> Cc: ImageJ-devel
+</I>&gt;<i> Subject: Re: [ImageJ-devel] Labeling - Revised Branch
+</I>&gt;<i>
+</I>&gt;<i> On 03/20/2012 05:01 PM, Tobias Pietzsch wrote:
+</I>&gt;&gt;<i> The main point for you is, that now you can use &quot;smaller&quot; IntegerTypes
+</I>&gt;&gt;<i> (eg. Byte) to store the Labeling, so you save memory, right?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> That's cool, but it comes with the additional overhead of using a
+</I>&gt;&gt;<i> SamplerConverter for the Accessors. So you trade of memory vs
+</I>&gt;&gt;<i> computation time. Did you do any benchmarks to see how much
+</I>&gt;&gt;<i> runtime-overhead you have there?
+</I>&gt;<i>
+</I>&gt;<i> An alternative way to achieve this would be to make LabelingType an
+</I>&gt;<i> interface a la
+</I>&gt;<i> public interface LabelingType&lt;T extends LabelingType&lt;T&gt;  &amp;  Comparable&lt;T&gt;&gt;
+</I>&gt;<i> extends NativeType&lt;T&gt;
+</I>&gt;<i> and provide implementations mapping to different basic type arrays.
+</I>&gt;<i>
+</I>&gt;<i> Did you consider this alternative?
+</I>&gt;<i>
+</I>&gt;<i> best regards,
+</I>&gt;<i> Tobias
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> best regards,
+</I>&gt;&gt;<i> Tobias
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> On 03/19/2012 10:05 PM, Christian Dietz wrote:
+</I>&gt;&gt;&gt;<i> Hi Tobi&amp;  Lee,
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> I created a new branch with some changes of Martin Horn and me
+</I>&gt;&gt;&gt;<i> concerning the Labeling (labeling-revised).
+</I>&gt;&gt;&gt;<i> Actually the we changed only a little.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> The main differences are:
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> - Generic Labeling of any IntegerType (Bit, Byte, Short, Int and so on)
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> - Labeling is not an Img&lt;LabelingType&lt;?&gt;&gt;  anymore, but still
+</I>&gt;&gt;&gt;<i> IterableInterval&lt;LabelingType&lt;?&gt;&gt;  and RandomAccessible&lt;LabelingType&lt;?&gt;&gt;
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> - The Labeling is created a little different now (Img&lt;? extends
+</I>&gt;&gt;&gt;<i> IntegerType&lt;?&gt;&gt;  is provided in the constructor as the storage).
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Please see this as some suggestions from our side and we are pretty sure
+</I>&gt;&gt;&gt;<i> it's not perfect or even good ;) But maybe it's a good starting point
+</I>&gt;&gt;&gt;<i> for some future discussions.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Thank you for your comments in advance,
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Martin&amp;  Christian :)
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>
+
+</PRE>
+
+
+
+
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000682.html">[ImageJ-devel] Labeling - Revised Branch
+</A></li>
+	<LI>Next message: <A HREF="000679.html">[ImageJ-devel] Labeling - Revised Branch
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#687">[ date ]</a>
+              <a href="thread.html#687">[ thread ]</a>
+              <a href="subject.html#687">[ subject ]</a>
+              <a href="author.html#687">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

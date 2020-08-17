@@ -1,0 +1,134 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] ImageJ launcher split to its own repository
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImageJ%20launcher%20split%20to%20its%20own%20repository&In-Reply-To=%3Calpine.DEB.1.00.1306060456140.28957%40s15462909.onlinehome-server.info%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001532.html">
+   <LINK REL="Next"  HREF="001535.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] ImageJ launcher split to its own repository</H1>
+    <B>Johannes Schindelin</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImageJ%20launcher%20split%20to%20its%20own%20repository&In-Reply-To=%3Calpine.DEB.1.00.1306060456140.28957%40s15462909.onlinehome-server.info%3E"
+       TITLE="[ImageJ-devel] ImageJ launcher split to its own repository">schindelin at wisc.edu
+       </A><BR>
+    <I>Thu Jun  6 09:47:12 CDT 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001532.html">[ImageJ-devel] ImageJ launcher split to its own repository
+</A></li>
+        <LI>Next message: <A HREF="001535.html">[ImageJ-devel] ImageJ 2.0.0-beta-7 released
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1533">[ date ]</a>
+              <a href="thread.html#1533">[ thread ]</a>
+              <a href="subject.html#1533">[ subject ]</a>
+              <a href="author.html#1533">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Curtis,
+
+On Wed, 5 Jun 2013, Curtis Rueden wrote:
+
+&gt;<i> The ImageJ launcher has been split to its own Git repository:
+</I>&gt;<i> 
+</I>&gt;<i>     <A HREF="https://github.com/imagej/imagej-launcher">https://github.com/imagej/imagej-launcher</A>
+</I>&gt;<i> 
+</I>&gt;<i> The reasoning is two-fold:
+</I>&gt;<i> 
+</I>&gt;<i> 1) The launcher is its own project with its own development cycle,
+</I>&gt;<i> supporting ImageJ1, Fiji and ImageJ2. So it should be versioned separately.
+</I>&gt;<i> 
+</I>&gt;<i> 2) The split makes it much simpler to build and release ImageJ2.
+</I>&gt;<i> 
+</I>&gt;<i> We have also released version 2.0.0 of the launcher [1]. It has been in
+</I>&gt;<i> use with Fiji for a long time now, and we are already committed to
+</I>&gt;<i> maintaining backwards compatibility, so unlike ImageJ2, there is no
+</I>&gt;<i> point to keeping it in beta.
+</I>
+Good point.
+
+BTW I found one problem with the deployment: I forgot to use
+-DupdateReleaseInfo=true in ImageJ-launcher-deploy.
+
+While at it, I looked through all the configurations and found that
+Bio-Formats-maven, cppwrap-maven-plugin, curve-fitter, deep-zoom-plugin,
+flow-cytometry, forward-cron-job, ImgLib, ImgLib-daily, jar2lib, jvmlink,
+loci-checkstyle, LOCI, LOCI-daily, loci-utils, misc-plugins, multi-lut,
+native-lib-loader, ome-versioning, prairie-ome-tiff,
+Saalfeld-MPICBG-Maven, SCIFIO, SLIM-curve, slim-plotter, slim-plugin,
+TrakEM2-Maven, visbio, visbio-imagej, wid-3dniche and wiscscan-java share
+the same problem.
+
+I fixed them all, even the disabled (and the obsolete) ones, so that the
+following command would give me an empty result:
+
+grep -w 'deploy' $HOME/jobs/*/config.xml |
+grep -v -e '-DupdateReleaseInfo=true' -e 'incremental-deploy' \
+	-e '&lt;/\?description&gt;' -e '&lt;projects&gt;' -e '&lt;command&gt;#' |
+sed 's/^[^:]*\/\([^\/:]*\)\/config\.xml:.*/http:\/\/jenkins.imagej.net\/job\/\1\/configure/'
+
+&gt;<i> P.S. to Dscho: Updating the Jenkins jobs was mostly very straightforward,
+</I>&gt;<i> except for the ImageJ-launcher-deploy job. Your recent hack to discover the
+</I>&gt;<i> triggering Image-launcher build number by extracting it from the current
+</I>&gt;<i> build log did not work as we hoped: there was no match. At first I thought
+</I>&gt;<i> Jenkins was stripping out the backslashes within the sed expression, so I
+</I>&gt;<i> tried escaping the backslashes, which fixed the Jenkins console output but
+</I>&gt;<i> ultimately had the same result. So then I figured probably the log is not
+</I>&gt;<i> actually written to disk at that point.
+</I>
+That is too bad. I actually tested this in the Sandbox and the first part
+of the log *was* written to disk at that point.
+
+&gt;<i> I installed the Parameterized Trigger plugin, added a buildNumber
+</I>&gt;<i> parameter to ImageJ-launcher-deploy, and passed ImageJ-launcher's
+</I>&gt;<i> $BUILD_NUMBER in via that parameter. It worked, and furthermore we now
+</I>&gt;<i> have the ability to manually execute ImageJ-launcher-deploy on any
+</I>&gt;<i> desired ImageJ-launcher build.
+</I>
+I agree that is much better than my hack! Sorry to cause you so much
+trouble, I would have worked harder on this (and on the split) had I
+not expected all of that to happen next week ;-)
+
+&gt;<i> P.P.S. to all: ImageJ 2.0.0-beta-7 will probably be out tomorrow, though
+</I>&gt;<i> announcements and blog posts may not be finished before Friday.
+</I>
+Sounds good to me!
+
+Ciao,
+Dscho
+
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001532.html">[ImageJ-devel] ImageJ launcher split to its own repository
+</A></li>
+	<LI>Next message: <A HREF="001535.html">[ImageJ-devel] ImageJ 2.0.0-beta-7 released
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1533">[ date ]</a>
+              <a href="thread.html#1533">[ thread ]</a>
+              <a href="subject.html#1533">[ subject ]</a>
+              <a href="author.html#1533">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

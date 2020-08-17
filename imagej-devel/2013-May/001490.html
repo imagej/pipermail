@@ -1,0 +1,121 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Tons of &quot;back to normal&quot; Jenkins messages
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Tons%20of%20%22back%20to%20normal%22%20Jenkins%20messages&In-Reply-To=%3Calpine.DEB.1.00.1305111142160.8213%40s15462909.onlinehome-server.info%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001489.html">
+   <LINK REL="Next"  HREF="001491.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Tons of &quot;back to normal&quot; Jenkins messages</H1>
+    <B>Johannes Schindelin</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Tons%20of%20%22back%20to%20normal%22%20Jenkins%20messages&In-Reply-To=%3Calpine.DEB.1.00.1305111142160.8213%40s15462909.onlinehome-server.info%3E"
+       TITLE="[ImageJ-devel] Tons of &quot;back to normal&quot; Jenkins messages">schindelin at wisc.edu
+       </A><BR>
+    <I>Sat May 11 12:01:42 CDT 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001489.html">[ImageJ-devel] experiments with a new ops framework for imglib2
+</A></li>
+        <LI>Next message: <A HREF="001491.html">[ImageJ-devel] ImageJA pom-scijava version
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1490">[ date ]</a>
+              <a href="thread.html#1490">[ thread ]</a>
+              <a href="subject.html#1490">[ subject ]</a>
+              <a href="author.html#1490">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi all,
+
+those of you who subscribed to imagej-builds will have gotten a flurry of
+&quot;Build is back to normal&quot; messages. While this is soothing, the absence of
+mails claiming that the builds failed might be discomforting.
+
+The reason those mails were not sent is actually the same reason as why
+those builds failed in the first place: Jenkins' JVM ran out of PermSpace.
+
+So what is PermSpace? This is the area of the memory in which the JVM
+stores things that are supposed never to be unloaded from memory. Like
+class definitions. In Java 1.7, you can actually mark a URLClassLoader as
+no longer required, but in Java 1.6 this is not the case. There are
+workarounds with the garbage collector going around on demand to clean
+those class definitions which fell out of use when their corresponding
+class loaders get garbage collected. Contrary to my belief, this
+functionality is opt-in, not opt-out in Java 1.6.
+
+But why did Jenkins run out of PermSpace to begin with?
+
+Alas, this is my fault. In my endeavor to show the changes of the
+Stable-Fiji job (i.e. the changes in the uploaded files), I had to fake a
+Subversion changelog (the Changes in Jenkins are tied very tightly to an
+SCM, even if just parsing the persisted list of changes). To make that
+happen, I had to instantiate a class loader because the Groovy Postbuild
+script generating those Changes did not have a default class loader that
+knew about the Subversion ChangeLog classes.
+
+So I punted and built a URLClassLoader myself. Everytime the Stable-Fiji
+job ran, which apparently was quite, quite often.
+
+I should have researched a little more back then and found the place in
+Jenkins where it loads its plugins itself. I did that now and fixed the
+Stable-Fiji job.
+
+However, I could be all wrong and the PermSpace issue is not at all caused
+by that URLClassLoader thingie, but rather by something as mundane as the
+mere fact that we run a gazillion jobs on Jenkins. Well, maybe not a
+gazillion. At the moment the tally is 170. Quite something, still.
+
+So let's be wary and if we find that Jenkins is stuck (i.e. its CPU load
+on dev is 99-100%), let's first inspect the respective /proc/&lt;pid&gt;/fd/ to
+find the (probably deleted by the logrotator) log and cat it into a file
+for future inspection. If the issue is PermSpace again, we might need to
+simply increase the PermSpace with -XX:MaxPermSize=&lt;memory&gt; and/or require
+the surefire plugin to fork by passing the -Dsurefire.forkMode=once
+property (since a couple of recent unit tests in ImageJ/Fiji actually use
+custom ClassLoaders).
+
+All the current work on this issue can be found here:
+
+<A HREF="http://trac.imagej.net/ticket/1863">http://trac.imagej.net/ticket/1863</A>
+
+The bug is marked as resolved because I expect the Stable-Fiji
+configuration to have been the culprit, but if the issue arises again,
+please reopen that ticket instead of adding a new one.
+
+Thank you for your attention,
+Dscho
+
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001489.html">[ImageJ-devel] experiments with a new ops framework for imglib2
+</A></li>
+	<LI>Next message: <A HREF="001491.html">[ImageJ-devel] ImageJA pom-scijava version
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1490">[ date ]</a>
+              <a href="thread.html#1490">[ thread ]</a>
+              <a href="subject.html#1490">[ subject ]</a>
+              <a href="author.html#1490">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

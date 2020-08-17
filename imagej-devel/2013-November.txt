@@ -1,0 +1,819 @@
+From Johannes.Schindelin at gmx.de  Sat Nov  2 22:35:54 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Sun, 3 Nov 2013 04:35:54 +0100 (CET)
+Subject: [ImageJ-devel] Unit test problems
+In-Reply-To: <241A525D-ED90-4320-A7E6-6DF593BB92D7@gmail.com>
+References: <241A525D-ED90-4320-A7E6-6DF593BB92D7@gmail.com>
+Message-ID: <alpine.DEB.1.00.1311030417440.1191@s15462909.onlinehome-server.info>
+
+Dear Wayne,
+
+it is better to discuss this on the mailing list, as I am not the only one
+who can change things, and I prefer not to be the bottleneck (there *are*
+days when I am completely offline).
+
+On Sat, 2 Nov 2013, Wayne Rasband wrote:
+
+> There appear to be a few problems with the unit tests. I got 20 email
+> messages with titles like "Build failed in Jenkins:
+> ImageJ1-daily-unit-tests #nnn" after I uploaded the ImageJ 1.48g3 daily
+> build, and Jenkins seems to be running the tests on ImageJ 1.48f, not
+> the daily build. It reports the error
+> 
+>    Failed tests:   testGetFeretValues(ij.gui.ShapeRoiTest): arrays first
+>    differed at element [1]; expected:<-73.3007558> but was:<106.69924423399361>
+> 
+> but the daily build always returns positive values as the Feret's angle.
+
+As you can see from
+http://jenkins.imagej.net/view/Failing/job/ImageJ1-daily-unit-tests/161/console
+the daily build is atually downloaded and tested...
+
+I also verified that the downloaded ij.jar has the correct ImageJ.VERSION
+and ImageJ.BUILD and that the command-line
+
+	mvn -Dimagej1.version=1.48g3 clean test
+
+fails because it tries to download the correct version (the Jenkins job
+provides alternative settings so that the local repository -- which is
+populated with the downloaded ij.jar -- is used).
+
+Ciao,
+Johannes
+
+
+From ctrueden at wisc.edu  Sun Nov  3 09:32:12 2013
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Sun, 3 Nov 2013 09:32:12 -0600
+Subject: [ImageJ-devel] Unit test problems
+In-Reply-To: <alpine.DEB.1.00.1311030417440.1191@s15462909.onlinehome-server.info>
+References: <241A525D-ED90-4320-A7E6-6DF593BB92D7@gmail.com>
+	<alpine.DEB.1.00.1311030417440.1191@s15462909.onlinehome-server.info>
+Message-ID: <CADN69ymjxbUQA0estZPsVbthy0wertdFzuG4OxrMxfZSWpe2tg@mail.gmail.com>
+
+Hi all,
+
+> I got 20 email messages with titles like
+> "Build failed in Jenkins: ImageJ1-daily-unit-tests #nnn"
+
+I also noticed the large number of emails from Jenkins yesterday, and
+disabled the two ImageJ unit testing jobs in response. We will reenable the
+jobs later this week once the issue has been resolved.
+
+Regards,
+Curtis
+
+
+
+On Sat, Nov 2, 2013 at 10:35 PM, Johannes Schindelin <
+Johannes.Schindelin at gmx.de> wrote:
+
+> Dear Wayne,
+>
+> it is better to discuss this on the mailing list, as I am not the only one
+> who can change things, and I prefer not to be the bottleneck (there *are*
+> days when I am completely offline).
+>
+> On Sat, 2 Nov 2013, Wayne Rasband wrote:
+>
+> > There appear to be a few problems with the unit tests. I got 20 email
+> > messages with titles like "Build failed in Jenkins:
+> > ImageJ1-daily-unit-tests #nnn" after I uploaded the ImageJ 1.48g3 daily
+> > build, and Jenkins seems to be running the tests on ImageJ 1.48f, not
+> > the daily build. It reports the error
+> >
+> >    Failed tests:   testGetFeretValues(ij.gui.ShapeRoiTest): arrays first
+> >    differed at element [1]; expected:<-73.3007558> but
+> was:<106.69924423399361>
+> >
+> > but the daily build always returns positive values as the Feret's angle.
+>
+> As you can see from
+>
+> http://jenkins.imagej.net/view/Failing/job/ImageJ1-daily-unit-tests/161/console
+> the daily build is atually downloaded and tested...
+>
+> I also verified that the downloaded ij.jar has the correct ImageJ.VERSION
+> and ImageJ.BUILD and that the command-line
+>
+>         mvn -Dimagej1.version=1.48g3 clean test
+>
+> fails because it tries to download the correct version (the Jenkins job
+> provides alternative settings so that the local repository -- which is
+> populated with the downloaded ij.jar -- is used).
+>
+> Ciao,
+> Johannes
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20131103/f3011552/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Thu Nov 28 12:26:45 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Thu, 28 Nov 2013 12:26:45 -0600 (CST)
+Subject: [ImageJ-devel] SCIFIO via Avian,
+ was Re:  [VIGRA] Avian VM and Bio-Formats
+In-Reply-To: <alpine.DEB.1.00.1310171922080.1191@s15462909.onlinehome-server.info>
+References: <alpine.DEB.1.00.1310170222150.1191@s15462909.onlinehome-server.info>
+	<52600288.1050509@iwr.uni-heidelberg.de>
+	<alpine.DEB.1.00.1310171922080.1191@s15462909.onlinehome-server.info>
+Message-ID: <alpine.DEB.1.00.1311281016230.3906@bonsai2>
+
+Hi Ulli,
+
+since you had the impression in a recent Skype chat that nothing has
+happened with this project of mine since the last time I wrote a mail, let
+me clarify the status, and add a few questions of my own.
+
+[sorry for the long mail, everyone, I tried to make it more succinct, but
+despite spending three hours on this mail, I did not succeed.]
+
+On Thu, 17 Oct 2013, Johannes Schindelin wrote:
+
+> On Thu, 17 Oct 2013, Ullrich Koethe wrote:
+> 
+> > thank you for this very encouraging effort! Do I understand correctly
+> > that you achieved the following:
+> > 
+> > * embed Avian in a C++ program
+> > * call BioFormats via the embedded Avian to convert a file into
+> > another format
+> 
+> Yes, that is essentially what I did. Except that the C++ program was
+> Avian's default one.
+
+I still use Avian's default executable (which essentially is a Java
+look-alike) for the moment, so the main program is still a Java one, the
+plan being to make this a C++ library that starts the Avian VM on demand.
+
+But in the meantime, I use SCIFIO instead of Bio-Formats. The reason is
+that Bio-Formats was not designed with a flexible data store in mind.
+SCIFIO (which is essentially to Bio-Formats what ImageJ2 is to ImageJ1: a
+complete overhaul of the architecture, applying lessons learned over the
+years) offers a very convenient ImgOpener interface that works on ImgLib2
+data structures (which are, as I pointed out at EuBIAS in Barcelona, at
+least partially modeled after VIGRA). In particular, SCIFIO does no
+dictate what data storage should be used, but instead uses the interfaces
+defined by ImgLib2 to access whatever data storage you throw at it.
+
+The good news first: I essentially got SCIFIO running in an Avian VM on
+top of data structures backed by VIGRA (see below for more about the
+backing data structures).
+
+To be able to do that, I had to work quite a bit on Avian and got already
+18 pull requests merged into the official Avian's master branch, with
+three still waiting to be reviewed and merged. There are basically only
+two changes I still need to implement/clean up and submit pull requests
+for: Proper support for Runtime#availableMemory() and
+Field#getGenericType().
+
+Among other things, I even had to implement a full regular expression
+engine (technically, I could have punted on that and only provided
+handling for special cases but that is a very fragile solution and prone
+to break; besides, I always wanted to implement a regex engine to
+understand how these things work). So while there were some serious
+obstacles, I am starting to see the sun. In fact, the remaining parts are
+so easy, a first-year student could finish this project (under my
+guidance, at least).
+
+To put things into perspective, and also to correct your impression how
+dedicated I am to this project: My first commit in the Avian project was
+on October 17th -- the earliest date I could afford to work on this topic
+after coming back from the EuBIAS meeting -- and in Avian's master branch
+I am already the top #5 committer with 86 non-merge commits -- despite a
+full week dedicated to a KNIME hackathon, and some intense release
+engineering for the nar-maven-plugin mentioned below. The outstanding pull
+requests should soon add 41 commits to that so that I'll be within 17
+commits to tie top committer #3. For the record, Avian's initial commit
+dates May 21st, 2007, i.e. within less than three percent of Avian's life
+time, I made the top 5 of 44 committers in total. You see: I am dead set
+to see VIGRA/SCIFIO integration working via Avian.
+
+I also had to work on SCIFIO a little bit -- mainly bugs that were outside
+the default call path, easily fixed with the awesome help of Mark Hiner
+and Curtis Rueden.
+
+To compile the native part, I use the nar-maven-plugin (which I foolishly
+took maintainership of, but at least we have something pretty reliable now
+both as plugin and as project). Tobias pointed out a few problems (due to
+very unfortunate timing, I did not have the chance to fix them other than
+suggest to use a stable Linux to compile rather than updating to a
+just-released XCode and expect things to work flawlessly -- history be
+ignored) that are mostly fixed now, thanks to the awesome Curtis Rueden
+who cannot be thanked enough for all his help!
+
+If you want to try things out, you will need to
+
+- have compiled and installed VIGRA (I actually tested with revision
+  494bd66423782280f31239b12dd2e7a6184d916b and had no reason to update so
+  far)
+
+- have an Oracle JDK for compiling (*not* for running)
+
+- have a working Maven (e.g. from
+  http://www.apache.org/dyn/closer.cgi/maven/maven-3/3.0.4/binaries/apache-maven-3.0.4-bin.tar.gz);
+  Maven is essentially for Java what CMake tries to be for C++, but Maven
+  is both easier to use and to extend.
+
+- have the following branches of the following projects built (just call "mvn
+  install" after cloning and switching to the correct branch):
+
+  'avian' of https://github.com/scifio/scifio
+  'debug/scifio' of https://github.com/dscho/avian
+  'wip' of https://github.com/dscho/vigra-imglib2
+
+After that, 'avian-run.sh' in the vigra-imglib2 directory should be able
+to convert any given grayscale /tmp/img.pgm into a /tmp/img.tiff (being
+read by SCIFIO, written by VIGRA). Yes, this does not do anything
+interesting, but the example was designed to demonstrate the interaction
+between SCIFIO and VIGRA, nothing else.
+
+Depending on how fast we can resolve the questions below, I estimate that
+we can have a stable C++ library offering SCIFIO to VIGRA (based on
+'master' or even release versions of scifio, avian and vigra-imglib2)
+early next year.
+
+> > but you didn't yet try to use Avian/BioFormats to read the data
+> > directly into a C++ data structure (such as vigra::MultiArray)? Is
+> > this latter step easy to achieve using standard JNI tools once the
+> > embedding/running of BioFormats works?
+> 
+> That would be the next step after cleaning up my Avian patches and
+> trying to read files via SCIFIO.
+
+As I said, Bio-Formats does not lend itself to that kind of usage. It will
+always require you to copy the data after reading them. SCIFIO, in
+contrast, allows you to specify the factory to make instances of the
+backing data store, including VIGRA-backed ones. This, BTW, is working now.
+
+> Once I can call a Java class that uses SCIFIO to read a file, it should be
+> very, very easy to access the read data via C++. Of course, the ultimate
+> goal would be to let SCIFIO read the data *directly* into VIGRA's data
+> structures, something I hope ImgLib2 makes easy: I would simply wrap the
+> C++ arrays in an ImgLib2-compatible container and ask SCIFIO to use that
+> as the destination.
+
+I had a proof-of-concept of that VIGRA-backed ImgFactory already on
+October 24th, thinking that maybe you'd have a glimpse at the progress in
+my (public) GitHub repository ;-)
+
+So now -- as promised -- the questions:
+
+* SCIFIO's jpg and png support rely on Java Advanced Imaging which in turn
+  relies on AWT (which is not available in Avian's class path library).
+  While my long-term plan is to implement enough of AWT to support JAI,
+  would it be okay to punt on jpg/png support via SCIFIO for now?
+
+* as discussed in Skype, I am a bit lost (seven years after my last
+  serious design of a C++-based architecture) how to make sure that once
+  created in the Java part, the data structures are actually handled using
+  the correct specializations of the C++ templates: SCIFIO can return images
+  of any number of dimensions and any data type.
+
+  My first idea would be to have the callback into C++ that creates the
+  data structure (and needs to know the number of dimensions and the data
+  type, of course) not only create the data structure but also provide
+  kind of a virtual function table associated with said data structure. In
+  essence, the C++ caller would pass a container to SCIFIO which would not
+  only contain a pointer to the MultiArray upon return but also a pointer to
+  the virtual function table of functions that are to be called on the
+  loaded image.
+
+  However, since you have waaay more extensive experience with this type of
+  interfacing, may I ask you to whip up a quick mockup of the C++ side of
+  this? IOW: how would you like the C++ side of the SCIFIO opener to look
+  like?
+
+* also as discussed in Skype, there is the issue whose responsibility it
+  is to allocate and hold the data (including reference counting and
+  especially releasing the memory at the appropriate time): Java's, or
+  C++'s?
+
+  For the benefit of those who have not been in that Skype chat, let me
+  summarize the options we discussed (note that I make no distinction
+  between Avian or Oracle JRE because Tobias wants to make the
+  VIGRA/ImgLib2 bridge work in the other direction, using Oracle Java):
+
+  From Java's perspective, the easiest would be if Java would allocate the
+  memory because Java's memory management is pretty adamant about full
+  control: to avoid memory fragmentation, Java's garbage collector wants
+  to be able to shift data around (and therefore, it not only needs a
+  reference *count* but a *list* of references and the ability to update
+  them). For interaction with C/C++, Java has the notion of "pinning",
+  i.e. telling the garbage collector that no, this chunk of memory needs to
+  stay *exactly* where it is, right now, until I say otherwise. The API
+  calls are named Get*ArrayElements()/Release*ArrayElements() for "pin"
+  and "unpin" respectively. *All* the documentation referring to this feature
+  say that pinning should be avoided, hampering performance of Java rather
+  badly.
+
+  From my own perspective, the easiest seemed to be to let VIGRA do all
+  the data management and provide accessors for Java. Currently, still
+  being in proof-of-concept phase, I was satisfied with individual JNI
+  calls accessing the pixels individually, content with the notion that
+  Avian (and most likely also Oracle's JRE) would be clever enough to
+  optimize most of the call chain, even if the C++ function wrapping the
+  call to MultiArray's [] operator will not be inlined, of course. Tobias
+  pointed out correctly that we should be able to make use of the
+  DirectByteBuffer feature to make this faster. And indeed, it is very
+  easy: standard JNI provides the NewDirectByteBuffer() function accepting
+  an address and a capacity and that's that. No pinning needed. Just your
+  responsibility to make sure that endian issues do not bite you (I almost
+  wrote "byte you" here...): Java handles *all* data as big endian.
+
+  From Tobias' perspective, it looked the best to use the sun.misc.Unsafe
+  class to allocate the memory (which would give us both an
+  eternally-pinned C++ byte array as well as a Java byte[] access), then map
+  it into VIGRA via a custom allocator. As I pointed out, my gut feeling
+  strongly suggested this to be a finicky solution. In the meantime, I can
+  put this into more coherent words (it does help that I thought these
+  thoughts in a different week now than the one that was theoretically
+  dedicated to the KNIME hackathon): if Unsafe is used to allocate the
+  memory, the responsibility for releasing the memory should logically
+  *also* be on the Java side, but by calling this from a C++ allocator, the
+  roles are now confused: if C++ allocates the data structure, the C++
+  destructor *needs* to release the memory, too.
+
+  So the three options are:
+
+	1) allocating/deallocating in Java, pinning whenever we call C++
+	   (making sure that C++ does not keep any references after
+	   returning)
+
+	2) allocating/deallocating in C++, providing Java with access to
+	   the allocated memory
+
+	3) allocating/deallocating in C++, except allocating the pixel
+	   array using Java's Unsafe class (requiring the Java VM to
+	   continue up and running during the complete life time of the
+	   image)
+
+  I actually see the need for both 1) and 2) because we either start the
+  bridge from C++ (in which case we'll want to let go of the VM as soon as
+  the image is read/processed) or from Java (in which case we'll want the
+  optimal performance of the Java code), but my experience tells me that
+  3) will only lead to problems because of muddled responsibilities and
+  therefore ample opportunity for race conditions.
+
+  Having said that, quite often elegant design does not quite provide the
+  performance we need. Therefore, I believe that we absolutely require a
+  performance testing framework and preferably implementations of all
+  three allocation methods mentioned above, to be pitted against each
+  other (and may the fastest survive).
+
+  Tobias, I guess this means you: you mentioned that you wrote such a
+  performance test already (but I vaguely remember that you said you no
+  longer have it, which means that you'll have to do it again). It will be
+  essential to be able to test performance regularly, not only to test
+  existing allocation strategies against each other, but new ones, too,
+  and also different virtual machines (or versions thereof, think of the
+  different performance characteristics of different versions of Oracle's
+  JRE).
+
+  So here the question: Tobias, where is that performance testing
+  framework? If it is no longer there, when do you think you will have it
+  again?
+
+- from day one of my project, I developed this project in the open, for
+  everybody to see, with at least three status updates. I understand that
+  you worked on very related things, but instead of going on a hunt through
+  your combined GitHub repositories to find it and try to avoid duplicating
+  your work, may I ask you to tell me what you did so far, where I can
+  find it, and where you want to go with it?
+
+Happy thanksgiving!
+Johannes
+
+
+From Johannes.Schindelin at gmx.de  Fri Nov 29 08:09:27 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Fri, 29 Nov 2013 15:09:27 +0100 (CET)
+Subject: [ImageJ-devel] SCIFIO via Avian,
+ was Re:  [VIGRA] Avian VM and Bio-Formats
+In-Reply-To: <52979B98.6070500@iwr.uni-heidelberg.de>
+References: <alpine.DEB.1.00.1310170222150.1191@s15462909.onlinehome-server.info>
+	<52600288.1050509@iwr.uni-heidelberg.de>
+	<alpine.DEB.1.00.1310171922080.1191@s15462909.onlinehome-server.info>
+	<alpine.DEB.1.00.1311281016230.3906@bonsai2>
+	<52979B98.6070500@iwr.uni-heidelberg.de>
+Message-ID: <alpine.DEB.1.00.1311291502130.1191@s15462909.onlinehome-server.info>
+
+Hi Ulli,
+
+On Thu, 28 Nov 2013, Ullrich Koethe wrote:
+
+> I checked out the repos you mentioned, but couldn't compile:
+> 
+> > - have the following branches of the following projects built (just call
+> > "mvn
+> >    install" after cloning and switching to the correct branch):
+> >
+> >    'avian' of https://github.com/scifio/scifio
+> 
+> 'mvn install' runs through.
+> 
+> >    'debug/scifio' of https://github.com/dscho/avian
+> 
+> 'mvn install' stops with
+> 
+> [ERROR] The goal you specified requires a project to execute but there is no
+> POM in this directory.
+
+I am an idiot! Avian uses the "make" command. That will compile things
+into a subdirectory of build/. It actually requires JAVA_HOME to point to
+a JDK and javac to be in the PATH. Sorry for not describing this
+correctly.
+
+> >    'wip' of https://github.com/dscho/vigra-imglib2
+> 
+> 'mvn install' stops with
+> 
+> [ERROR] Error: Class net.imglib2.Interval could not be found.
+
+That is funny. It works here without a hitch, but maybe only because I had
+cloned and "mvn install"ed https://github.com/imagej/imglib earlier. Will
+investigate.
+
+> BTW, Tobias' VIGRA bindings work on my machine (Windows 7 with Visual
+> Sudio 2012).
+
+Okay. I fear that he duplicated a large part of my work to get there, but
+then, I cannot look at it anyway :-)
+
+Ciao,
+Johannes
+
+
+From ullrich.koethe at iwr.uni-heidelberg.de  Fri Nov 29 12:05:06 2013
+From: ullrich.koethe at iwr.uni-heidelberg.de (Ullrich Koethe)
+Date: Fri, 29 Nov 2013 19:05:06 +0100
+Subject: [ImageJ-devel] SCIFIO via Avian,
+ was Re:  [VIGRA] Avian VM and Bio-Formats
+In-Reply-To: <alpine.DEB.1.00.1311291502130.1191@s15462909.onlinehome-server.info>
+References: <alpine.DEB.1.00.1310170222150.1191@s15462909.onlinehome-server.info>
+	<52600288.1050509@iwr.uni-heidelberg.de>
+	<alpine.DEB.1.00.1310171922080.1191@s15462909.onlinehome-server.info>
+	<alpine.DEB.1.00.1311281016230.3906@bonsai2>
+	<52979B98.6070500@iwr.uni-heidelberg.de>
+	<alpine.DEB.1.00.1311291502130.1191@s15462909.onlinehome-server.info>
+Message-ID: <5298D752.1070701@iwr.uni-heidelberg.de>
+
+Hi Johannes,
+
+thanks for the suggestions.
+
+ >> 'mvn install' stops with
+ >>
+ >> [ERROR] The goal you specified requires a project to execute but 
+there is no
+ >> POM in this directory.
+ >
+ > I am an idiot! Avian uses the "make" command. That will compile things
+ > into a subdirectory of build/. It actually requires JAVA_HOME to point to
+ > a JDK and javac to be in the PATH. Sorry for not describing this
+ > correctly.
+ >
+
+OK, I tried make, but the makefile doesn't support Visual Studio (only 
+on Windows Phone, not on Windows 7). So I guess I'll have to start over 
+on a Linux box, because a mingw build will most certainly be 
+incompatible with the maven-compiled stuff, which used Visual Studio. 
+And anyway, mingw64 isn't supported either, only mingw32. cmake is not 
+that bad, after all...
+
+ >>>     'wip' of https://github.com/dscho/vigra-imglib2
+ >>
+ >> 'mvn install' stops with
+ >>
+ >> [ERROR] Error: Class net.imglib2.Interval could not be found.
+ >
+ > That is funny. It works here without a hitch, but maybe only because 
+I had
+ > cloned and "mvn install"ed https://github.com/imagej/imglib earlier. Will
+ > investigate.
+ >
+
+When Tobias tried his code on my machine, we had a similar problem. We 
+solved it by adding some paths explicitly (vigra-imglib2/target/classes 
+and 
+$HOME/.m2/repository/net/imglib2/imglib2/2.0.0-SNAPSHOT/imglib2-2.0.0-SNAPSHOT.jar). 
+I applied the same change to your pom file, and got a bit further. The 
+error message is now
+
+[ERROR] Error: Could not find class file for 
+'net.imglib2.vigra.VigraImg3DUnsignedByte'.
+
+ >> BTW, Tobias' VIGRA bindings work on my machine (Windows 7 with Visual
+ >> Sudio 2012).
+ >
+ > Okay. I fear that he duplicated a large part of my work to get there, but
+ > then, I cannot look at it anyway
+ >
+
+No, there is no duplication. The two approaches are completely 
+complementary -- yours is for embedding Java in a VIGRA program, and 
+Tobias' is to call VIGRA code from Java. You can have a look at
+   https://github.com/tpietzsch/vigra-imglib2/tree/buffer
+
+Best regards
+Ulli
+
+
+From Johannes.Schindelin at gmx.de  Fri Nov 29 13:17:22 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Fri, 29 Nov 2013 20:17:22 +0100 (CET)
+Subject: [ImageJ-devel] SCIFIO via Avian,
+ was Re:  [VIGRA] Avian VM and Bio-Formats
+In-Reply-To: <5298D752.1070701@iwr.uni-heidelberg.de>
+References: <alpine.DEB.1.00.1310170222150.1191@s15462909.onlinehome-server.info>
+	<52600288.1050509@iwr.uni-heidelberg.de>
+	<alpine.DEB.1.00.1310171922080.1191@s15462909.onlinehome-server.info>
+	<alpine.DEB.1.00.1311281016230.3906@bonsai2>
+	<52979B98.6070500@iwr.uni-heidelberg.de>
+	<alpine.DEB.1.00.1311291502130.1191@s15462909.onlinehome-server.info>
+	<5298D752.1070701@iwr.uni-heidelberg.de>
+Message-ID: <alpine.DEB.1.00.1311291952020.1191@s15462909.onlinehome-server.info>
+
+Hi Ulli,
+
+On Fri, 29 Nov 2013, Ullrich Koethe wrote:
+
+> > > 'mvn install' stops with
+> > >
+> > > [ERROR] The goal you specified requires a project to execute but
+> > > there is no POM in this directory.
+> >
+> > I am an idiot! Avian uses the "make" command. That will compile things
+> > into a subdirectory of build/. It actually requires JAVA_HOME to point
+> > to a JDK and javac to be in the PATH. Sorry for not describing this
+> > correctly.
+> >
+> 
+> OK, I tried make, but the makefile doesn't support Visual Studio (only on
+> Windows Phone, not on Windows 7). So I guess I'll have to start over on a
+> Linux box, because a mingw build will most certainly be incompatible with the
+> maven-compiled stuff, which used Visual Studio.
+
+There are ways to use GCC with the nar-maven-plugin. The ImageJ launcher
+uses that method for a long time already, so I am certain that it works.
+
+> And anyway, mingw64 isn't supported either, only mingw32. cmake is not
+> that bad, after all...
+
+Again, I did not have problems with ming64 with nar-maven-plugin. But
+maybe you are referring to Avian?
+
+And why are you trying to get things to work on the platform that is
+notorious for being the most difficult to develop platform-independently
+for? Is Windows not something that we should try to support *after*
+everything else works instead of *before*? If you want to have a realistic
+chance to get things going, always try Linux first. It is *the*
+best-supported platform for cross-platform development. I know, I am
+writing this on a Mac, but even on a Mac you can install Linux in a
+VirtualBox, so there is really no excuse for making this harder to get
+going than necessary.
+
+Sorry if this sounds harsh, but I am trying to get the VIGRA/ImgLib2
+bridge going, not the *Windows* VIGRA/ImgLib2 bridge. Of course, my
+extensive knowledge with cross-platform development will be helpful to
+resolve that problem, too, but should we not rather try to solve the
+current problems first before we tackle the problem called Windows? I
+mean, I am happy to help you with that, sure, but I would really like to
+get at the meat of the current problem first, and solve it, so that that
+is said and done.
+
+> > > >     'wip' of https://github.com/dscho/vigra-imglib2
+> > >
+> > > 'mvn install' stops with
+> > >
+> > > [ERROR] Error: Class net.imglib2.Interval could not be found.
+> >
+> > That is funny. It works here without a hitch, but maybe only because I
+> > had cloned and "mvn install"ed https://github.com/imagej/imglib
+> > earlier. Will investigate.
+> >
+> 
+> When Tobias tried his code on my machine, we had a similar problem.
+
+As I said, Windows is notorious for being hard to compile
+platform-independent code on. It is not only the insistence on a
+non-standard C++ ABI (you cannot mix and match Visual C++-compiled code
+with GNU C++-compiled code because GNU C++ *adheres* to the standard while
+Visual C++ does not). It is also the chronical problems with a lack of
+standardized installation paths for headers and libraries, the lack of
+speed with its filesystem drivers (and as a consequence insane runtimes of
+compilation and Git operations compared to every other operating system).
+And of course it is the complete and utter lack of POSIX routines,
+something industry outside Microsoft's area of influence settled on a long
+time ago.
+
+So maybe it would really be a good idea to follow my suggestion and tackle
+the real problems first, and only then the WIndows-specific ones?
+
+> We solved it by adding some paths explicitly
+> (vigra-imglib2/target/classes and
+> $HOME/.m2/repository/net/imglib2/imglib2/2.0.0-SNAPSHOT/imglib2-2.0.0-SNAPSHOT.jar).
+
+Oh, I misunderstood  what you meant by "similar problem" above, then.
+
+> I applied the same change to your pom file, and got a bit further. The
+> error message is now
+> 
+> [ERROR] Error: Could not find class file for
+> 'net.imglib2.vigra.VigraImg3DUnsignedByte'.
+
+Yes, there is another thing I completely forgot to mention: in
+vigra-imglib2, I ran "mvn dependency:copy-dependencies" a long time ago
+(back when I mentioned to Tobias that I was working on this),
+so long ago that I forgot in the meantime. Very sorry for this!
+
+> > > BTW, Tobias' VIGRA bindings work on my machine (Windows 7 with
+> > > Visual Sudio 2012).
+> >
+> > Okay. I fear that he duplicated a large part of my work to get there, but
+> > then, I cannot look at it anyway
+> >
+> 
+> No, there is no duplication. The two approaches are completely complementary
+> -- yours is for embedding Java in a VIGRA program, and Tobias' is to call
+> VIGRA code from Java. You can have a look at
+>   https://github.com/tpietzsch/vigra-imglib2/tree/buffer
+
+Thank you for sharing that information with me.
+
+Ciao,
+Dscho
+
+
+From ullrich.koethe at iwr.uni-heidelberg.de  Fri Nov 29 16:31:21 2013
+From: ullrich.koethe at iwr.uni-heidelberg.de (Ullrich Koethe)
+Date: Fri, 29 Nov 2013 23:31:21 +0100
+Subject: [ImageJ-devel] SCIFIO via Avian,
+ was Re:  [VIGRA] Avian VM and Bio-Formats
+In-Reply-To: <alpine.DEB.1.00.1311291952020.1191@s15462909.onlinehome-server.info>
+References: <alpine.DEB.1.00.1310170222150.1191@s15462909.onlinehome-server.info>
+	<52600288.1050509@iwr.uni-heidelberg.de>
+	<alpine.DEB.1.00.1310171922080.1191@s15462909.onlinehome-server.info>
+	<alpine.DEB.1.00.1311281016230.3906@bonsai2>
+	<52979B98.6070500@iwr.uni-heidelberg.de>
+	<alpine.DEB.1.00.1311291502130.1191@s15462909.onlinehome-server.info>
+	<5298D752.1070701@iwr.uni-heidelberg.de>
+	<alpine.DEB.1.00.1311291952020.1191@s15462909.onlinehome-server.info>
+Message-ID: <529915B9.5040602@iwr.uni-heidelberg.de>
+
+Hi Johannes,
+
+>>> I am an idiot! Avian uses the "make" command. That will compile things
+>>> into a subdirectory of build/. It actually requires JAVA_HOME to point
+>>> to a JDK and javac to be in the PATH. Sorry for not describing this
+>>> correctly.
+>>
+>> OK, I tried make, but the makefile doesn't support Visual Studio (only on
+>> Windows Phone, not on Windows 7). So I guess I'll have to start over on a
+>> Linux box, because a mingw build will most certainly be incompatible with the
+>> maven-compiled stuff, which used Visual Studio.
+>
+> Again, I did not have problems with ming64 with nar-maven-plugin. But
+> maybe you are referring to Avian?
+>
+
+Indeed, I was referring to the make-based compilation of Avian, not to 
+maven.
+
+> And why are you trying to get things to work on the platform that is
+> notorious for being the most difficult to develop platform-independently
+> for?
+
+Last week, we simply tried Tobias' code on my Windows box, and (thanks 
+to maven) it worked more or less out of the box, except for the extra 
+paths we had to add to pom.xml (see my earlier mail) and an 
+incompatibility in some macro magic that turned out to be easy to fix. 
+Encouraged by this success, I simply tried your code as well.
+
+I don't mind switching to Linux for the time being, it just means that I 
+have to install all prerequisites again, which will take some time.
+
+> As I said, Windows is notorious for being hard to compile
+> platform-independent code on. It is not only the insistence on a
+> non-standard C++ ABI (you cannot mix and match Visual C++-compiled code
+> with GNU C++-compiled code because GNU C++ *adheres* to the standard while
+> Visual C++ does not).
+
+GNU's standard adherence notwithstanding, different versions of gcc 
+still produce mutually incompatible shared libraries, see our other 
+conversation on the VIGRA mailing list. So Linux and Mac are not really 
+much better in this respect. In the end, it is the complexity of C++ 
+that bites everyone.
+
+> It is also the chronical problems with a lack of
+> standardized installation paths for headers and libraries,
+
+Indeed. I opted for a Unix-like path structure according to 
+c:\install\bin, c:\install\include etc., which makes life a lot easier.
+
+> the lack of
+> speed with its filesystem drivers (and as a consequence insane runtimes of
+> compilation and Git operations compared to every other operating system).
+
+VIGRA compilation takes about the same time on Windows and Linux, and I 
+haven't experienced any latency in git either. In contrast, maven did 
+indeed seem to be a bit on the slow side.
+
+> And of course it is the complete and utter lack of POSIX routines,
+> something industry outside Microsoft's area of influence settled on a long
+> time ago.
+>
+
+I guess, the boost libraries have solved this problem for most purposes, 
+and better than POSIX for that matter.
+
+> Yes, there is another thing I completely forgot to mention: in
+> vigra-imglib2, I ran "mvn dependency:copy-dependencies" a long time ago
+> (back when I mentioned to Tobias that I was working on this),
+> so long ago that I forgot in the meantime. Very sorry for this!
+>
+
+OK. I executed "mvn dependency:copy-dependencies", followed by "mvn 
+install", and am back to
+
+[ERROR] Error: Class net.imglib2.Interval could not be found.
+
+But since Avian won't work easily on this machine anyway, it's probably 
+not worth fixing now.
+
+Best regards
+Ulli
+
+
+From pietzsch at mpi-cbg.de  Fri Nov 29 17:36:35 2013
+From: pietzsch at mpi-cbg.de (Tobias Pietzsch)
+Date: Sat, 30 Nov 2013 00:36:35 +0100
+Subject: [ImageJ-devel] SCIFIO via Avian,
+	was Re:  [VIGRA] Avian VM and Bio-Formats
+In-Reply-To: <529915B9.5040602@iwr.uni-heidelberg.de>
+References: <alpine.DEB.1.00.1310170222150.1191@s15462909.onlinehome-server.info>
+	<52600288.1050509@iwr.uni-heidelberg.de>
+	<alpine.DEB.1.00.1310171922080.1191@s15462909.onlinehome-server.info>
+	<alpine.DEB.1.00.1311281016230.3906@bonsai2>
+	<52979B98.6070500@iwr.uni-heidelberg.de>
+	<alpine.DEB.1.00.1311291502130.1191@s15462909.onlinehome-server.info>
+	<5298D752.1070701@iwr.uni-heidelberg.de>
+	<alpine.DEB.1.00.1311291952020.1191@s15462909.onlinehome-server.info>
+	<529915B9.5040602@iwr.uni-heidelberg.de>
+Message-ID: <31F23E9A-69CE-4338-9824-5C0E2287747B@mpi-cbg.de>
+
+Hi Johannes and Ulli,
+
+with respect to the need to set up the paths in the pom.xml:
+This is an issue with the nar-maven-plugin, which compiles and packages the native code.
+With Johannes' help, I submitted an integration test to the nar-maven-plugin project, that illustrates this problem. So hopefully it will be fixed at some point in the future.
+Ulli, I remember that there was another issue on Windows: The dll was named differently to what the NarHelper class expects. Could you elaborate on that?
+
+With respect to what we did on the vigra-imglib2 project. I forked your project, Johannes, https://github.com/tpietzsch/vigra-imglib2.
+We worked on the "buffer" branch.
+This is using direct buffers as the underlying data structure for both ImgLib2's ArrayImg and VIGRA's MultiArrayView. At the moment, the direct buffer is allocated on the Java side, but as you pointed out, one can use JNI's NewDirectByteBuffer() from the C++ side. I think this is a good solution, because it leaves the option for both scenarios, Java embedded in C++ and C++ embedded in Java. The ByteBuffer is wrapped in a ImgLib2 Access (e.g. IntAccess for Imgs of IntType. It is easy to provide two constructors there, one which allocates the buffer and one which takes an existing buffer. Responsibility for freeing the memory is not a problem. Note that JNI NewDirectByteBuffer is constructed with already allocated memory. So, if C++ allocated the memory, Java may garbage-collect the ByteBuffer, but will not free the memory block. If creating the ByteBuffer form Java, Java will also free the memory.
+The good thing is that both ImgLib ArrayImgs and VIGRA MultiArrayViews were designed to wrap flat arrays, which is what is happening here.
+
+The ByteBuffer code came from the ImgLib2 branch "buffer-and-unsafe", where I played with using direct buffers and sun.misc.Unsafe to back ArrayImgs instead of Java primitive arrays.
+sun.misc.Unsafe is the other viable option. In contrast to primitive arrays and direct buffers it does not suffer from the 2G size limit of Java arrays. Of course, if we put it behind an ArrayImg, we cannot make use of that fact yet. So we could have a BigArrayImg at some point in the future (which would be useful in its own right). Otherwise, same advantages as explained above.
+The benchmark that Johannes mentioned was comparing the speed of ArrayImgs backed by primitive arrays, direct buffers, and sun.misc.Unsafe, respectively. I just had a look and I couldn't find it. I'll recreate it next week.
+
+Note, that I copied the byte buffer stuff from the ImgLib2 branch "buffer-and-unsafe", so that vigra-imglib2 works with the current ImgLib2 beta.
+
+But wrapping the images back and forth was only part of what we did. An important point is to make it easy to make bindings to VIGRA functions withou writing lots of boilderplate code on either side of JNI. Based on earlier VIGRA-Matlab wrapper we made some macros that allow to write on the C++ side
+
+JNIEXPORT void JNICALL Java_net_imglib2_vigra_VigraWrapper_gaussianSmoothMultiArray
+  (JNIEnv *env, jclass, jlongArray shape, jint typeId, jobject sourceData, jobject destData, jdouble sigma)
+{
+    using namespace vigra; // to get UInt8 and Int32
+    #define F(T) gaussianSmoothMultiArray<T>(env, shape, typeId, sourceData, destData, sigma)
+    ALLOW_TYPES(typeId, UInt8, Int32, float)
+    #undef F
+}
+
+This creates a switch statement that instantiates the VIGRA template function for the specified C++ types and dispatches to these according to the corresponding ImgLib type.
+The same is done for supported dimensionalities (because with templates we have to specify that at compile time).
+
+The plan is to directly pass in the ArrayImg jobject (and maybe even views later) and extract the type and dimension etc directly from that.
+This would mean, that on the Java side, we only have one native method for each exported VIGRA function, basically with the same signature and just replacing MultiArrayView with Img.
+
+best regards,
+Tobias
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20131130/e78185bb/attachment-0001.html>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20131130/e78185bb/attachment-0001.pgp>
+

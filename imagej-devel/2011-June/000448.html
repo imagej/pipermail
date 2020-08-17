@@ -1,0 +1,188 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] net.imglib2.algorithm.kdtree and rectangles
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20net.imglib2.algorithm.kdtree%20and%20rectangles&In-Reply-To=%3CF995D945-A08E-4A62-9868-72F4F4570842%40lifesci.dundee.ac.uk%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000447.html">
+   <LINK REL="Next"  HREF="000440.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] net.imglib2.algorithm.kdtree and rectangles</H1>
+    <B>Jason Swedlow</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20net.imglib2.algorithm.kdtree%20and%20rectangles&In-Reply-To=%3CF995D945-A08E-4A62-9868-72F4F4570842%40lifesci.dundee.ac.uk%3E"
+       TITLE="[ImageJ-devel] net.imglib2.algorithm.kdtree and rectangles">jason at lifesci.dundee.ac.uk
+       </A><BR>
+    <I>Tue Jun 21 13:52:23 CDT 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000447.html">[ImageJ-devel] net.imglib2.algorithm.kdtree and rectangles
+</A></li>
+        <LI>Next message: <A HREF="000440.html">[ImageJ-devel] ImageJ 1 legacy harmonization and rois
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#448">[ date ]</a>
+              <a href="thread.html#448">[ thread ]</a>
+              <a href="subject.html#448">[ subject ]</a>
+              <a href="author.html#448">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Gang-
+
+Sorry to do this again-
+
+For ROIs, see
+
+<A HREF="http://www.openmicroscopy.org/Schemas/ROI/2011-06/ROI.xsd">http://www.openmicroscopy.org/Schemas/ROI/2011-06/ROI.xsd</A>
+
+or a more readable version is at:
+
+<A HREF="http://git.openmicroscopy.org/src/develop/components/specification/Documentation/Generated/OME-2011-06/ome.html">http://git.openmicroscopy.org/src/develop/components/specification/Documentation/Generated/OME-2011-06/ome.html</A>
+
+(you'll have to scroll down a ways to the ROI schema).
+
+ If we want to achieve the interoperability that we often discuss, defining a single model for ROIs would help.  Tell us what you don't like and we'll work on it.  If you want to reject this, that's fine, and really not a problem.  If you can't map what we have to imglib2, then we need to scratch our heads and figure out how we might make that work.   There is no pretense that our existing model is perfect.  If you tell us what's broken, we'll work hard to fix it. 
+
+If you come up with a new ROI model, let us know, and we'll do the translation work (more work for the Bio-Formats developers, known to you as Melissa and Curtis).  Of course, if we all used the same one, or even worked to make the translation easy, wouldn't that be great?!?!?!
+
+Cheers,
+
+Jason
+
+
+On 21 Jun 2011, at 19:17, Lee Kamentsky wrote:
+
+&gt;<i> Thanks Tobias,
+</I>&gt;<i> I ended up not using the KD tree for my composite ROI, but I wrote a hyperrectangle search class, net.imglib2.algorithm.kdtree.VolumetricSearch, anyway. I'm looking at net.imglib2.collection.KDTree and the searches in net.imglib2.neighborsearch and I can see those are better places for it now. I'll see if I can find some time to reimplement it there.
+</I>&gt;<i> 
+</I>&gt;<i> But, the one in algorithms works - it's pretty cool to have a database of N-dimensional intervals that you can search in log time.
+</I>&gt;<i> 
+</I>&gt;<i> --Lee
+</I>&gt;<i> 
+</I>&gt;<i> On 6/21/2011 1:21 PM, Tobias Pietzsch wrote:
+</I>&gt;&gt;<i> On 06/10/2011 03:33 PM, Lee Kamentsky wrote:
+</I>&gt;&gt;&gt;<i> Hi all, esp Dscho &amp; Stephan P. I'm thinking of doing a composite region
+</I>&gt;&gt;&gt;<i> of interest which would be a collection any other kinds of region of
+</I>&gt;&gt;&gt;<i> interest. I'm thinking that the most efficient way to do this is to use
+</I>&gt;&gt;&gt;<i> a K-D tree to store references to the sub-ROIs: Wikipedia says that you
+</I>&gt;&gt;&gt;<i> can search for hyper-rectangles (the bounds of the ROIs) by storing the
+</I>&gt;&gt;&gt;<i> minimum and maximum extents as a 2N-d object in the hyperplane and then
+</I>&gt;&gt;&gt;<i> the search for rectangles containing a point becomes a range search in
+</I>&gt;&gt;&gt;<i> the 2N-d space for all points on one side of a hyperplane.
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> So 2 questions:
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> 1) Could I add a leaf that holds onto a real interval,
+</I>&gt;&gt;&gt;<i> &quot;RealntervalLeaf&lt;I extends RealInterval&gt;&quot;, a search method that returns
+</I>&gt;&gt;&gt;<i> all points on one side of a hyperplane (T point, Node&lt;T&gt; node, bool []
+</I>&gt;&gt;&gt;<i> above = false to retrieve nodes less than point in the given dimension,
+</I>&gt;&gt;&gt;<i> true to retrieve nodes greater than point in the given dimension) and
+</I>&gt;&gt;&gt;<i> some wrapper class that purports to be a database of &quot;I extends
+</I>&gt;&gt;&gt;<i> RealInterval&quot; with a simple interface for retrieving all RealIntervals
+</I>&gt;&gt;&gt;<i> containing a point?
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> Hi Lee,
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> I'm a bit out of the loop right now, just getting back into imglib development. I don't know if this has been discussed in the Skype channel or something, but...
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> Did you consider using the new KDTree implementation in imglib2 core, instead of the net.imglib2.algorithm.kdtree?
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> The new KDTree does not require it's T to be a Leaf&lt; T &gt;
+</I>&gt;&gt;<i> and there are implementations of the net.imglib2.neighborsearch.*NeighborSearch&lt; T &gt; interfaces.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> It uses exact median-finding algorithm for constructing the tree
+</I>&gt;&gt;<i> (instead of the approximate one in net.imglib2.algorithm.kdtree).
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> It is also faster, if I remember correctly.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> best regards,
+</I>&gt;&gt;<i> Tobias
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> 2) imglib2-algorithms is really useful. There are going to be other
+</I>&gt;&gt;&gt;<i> cases where imglib2 or other components would like to use algorithms to
+</I>&gt;&gt;&gt;<i> construct things like NativeImg and RegionOfInterest. How do we manage
+</I>&gt;&gt;&gt;<i> this? It sure would be nice if imglib2 and imglib2-algorithms were
+</I>&gt;&gt;&gt;<i> interdependent. If we're not going to allow that, I'll probably
+</I>&gt;&gt;&gt;<i> implement the composite ROI in imglib2-algorithms and I'll wait until
+</I>&gt;&gt;&gt;<i> imglib2-algorithms to be completed before I use composite ROIs in ImageJ
+</I>&gt;&gt;&gt;<i> 2.0.
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> I'm probably going to do the first for the fun of it, the legacy ROI
+</I>&gt;&gt;&gt;<i> code will need it, need a break from the GUI stuff and this will be
+</I>&gt;&gt;&gt;<i> refreshing. Tell me what you all think.
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> --Lee
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagejdev.org</A>
+</I>&gt;&gt;&gt;<i> <A HREF="http://imagejdev.org/mailman/listinfo/imagej-devel">http://imagejdev.org/mailman/listinfo/imagej-devel</A>
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagejdev.org</A>
+</I>&gt;&gt;<i> <A HREF="http://imagejdev.org/mailman/listinfo/imagej-devel">http://imagejdev.org/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagejdev.org</A>
+</I>&gt;<i> <A HREF="http://imagejdev.org/mailman/listinfo/imagej-devel">http://imagejdev.org/mailman/listinfo/imagej-devel</A>
+</I>
+
+
+**************************
+Wellcome Trust Centre for Gene Regulation &amp; Expression
+College of Life Sciences
+MSI/WTB/JBC Complex
+University of Dundee
+Dow Street
+Dundee  DD1 5EH
+United Kingdom
+
+phone (01382) 385819
+Intl phone:  44 1382 385819 
+FAX   (01382) 388072 
+email: <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">jason at lifesci.dundee.ac.uk</A>
+
+Lab Page: <A HREF="http://gre.lifesci.dundee.ac.uk/staff/jason_swedlow.html">http://gre.lifesci.dundee.ac.uk/staff/jason_swedlow.html</A>
+Open Microscopy Environment: <A HREF="http://openmicroscopy.org">http://openmicroscopy.org</A>
+**************************
+
+The University of Dundee is a Scottish Registered Charity, No. SC015096.
+
+
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20110621/1ba3b482/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20110621/1ba3b482/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000447.html">[ImageJ-devel] net.imglib2.algorithm.kdtree and rectangles
+</A></li>
+	<LI>Next message: <A HREF="000440.html">[ImageJ-devel] ImageJ 1 legacy harmonization and rois
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#448">[ date ]</a>
+              <a href="thread.html#448">[ thread ]</a>
+              <a href="subject.html#448">[ subject ]</a>
+              <a href="author.html#448">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

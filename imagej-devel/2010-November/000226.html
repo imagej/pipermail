@@ -1,0 +1,144 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] ThreadContextClassLoader Article
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ThreadContextClassLoader%20Article&In-Reply-To=%3CAANLkTim5HAPu%3DP42sZ6OqkgCtAYeiE771zYWmNhC80yM%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000225.html">
+   <LINK REL="Next"  HREF="000229.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] ThreadContextClassLoader Article</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ThreadContextClassLoader%20Article&In-Reply-To=%3CAANLkTim5HAPu%3DP42sZ6OqkgCtAYeiE771zYWmNhC80yM%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] ThreadContextClassLoader Article">ctrueden at wisc.edu
+       </A><BR>
+    <I>Wed Nov 10 15:52:13 CST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000225.html">[ImageJ-devel] ThreadContextClassLoader Article
+</A></li>
+        <LI>Next message: <A HREF="000229.html">[ImageJ-devel] ThreadContextClassLoader Article
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#226">[ date ]</a>
+              <a href="thread.html#226">[ thread ]</a>
+              <a href="subject.html#226">[ subject ]</a>
+              <a href="author.html#226">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Dscho,
+
+Why not use the URLClassLoader directly? You might want to subclass it to
+&gt;<i> access the addURL() method, but it should be plenty enough.
+</I>&gt;<i>
+</I>
+Right, I was thinking about that. The cool thing about JCL is that
+supposedly it can unload classes without needing to create a new class
+loader every time. Maybe it's not such a big deal, though.
+
+BTW what is the status on sezpos? Is there a compelling example yet,
+&gt;<i> showing that it can be integrated into the compilation easily, and that
+</I>&gt;<i> the annotations can be read without hassle (and without actually loading
+</I>&gt;<i> the class)?
+</I>&gt;<i>
+</I>
+Soon! Yesterday and today we rearranged the ImageJ2 project modules in the
+SVN repository. The new layout is:
+
+1) ij1-bridge: Code containing &quot;compatibility layer&quot; between IJ2 and IJ1.
+This project contains the ImgLibProcessor extension of ImageProcessor, for
+example, that allows us to wrap an imglib Image as an ImagePlus. Classes in
+this project start with package prefix &quot;imagej.ij1.&quot;
+
+2) ij1-patches: Code overriding vanilla IJ1 classes. This project is
+intended to be a temporary place where we put changes to the ImageJ1 core
+classes (i.e., classes of package &quot;ij.&quot;). We had made quite a few changes to
+the core ImageJ classes before when we were pursuing the &quot;delegation&quot;
+development plan, and we are now going through and backing them out whenever
+possible. However, sometimes changes to core ImageJ1 will be needed. The
+idea is to absolutely minimize them, and when we need a change, to place it
+in ij1-patches.jar on the classpath before the stock ij.jar. That way our
+modified classes take precedence. Then we can discuss why we needed each
+change with Wayne and others, and work together to integrate the changes
+into the main IJ1 codebase as needed.
+
+3) imagej2: Code defining the new ImageJ2 architecture and user interface.
+After feedback from the conference, it seems clear that people (particularly
+Wayne) want an alpha release as soon as possible. Hence, we are creating a
+minimal ImageJ2 project that replicates the existing IJ1 user interface and
+functionality, according to the adaptation development plan I outlined in my
+talk. I am referring to this as the &quot;bootstrapping&quot; phase of the project.
+Once we have the minimal IJ2 alpha in place, we can begin to make iterative
+changes. Also, this project will be renamed back to &quot;imagej&quot; from &quot;imagej2&quot;
+once the bootstrapping is complete.
+
+4) imagej: This project contains the previous ImageJ2 code, with many
+changes to the ij.* packages, and is what was demoed at the conference. It
+is now obsolete, as we migrate various portions of the code into the other
+projects mentioned above.
+
+So, regarding SezPoz, as part of #3, we need to have an updated plugin
+loading mechanism. Step 1 is to lift ImageJ1's mechanism wholesale. Step 2
+is to add SezPoz and/or NetBeans Lookup to show how they would benefit the
+plugin discovery process. I will send another update once that is working
+(hopefully within 1-3 weeks).
+
+Please let us know if anything described above is unclear, and I can
+clarify.
+
+-Curtis
+
+On Wed, Nov 10, 2010 at 3:37 PM, Johannes Schindelin &lt;
+<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">Johannes.Schindelin at gmx.de</A>&gt; wrote:
+
+&gt;<i> Hi,
+</I>&gt;<i>
+</I>&gt;<i> On Wed, 10 Nov 2010, Curtis Rueden wrote:
+</I>&gt;<i>
+</I>&gt;<i> &gt; Out of curiosity, does anyone here have experience using JarClassLoader
+</I>&gt;<i> &gt; (JCL)? On first glance it looks like it might be able to solve the class
+</I>&gt;<i> &gt; reloading issue.
+</I>&gt;<i> &gt;   <A HREF="http://jcloader.sourceforge.net/index.html">http://jcloader.sourceforge.net/index.html</A>
+</I>&gt;<i>
+</I>&gt;<i> Why not use the URLClassLoader directly? You might want to subclass it to
+</I>&gt;<i> access the addURL() method, but it should be plenty enough.
+</I>&gt;<i>
+</I>&gt;<i> BTW what is the status on sezpos? Is there a compelling example yet,
+</I>&gt;<i> showing that it can be integrated into the compilation easily, and that
+</I>&gt;<i> the annotations can be read without hassle (and without actually loading
+</I>&gt;<i> the class)?
+</I>&gt;<i>
+</I>&gt;<i> Ciao,
+</I>&gt;<i> Johannes
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20101110/afcc44f5/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20101110/afcc44f5/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000225.html">[ImageJ-devel] ThreadContextClassLoader Article
+</A></li>
+	<LI>Next message: <A HREF="000229.html">[ImageJ-devel] ThreadContextClassLoader Article
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#226">[ date ]</a>
+              <a href="thread.html#226">[ thread ]</a>
+              <a href="subject.html#226">[ subject ]</a>
+              <a href="author.html#226">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

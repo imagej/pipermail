@@ -1,0 +1,110 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Fwd: Hist thresh toolbox license question
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Fwd%3A%20Hist%20thresh%20toolbox%20license%20question&In-Reply-To=%3C1643485.WSYIA9d1mD%40ds170%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001421.html">
+   <LINK REL="Next"  HREF="001424.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Fwd: Hist thresh toolbox license question</H1>
+    <B>Gabriel Landini</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Fwd%3A%20Hist%20thresh%20toolbox%20license%20question&In-Reply-To=%3C1643485.WSYIA9d1mD%40ds170%3E"
+       TITLE="[ImageJ-devel] Fwd: Hist thresh toolbox license question">G.Landini at bham.ac.uk
+       </A><BR>
+    <I>Tue Feb 19 05:08:58 CST 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001421.html">[ImageJ-devel] Fwd: Hist thresh toolbox license question
+</A></li>
+        <LI>Next message: <A HREF="001424.html">[ImageJ-devel] Fwd: Hist thresh toolbox license question
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1423">[ date ]</a>
+              <a href="thread.html#1423">[ thread ]</a>
+              <a href="subject.html#1423">[ subject ]</a>
+              <a href="author.html#1423">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Monday 18 Feb 2013 22:01:14 Antti Niemist&#246; wrote:
+&gt;<i> It seems like your ported version does not produce the correct threshold
+</I>&gt;<i> between the two peaks in the smoothed histogram in certain cases where you
+</I>&gt;<i> have flat areas in the smoothed histogram.
+</I>&gt;<i> 
+</I>&gt;<i> For example, try this one.
+</I>&gt;<i> 
+</I>&gt;<i> I = 40*ones(40);
+</I>&gt;<i> I(10:30,10:30) = 120;
+</I>&gt;<i> T = th_minimum(I);
+</I>&gt;<i> 
+</I>&gt;<i> You'll find the threshold becomes 121. This is of course not between the
+</I>&gt;<i> two peaks at 40 and 120.
+</I>&gt;<i> 
+</I>&gt;<i> The code in v1.02 did not assign any value to the threshold in this
+</I>&gt;<i> example case and in similar cases, so it clearly needed to be fixed.
+</I>&gt;<i> 
+</I>&gt;<i> I now realize that a much more elegant fix than what I put in v1.03 would
+</I>&gt;<i> be this (gives T=41 in my simple example):
+</I>&gt;<i> 
+</I>&gt;<i> for k = 2:n
+</I>&gt;<i>    if y(k-1) &gt; y(k) &amp; y(k+1) &gt;= y(k)
+</I>&gt;<i>      T = k-1;
+</I>&gt;<i>      break
+</I>&gt;<i>    end
+</I>&gt;<i> end
+</I>&gt;<i> 
+</I>&gt;<i> The &quot;break&quot; from the loop is essential, in addition to changing the latter
+</I>&gt;<i> &quot;&gt;&quot; to a &quot;&gt;=&quot;. I would definitely use this code in your port.
+</I>
+Hi again,
+Barry: I seem to have discussed this with Antti that in matlab the arrays 
+start at 1, so the counts for greyscale 0 are in the index 1.
+So for the Java version, the threshold should be set at:
+ T=k;
+
+You want the threshold at y(k), that bin should be smaller than y(k-1).
+BTW that is what the current IJ plugin does. Antti codes compensates for the 
+indexes starting at 1. IJ does not need that.
+
+And do you really need the Break statement?
+If there are 2 peaks guaranteed, then a 2nd instance of the test would not be 
+found. Or am I wrong?
+
+Cheers
+Gabriel
+
+
+
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001421.html">[ImageJ-devel] Fwd: Hist thresh toolbox license question
+</A></li>
+	<LI>Next message: <A HREF="001424.html">[ImageJ-devel] Fwd: Hist thresh toolbox license question
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1423">[ date ]</a>
+              <a href="thread.html#1423">[ thread ]</a>
+              <a href="subject.html#1423">[ subject ]</a>
+              <a href="author.html#1423">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

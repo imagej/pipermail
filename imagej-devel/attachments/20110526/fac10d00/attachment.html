@@ -1,0 +1,39 @@
+<tt>
+Hi&nbsp;Dscho,&lt;br&gt;&lt;br&gt;I&nbsp;implemented&nbsp;a&nbsp;fix&nbsp;yesterday:&lt;br&gt; &nbsp;&lt;a&nbsp;href=&quot;http://dev.imagejdev.org/trac/imagej/ticket/543&quot;&gt;http://dev.imagejdev.org/trac/imagej/ticket/543&lt;/a&gt;&lt;br&gt; &nbsp;&lt;a&nbsp;href=&quot;http://dev.imagejdev.org/trac/imagej/changeset/2957&quot;&gt;http://dev.imagejdev.org/trac/imagej/changeset/2957&lt;/a&gt;&lt;br&gt;<br>
+<br>
+&lt;br&gt;It&nbsp;simply&nbsp;flags&nbsp;the&nbsp;parameter&nbsp;as&nbsp;&amp;quot;resolved,&amp;quot;&nbsp;meaning&nbsp;it&nbsp;will&nbsp;not&nbsp;appear&nbsp;in&nbsp;the&nbsp;input&nbsp;dialog.&lt;br&gt;&lt;br&gt;I&nbsp;also&nbsp;added&nbsp;a&nbsp;warning&nbsp;message&nbsp;if&nbsp;a&nbsp;final&nbsp;parameter&nbsp;is&nbsp;detected:&lt;br&gt; &nbsp;&lt;a&nbsp;href=&quot;http://dev.imagejdev.org/trac/imagej/changeset/2958&quot;&gt;http://dev.imagejdev.org/trac/imagej/changeset/2958&lt;/a&gt;&lt;br&gt;<br>
+<br>
+&lt;br&gt;However,&nbsp;we&nbsp;could&nbsp;be&nbsp;stricter&nbsp;and&nbsp;throw&nbsp;an&nbsp;exception&nbsp;instead,&nbsp;as&nbsp;you&nbsp;suggest.&nbsp;What&nbsp;do&nbsp;you&nbsp;think?&lt;br&gt;&lt;br&gt;Regards,&lt;br&gt;Curtis&lt;br&gt;&lt;br&gt;&lt;div&nbsp;class=&quot;gmail_quote&quot;&gt;On&nbsp;Thu,&nbsp;May&nbsp;26,&nbsp;2011&nbsp;at&nbsp;2:35&nbsp;AM,&nbsp;Johannes&nbsp;Schindelin&nbsp;&lt;span&nbsp;dir=&quot;ltr&quot;&gt;&amp;lt;&lt;a&nbsp;href=&quot;mailto:Johannes.Schindelin@gmx.de&quot;&gt;Johannes.Schindelin@gmx.de&lt;/a&gt;&amp;gt;&lt;/span&gt;&nbsp;wrote:&lt;br&gt;<br>
+<br>
+&lt;blockquote&nbsp;class=&quot;gmail_quote&quot;&nbsp;style=&quot;margin:0&nbsp;0&nbsp;0&nbsp;.8ex;border-left:1px&nbsp;#ccc&nbsp;solid;padding-left:1ex;&quot;&gt;Hi,&lt;br&gt;<br>
+&lt;div&gt;&lt;div&gt;&lt;/div&gt;&lt;div&nbsp;class=&quot;h5&quot;&gt;&lt;br&gt;<br>
+On&nbsp;Wed,&nbsp;25&nbsp;May&nbsp;2011,&nbsp;Grant&nbsp;B.&nbsp;Harris&nbsp;wrote:&lt;br&gt;<br>
+&lt;br&gt;<br>
+&amp;gt;&nbsp;On&nbsp;5/25/2011&nbsp;2:53&nbsp;AM,&nbsp;Johannes&nbsp;Schindelin&nbsp;wrote:&lt;br&gt;<br>
+&amp;gt;&nbsp;&amp;gt;&nbsp;Can&nbsp;we&nbsp;have&nbsp;some&nbsp;check&nbsp;when&nbsp;the&nbsp;class&nbsp;is&nbsp;parsed&nbsp;to&nbsp;make&nbsp;sure&nbsp;that&lt;br&gt;<br>
+&amp;gt;&nbsp;&amp;gt;&nbsp;@Parameter&nbsp;fields&nbsp;are&nbsp;not&nbsp;final?&lt;br&gt;<br>
+&amp;gt;&nbsp;&amp;gt;&lt;br&gt;<br>
+&amp;gt;&nbsp;Johannes,&lt;br&gt;<br>
+&amp;gt;&nbsp;Ya,&nbsp;I&nbsp;was&nbsp;thinking&nbsp;the&nbsp;same&nbsp;thing.&nbsp; &nbsp;We&nbsp;can&nbsp;add&nbsp;a&nbsp;check&nbsp;using&lt;br&gt;<br>
+&amp;gt;&nbsp;Field.getModifiers()&nbsp;and&nbsp;not&nbsp;add&nbsp;an&nbsp;input&nbsp;widget&nbsp;if&nbsp;the&nbsp;field&nbsp;is&nbsp;final.&nbsp; I&amp;#39;ve&lt;br&gt;<br>
+&amp;gt;&nbsp;filed&nbsp;a&nbsp;ticket&nbsp;for&nbsp;it.&lt;br&gt;<br>
+&lt;br&gt;<br>
+&lt;/div&gt;&lt;/div&gt;Maybe&nbsp;this&nbsp;is&nbsp;already&nbsp;half&nbsp;the&nbsp;solution?&lt;br&gt;<br>
+&lt;br&gt;<br>
+--&nbsp;snipsnap&nbsp;--&lt;br&gt;<br>
+diff&nbsp;--git&nbsp;a/core/plugin/src/main/java/imagej/plugin/PluginModuleInfo.java&nbsp;b/core/plugin/src/main/java/imagej/plugin/PluginModuleInfo.java&lt;br&gt;<br>
+index&nbsp;d520260..bd6d988&nbsp;100644&lt;br&gt;<br>
+---&nbsp;a/core/plugin/src/main/java/imagej/plugin/PluginModuleInfo.java&lt;br&gt;<br>
++++&nbsp;b/core/plugin/src/main/java/imagej/plugin/PluginModuleInfo.java&lt;br&gt;<br>
+@@&nbsp;-165,6&nbsp;+165,8&nbsp;@@&nbsp;public&nbsp;class&nbsp;PluginModuleInfo&amp;lt;T&nbsp;extends&nbsp;BasePlugin&amp;gt;&nbsp;implements&nbsp;ModuleInfo&nbsp;{&lt;br&gt;<br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; if&nbsp;(param&nbsp;==&nbsp;null)&nbsp;continue;&nbsp;//&nbsp;not&nbsp;a&nbsp;parameter&lt;br&gt;<br>
+&lt;br&gt;<br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; final&nbsp;String&nbsp;name&nbsp;=&nbsp;f.getName();&lt;br&gt;<br>
++&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;if&nbsp;(Modifier.isFinal(f.getModifiers()))&lt;br&gt;<br>
++&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;throw&nbsp;new&nbsp;RuntimeException(&amp;quot;Invalid&nbsp;&amp;#39;final&amp;#39;&nbsp;parameter:&nbsp;&amp;quot;&nbsp;+&nbsp;name);&lt;br&gt;<br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; if&nbsp;(presets.containsKey(name))&nbsp;{&lt;br&gt;<br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; //&nbsp;assign&nbsp;preset&nbsp;value&nbsp;to&nbsp;field,&nbsp;and&nbsp;exclude&nbsp;from&nbsp;the&nbsp;list&nbsp;of&nbsp;inputs&lt;br&gt;<br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; PluginModule.setValue(f,&nbsp;plugin,&nbsp;presets.get(name));&lt;br&gt;<br>
+&lt;/blockquote&gt;&lt;/div&gt;&lt;br&gt;<br>
+
+</tt>

@@ -1,0 +1,136 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Confusion about SubsampleIntervalView, HyperSliceImgPlus, etc.
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Confusion%20about%20SubsampleIntervalView%2C%0A%20HyperSliceImgPlus%2C%20etc.&In-Reply-To=%3CCADN69yna6YUMVKfftpiy8vK7dCZMaMQOkgJDMOpEANx%2Bf%2BdzHw%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002450.html">
+   <LINK REL="Next"  HREF="002457.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Confusion about SubsampleIntervalView, HyperSliceImgPlus, etc.</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Confusion%20about%20SubsampleIntervalView%2C%0A%20HyperSliceImgPlus%2C%20etc.&In-Reply-To=%3CCADN69yna6YUMVKfftpiy8vK7dCZMaMQOkgJDMOpEANx%2Bf%2BdzHw%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Confusion about SubsampleIntervalView, HyperSliceImgPlus, etc.">ctrueden at wisc.edu
+       </A><BR>
+    <I>Mon Feb 23 16:44:58 CST 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002450.html">[ImageJ-devel] Confusion about SubsampleIntervalView,	HyperSliceImgPlus, etc.
+</A></li>
+        <LI>Next message: <A HREF="002457.html">[ImageJ-devel] Confusion about SubsampleIntervalView, HyperSliceImgPlus, etc.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2455">[ date ]</a>
+              <a href="thread.html#2455">[ thread ]</a>
+              <a href="subject.html#2455">[ subject ]</a>
+              <a href="author.html#2455">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Jan,
+
+Apologies for the delay in reply.
+
+&gt;<i> I run into conflict between net.imglib2.meta.ImgPlus&lt;T&gt; and
+</I>&gt;<i> net.imagej.ImgPlus&lt;T&gt; now.
+</I>
+That suggests a clash of dependencies. The &quot;net.imglib2.meta.ImgPlus&quot; is
+gone, in favor of (for the time being [1]) net.imagej.ImgPlus.
+
+Everything should work if you update your POM to extend the newest
+pom-imagej (5.10.0 at the time of this writing), and purge all &quot;import
+net.imglib2.meta&quot; lines from your imports in favor of the new &quot;import
+net.imagej&quot; class instead.  The HyperSliceImgPlus, though deprecated, was
+updated to use net.imagej.ImgPlus, so hopefully this will work for you.
+
+&gt;<i> what should I use for the subsampling operations to do it properly?
+</I>
+The API for doing this is still under development. The Views.interpolate
+method [2] is probably a good starting point, though it is rather low
+level. If what you want is to resample an image, we should create an op for
+that in the ImageJ OPS project (I don't think one exists yet).
+
+Regards,
+Curtis
+
+[1] In case you are curious: the ImgPlus class really needs a better
+interface-driven type hierarchy, which has been a long time in coming. It
+is planned to rework the ImageJ2 data model a bit along these lines later
+this year.
+
+[2]
+<A HREF="http://javadoc.imagej.net/ImgLib2/net/imglib2/view/Views.html#interpolate(F,%20net.imglib2.interpolation.InterpolatorFactory">http://javadoc.imagej.net/ImgLib2/net/imglib2/view/Views.html#interpolate(F,%20net.imglib2.interpolation.InterpolatorFactory</A>)
+
+On Fri, Feb 13, 2015 at 6:45 AM, Jan Schier &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">schier at utia.cas.cz</A>&gt; wrote:
+
+&gt;<i> Hi,
+</I>&gt;<i>
+</I>&gt;<i> Excuse me perhaps naive questions for this list. I have, say, reasonable
+</I>&gt;<i> experience with Java coding for ImageJ1, and now I have tried to touch
+</I>&gt;<i> ImageJ2 and ImgLib2
+</I>&gt;<i>
+</I>&gt;<i> I have written some code using Haar wavelets on 3D images last year, using
+</I>&gt;<i> HyperSliceImgPlus.fixChannelAxis() to select the channel and then
+</I>&gt;<i> SubsampleIntervalView etc. to get the sampling for wavelet computation.
+</I>&gt;<i>
+</I>&gt;<i> Essentially, I have used something like
+</I>&gt;<i>
+</I>&gt;<i> final ImgPlus&lt;T&gt; input = (ImgPlus&lt;T&gt;)dataset.getImgPlus();
+</I>&gt;<i> final Img&lt;T&gt; viewChan = HyperSliceImgPlus.fixChannelAxis(input, 1L);
+</I>&gt;<i>
+</I>&gt;<i> and then I was using Img&lt;T&gt; for subsampling and further processing.
+</I>&gt;<i> With this code, I run into conflict between net.imglib2.meta.ImgPlus&lt;T&gt;
+</I>&gt;<i> and net.imagej.ImgPlus&lt;T&gt; now.
+</I>&gt;<i>
+</I>&gt;<i> I wanted to extend it now, but things have changed a lot with ops. I
+</I>&gt;<i> assume that my approach of working on Img&lt;T&gt; is incorrect now.
+</I>&gt;<i>
+</I>&gt;<i> - how should I replace the above construct for channel selection now?
+</I>&gt;<i>
+</I>&gt;<i> - what should I use for the subsampling operations to do it properly? I
+</I>&gt;<i> assume I should stay at the Dataset or ImgPlus level?
+</I>&gt;<i>
+</I>&gt;<i> Many thanks for any hint,
+</I>&gt;<i>
+</I>&gt;<i> Jan
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20150223/98c07789/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20150223/98c07789/attachment.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002450.html">[ImageJ-devel] Confusion about SubsampleIntervalView,	HyperSliceImgPlus, etc.
+</A></li>
+	<LI>Next message: <A HREF="002457.html">[ImageJ-devel] Confusion about SubsampleIntervalView, HyperSliceImgPlus, etc.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2455">[ date ]</a>
+              <a href="thread.html#2455">[ thread ]</a>
+              <a href="subject.html#2455">[ subject ]</a>
+              <a href="author.html#2455">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

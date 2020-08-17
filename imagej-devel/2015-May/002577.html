@@ -1,0 +1,461 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] 3D Viewer vs. ClearVolume
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%203D%20Viewer%20vs.%20ClearVolume&In-Reply-To=%3CCADN69ykDbgurh0wFtjRXGXCNTQGLsrKs9%3D4%2BynimBdeg8CtQsg%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002578.html">
+   <LINK REL="Next"  HREF="002580.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] 3D Viewer vs. ClearVolume</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%203D%20Viewer%20vs.%20ClearVolume&In-Reply-To=%3CCADN69ykDbgurh0wFtjRXGXCNTQGLsrKs9%3D4%2BynimBdeg8CtQsg%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] 3D Viewer vs. ClearVolume">ctrueden at wisc.edu
+       </A><BR>
+    <I>Thu May 28 20:52:50 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002578.html">[ImageJ-devel] Stack overflow error with screen size computation
+</A></li>
+        <LI>Next message: <A HREF="002580.html">[ImageJ-devel] Getting channel names from a Dataset object
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2577">[ date ]</a>
+              <a href="thread.html#2577">[ thread ]</a>
+              <a href="subject.html#2577">[ subject ]</a>
+              <a href="author.html#2577">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Florian,
+
+Thanks for the update!
+
+&gt;<i> if you know better place to discuss this then email&#8230; sure, let me
+</I>&gt;<i> know&#8230; I could cut and paste this mail easily into a forum type thing
+</I>&gt;<i> of your choice...
+</I>
+I have CCed the imagej-devel list, since this discussion may interest other
+developers. I chose imagej-devel instead of fiji-devel because although the
+3D_Viewer plugin does not ship on the core ImageJ update site, a version of
+it does ship with ImageJ1. So it is not really a &quot;Fiji-specific&quot; plugin.
+
+&gt;<i> we switched gears and looked out for methods that could bundle our
+</I>&gt;<i> favorite jogl and gluegen libraries in our own ueber-jar.
+</I>
+I hope you guys saw this page at some point:
+<A HREF="http://imagej.net/Uber-JAR">http://imagej.net/Uber-JAR</A>
+
+Indeed, shading the dependencies is the most robust way of shipping two
+versions of the same libraries in ImageJ right now without causing
+conflicts. There are still disadvantages though, as discussed at the above
+link. But if it is working for you, that is OK.
+
+&gt;<i> we had to find out that on 0 of the 5 machines we could ever start the
+</I>&gt;<i> 3D Viewer if we used Java7 or Java8.
+</I>
+All Macs? If any were Windows, did you try the updated experimental bundle
+I linked before?
+<A HREF="http://curtis.imagej.net/2015-04-09-jogl-java3d/">http://curtis.imagej.net/2015-04-09-jogl-java3d/</A>
+
+For one thing, that bundle uses an updated version of the 3D Viewer that
+never takes the liberty of trying to install Java 3D [1].
+
+If it would be helpful, I could also prepare OS X and/or Linux versions of
+such a bundle.
+
+&gt;<i> Let me know what you think and if we can help in any way.
+</I>
+If you guys are feeling motivated, you could do more testing on various
+platforms of the code changes I have done. It would be great to get the
+JOGL version of Java 3D 1.6 shipping with Fiji.
+
+I am insanely busy through at least mid June, but will try to make time to
+work on this before July 1st (since after that point, I have a moratorium
+on coding in order to work on papers for a while).
+
+Regards,
+Curtis
+
+[1] <A HREF="https://github.com/fiji/3D_Viewer/compare/jogl-java3d">https://github.com/fiji/3D_Viewer/compare/jogl-java3d</A>
+
+
+
+On Thu, May 28, 2015 at 3:48 AM, Florian Jug &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">jug at mpi-cbg.de</A>&gt; wrote:
+
+&gt;<i> Curtis, Mark,
+</I>&gt;<i>
+</I>&gt;<i> I have some exciting and potentially also some less exciting news!
+</I>&gt;<i> Loic and I sat together yesterday and only went to bed far after it was
+</I>&gt;<i> still yesterday&#8230; ;)
+</I>&gt;<i> First we started playing with some classpath isolation ideas, hoping that
+</I>&gt;<i> the 3D Viewer und ClearVolume could happily coexist within Fiji.
+</I>&gt;<i> Long story short: it was hell&#8230; and our &#8216;lessons learned&#8217; is that such an
+</I>&gt;<i> attempt is only feasible if the entire interaction between the default and
+</I>&gt;<i> the new classpath goes via interfaces alone.
+</I>&gt;<i>
+</I>&gt;<i> Then we switched gears and looked out for methods that could bundle our
+</I>&gt;<i> favorite jogl and gluegen libraries in our own ueber-jar. That sounds bad,
+</I>&gt;<i> doesn&#8217;t it? Yes it does&#8230; BUT: we figured that if we can at the same time
+</I>&gt;<i> rename the package names of jogl and gluegen + modify all our internal code
+</I>&gt;<i> such that only these modified packages are used we would also have our
+</I>&gt;<i> separate version of these libraries and could even coexist in the same
+</I>&gt;<i> classloader.
+</I>&gt;<i>
+</I>&gt;<i> The solutions turns out to be quite easy and uses a very nice and potent
+</I>&gt;<i> Maven plugin you might know: *maven-shade-plugin*
+</I>&gt;<i>        &lt;plugin&gt;
+</I>&gt;<i>         &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+</I>&gt;<i>         &lt;artifactId&gt;maven-shade-plugin&lt;/artifactId&gt;
+</I>&gt;<i>         &lt;version&gt;2.3&lt;/version&gt;
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> &lt;executions&gt;
+</I>&gt;<i>           &lt;execution&gt;
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>             &lt;phase&gt;package&lt;/phase&gt;
+</I>&gt;<i>             &lt;goals&gt;
+</I>&gt;<i>               &lt;goal&gt;shade&lt;/goal&gt;
+</I>&gt;<i>             &lt;/goals&gt;
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>             &lt;configuration&gt;
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>             &lt;artifactSet&gt;
+</I>&gt;<i>             &lt;includes&gt;
+</I>&gt;<i>             &lt;include&gt;net.clearvolume:cleargl&lt;/include&gt;
+</I>&gt;<i>             &lt;include&gt;net.clearvolume:clearcuda&lt;/include&gt;
+</I>&gt;<i>             &lt;include&gt;net.clearvolume:clearvolume&lt;/include&gt;
+</I>&gt;<i>             &lt;include&gt;org.jogamp.gluegen:gluegen-rt&lt;/include&gt;
+</I>&gt;<i>             &lt;include&gt;org.jogamp.jogl:jogl-all&lt;/include&gt;
+</I>&gt;<i>             &lt;/includes&gt;
+</I>&gt;<i>             &lt;/artifactSet&gt;
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> &lt;relocations&gt;
+</I>&gt;<i>                 &lt;relocation&gt;
+</I>&gt;<i>                   &lt;pattern&gt;javax.media.opengl&lt;/pattern&gt;
+</I>&gt;<i>                   &lt;shadedPattern&gt;cv.javax.media.opengl&lt;/shadedPattern&gt;
+</I>&gt;<i>                 &lt;/relocation&gt;
+</I>&gt;<i>                &lt;/relocations&gt;
+</I>&gt;<i>             &lt;/configuration&gt;
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>           &lt;/execution&gt;
+</I>&gt;<i>           &lt;/execution&gt;
+</I>&gt;<i>         &lt;/executions&gt;
+</I>&gt;<i>       &lt;/plugin&gt;
+</I>&gt;<i>
+</I>&gt;<i> The setup above is the &#8216;minimal&#8217; setup we came up with late last night. We
+</I>&gt;<i> include our own dependencies + jogl + gluegen. From within both those
+</I>&gt;<i> libraries we then relocate all packages conflicting with the 3D Viewer,
+</I>&gt;<i> which happens to be all packages below &#8216;javax.media.opengl&#8217;.
+</I>&gt;<i>
+</I>&gt;<i> Status quo: on 5 out of 5 machines we tried this setup ClearVolume can
+</I>&gt;<i> still start (when Fiji was run with Java7 or Java8) even after the 3D
+</I>&gt;<i> Viewer did his pollution downloads into 'ext&#8217;.
+</I>&gt;<i>
+</I>&gt;<i> *Some potentially bad news:* we had to find out that on 0 of the 5
+</I>&gt;<i> machines we could ever start the 3D Viewer if we used Java7 or Java8.
+</I>&gt;<i> Either there is some inherent issue with Java&gt;6, or it is because we ran
+</I>&gt;<i> the 3D Viewer using Java6 before, he downloaded some dependencies into some
+</I>&gt;<i> Java6 related path, and when later we tried to run it using Java&gt;6 the 3D
+</I>&gt;<i> Viewer did not check if he has all dependencies at hand. I don&#8217;t know and
+</I>&gt;<i> did not yet attempt to figure that out.
+</I>&gt;<i>
+</I>&gt;<i> On a fresh fiji install I did for example this:
+</I>&gt;<i> 1) open fiji with regular java (1.6 on mac)
+</I>&gt;<i> 2) run the 3D Viewer on the mitosis 5d example dataset &#8212; he downloaded
+</I>&gt;<i> stuff
+</I>&gt;<i> 3) restart and redo &#8212; he opens the 3d viewer
+</I>&gt;<i> 4) restart using Java7
+</I>&gt;<i> 5) fail! (see below)
+</I>&gt;<i>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">jug at myers-mac-7</A>:~/Repositories/GIT/imglib2/imglib2-clearvolume (master)$
+</I>&gt;<i> /Applications/Fiji4tests.app/Contents/MacOS/ImageJ-macosx --java-home
+</I>&gt;<i> /Library/Java/JavaVirtualMachines/jdk1.7.0_71.jdk/Contents/Home/
+</I>&gt;<i> May 28 10:38:49 myers-mac-7 ImageJ-macosx[86410] &lt;Error&gt;: The function
+</I>&gt;<i> &#8216;CGContextErase&#8217; is obsolete and will be removed in an upcoming update.
+</I>&gt;<i> Unfortunately, this application, or a library it uses, is using this
+</I>&gt;<i> obsolete function, and is thereby contributing to an overall degradation of
+</I>&gt;<i> system performance.
+</I>&gt;<i> log4j:WARN No appenders could be found for logger
+</I>&gt;<i> (org.bushe.swing.event.EventService).
+</I>&gt;<i> log4j:WARN Please initialize the log4j system properly.
+</I>&gt;<i> log4j:WARN See <A HREF="http://logging.apache.org/log4j/1.2/faq.html#noconfig">http://logging.apache.org/log4j/1.2/faq.html#noconfig</A> for
+</I>&gt;<i> more info.
+</I>&gt;<i> [ERROR] Skipping unsupported option -port7
+</I>&gt;<i> version = 1.5
+</I>&gt;<i> Exception in thread &quot;J3D-Renderer-1&quot; java.lang.UnsatisfiedLinkError: no
+</I>&gt;<i> jogl in java.library.path
+</I>&gt;<i> at java.lang.ClassLoader.loadLibrary(ClassLoader.java:1886)
+</I>&gt;<i> at java.lang.Runtime.loadLibrary0(Runtime.java:849)
+</I>&gt;<i> at java.lang.System.loadLibrary(System.java:1088)
+</I>&gt;<i> at
+</I>&gt;<i> com.sun.opengl.impl.NativeLibLoader.loadLibraryInternal(NativeLibLoader.java:189)
+</I>&gt;<i> at com.sun.opengl.impl.NativeLibLoader.access$000(NativeLibLoader.java:49)
+</I>&gt;<i> at
+</I>&gt;<i> com.sun.opengl.impl.NativeLibLoader$DefaultAction.loadLibrary(NativeLibLoader.java:80)
+</I>&gt;<i> at
+</I>&gt;<i> com.sun.opengl.impl.NativeLibLoader.loadLibrary(NativeLibLoader.java:103)
+</I>&gt;<i> at com.sun.opengl.impl.NativeLibLoader.access$200(NativeLibLoader.java:49)
+</I>&gt;<i> at com.sun.opengl.impl.NativeLibLoader$1.run(NativeLibLoader.java:111)
+</I>&gt;<i> at java.security.AccessController.doPrivileged(Native Method)
+</I>&gt;<i> at com.sun.opengl.impl.NativeLibLoader.loadCore(NativeLibLoader.java:109)
+</I>&gt;<i> at
+</I>&gt;<i> com.sun.opengl.impl.macosx.MacOSXGLDrawableFactory.&lt;clinit&gt;(MacOSXGLDrawableFactory.java:53)
+</I>&gt;<i> at java.lang.Class.forName0(Native Method)
+</I>&gt;<i> at java.lang.Class.forName(Class.java:191)
+</I>&gt;<i> at
+</I>&gt;<i> javax.media.opengl.GLDrawableFactory.getFactory(GLDrawableFactory.java:108)
+</I>&gt;<i> at javax.media.j3d.JoglPipeline$QueryCanvas.&lt;init&gt;(JoglPipeline.java:9029)
+</I>&gt;<i> at
+</I>&gt;<i> javax.media.j3d.JoglPipeline.getBestConfiguration(JoglPipeline.java:8793)
+</I>&gt;<i> at javax.media.j3d.Renderer.doWork(Renderer.java:514)
+</I>&gt;<i> at javax.media.j3d.J3dThread.run(J3dThread.java:275)
+</I>&gt;<i>
+</I>&gt;<i> *ClearVolume is NOT installed in this Fiji yet.*
+</I>&gt;<i>
+</I>&gt;<i> Anyways&#8230; this was my coredump of today. Let me know what you think and if
+</I>&gt;<i> we can help in any way.
+</I>&gt;<i> For us it was important that you guys are informed about how ClearVolume
+</I>&gt;<i> deals with the version conflict of jogl at the moment.
+</I>&gt;<i>
+</I>&gt;<i> Let us know if you have questions or concerns.
+</I>&gt;<i>
+</I>&gt;<i> Cheers,
+</I>&gt;<i> Florian
+</I>&gt;<i> :)
+</I>&gt;<i>
+</I>&gt;<i> PS: if you know better place to discuss this then email&#8230; sure, let me
+</I>&gt;<i> know&#8230; I could cut and paste this mail easily into a forum type thing of
+</I>&gt;<i> your choice...
+</I>&gt;<i>
+</I>&gt;<i> - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+</I>&gt;<i>
+</I>&gt;<i> MPI of Molecular Cell Biology and Genetics
+</I>&gt;<i> Group: Gene Myers
+</I>&gt;<i> Pfotenhauer Strasse 108
+</I>&gt;<i> 01307 Dresden
+</I>&gt;<i> Germany
+</I>&gt;<i>
+</I>&gt;<i> - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On 13 May 2015, at 21:01, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt; wrote:
+</I>&gt;<i>
+</I>&gt;<i> Hi Florian,
+</I>&gt;<i>
+</I>&gt;<i> &gt; a little bit of waiting time will solve all our problems. :)
+</I>&gt;<i>
+</I>&gt;<i> :-)
+</I>&gt;<i>
+</I>&gt;<i> I wish I could promise it will only be a little bit. Good news is: Mark's
+</I>&gt;<i> current main project is to solve the various launcher / Java 8 / OS X /
+</I>&gt;<i> Java 3D issues, since they are pretty much all related. Bad news is: it's
+</I>&gt;<i> amazing how little time we actually spend these days working on our &quot;main
+</I>&gt;<i> projects&quot;...
+</I>&gt;<i>
+</I>&gt;<i> &gt; we should check out <A HREF="https://github.com/imagej/imagej/issues/120">https://github.com/imagej/imagej/issues/120</A> &#8212;
+</I>&gt;<i> &gt; if the mavenized jogl is all we need&#8230; that would be perfect!
+</I>&gt;<i>
+</I>&gt;<i> Just to clarify: JOGL is already Mavenized. It was the hharrison Java 3D
+</I>&gt;<i> fork that wasn't yet Maven based. So I did that work, and it lives in my
+</I>&gt;<i> fork right now:
+</I>&gt;<i>
+</I>&gt;<i> * <A HREF="http://github.com/ctrueden/java3d-core/compare/maven">http://github.com/ctrueden/java3d-core/compare/maven</A>
+</I>&gt;<i> * <A HREF="http://github.com/ctrueden/java3d-utils/compare/maven">http://github.com/ctrueden/java3d-utils/compare/maven</A>
+</I>&gt;<i> * <A HREF="http://github.com/ctrueden/vecmath/compare/maven">http://github.com/ctrueden/vecmath/compare/maven</A>
+</I>&gt;<i>
+</I>&gt;<i> Harvey expressed interest in merging it, although he's slow to respond
+</I>&gt;<i> (probably he's super busy).
+</I>&gt;<i>
+</I>&gt;<i> The worst case scenario is that we move the Maven-based Java 3D fork to
+</I>&gt;<i> scijava org and maintain it there. But hopefully it won't come to that&#8212;the
+</I>&gt;<i> JOGL community seems very helpful and active so far.
+</I>&gt;<i>
+</I>&gt;<i> Regards,
+</I>&gt;<i> Curtis
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On Wed, May 13, 2015 at 1:51 PM, Florian Jug &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">jug at mpi-cbg.de</A>&gt; wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> Hi Curtis,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> thanks, that was very helpful.
+</I>&gt;&gt;<i> For it means that a little bit of waiting time will solve all our
+</I>&gt;&gt;<i> problems. :)
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> @Loic: we should check out <A HREF="https://github.com/imagej/imagej/issues/120">https://github.com/imagej/imagej/issues/120</A> &#8212;
+</I>&gt;&gt;<i> if the mavenized jogl is all we need&#8230; that would be perfect!
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Thanks for you response Curtis,
+</I>&gt;&gt;<i> Florian
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> MPI of Molecular Cell Biology and Genetics
+</I>&gt;&gt;<i> Group: Gene Myers
+</I>&gt;&gt;<i> Pfotenhauer Strasse 108
+</I>&gt;&gt;<i> 01307 Dresden
+</I>&gt;&gt;<i> Germany
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> On 13 May 2015, at 20:37, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt; wrote:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Hi Florian,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> &gt; We would love to see the 3D Viewer and ClearVolume to coexist in Fiji.
+</I>&gt;&gt;<i> &gt; However, for this to become reality we do face the problem of
+</I>&gt;&gt;<i> &gt; mismatching dependencies. 3D Viewer depends on Java 3D &gt;= 1.5 (Jogl
+</I>&gt;&gt;<i> &gt; 1), while ClearVolume depends on Jogl 2.2.4.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I have recently been working on updating ImageJ to use the JOGL version
+</I>&gt;&gt;<i> of Java 3D 1.6, currently in prerelease.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> This issue has the details so far:
+</I>&gt;&gt;<i> <A HREF="https://github.com/imagej/imagej/issues/120">https://github.com/imagej/imagej/issues/120</A>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> In short, there is already an experimental version of Fiji that bundles
+</I>&gt;&gt;<i> JOGL 2.2, the Java 3D 1.6 fork using it [1], and an updated version of the
+</I>&gt;&gt;<i> 3D Viewer that removes some of the &quot;old Java 3D&quot; cruft.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> So far, it seems to work pretty well. The plan is to upgrade Fiji across
+</I>&gt;&gt;<i> the board, so that Java 3D no longer has to be installed into the JRE, but
+</I>&gt;&gt;<i> rather can ship with ImageJ just like any other dependency.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> &gt; 1. 3D Viewer gets upgraded to the latest Java3D which is based on Jogl
+</I>&gt;&gt;<i> &gt; 2. (see <A HREF="https://github.com/hharrison/java3d-core">https://github.com/hharrison/java3d-core</A>) If this version
+</I>&gt;&gt;<i> &gt; turns out to be 100% compatible, which it should, then the work to
+</I>&gt;&gt;<i> &gt; upgrade should be minimal.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Yep, right on. That's the option we're going for, and it seems to work
+</I>&gt;&gt;<i> well so far. More testing needed, though.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> &gt; 2. Since 3D Viewer downloads some dependencies on first start &#8212; we
+</I>&gt;&gt;<i> &gt; could do the same in CV + manually copy the right versions into place
+</I>&gt;&gt;<i> &gt; if a user attempts to start one of the two tools. This is ugly, but
+</I>&gt;&gt;<i> &gt; would at least allow switching between the 2 3D viewers somehow.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Actually, I would strongly prefer that ImageJ plugins not take the
+</I>&gt;&gt;<i> liberty of downloading more things outside of the ImageJ Updater paradigm.
+</I>&gt;&gt;<i> It makes things really messy. I'm glad we're moving toward a version of
+</I>&gt;&gt;<i> Java 3D where the 3D Viewer no longer needs to do that.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> &gt; 3. Classloader isolation &#8212; I know what the idea is, but I have no clue
+</I>&gt;&gt;<i> &gt; how we could set this up. This would be a somewhat clean solution but&#8230;
+</I>&gt;&gt;<i> &gt; is it really what we want?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> OSGi. We've discussed it before. It's a big can of worms, which we have
+</I>&gt;&gt;<i> decided to avoid indefinitely, since it makes things too complicated for
+</I>&gt;&gt;<i> casual developers. Perhaps a compelling reason to use it will crop up, but
+</I>&gt;&gt;<i> not so far.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> (BTW: KNIME already uses OSGi. So for people who need OSGi downstream, we
+</I>&gt;&gt;<i> already have a solution for that. We just don't want to require it for the
+</I>&gt;&gt;<i> core SciJava software stack.)
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Regards,
+</I>&gt;&gt;<i> Curtis
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> On Wed, May 13, 2015 at 12:31 PM, Florian Jug &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">jug at mpi-cbg.de</A>&gt; wrote:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Hi Curtis,
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> we write directly to you and are not posting this on some mailing list
+</I>&gt;&gt;&gt;<i> or more public place because we really want to have your opinion.
+</I>&gt;&gt;&gt;<i> As soon as we come to some conclusion on this 'private channel' we are
+</I>&gt;&gt;&gt;<i> more then happy to write corresponding texts that live in the cloud and can
+</I>&gt;&gt;&gt;<i> be found by anybody interested in this topic.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> We would love to see the 3D Viewer and ClearVolume to coexist in Fiji.
+</I>&gt;&gt;&gt;<i> However, for this to become reality we do face the problem of mismatching
+</I>&gt;&gt;&gt;<i> dependencies.
+</I>&gt;&gt;&gt;<i> 3D Viewer depends on Java 3D &gt;= 1.5 (Jogl 1), while ClearVolume depends
+</I>&gt;&gt;&gt;<i> on Jogl 2.2.4.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> We see X ways out, but we are happy to learn about other options if you
+</I>&gt;&gt;&gt;<i> see any:
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>    1. 3D Viewer gets upgraded to the latest Java3D which is based on
+</I>&gt;&gt;&gt;<i>    Jogl 2. (see <A HREF="https://github.com/hharrison/java3d-core">https://github.com/hharrison/java3d-core</A>) If this
+</I>&gt;&gt;&gt;<i>    version turns out to be 100% compatible, which it should, then the work to
+</I>&gt;&gt;&gt;<i>    upgrade should be minimal.
+</I>&gt;&gt;&gt;<i>    2. Since 3D Viewer downloads some dependencies on first start &#8212; we
+</I>&gt;&gt;&gt;<i>    could do the same in CV + manually copy the right versions into place if a
+</I>&gt;&gt;&gt;<i>    user attempts to start one of the two tools. This is ugly, but would at
+</I>&gt;&gt;&gt;<i>    least allow switching between the 2 3D viewers somehow.
+</I>&gt;&gt;&gt;<i>    3. Classloader isolation &#8212; I know what the idea is, but I have no
+</I>&gt;&gt;&gt;<i>    clue how we could set this up. This would be a somewhat clean solution but&#8230;
+</I>&gt;&gt;&gt;<i>    is it really what we want?
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> We would be very interested to get a core-dump of your thoughts on this.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Thanks,
+</I>&gt;&gt;&gt;<i> Lo&#239;c and Florian
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> MPI of Molecular Cell Biology and Genetics
+</I>&gt;&gt;&gt;<i> Group: Gene Myers
+</I>&gt;&gt;&gt;<i> Pfotenhauer Strasse 108
+</I>&gt;&gt;&gt;<i> 01307 Dresden
+</I>&gt;&gt;&gt;<i> Germany
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20150528/778e9576/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20150528/778e9576/attachment-0001.html</A>&gt;
+</PRE>
+
+
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002578.html">[ImageJ-devel] Stack overflow error with screen size computation
+</A></li>
+	<LI>Next message: <A HREF="002580.html">[ImageJ-devel] Getting channel names from a Dataset object
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2577">[ date ]</a>
+              <a href="thread.html#2577">[ thread ]</a>
+              <a href="subject.html#2577">[ subject ]</a>
+              <a href="author.html#2577">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,194 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Problem with Exporting Runnable Jar
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Problem%20with%20Exporting%20Runnable%20Jar&In-Reply-To=%3CCADN69ynx4N_CrFHYeuDgrer3UCe9ufXOT4xTK6_-iKN2OmgCcQ%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001931.html">
+   <LINK REL="Next"  HREF="001933.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Problem with Exporting Runnable Jar</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Problem%20with%20Exporting%20Runnable%20Jar&In-Reply-To=%3CCADN69ynx4N_CrFHYeuDgrer3UCe9ufXOT4xTK6_-iKN2OmgCcQ%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Problem with Exporting Runnable Jar">ctrueden at wisc.edu
+       </A><BR>
+    <I>Fri Jan 31 16:21:32 CST 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001931.html">[ImageJ-devel] Jenkins upgrade
+</A></li>
+        <LI>Next message: <A HREF="001933.html">[ImageJ-devel] Plugin Philosophy?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1932">[ date ]</a>
+              <a href="thread.html#1932">[ thread ]</a>
+              <a href="subject.html#1932">[ subject ]</a>
+              <a href="author.html#1932">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Jay,
+
+&gt;<i> I typically deploy JEX as a runnable jar via the Eclipse export.
+</I>&gt;<i> However, the exported jar fails to run while the Eclipse project
+</I>&gt;<i> encounters no such issue. The export process seems to break the IJ2
+</I>&gt;<i> portion of the application making it impossible at the moment to
+</I>&gt;<i> attempt to deploy the JEX version with the IJ2 enhancements. I've
+</I>&gt;<i> isolated the issue to being purely related to the IJ2 set of jars that
+</I>&gt;<i> I included into the project.
+</I>
+This problem is almost certainly due to the fact that the SciJava Common
+plugin mechanism stores a file in each JAR at:
+/META-INF/json/org.scijava.plugin.Plugin. And when combining multiple JARs
+into an uber-JAR, those files need to be aggregated together rather than
+overwriting one another. We ran into the very same problem using the
+maven-assembly-plugin to build an uber-JAR. Our workaround is here:
+
+<A HREF="https://github.com/imagej/imagej/blob/imagej-2.0.0-beta-7.6/bin/gen-jar-with-deps.sh">https://github.com/imagej/imagej/blob/imagej-2.0.0-beta-7.6/bin/gen-jar-with-deps.sh</A>
+
+Which calls the AnnotationCombiner class from SciJava Common:
+<A HREF="https://github.com/scijava/scijava-common/blob/scijava-common-2.9.0/src/main/java/org/scijava/annotations/AnnotationCombiner.java">https://github.com/scijava/scijava-common/blob/scijava-common-2.9.0/src/main/java/org/scijava/annotations/AnnotationCombiner.java</A>
+
+In the future we will look into switching to maven-shade-plugin to create
+such an uber-JAR.
+
+But I still don't know if/how you can do that with Eclipse's &quot;Export
+executable JAR&quot; feature.
+
+&gt;<i> I also noticed that the during the successful eclipse run there is a
+</I>&gt;<i> line which reads... [WARNING] Overridden plugin
+</I>&gt;<i> ij.plugin.LutLoader(&quot;3-3-2 RGB&quot;) is blacklisted  Do you think there is
+</I>&gt;<i> any connection?
+</I>
+Nope, that warning is unrelated and can be safely ignored.
+
+&gt;<i> I know that Eclipse, when it exports a runnable jar, creates a
+</I>&gt;<i> relatively non-standard jar hierarchy (jarinjar), which might be the
+</I>&gt;<i> issue
+</I>
+Hmm, in that case, it may be possible to improve SciJava Common to find
+such META-INF in nested JARs. Feel free to file a PR against scijava-common
+(<A HREF="https://github.com/scijava/scijava-common">https://github.com/scijava/scijava-common</A>) for this feature if you really
+need it.
+
+To pursue that, you'd want to inspect your uber-JAR using the Java JAR
+command line tool (e.g., &quot;jar tf myUberJar.jar&quot;) to see exactly what got
+put in there. Maybe unpack it (&quot;jar xf myUberJar.jar&quot;) and then examine any
+nested JARs, as well.
+
+The relevant code in scijava-common is here:
+<A HREF="https://github.com/scijava/scijava-common/blob/scijava-common-2.9.0/src/main/java/org/scijava/annotations/Index.java#L130">https://github.com/scijava/scijava-common/blob/scijava-common-2.9.0/src/main/java/org/scijava/annotations/Index.java#L130</A>
+
+The code uses ClassLoader.getResources() to access all annotations within
+META-INF/json across all JAR files on the classpath. If Eclipse really
+embeds JARs inside other JARs, you'd have to smarten up that method to
+support that somehow, which would be an unfortunate addition in complexity.
+
+Easier would be to avoid using uber-JARs at all and instead just ship with
+all your JAR libraries separately. Then all the annotations will be
+discovered as expected.
+
+Or you could somehow run the AnnotationCombiner across all of your JARs
+when building your uber-JAR, perhaps using the maven-shade-plugin. If you
+structured JEX as a Maven project it would be relatively straightforward to
+use that, and do your releases from the command line, too.
+
+Sorry I can't be more helpful, but we really avoid doing things in ways
+that cannot be automated from the command line.
+
+Regards,
+Curtis
+
+
+
+On Mon, Jan 20, 2014 at 10:45 PM, Jay Warrick &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">jay.w.warrick at gmail.com</A>&gt;wrote:
+
+&gt;<i> Hi Guys,
+</I>&gt;<i>
+</I>&gt;<i> I have had some success with incorporating IJ2 plugins but ran into an
+</I>&gt;<i> issue during deployment that I wonder if you have run into before. I
+</I>&gt;<i> typically deploy JEX as a runnable jar via the Eclipse export. However, the
+</I>&gt;<i> exported jar fails to run while the Eclipse project encounters no such
+</I>&gt;<i> issue. The export process seems to break the IJ2 portion of the application
+</I>&gt;<i> making it impossible at the moment to attempt to deploy the JEX version
+</I>&gt;<i> with the IJ2 enhancements. I've isolated the issue to being purely related
+</I>&gt;<i> to the IJ2 set of jars that I included into the project. I did this by
+</I>&gt;<i> making a separate project with only IJ2 jars (which also includes the IJ1
+</I>&gt;<i> jar) and a simple static main that uses IJ2 to run the &quot;Fill&quot; plugin on a
+</I>&gt;<i> tif that is on my computer. The program runs successfully when run from
+</I>&gt;<i> eclipse but produces an error when exported and run as a runnable jar. Here
+</I>&gt;<i> is the script, the output from the Eclipse run, output from the jar run,
+</I>&gt;<i> and list of imported jars for the simple test project. Note that I had to
+</I>&gt;<i> add the &quot;static{DefaultLegacyService.preinit();}&quot; to the class to get
+</I>&gt;<i> things to work in the presence of the IJ1 jar that is included.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Do you have any suggestions? I appears that it thinks that the
+</I>&gt;<i> DefaultLUTService is invalid per &quot;Caused by:
+</I>&gt;<i> java.lang.IllegalArgumentException: Invalid service:
+</I>&gt;<i> imagej.data.lut.DefaultLUTService&quot;. I also noticed that the during the
+</I>&gt;<i> successful eclipse run there is a line which reads... [WARNING]
+</I>&gt;<i> Overridden plugin ij.plugin.LutLoader(&quot;3-3-2 RGB&quot;) is blacklisted  Do you
+</I>&gt;<i> think there is any connection?
+</I>&gt;<i>
+</I>&gt;<i> I know that Eclipse, when it exports a runnable jar, creates a relatively
+</I>&gt;<i> non-standard jar hierarchy (jarinjar), which might be the issue given the &quot;Caused
+</I>&gt;<i> by: java.lang.IllegalArgumentException: URI is not hierarchical at
+</I>&gt;<i> java.io.File.&lt;init&gt;(File.java:418)&quot; error.
+</I>&gt;<i>
+</I>&gt;<i> I'm not well versed enough in maven or other such dependency management
+</I>&gt;<i> systems to be able to export something for you to import (unless it is
+</I>&gt;<i> super easy and I just don't know the correct menu options :-) But, in case
+</I>&gt;<i> it helps, this is how I built the small test project. To import the jars, I
+</I>&gt;<i> import the jar files as files directly into a package called lib so the jar
+</I>&gt;<i> files are not just referenced but actually a part of the project (probably
+</I>&gt;<i> not best practice but found it effective for our project and haven't had
+</I>&gt;<i> issues with the other 25 jars that we use in the JEX project). Then I
+</I>&gt;<i> configure the build path and &quot;Add Jars&quot; selecting the jars that are
+</I>&gt;<i> imported into the project. During export, I choose to package required
+</I>&gt;<i> libraries into generated jar.
+</I>&gt;<i>
+</I>&gt;<i> Thanks for any insight,
+</I>&gt;<i>
+</I>&gt;<i> Jay
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140131/fbe2324f/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20140131/fbe2324f/attachment.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001931.html">[ImageJ-devel] Jenkins upgrade
+</A></li>
+	<LI>Next message: <A HREF="001933.html">[ImageJ-devel] Plugin Philosophy?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1932">[ date ]</a>
+              <a href="thread.html#1932">[ thread ]</a>
+              <a href="subject.html#1932">[ subject ]</a>
+              <a href="author.html#1932">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

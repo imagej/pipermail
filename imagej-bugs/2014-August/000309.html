@@ -1,0 +1,123 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-bugs] [Bug 835] Fiji hangs when installing macro tool
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%20835%5D%20Fiji%20hangs%20when%20installing%20macro%20tool&In-Reply-To=%3Cbug-835-19-Zi7xbKTPiq%40http.fiji.sc/bugzilla/%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000308.html">
+   <LINK REL="Next"  HREF="000310.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-bugs] [Bug 835] Fiji hangs when installing macro tool</H1>
+    <B>bugzilla at fiji.sc</B> 
+    <A HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%20835%5D%20Fiji%20hangs%20when%20installing%20macro%20tool&In-Reply-To=%3Cbug-835-19-Zi7xbKTPiq%40http.fiji.sc/bugzilla/%3E"
+       TITLE="[ImageJ-bugs] [Bug 835] Fiji hangs when installing macro tool">bugzilla at fiji.sc
+       </A><BR>
+    <I>Sun Aug 24 06:33:57 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000308.html">[ImageJ-bugs] [Bug 857] Stack Dump window appears on play image	stack
+</A></li>
+        <LI>Next message: <A HREF="000310.html">[ImageJ-bugs] [Bug 835] Fiji hangs when installing macro tool
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#309">[ date ]</a>
+              <a href="thread.html#309">[ thread ]</a>
+              <a href="subject.html#309">[ subject ]</a>
+              <a href="author.html#309">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE><A HREF="http://fiji.sc/bugzilla/show_bug.cgi?id=835">http://fiji.sc/bugzilla/show_bug.cgi?id=835</A>
+
+--- Comment #9 from Ilan Tal &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">ilan.tal at gmail.com</A>&gt; ---
+Hi Mark,
+This is the case &quot;Install from more&quot; which is attachment 181. The process
+starts at Toolbar.itemStateChanged:1270 and the critical difference is at
+Executer.runCommand:131. The interesting code is
+
+    void runCommand(String cmd) {
+        Hashtable table = Menus.getCommands();
+        String className = (String)table.get(cmd);
+        if (className!=null) {
+            String arg = &quot;&quot;;
+            if (className.endsWith(&quot;\&quot;)&quot;)) {
+                // extract string argument (e.g. className(&quot;arg&quot;))
+                int argStart = className.lastIndexOf(&quot;(\&quot;&quot;);
+                if (argStart&gt;0) {
+                    arg = className.substring(argStart+2,
+className.length()-2);
+                    className = className.substring(0, argStart);
+                }
+            }
+            if (IJ.shiftKeyDown() &amp;&amp;
+className.startsWith(&quot;ij.plugin.Macro_Runner&quot;) &amp;&amp;
+!Menus.getShortcuts().contains(&quot;*&quot;+cmd))
+                IJ.open(IJ.getDirectory(&quot;plugins&quot;)+arg);
+            else
+                IJ.runPlugIn(cmd, className, arg);
+
+There is a hash table of commands and the question is: what is the command
+which gets picked up? In the ImageJ environment the className comes back as
+
+ij.plugin.Macro_Runner(&quot;Tools/Postage_Action_Tool.ijm&quot;)
+This ends with &quot;) so it is parsed into 2 strings:
+className = ij.plugin.Macro_Runner
+and arg = Tools/Postage_Action_Tool.ijm
+
+In Fiji something else comes out. The className comes back as
+script:/home/ilan/Fiji.app/plugins/Tools/Postage_Action_Tool.ijm
+
+Of course no parsing is performed and arg=&quot;&quot;
+Not surpringly the IJ.runPlugIn(cmd, className, arg)
+works totally differently. Later on down the line, this results in the crash.
+So the hash table has been changed. Where it has been changed and why it has
+been changed, I don't know, but the change results in a crash.
+If you have any idea why it isn't picking up &quot;ij.plugin.Macro_Runner&quot; but
+instead is using script:/...., I would be interested in hearing about it.
+
+Now I'll go look at the second case.
+Thanks,
+Ilan
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-bugs/attachments/20140824/d7149b4d/attachment.html">http://imagej.net/pipermail/imagej-bugs/attachments/20140824/d7149b4d/attachment.html</A>&gt;
+</PRE>
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000308.html">[ImageJ-bugs] [Bug 857] Stack Dump window appears on play image	stack
+</A></li>
+	<LI>Next message: <A HREF="000310.html">[ImageJ-bugs] [Bug 835] Fiji hangs when installing macro tool
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#309">[ date ]</a>
+              <a href="thread.html#309">[ thread ]</a>
+              <a href="subject.html#309">[ subject ]</a>
+              <a href="author.html#309">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-bugs">More information about the Imagej-bugs
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,145 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] (headless) command execution
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%28headless%29%20command%20execution&In-Reply-To=%3C20140416144752.GC28601%40informatik.uni-halle.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002026.html">
+   <LINK REL="Next"  HREF="002007.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] (headless) command execution</H1>
+    <B>Stefan Posch</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%28headless%29%20command%20execution&In-Reply-To=%3C20140416144752.GC28601%40informatik.uni-halle.de%3E"
+       TITLE="[ImageJ-devel] (headless) command execution">posch at informatik.uni-halle.de
+       </A><BR>
+    <I>Wed Apr 16 09:47:52 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002026.html">[ImageJ-devel] (headless) command execution
+</A></li>
+        <LI>Next message: <A HREF="002007.html">[ImageJ-devel] last release of HistThresh
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2038">[ date ]</a>
+              <a href="thread.html#2038">[ thread ]</a>
+              <a href="subject.html#2038">[ subject ]</a>
+              <a href="author.html#2038">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Curtis,
+
+regarding the concept of initializers I had a discussion with Birgit yesterday
+and we came up with the following ideas.
+
+We think we could do without command and parameter initializers but work only with
+the parameter's callback function which - as currently - are to be invoked 
+upon setting/changing the corresponding parameters value.
+
+As currently, depending on parameter values, e.g. the image assigned to a Dataset,
+the command may add (or remove) parameters. This would be accomplished
+by the callback functions of the parameter whose value is the cause for these new parameters.
+E.g. the callback function of the inputDisplay of DuplicateImage would add the parameters
+(which is currently done by the command initializer).
+If some parameters should get (initial) values depending on the value of other
+parameters (e.g. your example of setting default brightness/contrast min,max values
+to current min,max of the input image) would we again the responsibility of 
+the callback function of the cause, i.e. the input image.
+
+This would eleviate us of the need to fill in parameters required for the command initializer.
+If a parameter's value is set (either by a pre processor or programmatically)
+its callback function takes care of taking the apropriate actions.
+
+If the pre processor is run, it just needs to set the parameter values it decides to,
+and the callback functions would be could automatically.
+
+What remains is of course: 
+(i) assume a parameter's value is changed, and its callback method
+  called accordingly. What if this callback reqires/assumes one or several other parameters
+  to aready have be set? It seems to be, that this necessarily is the responsibility
+  of the callback function (resp. its programmer) to handle this. I.e. to check
+  the validity of other parameters it requires. Otherwise the Command or its Parameters
+  have to declare a predefine order in which parameters have to be set.
+  (Which we have considered to introduce to alida/mitobo few years ago but abandoned this
+  idea as it seems to messy/error prone.)
+(ii) in case of command execution via GUI (in contrast to programmatically):
+    what if not all parameters which add further parameters are
+    filled before the GUI is created and presented to the user and are set by the user?
+    What we are considering is that the GUI to figure out such events have happened
+    and then to adapt the GUI accordingly.
+
+    How to figure out that set set of parameter (or the type of an already existing parameter)
+    was change by a callback function?
+    We see two possibilities: 
+    (a) a parameter may announce via its annotation that it (occasionally)
+        _may_ change paramter definitions and the GUI always assumes that this had happend,
+        is such a parameter's value has changed (which the GUI knows at it controls this processes).
+    (b) the callback function is to fire events in case it changes parameter definitions.
+
+    (a) might be similar or be used in analogy to your idea of a parameter to announce &quot;required before initialize&quot;,
+       as the pre processor framework would know that setting of such a parameter probably/potentially
+       may add parameters and should better be set before creating the GUI to ask the user for
+       further parameters (and if it accomplishes to set all of those parameters and either excludes them from
+       the GUI - as currently done by IJ2 for input images - or prohibits changing these parameters,
+       we get rid of problem (i) stated above).
+
+
+To make things conceptionally easier (for me) I favour the following guideline:
+A parameter, e.g. inputDisplay, may add (or remove) parameters to the command
+exclusively depending of its own value. Furthermore the parameter (names) potentially
+added by this parameter are disjoint from those parameters added by other parameters of
+the command. However, it is probably not possible to check or enforce this restriction.
+As stated above in (ii) in my view it would be the task of the programmer of the Comand anyway
+to cope with more complicated situations and does not affect to supporting &quot;runtime system&quot;,
+e.g. the functionality to run pre processors and creating GUIs to harvest input vlaues from the user.
+
+
+Best regards
+
+Stefan
+
+PS.:
+A different issue I came across have a second look at the Parameter annotation, sepcifically
+its choices: The few examples of usage I had a look at are parameters of type String which
+announce valid values. It might me worth considering to drop this feature and use Enums instead
+of Strings which easily allows to generate an approprate selection by the GUI.
+-- 
+Prof. Dr.-Ing. Stefan Posch,
+        Institut fuer Informatik, Martin-Luther-Universitaet Halle-Wittenberg
+        Von-Seckendorff-Platz 1, 06099 Halle (Saale)
+phone:  ++49 345 55-24728
+fax:	++49 345 55-27039
+e-mail: <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">Stefan.Posch at informatik.uni-halle.de</A>
+www:    www.informatik.uni-halle.de/~posch/
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002026.html">[ImageJ-devel] (headless) command execution
+</A></li>
+	<LI>Next message: <A HREF="002007.html">[ImageJ-devel] last release of HistThresh
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2038">[ date ]</a>
+              <a href="thread.html#2038">[ thread ]</a>
+              <a href="subject.html#2038">[ subject ]</a>
+              <a href="author.html#2038">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

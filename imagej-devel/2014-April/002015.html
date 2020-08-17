@@ -1,0 +1,175 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] (headless) command execution
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%28headless%29%20command%20execution&In-Reply-To=%3C20140410140127.GR28601%40informatik.uni-halle.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002004.html">
+   <LINK REL="Next"  HREF="002019.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] (headless) command execution</H1>
+    <B>Stefan Posch</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%28headless%29%20command%20execution&In-Reply-To=%3C20140410140127.GR28601%40informatik.uni-halle.de%3E"
+       TITLE="[ImageJ-devel] (headless) command execution">posch at informatik.uni-halle.de
+       </A><BR>
+    <I>Thu Apr 10 09:01:27 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002004.html">[ImageJ-devel] (headless) command execution
+</A></li>
+        <LI>Next message: <A HREF="002019.html">[ImageJ-devel] (headless) command execution - missing project	files
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2015">[ date ]</a>
+              <a href="thread.html#2015">[ thread ]</a>
+              <a href="subject.html#2015">[ subject ]</a>
+              <a href="author.html#2015">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Curtis,
+
+thank you very much for the details answers (and I did not mean to press you with
+regard to &quot;delays&quot; - this goes, of course, also for the future).
+
+Though very helpful a few issues are still open:
+
+&gt;&gt;<i> What are the precoditions assumed when running a (headless) command
+</I>&gt;<i> What happens is highly dependent on *how* you invoke the command...
+</I>
+   Maybe I was unclear on this issue. May question is, what does a method 
+   of a Command (e.g. its initializer, the run method) or rather the implementor
+   may assumed to have &quot;happend&quot;.
+
+   Or other way round: in case the run-method of OpenFile command used in the tutorial 
+   requires the initializer to have been executed:
+   Is the run-method responsible to check, if it has already been executed (e.g. if called
+   via the invokeWithArgs or invokeWihtMap methods of the tutorial) or not
+   (if e.g. called via invokeFrmoJava).
+   Or is it the callers responsibility to ensure the the initializer has been already been
+   executed before actually running the OpenFile command (if it indeed requires the initializer to
+   have been invoked beforehand).
+
+   The same questions goes for the initializer method: may it assume that a single Dataset
+   parameter has already been set? And if so, may it asume other prerequisites as well?
+   E.g. it seems to me that the initializer of DuplicateImage would probably crash if
+   the inputDisplay is null.
+   Or is it the other way round: That whoever (indirectly) invokes the initializer is
+   responsible for certain parameters to be set in advance.
+
+   Besides interesting for a programmer of a Command we are interested in this issue
+   to be able to wrap IJ2 commands in order to run them from our GUI (originaly design
+   for alida operators), our command line runner,
+   and to support them in our graphical editor for alida/mitobo operators and hopefully
+   ij2 commands (at least head less and non DynamicCommands)
+
+&gt;<i> It should be case that Alida can reuse the default pre- and post-processing
+</I>&gt;<i> plugin stack -- in other words, you should be able to pass &quot;process=true&quot;
+</I>&gt;<i> to the ModuleService#run and everything will &quot;just work&quot;. Let us know if
+</I>&gt;<i> not, and we can troubleshoot. As long as no UI has been shown, you will be
+</I>&gt;<i> in headless mode and no dialogs should ever be shown. (If one does pop up,
+</I>&gt;<i> it is probably a bug.)
+</I>
+  I am not sure whether we can recycle all IJ2s preprocessors as there might be differences
+  in the concept of parameter handling.
+
+  But trying to reused (some of) them &quot;by hand&quot;, not by using the Modules run method,
+  I somehow got stuck, as obviously I do not understand the concepts
+  properly. Maybe you are willing to help with this.
+
+  In the attached zip of a tiny maven project using ij2 (2.0.0-beta-7.8)
+  there is a command RunTestOp which tries to invoke a IJTestOp command &quot;by hand&quot;.
+  I first create a CommandInfo for IJTestOp, then a CommandModule for this info,
+  collects all preprocessors and (try to) invoke them for the CommandModule created.
+  I disabled invoking of the InitPreprocessor, as it crashes with a null pointer exception:
+    Exception in thread &quot;main&quot; java.lang.NullPointerException
+	at imagej.command.CommandModule.initialize(CommandModule.java:144)
+	at imagej.module.process.InitPreprocessor.process(InitPreprocessor.java:61)
+	at mainroutine.RunTestOp.main(RunTestOp.java:49)
+
+  Additionally it seems to be that creating the CommandInfo already invokes preprocessors,
+  however the initializer of IJTestOp is not invoked.
+ 
+  And the ImageDisplayService is also still null.
+  
+  BTW: when diving a little bit into the code I realized that 
+   Service and Context @Parameters of Commands are nor reflected in the CommandInfo.
+   Somehow I was confused when I saw, that the ServicePreprocessor's process method
+   looks for Service and Context parameters in the moduls CommandInfo.inputs().
+   Could there ever by any?
+
+&gt;<i> modules should not be dynamic. Dynamic commands are *much* more challenging
+</I>&gt;<i> to support across many different environments (CellProfiler, KNIME, OMERO,
+</I>&gt;<i> Alida, etc.) *much* more challenging.
+</I> Is it easily possible to state what makes a Command a DynamicCommand,
+ and what is the difference to interactive() commands?
+
+&gt;<i> On the CLI, we'll harvest values from the user at the same point in time
+</I>&gt;<i> that we currently do it via the UI. So most of the other preprocessing will
+</I>&gt;<i> be done; there will be a &quot;CLIInputHarvesterPlugin&quot; that prompts the user to
+</I>&gt;<i> type in these values using System.in or similar. We have not yet created
+</I>&gt;<i> this preprocessor plugin, but it would be very straightforward. If you need
+</I>&gt;<i> this, let me know -- it would be a fun side project. :-)
+</I>   We have one &quot;command line oprunner&quot; for alida 
+   (which does not work interactively, thus can be used also from shell-scripts,
+   e.g. for parameter tuning). And as noted above would like to support also 
+   ij2 commands.
+
+&gt;<i> The SciJava context is definitely not a singleton. But you can use it that
+</I>&gt;<i> way if you want: just create one a static variable in your own codebase
+</I>&gt;<i> somewhere; e.g.:
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> public static final imagej.ImageJ IJ = new imagej.ImageJ();
+</I>
+   I was aware of the option to create a context but was/am reluctant to use
+   it (in excess) due to overhead considerations. Just looking at the logging output
+   it seems pretty time consuming. Is this impression wrong?
+
+   In addition I am able to create only on instance of imagej.ImageJ, the second
+   constructor crashes. See the file createContext.log in the zip which results from
+   running RunTestOp. 
+   (It seems to me the creating a second instance of DefaultLegacyService fails,
+   and I faintly remeber to have read somewhere that only one instance of the 
+   DefaultLegacyService may exist ??)
+
+A new (and for the moment last) question:
+  The Command EquationDataValues.java ist annotated as headless and has a @Parameter
+  of type Button. Is this as intended?
+
+Again thanks a lot
+
+Best regards    Stefan
+
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002004.html">[ImageJ-devel] (headless) command execution
+</A></li>
+	<LI>Next message: <A HREF="002019.html">[ImageJ-devel] (headless) command execution - missing project	files
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2015">[ date ]</a>
+              <a href="thread.html#2015">[ thread ]</a>
+              <a href="subject.html#2015">[ subject ]</a>
+              <a href="author.html#2015">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

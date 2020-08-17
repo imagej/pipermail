@@ -1,0 +1,26 @@
+<tt>
+&lt;div&nbsp;dir=&quot;ltr&quot;&gt;&lt;div&nbsp;class=&quot;gmail_extra&quot;&gt;Hi&nbsp;all,&lt;br&gt;&lt;/div&gt;&lt;div&nbsp;class=&quot;gmail_extra&quot;&gt;&lt;div&nbsp;class=&quot;gmail_quote&quot;&gt;&lt;br&gt;&lt;blockquote&nbsp;class=&quot;gmail_quote&quot;&nbsp;style=&quot;margin:0&nbsp;0&nbsp;0&nbsp;.8ex;border-left:1px&nbsp;#ccc&nbsp;solid;padding-left:1ex&quot;&gt;&lt;div&nbsp;dir=&quot;ltr&quot;&gt;<br>
+<br>
+&lt;div&gt;&lt;div&gt;SCIFIOCellImg&nbsp;with&nbsp;Memory&nbsp;Service&lt;/div&gt;&lt;div&gt;*&nbsp;Development&nbsp;branch:&nbsp;&lt;a&nbsp;href=&quot;https://github.com/scifio/scifio/tree/cache-imps&quot;&nbsp;target=&quot;_blank&quot;&gt;https://github.com/scifio/scifio/tree/cache-imps&lt;/a&gt;&lt;/div&gt;<br>
+<br>
+&lt;div&gt;*&nbsp;Refactored&nbsp;SCIFIOCells&nbsp;to&nbsp;cache&nbsp;via&nbsp;phantom&nbsp;reference&nbsp;instead&nbsp;of&nbsp;finalization&nbsp;(done)&lt;/div&gt;&lt;div&gt;*&nbsp;Created&nbsp;MemoryService&nbsp;to&nbsp;manage&nbsp;a&nbsp;new&nbsp;RefHandler&nbsp;class&nbsp;of&nbsp;plugins&nbsp;and&nbsp;provide&nbsp;configurable&nbsp;memory&nbsp;safeguards&nbsp;(done)&lt;/div&gt;<br>
+<br>
+<br>
+<br>
+&lt;div&gt;*&nbsp;Taking&nbsp;a&nbsp;test&nbsp;case&nbsp;of&nbsp;re-writing&nbsp;each&nbsp;pixel&nbsp;in&nbsp;a&nbsp;dataset,&nbsp;improved&nbsp;cache&nbsp;performance&nbsp;from&nbsp;59.6s&nbsp;write,&nbsp;57.1s&nbsp;read&nbsp;to&nbsp;35.2s&nbsp;write,&nbsp;1.6s&nbsp;read&nbsp;(done)&lt;/div&gt;&lt;div&gt;*&nbsp;Two&nbsp;tests&nbsp;still&nbsp;failing&nbsp;unpredictably&nbsp;due&nbsp;to&nbsp;garbage&nbsp;collection&nbsp;reliance&nbsp;(I&nbsp;think).&nbsp;As&nbsp;soon&nbsp;as&nbsp;these&nbsp;are&nbsp;fixed,&nbsp;the&nbsp;update&nbsp;SCIFIOCell/MemoryService&nbsp;functionality&nbsp;will&nbsp;be&nbsp;released&nbsp;in&nbsp;SCIFIO&nbsp;0.7.4.&lt;/div&gt;<br>
+<br>
+<br>
+<br>
+&lt;div&gt;*&nbsp;Integration&nbsp;to&nbsp;KNIME&nbsp;started&nbsp;but&nbsp;not&nbsp;finished&nbsp;(easy&nbsp;task,&nbsp;thanks&nbsp;Mark!)&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;br&gt;&lt;/div&gt;&lt;/div&gt;&lt;/blockquote&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt; Just&nbsp;wanted&nbsp;to&nbsp;let&nbsp;people&nbsp;know&nbsp;that&nbsp;this&nbsp;functionality&nbsp;is&nbsp;now&nbsp;available&nbsp;in&nbsp;the&nbsp;&lt;a&nbsp;href=&quot;https://github.com/scifio/scifio/releases&quot;&gt;SCIFIO-0.7.4&nbsp;release&lt;/a&gt;.&lt;br&gt;<br>
+<br>
+&lt;br&gt;&lt;/div&gt;&lt;div&gt; I&nbsp;ended&nbsp;up&nbsp;focusing&nbsp;the&nbsp;changes&nbsp;to&nbsp;the&nbsp;PhantomReference&nbsp;refactoring&nbsp;and&nbsp;performance&nbsp;improvements.&nbsp;If&nbsp;anyone&#39;s&nbsp;interested&nbsp;why,&nbsp;I&nbsp;wrote&nbsp;up&nbsp;an&nbsp;explanation&nbsp;on&nbsp;&lt;a&nbsp;href=&quot;https://github.com/scifio/scifio/issues/69&quot;&gt;the&nbsp;original&nbsp;ticket&lt;/a&gt;.&lt;br&gt;<br>
+<br>
+&lt;br&gt;&lt;/div&gt;&lt;div&gt; To&nbsp;elaborate&nbsp;on&nbsp;the&nbsp;write/read&nbsp;test&nbsp;I&nbsp;was&nbsp;using&nbsp;as&nbsp;a&nbsp;metric,&nbsp;Christian&nbsp;Dietz&nbsp;provided&nbsp;a&nbsp;~90MB&nbsp;dataset&nbsp;and&nbsp;made&nbsp;a&nbsp;simple&nbsp;program&nbsp;that&nbsp;iterates&nbsp;over&nbsp;each&nbsp;pixel,&nbsp;writing&nbsp;it&nbsp;to&nbsp;a&nbsp;random&nbsp;value,&nbsp;then&nbsp;iterates&nbsp;over&nbsp;the&nbsp;dataset&nbsp;again&nbsp;reading&nbsp;each&nbsp;pixel&#39;s&nbsp;value.&lt;br&gt;<br>
+<br>
+&lt;br&gt;&lt;/div&gt;&lt;div&gt; With&nbsp;the&nbsp;0.7.3&nbsp;cell&nbsp;cache,&nbsp;the&nbsp;writing&nbsp;operation&nbsp;actually&nbsp;took&nbsp;over&nbsp;100s&nbsp;when&nbsp;limiting&nbsp;the&nbsp;JVM&nbsp;to&nbsp;50MB&nbsp;ram.&nbsp;Reading&nbsp;the&nbsp;data&nbsp;back&nbsp;took&nbsp;at&nbsp;least&nbsp;50s.&lt;br&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt; By&nbsp;adjusting&nbsp;when&nbsp;certain&nbsp;operations&nbsp;run,&nbsp;moving&nbsp;a&nbsp;lot&nbsp;of&nbsp;cleanup&nbsp;to&nbsp;separate&nbsp;threads,&nbsp;and&nbsp;avoiding&nbsp;unnecessary&nbsp;disk&nbsp;checks,&nbsp;as&nbsp;of&nbsp;0.7.4&nbsp;the&nbsp;same&nbsp;operation&nbsp;now&nbsp;takes&nbsp;~16s&nbsp;to&nbsp;write&nbsp;and&nbsp;~2s&nbsp;to&nbsp;read&nbsp;on&nbsp;the&nbsp;same&nbsp;machine.&nbsp;And&nbsp;of&nbsp;course&nbsp;the&nbsp;code&nbsp;is&nbsp;significantly&nbsp;improved,&nbsp;as&nbsp;we&#39;re&nbsp;no&nbsp;longer&nbsp;relying&nbsp;on&nbsp;overridden&nbsp;finalize&nbsp;methods&nbsp;or&nbsp;System.gc&nbsp;calls.&lt;br&gt;<br>
+<br>
+&lt;br&gt;&lt;/div&gt;&lt;div&gt; Anyway,&nbsp;I&#39;m&nbsp;sure&nbsp;there&nbsp;will&nbsp;still&nbsp;be&nbsp;more&nbsp;improvements&nbsp;to&nbsp;make&nbsp;but&nbsp;I&nbsp;think&nbsp;the&nbsp;cell&nbsp;cache&nbsp;was&nbsp;significantly&nbsp;enhanced.&nbsp;Thanks&nbsp;to&nbsp;Christian&nbsp;for&nbsp;providing&nbsp;the&nbsp;motivation&nbsp;+&nbsp;PhantomReference&nbsp;info!&lt;br&gt;&lt;br&gt;&lt;/div&gt;<br>
+<br>
+&lt;div&gt;-&nbsp;Mark&lt;br&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;<br>
+
+</tt>

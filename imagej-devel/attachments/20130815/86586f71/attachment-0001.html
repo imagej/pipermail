@@ -1,0 +1,50 @@
+<tt>
+&lt;div&nbsp;dir=&quot;ltr&quot;&gt;Hi&nbsp;Michael,&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&gt;&nbsp;we&nbsp;have&nbsp;a&nbsp;race&nbsp;condition&nbsp;problem&nbsp;using&nbsp;the&nbsp;DefaultAutoscaleService.&nbsp;If&lt;/div&gt;&lt;div&gt;&gt;&nbsp;the&nbsp;methods()&nbsp;method&nbsp;is&nbsp;called&nbsp;from&nbsp;several&nbsp;threads&nbsp;at&nbsp;the&nbsp;same&nbsp;time&lt;/div&gt;&lt;div&gt;&gt;&nbsp;the&nbsp;first&nbsp;invocation&nbsp;will&nbsp;enter&nbsp;buildDataStructures&nbsp;and&nbsp;generate&nbsp;the&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&gt;&nbsp;methods&nbsp;object.&nbsp;However&nbsp;the&nbsp;2nd...&nbsp;invocation&nbsp;can&nbsp;pass&nbsp;the&nbsp;&quot;if&lt;/div&gt;&lt;div&gt;&gt;&nbsp;condition&quot;&nbsp;even&nbsp;if&nbsp;methods&nbsp;has&nbsp;not&nbsp;yet&nbsp;been&nbsp;filled&nbsp;by&lt;/div&gt;&lt;div&gt;&gt;&nbsp;buildDataStructures.&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Yes,&nbsp;many&nbsp;of&nbsp;the&nbsp;ImageJ2,&nbsp;SciJava&nbsp;Common&nbsp;and&nbsp;SCIFIO&nbsp;services&nbsp;have&nbsp;been&nbsp;updated&nbsp;to&nbsp;initialize&nbsp;their&nbsp;data&nbsp;structures&nbsp;only&nbsp;as&nbsp;needed.&nbsp;This&nbsp;has&nbsp;greatly&nbsp;sped&nbsp;up&nbsp;context&nbsp;creation,&nbsp;at&nbsp;the&nbsp;cost&nbsp;of&nbsp;potential&nbsp;threading&nbsp;issues&nbsp;and&nbsp;unintuitive&nbsp;code&nbsp;execution&nbsp;order.&nbsp;Services&nbsp;patterned&nbsp;this&nbsp;way&nbsp;are&nbsp;known&nbsp;to&nbsp;be&nbsp;*not*&nbsp;thread-safe,&nbsp;so&nbsp;your&nbsp;workaround&nbsp;is&nbsp;the&nbsp;short-term&nbsp;solution&nbsp;here.&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&gt;&nbsp;Our&nbsp;workaround&nbsp;synchronizes&nbsp;some&nbsp;of&nbsp;our&nbsp;code&nbsp;but&nbsp;it&nbsp;would&nbsp;be&nbsp;more&lt;/div&gt;&lt;div&gt;&gt;&nbsp;efficient&nbsp;if&nbsp;the&nbsp;DefaultAutoscaleService&nbsp;could&nbsp;handle&nbsp;this.&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;We&nbsp;need&nbsp;to&nbsp;make&nbsp;a&nbsp;decision&nbsp;about&nbsp;whether&nbsp;services&nbsp;patterned&nbsp;this&nbsp;way&nbsp;should&nbsp;be&nbsp;thread-safe&nbsp;or&nbsp;not.&nbsp;They&nbsp;probably&nbsp;should&nbsp;be,&nbsp;but&nbsp;it&#39;s&nbsp;tricky.&nbsp;What&nbsp;I&nbsp;want&nbsp;to&nbsp;avoid&nbsp;is&nbsp;the&nbsp;negative&nbsp;performance&nbsp;impact&nbsp;of&nbsp;synchronizing&nbsp;when&nbsp;not&nbsp;completely&nbsp;necessary.&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;I&nbsp;filed&nbsp;a&nbsp;ticket&nbsp;for&nbsp;this&nbsp;work:&lt;/div&gt;&lt;div&gt;&lt;a&nbsp;href=&quot;http://trac.imagej.net/ticket/1980&quot;&nbsp;target=&quot;_blank&quot;&gt;http://trac.imagej.net/ticket/1980&lt;/a&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Regards,&lt;/div&gt;&lt;div&gt;Curtis&lt;/div&gt;<br>
+<br>
+&lt;div&nbsp;class=&quot;gmail_extra&quot;&gt;<br>
+&lt;br&gt;&lt;br&gt;&lt;div&nbsp;class=&quot;gmail_quote&quot;&gt;On&nbsp;Thu,&nbsp;Aug&nbsp;15,&nbsp;2013&nbsp;at&nbsp;7:25&nbsp;AM,&nbsp;Michael&nbsp;Zinsmaier&nbsp;&lt;span&nbsp;dir=&quot;ltr&quot;&gt;&lt;&lt;a&nbsp;href=&quot;mailto:michael.zinsmaier@gmx.de&quot;&nbsp;target=&quot;_blank&quot;&gt;michael.zinsmaier@gmx.de&lt;/a&gt;&gt;&lt;/span&gt;&nbsp;wrote:&lt;br&gt;&lt;blockquote&nbsp;class=&quot;gmail_quote&quot;&nbsp;style=&quot;margin:0&nbsp;0&nbsp;0&nbsp;.8ex;border-left:1px&nbsp;#ccc&nbsp;solid;padding-left:1ex&quot;&gt;<br>
+<br>
+<br>
+Hi&nbsp;Curtis,&lt;br&gt;<br>
+&lt;br&gt;<br>
+we&nbsp;have&nbsp;a&nbsp;race&nbsp;condition&nbsp;problem&nbsp;using&nbsp;the&nbsp;DefaultAutoscaleService.&nbsp;If&nbsp;the&nbsp;methods()&nbsp;method&nbsp;is&nbsp;called&nbsp;from&nbsp;several&nbsp;threads&nbsp;at&nbsp;the&nbsp;same&lt;br&gt;<br>
+time&nbsp;the&nbsp;first&nbsp;invocation&nbsp;will&nbsp;enter&nbsp;buildDataStructures&nbsp;and&nbsp;generate&nbsp;the&nbsp;methods&nbsp;object.&nbsp;However&nbsp;the&nbsp;2nd...&nbsp;invocation&nbsp;can&nbsp;pass&nbsp;the&nbsp;&quot;if&nbsp;condition&quot;&nbsp;even&nbsp;if&nbsp;methods&nbsp;has&nbsp;not&nbsp;yet&nbsp;been&nbsp;filled&nbsp;by&nbsp;buildDataStructures.&lt;br&gt;<br>
+<br>
+<br>
+<br>
+&lt;br&gt;<br>
+This&nbsp;happens&nbsp;in&nbsp;KNIP&nbsp;if&nbsp;we&nbsp;execute&nbsp;several&nbsp;plugins&nbsp;that&nbsp;rely&nbsp;on&nbsp;this&nbsp;service&nbsp;at&nbsp;the&nbsp;same&nbsp;time&nbsp;(and&nbsp;for&nbsp;the&nbsp;first&nbsp;time).&lt;br&gt;<br>
+Our&nbsp;workaround&nbsp;synchronizes&nbsp;some&nbsp;of&nbsp;our&nbsp;code&nbsp;but&nbsp;it&nbsp;would&nbsp;be&nbsp;more&nbsp;efficient&nbsp;if&nbsp;the&nbsp;DefaultAutoscaleService&nbsp;could&nbsp;handle&nbsp;this.&lt;br&gt;<br>
+&lt;br&gt;<br>
+Best&nbsp;regards&nbsp;Michael&lt;br&gt;<br>
+&lt;br&gt;<br>
+------------------------------&lt;u&gt;&lt;/u&gt;------------------------------&lt;u&gt;&lt;/u&gt;-----------------&lt;br&gt;<br>
+&lt;br&gt;<br>
+DefaultAutoscaleService&lt;br&gt;<br>
+&lt;br&gt;<br>
+ &nbsp; &nbsp;private&nbsp;void&nbsp;buildDataStructures()&nbsp;{&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;methods&nbsp;=&nbsp;new&nbsp;ConcurrentHashMap&lt;String,&nbsp;AutoscaleMethod&gt;();&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;methodNames&nbsp;=&nbsp;new&nbsp;ArrayList&lt;String&gt;();&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;for&nbsp;(final&nbsp;AutoscaleMethod&nbsp;method&nbsp;:&nbsp;getInstances())&nbsp;{&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;final&nbsp;String&nbsp;name&nbsp;=&nbsp;method.getInfo().getName();&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;methods.put(name,&nbsp;method);&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;methodNames.add(name);&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;}&lt;br&gt;<br>
+ &nbsp; &nbsp;}&lt;br&gt;<br>
+&lt;br&gt;<br>
+ &nbsp; &nbsp;private&nbsp;Map&lt;?&nbsp;extends&nbsp;String,&nbsp;?&nbsp;extends&nbsp;AutoscaleMethod&gt;&nbsp;methods()&nbsp;{&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;if&nbsp;(methods&nbsp;==&nbsp;null)&nbsp;buildDataStructures();&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;return&nbsp;methods;&lt;br&gt;<br>
+ &nbsp; &nbsp;}&lt;br&gt;<br>
+&lt;/blockquote&gt;&lt;/div&gt;&lt;br&gt;&lt;/div&gt;&lt;/div&gt;<br>
+
+</tt>

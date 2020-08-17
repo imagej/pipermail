@@ -1,0 +1,457 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] (headless) command execution
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%28headless%29%20command%20execution&In-Reply-To=%3CCADN69yk49kSFV7%2B4da%2BgvL%3DC%3DKQQzGRuo8DU%2BuONMp3_PCqMnA%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002021.html">
+   <LINK REL="Next"  HREF="002026.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] (headless) command execution</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%28headless%29%20command%20execution&In-Reply-To=%3CCADN69yk49kSFV7%2B4da%2BgvL%3DC%3DKQQzGRuo8DU%2BuONMp3_PCqMnA%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] (headless) command execution">ctrueden at wisc.edu
+       </A><BR>
+    <I>Thu Apr 10 15:21:46 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002021.html">[ImageJ-devel] (headless) command execution - missing project	files
+</A></li>
+        <LI>Next message: <A HREF="002026.html">[ImageJ-devel] (headless) command execution
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2020">[ date ]</a>
+              <a href="thread.html#2020">[ thread ]</a>
+              <a href="subject.html#2020">[ subject ]</a>
+              <a href="author.html#2020">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Stefan,
+
+&gt;<i> Maybe I was unclear on this issue. May question is, what does a method
+</I>&gt;<i> of a Command (e.g. its initializer, the run method) or rather the
+</I>&gt;<i> implementor may assumed to have &quot;happend&quot;.
+</I>
+No worries, you were clear. The term &quot;preconditions&quot; is a technical
+software engineering term, so I know what you meant. I just dodged the
+question a bit there, figuring my detailed answers later would clarify
+everything. But I guess it still was not clear, sorry...
+
+* The run() method of a module can assume that all required input
+parameters have been filled (i.e., are non-null). And the corresponding
+post-condition of run() is that all required output parameters are now
+filled.
+
+* The initialize() method of a module cannot necessarily assume anything
+about the state of its parameters. As you pointed out, ImageJ2 has various
+commands right now that *do* assume certain parameters have been filled via
+preprocessing. This works in practice (at least from the ImageJ
+application), but is not particularly rigorous.
+
+* Similarly, ImageJ2 has several commands which assume their initializer
+has been called, but it is not stated as a formal precondition. Most
+probably it makes sense to state that in the javadoc, would you agree? In
+other words: if you aren't going to include the InitPreprocessor in the
+preprocessing chain, you are still somehow responsible for calling
+module.initialize() before calling module.run(). Is that fair?
+
+So the main sticky point is what to do about initialize() requiring certain
+parameters to be already filled. This is useful for dynamic modules, but
+also just for computing defaults -- e.g., setting default
+brightness/contrast min &amp; max values to the current display min max of the
+input image. So it seems there are two &quot;layers&quot; of input parameters: those
+needed before initialize() and those not needed for it.
+
+Maybe we need a way to formally flag these &quot;required before initialize&quot;
+parameters in the annotation? What do you think? Would that help you?
+
+In any case, now is the perfect time to get the module framework fully
+solidified, since we are on the cusp of migrating it into the
+(non-image-specific) SciJava layer. After the June 1 release, we will not
+be able to introduce any more breaking changes.
+
+&gt;<i> Besides interesting for a programmer of a Command we are interested in
+</I>&gt;<i> this issue to be able to wrap IJ2 commands in order to run them from
+</I>&gt;<i> our GUI (originaly design for alida operators), our command line
+</I>&gt;<i> runner, and to support them in our graphical editor for alida/mitobo
+</I>&gt;<i> operators and hopefully ij2 commands (at least head less and non
+</I>&gt;<i> DynamicCommands)
+</I>
+One thing that may interest you is the recent ImageJ OPS announcement:
+   <A HREF="http://developer.imagej.net/2014/04/04/announcing-imagej-ops">http://developer.imagej.net/2014/04/04/announcing-imagej-ops</A>
+
+An Op is just an ImageJ command intended to be fully functional -- i.e.,
+all inputs and outputs declared explicitly as parameters, with no side
+effects. They are essentially &quot;lower level&quot; commands intended for image
+processing, and they might be another good integration point for Alida.
+Really, your current implementation should gain access to them &quot;for free&quot;
+since they are just a subtype of Commands, but perhaps it makes sense to
+special case them somehow since they are in many ways friendlier for
+headless &amp; non-dynamic situations?
+
+&gt;<i> I am not sure whether we can recycle all IJ2s preprocessors as there
+</I>&gt;<i> might be differences in the concept of parameter handling.
+</I>
+Actually, there is a fair chance you could. It's just that the
+ActiveFooPreprocessor style things may either: A) always return null for
+you; or B) be populated via some alternate means that you can specify by
+extending the DefaultDisplayService, DefaultImageDisplayService, etc., with
+overridden method implementations that draw the &quot;active&quot; objects from
+somewhere else.
+
+Alternately, it is just fine if they are always null, as long as you pass
+them in via the moduleService#run method &quot;Object...&quot; or &quot;Map&lt;String,
+Object&gt;&quot; arguments.
+
+&gt;<i> In the attached zip of a tiny maven project using ij2 (2.0.0-beta-7.8)
+</I>&gt;<i> there is a command RunTestOp which tries to invoke a IJTestOp command
+</I>&gt;<i> &quot;by hand&quot;.
+</I>
+It seems the mailing list stripped your attachment. Can you please post on
+GitHub?
+
+&gt;<i> I first create a CommandInfo for IJTestOp, then a CommandModule for this
+</I>info,
+&gt;<i> collects all preprocessors and (try to) invoke them for the CommandModule
+</I>created.
+&gt;<i> I disabled invoking of the InitPreprocessor, as it crashes with a null
+</I>&gt;<i> pointer exception:
+</I>&gt;<i>   Exception in thread &quot;main&quot; java.lang.NullPointerException at
+</I>&gt;<i>     imagej.command.CommandModule.initialize(CommandModule.java:144)
+</I>
+That error indicates that the CommandModule did not have a context injected
+properly. From your description, it sounds like your code is more low-level
+than it needs to be. But I'd have to see the code to be certain.
+
+For customizing which pre- and post-processors get run, it is enough to do:
+
+pre = pluginService.createInstancesOfType(PreprocessorPlugin.class);
+post = pluginService.createInstancesOfType(PostprocessorPlugin.class);
+// then loop over pre and post, removing blacklisted entries
+// alternately, loop over pre and post, populating whitelists with desired
+entries
+moduleService.run(moduleInfo, pre, post, inputName1, inputValue1,
+inputName2, inputValue2, ...etc...)
+
+Is that how you were doing it?
+
+// or if you really want to avoid creating instances which you then throw
+away...
+// you can write:
+//   infos = pluginService.getPluginsOfType(PreprocessorPlugin.class)
+// and/or:
+//   info = pluginService.getPlugin(InitPreprocessor.class)
+// get the infos you want onto a list and then call:
+//   pre = pluginService.createInstances(info);
+// or even this way:
+//   pre.add(pluginService.createInstance(InitPreprocessor.class);
+// the advantage being that all context is injected automatically for you.
+
+&gt;<i> And the ImageDisplayService is also still null.
+</I>
+Regardless of which preprocessors you use, such service parameters should
+not be null, as long as the context has that service associated with it;
+see below. Again, I'm guessing you didn't inject the context...
+
+&gt;<i> BTW: when diving a little bit into the code I realized that Service
+</I>&gt;<i> and Context @Parameters of Commands are nor reflected in the
+</I>&gt;<i> CommandInfo. Somehow I was confused when I saw, that the
+</I>&gt;<i> ServicePreprocessor's process method looks for Service and Context
+</I>&gt;<i> parameters in the moduls CommandInfo.inputs(). Could there ever by
+</I>&gt;<i> any?
+</I>
+Yes. :-) You have found a wrinkle that I didn't expect anyone to notice yet.
+
+In the case of Modules generally (not just Commands), there can certainly
+be Service and Context parameters. The prime example there is scripts: we
+want to annotate scripts written various languages such as Jython with a
+header comment that declares all the typed input and output parameters,
+including services. The ServicePreprocessor will take care of filling them,
+and the ModuleInfo API will include them when iterating the inputs.
+
+However, in the case of Commands specifically, the Service and Context
+fields annotated with @Parameter will actually *not* be reported as
+parameters by the ModuleInfo API. It was changed 8 months ago:
+
+
+<A HREF="https://github.com/imagej/imagej/commit/5a86785506f94dc0e58d5860559903b23fb64187">https://github.com/imagej/imagej/commit/5a86785506f94dc0e58d5860559903b23fb64187</A>
+
+Unfortunately, I did not bother to elaborate in my commit message on *why*
+&quot;we do then need to have a special exclusion for such parameters in the
+CommandInfo wrapper&quot; and I've forgotten what problems it caused not to have
+that special exclusion.
+
+So this is certainly inconsistent and confusing. Do you think that Commands
+should also include service and context inputs when iterating them? If so,
+we can try removing that exclusion and see what explodes... ;-)
+
+&gt;<i> I was aware of the option to create a context but was/am reluctant to
+</I>&gt;<i> use it (in excess) due to overhead considerations. Just looking at the
+</I>&gt;<i> logging output it seems pretty time consuming. Is this impression
+</I>&gt;<i> wrong?
+</I>
+Regardless of how you do things, you should be able to keep reusing the
+same context. You can either create one static one as I described, or you
+can create one non-static one and then pass it around everywhere to things
+that need it (either via constructors, setters, or by injecting it as a
+@Parameter -- whatever pattern suits your fancy).
+
+That said, we have put a fair amount of effort into optimizing context
+creation. What it comes down to is which services are part of the context.
+Creating a full-blown ImageJ context (all available services, huge
+classpath) on my system takes about 2000ms right now; creating one with
+only core SciJava services takes 450ms. This is actually much slower than
+last I checked, probably due to the Eclipse Helper making absolutely sure
+the annotation metadata is up to date. We will certainly be optimizing this
+more in the future -- e.g., if you run outside of the Eclipse development
+environment, the Eclipse Helper should not bog things down.
+
+Also, as of
+<A HREF="https://github.com/scijava/scijava-common/commit/0fd0e2916d39505e792f1bbd8e56e3de0f1f8904,">https://github.com/scijava/scijava-common/commit/0fd0e2916d39505e792f1bbd8e56e3de0f1f8904,</A>
+the log spam when creating a context has been eliminated by default. (It
+got to the point where those log messages were really annoying me. ;-) The
+next release will of course include this change.
+
+&gt;<i> In addition I am able to create only on instance of imagej.ImageJ, the
+</I>&gt;<i> second constructor crashes. See the file createContext.log in the zip
+</I>&gt;<i> which results from running RunTestOp. (It seems to me the creating a
+</I>&gt;<i> second instance of DefaultLegacyService fails, and I faintly remeber
+</I>&gt;<i> to have read somewhere that only one instance of the
+</I>&gt;<i> DefaultLegacyService may exist ??)
+</I>
+Indeed, trying to create two contexts each with a DefaultLegacyService
+fails right now. The reasons are complex, but in short, it is a bug. And
+unfortunately one we will not be able to address before the June release.
+The problem can be avoided by either: A) calling context.dispose() on the
+first context before creating the second one; or B) creating additional
+contexts beyond the first without a LegacyService (admittedly awkward to
+code since you can no longer use the default Context() constructor).
+
+If you urgently need support for multiple simultaneous ImageJ contexts
+created with the default constructor while ij-legacy is on the classpath,
+and you want to try fixing the bug yourself, we would be happy to elaborate
+further so that you can give it a shot.
+
+&gt;<i> The Command EquationDataValues.java ist annotated as headless and has
+</I>&gt;<i> a @Parameter of type Button. Is this as intended?
+</I>
+Yes, the &quot;Button&quot; is just a marker interface indicating that the input
+harvester UI should render a button with that label which when pressed
+calls that callback method. In the case of no input harvester UI, there
+will be no button, and the callback will hence never occur. But that should
+not interfere with headless operation. Such Button parameters can be safely
+ignored on your end.
+
+Note that we recently made the Button interface extend the Optional
+interface to clarify the fact that Button &quot;values&quot; are always allowed to be
+null, even if the @Parameter of the Button does not declare &quot;required =
+false&quot;. See:
+<A HREF="https://github.com/imagej/imagej/commit/09ed9f9b6178312d86083094732b2a1201f82e16">https://github.com/imagej/imagej/commit/09ed9f9b6178312d86083094732b2a1201f82e16</A>
+
+Let's hope our next exchange does not need to be quite so long winded...
+
+Regards,
+Curtis
+
+
+On Thu, Apr 10, 2014 at 9:01 AM, Stefan Posch &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">posch at informatik.uni-halle.de</A>
+&gt;<i> wrote:
+</I>
+&gt;<i> Hi Curtis,
+</I>&gt;<i>
+</I>&gt;<i> thank you very much for the details answers (and I did not mean to press
+</I>&gt;<i> you with
+</I>&gt;<i> regard to &quot;delays&quot; - this goes, of course, also for the future).
+</I>&gt;<i>
+</I>&gt;<i> Though very helpful a few issues are still open:
+</I>&gt;<i>
+</I>&gt;<i> &gt;&gt; What are the precoditions assumed when running a (headless) command
+</I>&gt;<i> &gt; What happens is highly dependent on *how* you invoke the command...
+</I>&gt;<i>
+</I>&gt;<i>    Maybe I was unclear on this issue. May question is, what does a method
+</I>&gt;<i>    of a Command (e.g. its initializer, the run method) or rather the
+</I>&gt;<i> implementor
+</I>&gt;<i>    may assumed to have &quot;happend&quot;.
+</I>&gt;<i>
+</I>&gt;<i>    Or other way round: in case the run-method of OpenFile command used in
+</I>&gt;<i> the tutorial
+</I>&gt;<i>    requires the initializer to have been executed:
+</I>&gt;<i>    Is the run-method responsible to check, if it has already been executed
+</I>&gt;<i> (e.g. if called
+</I>&gt;<i>    via the invokeWithArgs or invokeWihtMap methods of the tutorial) or not
+</I>&gt;<i>    (if e.g. called via invokeFrmoJava).
+</I>&gt;<i>    Or is it the callers responsibility to ensure the the initializer has
+</I>&gt;<i> been already been
+</I>&gt;<i>    executed before actually running the OpenFile command (if it indeed
+</I>&gt;<i> requires the initializer to
+</I>&gt;<i>    have been invoked beforehand).
+</I>&gt;<i>
+</I>&gt;<i>    The same questions goes for the initializer method: may it assume that
+</I>&gt;<i> a single Dataset
+</I>&gt;<i>    parameter has already been set? And if so, may it asume other
+</I>&gt;<i> prerequisites as well?
+</I>&gt;<i>    E.g. it seems to me that the initializer of DuplicateImage would
+</I>&gt;<i> probably crash if
+</I>&gt;<i>    the inputDisplay is null.
+</I>&gt;<i>    Or is it the other way round: That whoever (indirectly) invokes the
+</I>&gt;<i> initializer is
+</I>&gt;<i>    responsible for certain parameters to be set in advance.
+</I>&gt;<i>
+</I>&gt;<i>    Besides interesting for a programmer of a Command we are interested in
+</I>&gt;<i> this issue
+</I>&gt;<i>    to be able to wrap IJ2 commands in order to run them from our GUI
+</I>&gt;<i> (originaly design
+</I>&gt;<i>    for alida operators), our command line runner,
+</I>&gt;<i>    and to support them in our graphical editor for alida/mitobo operators
+</I>&gt;<i> and hopefully
+</I>&gt;<i>    ij2 commands (at least head less and non DynamicCommands)
+</I>&gt;<i>
+</I>&gt;<i> &gt; It should be case that Alida can reuse the default pre- and
+</I>&gt;<i> post-processing
+</I>&gt;<i> &gt; plugin stack -- in other words, you should be able to pass &quot;process=true&quot;
+</I>&gt;<i> &gt; to the ModuleService#run and everything will &quot;just work&quot;. Let us know if
+</I>&gt;<i> &gt; not, and we can troubleshoot. As long as no UI has been shown, you will
+</I>&gt;<i> be
+</I>&gt;<i> &gt; in headless mode and no dialogs should ever be shown. (If one does pop
+</I>&gt;<i> up,
+</I>&gt;<i> &gt; it is probably a bug.)
+</I>&gt;<i>
+</I>&gt;<i>   I am not sure whether we can recycle all IJ2s preprocessors as there
+</I>&gt;<i> might be differences
+</I>&gt;<i>   in the concept of parameter handling.
+</I>&gt;<i>
+</I>&gt;<i>   But trying to reused (some of) them &quot;by hand&quot;, not by using the Modules
+</I>&gt;<i> run method,
+</I>&gt;<i>   I somehow got stuck, as obviously I do not understand the concepts
+</I>&gt;<i>   properly. Maybe you are willing to help with this.
+</I>&gt;<i>
+</I>&gt;<i>   In the attached zip of a tiny maven project using ij2 (2.0.0-beta-7.8)
+</I>&gt;<i>   there is a command RunTestOp which tries to invoke a IJTestOp command
+</I>&gt;<i> &quot;by hand&quot;.
+</I>&gt;<i>   I first create a CommandInfo for IJTestOp, then a CommandModule for this
+</I>&gt;<i> info,
+</I>&gt;<i>   collects all preprocessors and (try to) invoke them for the
+</I>&gt;<i> CommandModule created.
+</I>&gt;<i>   I disabled invoking of the InitPreprocessor, as it crashes with a null
+</I>&gt;<i> pointer exception:
+</I>&gt;<i>     Exception in thread &quot;main&quot; java.lang.NullPointerException
+</I>&gt;<i>         at imagej.command.CommandModule.initialize(CommandModule.java:144)
+</I>&gt;<i>         at
+</I>&gt;<i> imagej.module.process.InitPreprocessor.process(InitPreprocessor.java:61)
+</I>&gt;<i>         at mainroutine.RunTestOp.main(RunTestOp.java:49)
+</I>&gt;<i>
+</I>&gt;<i>   Additionally it seems to be that creating the CommandInfo already
+</I>&gt;<i> invokes preprocessors,
+</I>&gt;<i>   however the initializer of IJTestOp is not invoked.
+</I>&gt;<i>
+</I>&gt;<i>   And the ImageDisplayService is also still null.
+</I>&gt;<i>
+</I>&gt;<i>   BTW: when diving a little bit into the code I realized that
+</I>&gt;<i>    Service and Context @Parameters of Commands are nor reflected in the
+</I>&gt;<i> CommandInfo.
+</I>&gt;<i>    Somehow I was confused when I saw, that the ServicePreprocessor's
+</I>&gt;<i> process method
+</I>&gt;<i>    looks for Service and Context parameters in the moduls
+</I>&gt;<i> CommandInfo.inputs().
+</I>&gt;<i>    Could there ever by any?
+</I>&gt;<i>
+</I>&gt;<i> &gt; modules should not be dynamic. Dynamic commands are *much* more
+</I>&gt;<i> challenging
+</I>&gt;<i> &gt; to support across many different environments (CellProfiler, KNIME,
+</I>&gt;<i> OMERO,
+</I>&gt;<i> &gt; Alida, etc.) *much* more challenging.
+</I>&gt;<i>  Is it easily possible to state what makes a Command a DynamicCommand,
+</I>&gt;<i>  and what is the difference to interactive() commands?
+</I>&gt;<i>
+</I>&gt;<i> &gt; On the CLI, we'll harvest values from the user at the same point in time
+</I>&gt;<i> &gt; that we currently do it via the UI. So most of the other preprocessing
+</I>&gt;<i> will
+</I>&gt;<i> &gt; be done; there will be a &quot;CLIInputHarvesterPlugin&quot; that prompts the user
+</I>&gt;<i> to
+</I>&gt;<i> &gt; type in these values using System.in or similar. We have not yet created
+</I>&gt;<i> &gt; this preprocessor plugin, but it would be very straightforward. If you
+</I>&gt;<i> need
+</I>&gt;<i> &gt; this, let me know -- it would be a fun side project. :-)
+</I>&gt;<i>    We have one &quot;command line oprunner&quot; for alida
+</I>&gt;<i>    (which does not work interactively, thus can be used also from
+</I>&gt;<i> shell-scripts,
+</I>&gt;<i>    e.g. for parameter tuning). And as noted above would like to support
+</I>&gt;<i> also
+</I>&gt;<i>    ij2 commands.
+</I>&gt;<i>
+</I>&gt;<i> &gt; The SciJava context is definitely not a singleton. But you can use it
+</I>&gt;<i> that
+</I>&gt;<i> &gt; way if you want: just create one a static variable in your own codebase
+</I>&gt;<i> &gt; somewhere; e.g.:
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; public static final imagej.ImageJ IJ = new imagej.ImageJ();
+</I>&gt;<i>
+</I>&gt;<i>    I was aware of the option to create a context but was/am reluctant to
+</I>&gt;<i> use
+</I>&gt;<i>    it (in excess) due to overhead considerations. Just looking at the
+</I>&gt;<i> logging output
+</I>&gt;<i>    it seems pretty time consuming. Is this impression wrong?
+</I>&gt;<i>
+</I>&gt;<i>    In addition I am able to create only on instance of imagej.ImageJ, the
+</I>&gt;<i> second
+</I>&gt;<i>    constructor crashes. See the file createContext.log in the zip which
+</I>&gt;<i> results from
+</I>&gt;<i>    running RunTestOp.
+</I>&gt;<i>    (It seems to me the creating a second instance of DefaultLegacyService
+</I>&gt;<i> fails,
+</I>&gt;<i>    and I faintly remeber to have read somewhere that only one instance of
+</I>&gt;<i> the
+</I>&gt;<i>    DefaultLegacyService may exist ??)
+</I>&gt;<i>
+</I>&gt;<i> A new (and for the moment last) question:
+</I>&gt;<i>   The Command EquationDataValues.java ist annotated as headless and has a
+</I>&gt;<i> @Parameter
+</I>&gt;<i>   of type Button. Is this as intended?
+</I>&gt;<i>
+</I>&gt;<i> Again thanks a lot
+</I>&gt;<i>
+</I>&gt;<i> Best regards    Stefan
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140410/1869bd7e/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20140410/1869bd7e/attachment-0001.html</A>&gt;
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002021.html">[ImageJ-devel] (headless) command execution - missing project	files
+</A></li>
+	<LI>Next message: <A HREF="002026.html">[ImageJ-devel] (headless) command execution
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2020">[ date ]</a>
+              <a href="thread.html#2020">[ thread ]</a>
+              <a href="subject.html#2020">[ subject ]</a>
+              <a href="author.html#2020">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

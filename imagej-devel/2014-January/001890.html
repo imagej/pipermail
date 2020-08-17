@@ -1,0 +1,156 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [fiji-devel] Custom starting of Fiji (was Fiji updater operates on what directories and what file types?)
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20Custom%20starting%20of%20Fiji%20%28was%20Fiji%0A%20updater%20operates%20on%20what%20directories%20and%20what%20file%20types%3F%29&In-Reply-To=%3C275DB4592472454787932C0036105466032FEA4D%40MBSRV01.sgc.loc%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001889.html">
+   <LINK REL="Next"  HREF="001886.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [fiji-devel] Custom starting of Fiji (was Fiji updater operates on what directories and what file types?)</H1>
+    <B>Unruh, Jay</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20Custom%20starting%20of%20Fiji%20%28was%20Fiji%0A%20updater%20operates%20on%20what%20directories%20and%20what%20file%20types%3F%29&In-Reply-To=%3C275DB4592472454787932C0036105466032FEA4D%40MBSRV01.sgc.loc%3E"
+       TITLE="[ImageJ-devel] [fiji-devel] Custom starting of Fiji (was Fiji updater operates on what directories and what file types?)">jru at stowers.org
+       </A><BR>
+    <I>Fri Jan  3 11:09:32 CST 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001889.html">[ImageJ-devel] [fiji-devel] Custom starting of Fiji (was Fiji updater operates on what directories and what file types?)
+</A></li>
+        <LI>Next message: <A HREF="001886.html">[ImageJ-devel] K-means clustering plugin
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1890">[ date ]</a>
+              <a href="thread.html#1890">[ thread ]</a>
+              <a href="subject.html#1890">[ subject ]</a>
+              <a href="author.html#1890">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I would add to this conversation that it would be very useful for other developers to see what Collin has developed in terms of the Fiji launcher script.  I have had situations where I wanted to launch in a custom way not provided by the built-in launcher.  No reason to figure this out if Collin already has.  Collin could label it &quot;experimental&quot; to prevent na&#239;ve users from accidentally using it.  Most of my plugins fall into the &quot;experimental&quot; category anyway-if they didn't I probably wouldn't rely so much on ImageJ.
+
+Jay
+
+From: <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">imagej-devel-bounces at imagej.net</A> [mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">imagej-devel-bounces at imagej.net</A>] On Behalf Of Poczatek, Joseph Collin
+Sent: Friday, January 03, 2014 10:16 AM
+To: Johannes Schindelin
+Cc: Fiji Developers; ImageJ Developers
+Subject: Re: [ImageJ-devel] [fiji-devel] Custom starting of Fiji (was Fiji updater operates on what directories and what file types?)
+
+Hi Johannes,
+
+Thanks for indulging me in this conversation.
+
+
+
+
+
+
+Couldn't you say the same thing about Fiji shipping with a .desktop
+
+file?
+
+
+
+It does not ship with a .desktop file. It generates it upon startup in
+
+Linux. (To be precise, the ImageJ launcher does.)
+That makes more sense, and I should have realized that looking at the executable path in the .desktop file. Maybe I should think about having the scripts generated...
+
+
+
+
+
+You are welcome to do that, bash scripts are not the way, however. A
+
+better way would be to patch the ImageJ launcher to make it possible to
+
+ship *limited* configuration via update sites that affects the way Fiji is
+
+started.
+
+I can see that making sense in that it's cross platform (since the launcher is cross platform), but I can't see how that would get you any granularity. Meaning I want to start fiji in say 2 ways that would be equivalent to:
+ImageJ-launcher -flagA
+ImageJ-launcher -flagB
+And not overshadow starting with no flags.
+
+
+
+
+
+So far, I am quite doubtful, however, that such a support is needed. I
+
+might be wrong, but then, I have not been graced with the information
+
+about the intended use case requiring those bash scripts.
+Ok, I was trying to keep my questions narrowly focused, but I guess I ended up too vague. This is related to a conversation on the list from this spring (*) about nrrd files and handleExtraFileTypes. I agree that what I'm doing isn't the cleanest/best but I think it's the lesser evil given all the following facts/constraints (and the ones I forgot):
+
+- I need to bypass the standard IJ-io/extraFileTypes/LOCI chain and pass a file arg directly to our plugin. Which is called OpenMIMS (**) btw.
+
+- Architecturally our plugin has gotten a little cluttered over the years and while we're trying to refactor things, I don't have the man power to refactor out our file readers right now.
+
+- Besides myself I would say that all our users use Fiji without starting OpenMIMS &lt;1% of the time. So they don't really want to start Fiji per se.
+
+- I seem to be categorically incapable of keeping even all the Fiji installs in the lab up-to-date/symmetric, let alone those outside the lab, so why not take advantage of the updater?
+
+- Like I mentioned above there are 2 ways (sets of flags) we start our plugin with. So we would need 2 &quot;executables&quot;.
+
+- Our &quot;users demand&quot; a high level of symmetry between at least Linux and OsX in terms of how OpenMIMS/Fiji runs. For example breaking the &quot;one instance of an application&quot; constraint on OsX. And if I have to do crazy things like that, best to have a parallel way of starting Fiji, right? (I know I need more than just a bash script.)
+
+- I'm not stepping on/overshadowing any part of Fiji. Or forcing any of this to be used.
+
+- Even if I make a mess of things or get to the point I can undo this kludge, the updater makes it a lot easier to back out.
+
+So in conclusion, yes I agree that it's not the best but it's probably manageable.
+
+Cheers,
+Collin
+
+(*) <A HREF="http://imagej.1557.x6.nabble.com/Fiji-the-nrrd-file-format-and-HandleExtraFileTypes-td5002602.html">http://imagej.1557.x6.nabble.com/Fiji-the-nrrd-file-format-and-HandleExtraFileTypes-td5002602.html</A>
+
+(**)
+<A HREF="http://nrims.harvard.edu/about-mims">http://nrims.harvard.edu/about-mims</A>
+<A HREF="http://nrims.partners.org/wiki/index.php/OpenMIMS_Manual">http://nrims.partners.org/wiki/index.php/OpenMIMS_Manual</A>
+
+
+
+The information in this e-mail is intended only for the person to whom it is
+addressed. If you believe this e-mail was sent to you in error and the e-mail
+contains patient information, please contact the Partners Compliance HelpLine at
+<A HREF="http://www.partners.org/complianceline">http://www.partners.org/complianceline</A> . If the e-mail was sent to you in error
+but does not contain patient information, please contact the sender and properly
+dispose of the e-mail.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140103/6a3888d8/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20140103/6a3888d8/attachment-0001.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001889.html">[ImageJ-devel] [fiji-devel] Custom starting of Fiji (was Fiji updater operates on what directories and what file types?)
+</A></li>
+	<LI>Next message: <A HREF="001886.html">[ImageJ-devel] K-means clustering plugin
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1890">[ date ]</a>
+              <a href="thread.html#1890">[ thread ]</a>
+              <a href="subject.html#1890">[ subject ]</a>
+              <a href="author.html#1890">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

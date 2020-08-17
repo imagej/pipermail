@@ -1,0 +1,219 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-bugs] [Bug 993] New: bUnwarpJ completely crashes Fiji
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%20993%5D%20New%3A%20bUnwarpJ%20completely%20crashes%20Fiji&In-Reply-To=%3Cbug-993-19%40http.fiji.sc/bugzilla/%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000633.html">
+   <LINK REL="Next"  HREF="000634.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-bugs] [Bug 993] New: bUnwarpJ completely crashes Fiji</H1>
+    <B>bugzilla at fiji.sc</B> 
+    <A HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%20993%5D%20New%3A%20bUnwarpJ%20completely%20crashes%20Fiji&In-Reply-To=%3Cbug-993-19%40http.fiji.sc/bugzilla/%3E"
+       TITLE="[ImageJ-bugs] [Bug 993] New: bUnwarpJ completely crashes Fiji">bugzilla at fiji.sc
+       </A><BR>
+    <I>Fri Jan 23 11:13:43 CST 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000633.html">[ImageJ-bugs] [Bug 992] 16-bit sample images open as 8-bit
+</A></li>
+        <LI>Next message: <A HREF="000634.html">[ImageJ-bugs] [Bug 994] New: script editor does not start
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#629">[ date ]</a>
+              <a href="thread.html#629">[ thread ]</a>
+              <a href="subject.html#629">[ subject ]</a>
+              <a href="author.html#629">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE><A HREF="http://fiji.sc/bugzilla/show_bug.cgi?id=993">http://fiji.sc/bugzilla/show_bug.cgi?id=993</A>
+
+            Bug ID: 993
+           Summary: bUnwarpJ completely crashes Fiji
+           Product: Fiji
+           Version: unspecified
+          Hardware: PC
+                OS: Windows
+            Status: NEW
+          Severity: normal
+          Priority: P4
+         Component: Plugins
+          Assignee: <A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">imagej-bugs at imagej.net</A>
+          Reporter: <A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">vbindoka at bsd.uchicago.edu</A>
+                CC: <A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">vbindoka at bsd.uchicago.edu</A>
+
+the following macro will crash Fiji to desktop in win7-64 every few runs,
+randomly. I will upload a sample file [&quot;wiggly.tif&quot;]
+macro text:
+
+/*macro to register images to median of Z slices per timepoint
+ * uses FIJI garbage code to try to correct random major crashes!
+ * V.Bindokas, Univ of Chicago, JAN 2015
+ */
+
+ti=getTitle();
+Stack.getDimensions(width, height, channels, slices, frames);
+//waitForUser(&quot;ref&quot;,&quot;select reference slice and then hit OK&quot;);
+
+for(z=1;z&lt;=slices; z++){
+    selectWindow(ti);
+    Stack.setSlice(z);
+    Stack.setFrame(1);
+    run(&quot;Z Project...&quot;, &quot;projection=Median&quot;);
+    run(&quot;Unsharp Mask...&quot;, &quot;radius=11 mask=0.60&quot;);
+    //run(&quot;Duplicate...&quot;, &quot;title=ref&quot;);
+    rename(&quot;ref&quot;);
+for (i=1; i&lt;=frames; i++){
+    selectWindow(ti);
+    Stack.setFrame(i);
+    run(&quot;Duplicate...&quot;, &quot;title=wrk&quot;);
+    // Fine [Very Fine] [Very Coarse] [Super Fine]
+    run(&quot;bUnwarpJ&quot;, &quot;source_image=wrk target_image=ref registration=Mono
+image_subsample_factor=0 initial_deformation=[Coarse] final_deformation=[Very
+Fine] divergence_weight=0.7 curl_weight=0 landmark_weight=0 image_weight=0.8
+consistency_weight=20 stop_threshold=0.001&quot;);
+    while(isOpen(&quot;Registered Source Image&quot;)==false) wait(800);
+    selectWindow(&quot;wrk&quot;);
+    close();
+    selectWindow(&quot;Registered Source Image&quot;);
+    run(&quot;Copy&quot;);
+    close();
+    selectWindow(ti);
+    run(&quot;Paste&quot;);
+    run(&quot;Collect Garbage&quot;);
+}
+selectWindow(&quot;ref&quot;);
+close();
+run(&quot;Collect Garbage&quot;);
+}
+
+Information about your version of Java:
+
+  os.arch =&gt; amd64
+  os.name =&gt; Windows 7
+  os.version =&gt; 6.1
+  java.version =&gt; 1.6.0_24
+  java.vendor =&gt; Sun Microsystems Inc.
+  java.runtime.name =&gt; Java(TM) SE Runtime Environment
+  java.runtime.version =&gt; 1.6.0_24-b07
+  java.vm.name =&gt; Java HotSpot(TM) 64-Bit Server VM
+  java.vm.version =&gt; 19.1-b02
+  java.vm.vendor =&gt; Sun Microsystems Inc.
+  java.vm.info =&gt; mixed mode
+  java.awt.graphicsenv =&gt; sun.awt.Win32GraphicsEnvironment
+  java.specification.name =&gt; Java Platform API Specification
+  java.specification.version =&gt; 1.6
+  sun.cpu.endian =&gt; little
+  sun.desktop =&gt; windows
+  file.separator =&gt; \
+
+The up-to-date check says: REMIND_LATER
+
+Information relevant to JAVA_HOME related problems:
+
+  JAVA_HOME is set to: E:\DEC201~1/java/win64/jdk1.6.0_24//jre
+  imagej.dir =&gt; E:\DEC201~1
+
+Information about the version of each plugin:
+
+Activated update sites:
+ImageJ: <A HREF="http://update.imagej.net/">http://update.imagej.net/</A> (last check:20150122044514)
+Fiji: <A HREF="http://fiji.sc/update/">http://fiji.sc/update/</A> (last check:20150122030708)
+3D ImageJ Suite: <A HREF="http://sites.imagej.net/Tboudier/">http://sites.imagej.net/Tboudier/</A> (last check:20141208015245)
+FFMPEG: <A HREF="http://fiji.sc/~schindelin/ffmpeg-plugins/">http://fiji.sc/~schindelin/ffmpeg-plugins/</A> (last check:20130606102449)
+GDSC-SMLM: <A HREF="http://sites.imagej.net/GDSC-SMLM/">http://sites.imagej.net/GDSC-SMLM/</A> (last check:20140918051334)
+HDF5: <A HREF="http://sites.imagej.net/Ronneber/">http://sites.imagej.net/Ronneber/</A> (last check:20140827114014)
+Morphology: <A HREF="http://sites.imagej.net/Landini/">http://sites.imagej.net/Landini/</A> (last check:20140723095558)
+OpenSPIM: <A HREF="http://openspim.org/update/">http://openspim.org/update/</A> (last check:20140630085101)
+
+Files not up-to-date:
+  1ad3be0d (LOCAL_ONLY) 20141222042830 jars/jpedalSTD.jar
+  6d337b7a (LOCAL_ONLY) 20140730142734 plugins/Accurate_Gaussian_Blur.class
+  6e9d50db (LOCAL_ONLY) 20140320051924 plugins/Adjustable_Watershed.class
+  12ec0761 (LOCAL_ONLY) 20120224100622 plugins/Align_RGB_planes.class
+  0c575fd1 (LOCAL_ONLY) 20141209160514 plugins/BioVoxxel_Plugins.jar
+  52ff6766 (LOCAL_ONLY) 20150115075008 plugins/Create_Template.jar
+  55de57f2 (LOCAL_ONLY) 20050408121420 plugins/DecCredits$1.class
+  66a64476 (LOCAL_ONLY) 20050408121420 plugins/DecCredits.class
+  fd4ce3cd (LOCAL_ONLY) 20050408103628 plugins/DeconvolutionFFT.class
+  b0398adb (LOCAL_ONLY) 20141028073350
+plugins/DeconvolutionLab/DeconvolutionLab_.jar
+  8866a3cd (LOCAL_ONLY) 20050408103628 plugins/DeconvolutionSolution.class
+  ce989b93 (LOCAL_ONLY) 20050408103628 plugins/DeconvolutionWavelets.class
+  13072662 (LOCAL_ONLY) 20050408121420 plugins/Deconvolution_.class
+  11326750 (LOCAL_ONLY) 20050408103628 plugins/FFT1D.class
+  18f23277 (LOCAL_ONLY) 20050408103628 plugins/FourierSpace.class
+  348da731 (LOCAL_ONLY) 20141126044659 plugins/GHT_.jar
+  15a0aac2 (LOCAL_ONLY) 20050408150536 plugins/GibsonPSF.class
+  52861b7c (LOCAL_ONLY) 20050408150244 plugins/GibsonPSFF.class
+  f481dc68 (LOCAL_ONLY) 20120817074900 plugins/Hybrid_2D_Filters.class
+  6b2de3e5 (LOCAL_ONLY) 20120817084143 plugins/Hybrid_3D_Filters.class
+  e9cb6eb7 (LOCAL_ONLY) 20150115083713 plugins/Image_CorrelationJ_1o.class
+  d6bc39b9 (LOCAL_ONLY) 20141023044548 plugins/Jay_Plugins.jar
+  04b38ca7 (LOCAL_ONLY) 20141023044548 plugins/Jay_Plugins2.jar
+  71ae5c42 (LOCAL_ONLY) 20140509130342 plugins/KalmanOpenStackFilter_.class
+  44f1acfa (LOCAL_ONLY) 20121128135145 plugins/Mexican_Hat_Filter.class
+  53c5c1ad (LOCAL_ONLY) 20141103073745 plugins/NL_Means_.jar
+  4ed208ff (LOCAL_ONLY) 20140929064046 plugins/NanoTrackJ_.jar
+  21927175 (LOCAL_ONLY) 20140808090713 plugins/PIV_.jar
+  b3b13b1f (LOCAL_ONLY) 20050408150244 plugins/PSFCredits$1.class
+  cb99705d (LOCAL_ONLY) 20050408150244 plugins/PSFCredits.class
+  de90b917 (LOCAL_ONLY) 20050408150536 plugins/PSFCreditsG$1.class
+  e33950eb (LOCAL_ONLY) 20050408150536 plugins/PSFCreditsG.class
+  9f2412ff (LOCAL_ONLY) 20141028082626 plugins/PSF_Generator.jar
+  5a3abd78 (LOCAL_ONLY) 20050408150536 plugins/PSF_Gibson_.class
+  65b190f7 (LOCAL_ONLY) 20121002063426 plugins/PSF_Simple_.class
+  0c89ccf5 (LOCAL_ONLY) 20140507100709 plugins/PoissonNMF_.jar
+  12289f6e (LOCAL_ONLY) 20110916093010 plugins/PureDenoise_.jar
+  33ca5f87 (LOCAL_ONLY) 20141215122204 plugins/Thunder_STORM.jar
+  69b16199 (LOCAL_ONLY) 20050408103628 plugins/WaveDaub4.class
+  f0990b22 (LOCAL_ONLY) 20050408103628 plugins/WaveDaub4Filter.class
+  27901023 (LOCAL_ONLY) 20050408152652 plugins/Wavelet_Deconvolution_.class
+  71331805 (LOCAL_ONLY) 20140314082430 plugins/jacop_.jar
+  9bbfb280 (LOCAL_ONLY) 20140225135257 plugins/octane2_.jar
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-bugs/attachments/20150123/9a37022a/attachment.html">http://imagej.net/pipermail/imagej-bugs/attachments/20150123/9a37022a/attachment.html</A>&gt;
+</PRE>
+
+
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000633.html">[ImageJ-bugs] [Bug 992] 16-bit sample images open as 8-bit
+</A></li>
+	<LI>Next message: <A HREF="000634.html">[ImageJ-bugs] [Bug 994] New: script editor does not start
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#629">[ date ]</a>
+              <a href="thread.html#629">[ thread ]</a>
+              <a href="subject.html#629">[ subject ]</a>
+              <a href="author.html#629">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-bugs">More information about the Imagej-bugs
+mailing list</a><br>
+</body></html>

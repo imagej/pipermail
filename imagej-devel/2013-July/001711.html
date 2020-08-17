@@ -1,0 +1,175 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] IOService changed
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20IOService%20changed&In-Reply-To=%3CCADN69ynpffEzArwFqNeOKyiuOt6OaEVAeJ_uusA_RS6WJTshAQ%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001708.html">
+   <LINK REL="Next"  HREF="001709.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] IOService changed</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20IOService%20changed&In-Reply-To=%3CCADN69ynpffEzArwFqNeOKyiuOt6OaEVAeJ_uusA_RS6WJTshAQ%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] IOService changed">ctrueden at wisc.edu
+       </A><BR>
+    <I>Mon Jul 22 12:52:07 CDT 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001708.html">[ImageJ-devel] IOService changed
+</A></li>
+        <LI>Next message: <A HREF="001709.html">[ImageJ-devel] MacOSX platform service issues
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1711">[ date ]</a>
+              <a href="thread.html#1711">[ thread ]</a>
+              <a href="subject.html#1711">[ subject ]</a>
+              <a href="author.html#1711">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Mohamed,
+
+&gt;<i> I was wondering if I can search the ij2 source for all methods that
+</I>&gt;<i> returns &quot;Dataset&quot; variable for example. If so, that would make things
+</I>&gt;<i> easier whenever I face a similar problem, currently I can only search
+</I>&gt;<i> for Class names.
+</I>
+I do not know if this is possible using an IDE. (You can search for all
+Dataset references but that would be too many hits, here.)
+
+However, Unix command line tools are your friend. I highly advise learning
+them, as they will give your productivity a big boost. The git command line
+tool also has a lot of nice things built in; especially on Windows that may
+work well for you.
+
+Here's how I found a list of places in the code that return a Dataset:
+
+    git grep 'public Dataset '
+
+Note the space after &quot;Dataset&quot; to ensure it doesn't match e.g.
+DatasetService.
+
+This returns 43 hits, which is a lot to wade through. But in your case, you
+probably knew you wanted a *Service* with a method that returns a Dataset,
+so you can chain them:
+
+    git grep 'public Dataset ' | grep Service.java
+
+Now we're down to 9 hits, which is promising. If we also limit ourselves to
+the name of the method we want (in this case, &quot;open&quot;):
+
+    git grep 'public Dataset ' | grep Service.java | grep open
+
+We are down to a single hit! Success!
+
+Of course, this does not search for any methods that return sub-types of
+Dataset; that gets more complicated and IDE support for that would be most
+welcome. Perhaps there is a plugin for it, but it is not something I
+personally have needed much in the past.
+
+Regards,
+Curtis
+
+
+On Sat, Jul 20, 2013 at 11:53 AM, Mohamed Tleis
+&lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">mohammedtleis at hotmail.com</A>&gt;wrote:
+
+&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Thank you Johannes and Curtis,
+</I>&gt;<i>
+</I>&gt;<i>  The method does still exist, but moved to DatasetService:
+</I>&gt;<i>
+</I>&gt;<i>      ij.dataset().open(String)
+</I>&gt;<i>
+</I>&gt;<i>  It still returns a Dataset (so no casting is necessary), but now throws
+</I>&gt;<i> only IOException instead of those ImgLib2-specific exceptions.
+</I>&gt;<i>
+</I>&gt;<i> That is good news.
+</I>&gt;<i> Off-topic question: I was wondering if I can search the ij2 source for all
+</I>&gt;<i> methods that returns &quot;Dataset&quot; variable for example. If so, that would make
+</I>&gt;<i> things easier whenever I face a similar problem, currently I can only
+</I>&gt;<i> search for Class names.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>  I have also updated the tutorials accordingly, in case that helps. Please
+</I>&gt;<i> let us know of any problems with it!
+</I>&gt;<i>
+</I>&gt;<i>   Thanks again, these are wonderful tutorials, and I hope you would have
+</I>&gt;<i> time to release some more in the future.
+</I>&gt;<i>
+</I>&gt;<i>   Regards,
+</I>&gt;<i> Curtis
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;&gt;<i> If you *know* that you want to open an image (and you need to open it
+</I>&gt;&gt;<i> yourself rather than being nice and asking the user to open the image or
+</I>&gt;&gt;<i> create it or obtain in any way they want rather than the way you want them
+</I>&gt;&gt;<i> to) use the ImgOpener class of SCIFIO:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> <A HREF="http://jenkins.imagej.net/view/SCIFIO/job/SCIFIO-javadoc/javadoc/io/scif/img/ImgOpener.html">http://jenkins.imagej.net/view/SCIFIO/job/SCIFIO-javadoc/javadoc/io/scif/img/ImgOpener.html</A>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>    I will try the ImgOpener later, but for now I will just use the
+</I>&gt;<i> dataset().open from the dataset() service as I am already testing with
+</I>&gt;<i> Dataset.
+</I>&gt;<i>
+</I>&gt;<i>    However, I strongly suggest that you try to make your plugin as
+</I>&gt;&gt;<i> flexible
+</I>&gt;&gt;<i> as possible by stating that you want a Dataset as a @Parameter instead of
+</I>&gt;&gt;<i> forcing the user to store the image as a file and then read it back.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>    In this regard I am loading the image directly for two benefits,
+</I>&gt;<i> first when I am testing my code I don't have to choose manually the image
+</I>&gt;<i> each time. Second, to load and process a set of images automatically.
+</I>&gt;<i>
+</I>&gt;<i>    Ciao,
+</I>&gt;&gt;<i> Johannes
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>   Thank you again, keep the good work going on :)
+</I>&gt;<i>
+</I>&gt;<i> Best Regards,
+</I>&gt;<i> Mohamed Tleis
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20130722/1efd8ae9/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20130722/1efd8ae9/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001708.html">[ImageJ-devel] IOService changed
+</A></li>
+	<LI>Next message: <A HREF="001709.html">[ImageJ-devel] MacOSX platform service issues
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1711">[ date ]</a>
+              <a href="thread.html#1711">[ thread ]</a>
+              <a href="subject.html#1711">[ subject ]</a>
+              <a href="author.html#1711">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

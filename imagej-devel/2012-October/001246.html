@@ -1,0 +1,202 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [ImgLib2] PLEASE READ IF YOU ARE USING VIEWS - Change of Views.translate() sign
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5BImgLib2%5D%20PLEASE%20READ%20IF%20YOU%20ARE%20USING%20VIEWS%20-%0A%20Change%20of%20Views.translate%28%29%20sign&In-Reply-To=%3C507C1B23.1010509%40gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001238.html">
+   <LINK REL="Next"  HREF="001247.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [ImgLib2] PLEASE READ IF YOU ARE USING VIEWS - Change of Views.translate() sign</H1>
+    <B>Tobias Pietzsch</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5BImgLib2%5D%20PLEASE%20READ%20IF%20YOU%20ARE%20USING%20VIEWS%20-%0A%20Change%20of%20Views.translate%28%29%20sign&In-Reply-To=%3C507C1B23.1010509%40gmail.com%3E"
+       TITLE="[ImageJ-devel] [ImgLib2] PLEASE READ IF YOU ARE USING VIEWS - Change of Views.translate() sign">tobias.pietzsch at gmail.com
+       </A><BR>
+    <I>Mon Oct 15 09:18:11 CDT 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001238.html">[ImageJ-devel] Code snippet verification script
+</A></li>
+        <LI>Next message: <A HREF="001247.html">[ImageJ-devel] Tutorial problems
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1246">[ date ]</a>
+              <a href="thread.html#1246">[ thread ]</a>
+              <a href="subject.html#1246">[ subject ]</a>
+              <a href="author.html#1246">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi all,
+
+I just made a change to the Views.translate() function. It does now 
+exactly the opposite of what it was doing before...
+
+This will break your code if you use Views.translate(), and I apologize 
+very much for the inconvenience. An explanation of why this was 
+necessary is below, but if you just want to fix your code quickly:
+
+   Simply replace all Views.translate() occurrences in your code by
+   Views.offset().
+
+Ok, so why was this done:
+Until now, the translation vector t in Views.translate( source, tacted 
+on the target coordinates, not the source coordinates. This is
+counter-intuitive and inconsistent with the rest of Views. In
+particular, if you have a RealView.affine( source, T ) with the affine
+transform [0 t] this would have the behaviour of Views.translate(
+source, -t).
+
+This was pointed out by Albert Cardona a long time ago (see emails 
+quoted below) and I've been putting it off ever since.  Now I wanted
+to fix it before the ImageJ Conference, so that we can present a sane
+Views.translate() version it the ImgLib tutorials there...
+
+Again, sorry for the inconvenience.
+best regards,
+Tobias
+
+
+
+On 11/28/2011 11:41 AM, Tobias Pietzsch wrote:
+&gt;<i> Hi,
+</I>&gt;<i>
+</I>&gt;<i> As Albert points out, Views.translate( source, offset ) considers
+</I>&gt;<i> offset differently than IntervalIndexer.indexToPositionWithOffset(),
+</I>&gt;<i> etc.
+</I>&gt;<i> I agree that the current Views behaviour is counter-intuitive and
+</I>&gt;<i> should be changed.
+</I>&gt;<i>
+</I>&gt;<i> Right now,
+</I>&gt;<i>    targetView = Views.translate(sourceView, offset)
+</I>&gt;<i> gives you a view which starts at offset in sourceView. That is, the
+</I>&gt;<i> pixel at offset in sourceView corresponds to the origin of targetView.
+</I>&gt;<i> SourceView and targetView coordinates are related as
+</I>&gt;<i>    x_src = x_tgt + offset.
+</I>&gt;<i>
+</I>&gt;<i> We should rather have
+</I>&gt;<i>    targetView = Views.translate(sourceView, translation)
+</I>&gt;<i> to give
+</I>&gt;<i>    x_tgt = x_src + translation.
+</I>&gt;<i>
+</I>&gt;<i> I would not change anython in MixedTransformView because this does
+</I>&gt;<i> what you would expect it to do: It is constructed as
+</I>&gt;<i> MixedTransformView( source, transformToSource ), that is, the transform
+</I>&gt;<i> is given fomr target to source, as
+</I>&gt;<i>    x_src = transformToSource( x_tgt )
+</I>&gt;<i> For the current Views.translate this resulted in
+</I>&gt;<i>    transformToSource = offset,
+</I>&gt;<i> not requiring inversion of offset, which is probably, why I did it that
+</I>&gt;<i> way.  However, I agree it should be changed.
+</I>&gt;<i>
+</I>&gt;<i> For convenience, I would make another method which maintains the current
+</I>&gt;<i> behaviour, because it implements something which you often want.
+</I>&gt;<i> For instance, to &quot;crop&quot; an interval (min,max) from a view, you
+</I>&gt;<i> can currently do Views.translate(view, min). With the changed
+</I>&gt;<i> translate() you would have to invert min to get the translation,
+</I>&gt;<i> which would be inverted back inside translate() to get the
+</I>&gt;<i> transformToSource.
+</I>&gt;<i> I would call the new method something like shift() or offset().
+</I>&gt;<i>
+</I>&gt;<i> What do you think?
+</I>&gt;<i>
+</I>&gt;<i> best regards,
+</I>&gt;<i> Tobias
+</I>&gt;<i>
+</I>&gt;<i> On 11/25/2011 04:20 PM, Albert Cardona wrote:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Hi Stephan, Tobias:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> the Views.translate considers a positive offset as negative.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Is this perhaps a consequence of the change in how offsets are handled
+</I>&gt;&gt;<i> now, meaning that MixedTransform needs a sign reversal somewhere?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Albert
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> On Fri, 2011-11-04 at 10:39 +0100, Stephan Saalfeld wrote:
+</I>&gt;&gt;&gt;<i> Hi ImgLib2ers,
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> in the last master commit Albert has found and fixed the first half of
+</I>&gt;&gt;&gt;<i> the long standing quirk in IntervalIndexer at calculating indices and
+</I>&gt;&gt;&gt;<i> positions with offsets (identified and reported a few weeks ago by
+</I>&gt;&gt;&gt;<i> Christion and Martin).  IntervalIndexer was consistently(!) treating
+</I>&gt;&gt;&gt;<i> offsets as negative offsets which was correct but unhandy using the
+</I>&gt;&gt;&gt;<i> positive min property in Intervals.  It is clear that inverting the
+</I>&gt;&gt;&gt;<i> logic in IntervalIndexer is a good idea.   To (hopefully) complete the
+</I>&gt;&gt;&gt;<i> process and get consistency back, I pushed the second half of the
+</I>&gt;&gt;&gt;<i> inversion now.  Either of both commits will break the KNIME code!  May
+</I>&gt;&gt;&gt;<i> be it will break other code too that is using IntervalIndexer.  I beg
+</I>&gt;&gt;&gt;<i> your pardon for being short in time and therefore not able to do
+</I>&gt;&gt;&gt;<i> extensive testings.  Please check your code and sorry for the
+</I>&gt;&gt;&gt;<i> inconvenience.  It's a short inconvenience for a better solution.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Best regards,
+</I>&gt;&gt;&gt;<i> Stephan
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> MHTML Document attachment, &quot;Forwarded message - bug in
+</I>&gt;&gt;&gt;<i> IntervalIndexer.indexToPositionWithOffset with solution&quot;
+</I>&gt;&gt;&gt;&gt;<i> -------- Forwarded Message --------
+</I>&gt;&gt;&gt;&gt;<i> From: Albert Cardona&lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">acardona at ini.phys.ethz.ch</A>&gt;
+</I>&gt;&gt;&gt;&gt;<i> To: Stephan Saalfeld&lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">saalfeld at mpi-cbg.de</A>&gt;, Tobias Pietzsch
+</I>&gt;&gt;&gt;&gt;<i> &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">tobias.pietzsch at inf.tu-dresden.de</A>&gt;, Stephan Preibisch
+</I>&gt;&gt;&gt;&gt;<i> &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">preibisch at mpi-cbg.de</A>&gt;
+</I>&gt;&gt;&gt;&gt;<i> Subject: bug in IntervalIndexer.indexToPositionWithOffset with
+</I>&gt;&gt;&gt;&gt;<i> solution
+</I>&gt;&gt;&gt;&gt;<i> Date: Thu, 03 Nov 2011 09:56:13 -0400
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> The 3 methods IntervalIndexer.indexToPositionWithOffset are subtracting
+</I>&gt;&gt;&gt;&gt;<i> the offsets when they should be adding them.
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> This affects the LocalizingIntervalIterator.jumpFwd, which is then
+</I>&gt;&gt;&gt;&gt;<i> screwed up for the subclass RandomAccessibleIntervalCursor.
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> Mind if I change them? These methods are not used anywhere else.
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> Albert
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>
+
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001238.html">[ImageJ-devel] Code snippet verification script
+</A></li>
+	<LI>Next message: <A HREF="001247.html">[ImageJ-devel] Tutorial problems
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1246">[ date ]</a>
+              <a href="thread.html#1246">[ thread ]</a>
+              <a href="subject.html#1246">[ subject ]</a>
+              <a href="author.html#1246">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

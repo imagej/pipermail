@@ -1,0 +1,119 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Img &lt;-&gt; BufferedImage conversion
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Img%20%3C-%3E%20BufferedImage%20conversion&In-Reply-To=%3C633028A8-11A9-413B-90BC-7E9C85939169%40mpi-cbg.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002191.html">
+   <LINK REL="Next"  HREF="002196.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Img &lt;-&gt; BufferedImage conversion</H1>
+    <B>Tobias Pietzsch</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Img%20%3C-%3E%20BufferedImage%20conversion&In-Reply-To=%3C633028A8-11A9-413B-90BC-7E9C85939169%40mpi-cbg.de%3E"
+       TITLE="[ImageJ-devel] Img &lt;-&gt; BufferedImage conversion">pietzsch at mpi-cbg.de
+       </A><BR>
+    <I>Wed Aug 20 04:10:44 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002191.html">[ImageJ-devel] Img &lt;-&gt; BufferedImage conversion
+</A></li>
+        <LI>Next message: <A HREF="002196.html">[ImageJ-devel] Img &lt;-&gt; BufferedImage conversion
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2194">[ date ]</a>
+              <a href="thread.html#2194">[ thread ]</a>
+              <a href="subject.html#2194">[ subject ]</a>
+              <a href="author.html#2194">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Brian,
+
+BufferedImage is always 2D, so you cannot have a BufferedImage with dimensions (height, width, 3).
+
+If you know that you have an ArrayImg and you know the pixel Type, you can get to the underlying primitive array, for example
+byte[] array = ( byte[] ) ( ( ArrayDataAccess&lt; ? &gt; ) img.update( null ) ).getCurrentStorageArray()
+if you know that img is a UnsignedByteType ArrayImg. Then you wrap that in a BufferedImage.
+
+You can do the same thing the other way around: Get the primitive array from the BufferedImage and wrap it in an ArrayImg.
+
+Essentially the code you found does that for you for the standard PixelTypes (UnsignedByteType, ARGBType, etc )...
+
+best regards,
+Tobias
+
+On 20 Aug 2014, at 00:20, Brian Schlining &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">bschlining at gmail.com</A>&gt; wrote:
+
+&gt;<i> Hi All,
+</I>&gt;<i> 
+</I>&gt;<i> I&#8217;m trying to use imglib2 for some image processing. One thing I need to do is transform Img (actually ArrayImg) objects to BufferedImages. I&#8217;d also like to be able to transform those BufferedImages back into ArrayImg objects. For the most part I&#8217;m currently working with just PNG and JPEG (i.e. ARGB).
+</I>&gt;<i> 
+</I>&gt;<i> I think I found a way to convert an Img to BufferedImage, but I&#8217;m not sure this is the recommended method. So if anyone has a better recommendation, please let me know!! Here&#8217;s the method I found:
+</I>&gt;<i> 
+</I>&gt;<i> // Scala code, sorry Java folks.
+</I>&gt;<i> 
+</I>&gt;<i> import net.imglib2.img.display.imagej.ImageJFunctions
+</I>&gt;<i> 
+</I>&gt;<i> val imagePlus = ImageJFunctions.wrap(img, &quot;&quot;)
+</I>&gt;<i> val bufferedImage = imagePlus.getBufferedImage
+</I>&gt;<i> 
+</I>&gt;<i> How do I convert the buffered image back to an Img object? I saw this code at <A HREF="https://github.com/imglib/imglib/&#8230;/BufferedImageImg.java,">https://github.com/imglib/imglib/&#8230;/BufferedImageImg.java,</A> but the resulting ArrayImg has dimensions of (height, width, 1) instead of the expected dimensions of (heigh, width, 3), so it doesn&#8217;t appear to be doing the right thing.
+</I>&gt;<i> 
+</I>&gt;<i> Thanks!
+</I>&gt;<i> 
+</I>&gt;<i> Brian
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> -- 
+</I>&gt;<i> Brian Schlining
+</I>&gt;<i> 
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140820/ed3ac6c5/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20140820/ed3ac6c5/attachment.html</A>&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140820/ed3ac6c5/attachment.pgp">http://imagej.net/pipermail/imagej-devel/attachments/20140820/ed3ac6c5/attachment.pgp</A>&gt;
+</PRE>
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002191.html">[ImageJ-devel] Img &lt;-&gt; BufferedImage conversion
+</A></li>
+	<LI>Next message: <A HREF="002196.html">[ImageJ-devel] Img &lt;-&gt; BufferedImage conversion
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2194">[ date ]</a>
+              <a href="thread.html#2194">[ thread ]</a>
+              <a href="subject.html#2194">[ subject ]</a>
+              <a href="author.html#2194">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

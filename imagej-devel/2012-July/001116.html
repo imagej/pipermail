@@ -1,0 +1,198 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Finding classes and importing the right Maven	artifacts
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Finding%20classes%20and%20importing%20the%20right%20Maven%0A%09artifacts&In-Reply-To=%3CCADN69y%3D2ynpQ3he9pW%3DKEc%2BDJHmuu%2BEmohnNaC5cVTfb_-9f-g%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001115.html">
+   <LINK REL="Next"  HREF="001122.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Finding classes and importing the right Maven	artifacts</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Finding%20classes%20and%20importing%20the%20right%20Maven%0A%09artifacts&In-Reply-To=%3CCADN69y%3D2ynpQ3he9pW%3DKEc%2BDJHmuu%2BEmohnNaC5cVTfb_-9f-g%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Finding classes and importing the right Maven	artifacts">ctrueden at wisc.edu
+       </A><BR>
+    <I>Thu Jul 26 15:19:52 CDT 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001115.html">[ImageJ-devel] Finding classes and importing the right Maven artifacts
+</A></li>
+        <LI>Next message: <A HREF="001122.html">[ImageJ-devel] Finding classes and importing the right Maven artifacts
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1116">[ date ]</a>
+              <a href="thread.html#1116">[ thread ]</a>
+              <a href="subject.html#1116">[ subject ]</a>
+              <a href="author.html#1116">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Mike,
+
+Thanks for the feedback. To add to Dscho's comments...
+
+
+&gt;<i> What was tripping me up was that there are several versions of
+</I>&gt;<i> ij-platform, for example. The beta releases (fixed states, right?) and
+</I>&gt;<i> the SNAPSHOTS (updating often, right?). So far, so good.
+</I>
+
+Yep, all correct.
+
+
+&gt;<i> But, then there are versions 2.0-SNAPSHOT and 2.0.0-SNAPSHOT.
+</I>
+
+This is my fault; I decided to change to a major.minor.micro versioning
+scheme so we could use semantic versioning (<A HREF="http://semver.org/">http://semver.org/</A>). The
+&quot;2.0-SNAPSHOT&quot; builds are obsolete, so I deleted them all. Hopefully that
+clears up any confusion there. :-)
+
+
+&gt;<i> And one with a sources classifier.
+</I>
+
+This is a standard Maven thing you can do: publish the source code to its
+own JAR with &quot;-sources&quot; classifier. Eclipse is smart enough to download it
+for you: in Package Explorer, find any JAR under your project's &quot;Maven
+Dependencies&quot; list, right-click it and choose &quot;Maven &gt; Download Sources&quot;.
+After that, you'll have them in your local cache (in ~/.m2) and you can
+browse the sources in Eclipse, debug into them, etc. This only works if
+that particular Maven project deploys the &quot;-sources&quot; JAR though, like we
+are doing.
+
+
+&gt;<i> And there is also an ij-platform artifact with the group ID imagej,
+</I>&gt;<i> version 2.0-SNAPSHOT
+</I>
+
+This is also my fault. We originally used groupId &quot;imagej&quot; but decided to
+change to &quot;net.imagej&quot; because as Dscho said, it is the convention to use
+reverse domain name, and it is strongly preferred (maybe even required?) to
+do things that way if you want to submit your stuff to the Maven central
+repository.
+
+So everything listed under the &quot;imagej&quot; groupId is old/deprecated, and
+should not be used.
+
+To clarify this, I deleted all SNAPSHOT builds with groupId of imagej from
+the server. However, there are some release builds that it would be best
+not to remove, such as ImageJ5D 1.2.1 - 1.2.4. So the &quot;imagej&quot; groupId will
+remain, but in the releases subtree only.
+
+
+&gt;<i> and several others with group ID net.imagej.
+</I>
+
+Yes, these are the correct ones.
+
+
+&gt;<i> So, even guessing the right artifact name could point at eight distinct
+</I>&gt;<i> actual artifacts.
+</I>
+
+Hopefully since I deleted a lot of the cruft, it is less confusing now.
+
+
+&gt;<i> Even more confusing is this recommendation for pom.xml at
+</I>&gt;<i> <A HREF="http://fiji.sc/wiki/index.php/Maven">http://fiji.sc/wiki/index.php/Maven</A>
+</I>
+
+I checked that page, but could not find the block you cited. If you see the
+old &quot;imagej&quot; groupId anywhere, please fix it, or let us know and I will do
+so.
+
+Regards,
+Curtis
+
+
+On Thu, Jul 26, 2012 at 2:47 AM, Michael Doube &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">michael at doube.net</A>&gt; wrote:
+
+&gt;<i> &gt;&gt; Mostly, Eclipse has handled that OK. But, now I'm editing my pom.xml and
+</I>&gt;<i> &gt;&gt; am missing a couple of dependencies, which are really hard to find.
+</I>&gt;<i>
+</I>&gt;<i> OK, so I found them by trial and error by searching at
+</I>&gt;<i> <A HREF="http://maven.imagej.net:8081/index.html#welcome">http://maven.imagej.net:8081/index.html#welcome</A> and editing pom.xml
+</I>&gt;<i> until build errors went away.
+</I>&gt;<i>
+</I>&gt;<i> What was tripping me up was that there are several versions of
+</I>&gt;<i> ij-platform, for example. The beta releases (fixed states, right?) and
+</I>&gt;<i> the SNAPSHOTS (updating often, right?). So far, so good. But, then there
+</I>&gt;<i> are versions 2.0-SNAPSHOT and 2.0.0-SNAPSHOT. And one with a sources
+</I>&gt;<i> classifier. And there is also an ij-platform artifact with the group ID
+</I>&gt;<i> imagej, version 2.0-SNAPSHOT, and several others with group ID
+</I>&gt;<i> net.imagej. So, even guessing the right artifact name could point at
+</I>&gt;<i> eight distinct actual artifacts.
+</I>&gt;<i>
+</I>&gt;<i> Even more confusing is this recommendation for pom.xml at
+</I>&gt;<i> <A HREF="http://fiji.sc/wiki/index.php/Maven">http://fiji.sc/wiki/index.php/Maven</A>
+</I>&gt;<i>
+</I>&gt;<i>                 &lt;dependency&gt;
+</I>&gt;<i>                         &lt;groupId&gt;net.imagej&lt;/groupId&gt;
+</I>&gt;<i>                         &lt;artifactId&gt;ij&lt;/artifactId&gt;
+</I>&gt;<i>                         &lt;version&gt;1.46j&lt;/version&gt;
+</I>&gt;<i>                 &lt;/dependency&gt;
+</I>&gt;<i>                 &lt;dependency&gt;
+</I>&gt;<i>                         &lt;groupId&gt;imagej&lt;/groupId&gt;
+</I>&gt;<i>                         &lt;artifactId&gt;imagej&lt;/artifactId&gt;
+</I>&gt;<i>                         &lt;version&gt;2.0-SNAPSHOT&lt;/version&gt;
+</I>&gt;<i>                 &lt;/dependency&gt;
+</I>&gt;<i>
+</I>&gt;<i> Which makes it look like ImageJ1 is under net.imagej and ImageJ2 is
+</I>&gt;<i> under imagej.
+</I>&gt;<i>
+</I>&gt;<i> Guidance, please?
+</I>&gt;<i>
+</I>&gt;<i> Michael
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20120726/8cf4d1b0/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20120726/8cf4d1b0/attachment.html</A>&gt;
+</PRE>
+
+
+
+
+
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001115.html">[ImageJ-devel] Finding classes and importing the right Maven artifacts
+</A></li>
+	<LI>Next message: <A HREF="001122.html">[ImageJ-devel] Finding classes and importing the right Maven artifacts
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1116">[ date ]</a>
+              <a href="thread.html#1116">[ thread ]</a>
+              <a href="subject.html#1116">[ subject ]</a>
+              <a href="author.html#1116">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

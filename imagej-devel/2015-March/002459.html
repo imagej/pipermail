@@ -1,0 +1,140 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Scifio question - how to use (recently updated)	bioformats proprietary formats (programmatically)
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Scifio%20question%20-%20how%20to%20use%20%28recently%20updated%29%0A%09bioformats%20proprietary%20formats%20%28programmatically%29&In-Reply-To=%3CB8F667E0-F684-42FF-ADA8-4D3E063CCEA4%40gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="002460.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Scifio question - how to use (recently updated)	bioformats proprietary formats (programmatically)</H1>
+    <B>Jay Warrick</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Scifio%20question%20-%20how%20to%20use%20%28recently%20updated%29%0A%09bioformats%20proprietary%20formats%20%28programmatically%29&In-Reply-To=%3CB8F667E0-F684-42FF-ADA8-4D3E063CCEA4%40gmail.com%3E"
+       TITLE="[ImageJ-devel] Scifio question - how to use (recently updated)	bioformats proprietary formats (programmatically)">jay.w.warrick at gmail.com
+       </A><BR>
+    <I>Tue Mar  3 10:42:07 CST 2015</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="002460.html">[ImageJ-devel] Scifio question - how to use (recently updated) bioformats proprietary formats (programmatically)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2459">[ date ]</a>
+              <a href="thread.html#2459">[ thread ]</a>
+              <a href="subject.html#2459">[ subject ]</a>
+              <a href="author.html#2459">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi All,
+
+I have 2 problems you all hopefully have suggestions for... (thanks in advance)
+
+Problem 1:
+
+I'm interested in opening ND2 file format programmatically in Java via a SCIFIO object used with an ImageJ context but can't seem to get it to work. (see listing A) Error message indicates format not found.
+
+Hopefully relevant details of what I am currently doing with maven imports are below. (see listing B)
+
+Suggestions? Is there a BioFormats dependency I am not bringing in that is necessary to expose/discover all the additional proprietary formats or do I have to add the proprietary formats myself using a combination of a bioformats artifact I'm not aware of and adding each format using the mechanism provided by scifio-bf-compat? I thought it used to be automatic upon adding the scifio and scifio-bf-compat dependencies. Any help is appreciated. I looked in scifio tutorials but couldn't figure it out. Sorry.
+
+Problem 2:
+
+After resolution of problem 1, I'd like to leverage recent changes to the bioformats package that addresses a bug in ND2 metadata handling that was affecting me (<A HREF="https://trac.openmicroscopy.org.uk/ome/ticket/12548">https://trac.openmicroscopy.org.uk/ome/ticket/12548</A> &lt;<A HREF="https://trac.openmicroscopy.org.uk/ome/ticket/12548">https://trac.openmicroscopy.org.uk/ome/ticket/12548</A>&gt;). The link suggests using bioformats 5.1.x vs 5.0.x which also requires use a few other updated jars (as noted near end of ticket). Suggestions on the best way to do this given my use case? It looks like the parent pom of scifio-bf-compat (pom-scijava) specifies &lt;bio-formats.version&gt;5.0.7&lt;/bio-formats.version&gt;. Is it likely to be &quot;risky&quot; to leverage the most recent changes for ND2 compatibility?
+
+Thanks,
+
+Jay
+
+%%%%%%%%%%%%%
+Listing A
+%%%%%%%%%%%%%
+
+final SCIFIO scifio = new SCIFIO(ij.getContext());
+Reader reader;
+try
+{
+	reader = scifio.initializer().initializeReader(nd2File, new SCIFIOConfig().checkerSetOpen(true));
+}
+catch (Exception e)
+{
+	e.printStackTrace();
+	return false;
+}
+
+
+%%%%%%%%%%%%%
+Listing B
+%%%%%%%%%%%%%
+
+My project parent pom is 
+
+	&lt;parent&gt;
+		&lt;groupId&gt;net.imagej&lt;/groupId&gt;
+		&lt;artifactId&gt;pom-imagej&lt;/artifactId&gt;
+		&lt;version&gt;5.12.0&lt;/version&gt;
+	&lt;/parent&gt;
+
+ I have the following maven dependencies
+
+		&lt;dependency&gt;
+			&lt;groupId&gt;io.scif&lt;/groupId&gt;
+			&lt;artifactId&gt;scifio&lt;/artifactId&gt;
+		&lt;/dependency&gt;
+		&lt;dependency&gt;
+			&lt;groupId&gt;io.scif&lt;/groupId&gt;
+			&lt;artifactId&gt;scifio-bf-compat&lt;/artifactId&gt;
+			&lt;scope&gt;runtime&lt;/scope&gt;
+		&lt;/dependency&gt;
+
+A &quot;limited&quot; list of 30 formats show up in the DefaultFormatService currently and don't include ND2. (see Listing C)
+
+
+%%%%%%%%%%%%%
+Listing C
+%%%%%%%%%%%%%
+
+(*) Formats in DefaultFormatService
+
+ImageJ ij = new ImageJ();
+Set&lt;Format&gt; formats = ij.scifio().format().getAllFormats();
+
+returns
+
+[Bio-Formats Compatibility Format, Animated PNG, Audio Video Interleave, Windows Bitmap, DICOM, Encapsulated PostScript, Flexible Image Transport System, Simulated data, Graphics Interchange Format, Image Cytometry Standard, JPEG-2000, JPEG, Java source code, Multiple Network Graphics, Micro-Manager, NRRD, OBF, PCX, Portable Gray Map, Text, Zip, QuickTime, PICT, plugin:class io.scif.ome.formats.OMEXMLFormat, Tile JPEG, QuickTime, plugin:class io.scif.ome.formats.OMETIFFFormat, Tagged Image File Format, Minimal TIFF, Tagged Image File Format]
+
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20150303/b48a001e/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20150303/b48a001e/attachment.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="002460.html">[ImageJ-devel] Scifio question - how to use (recently updated) bioformats proprietary formats (programmatically)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2459">[ date ]</a>
+              <a href="thread.html#2459">[ thread ]</a>
+              <a href="subject.html#2459">[ subject ]</a>
+              <a href="author.html#2459">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

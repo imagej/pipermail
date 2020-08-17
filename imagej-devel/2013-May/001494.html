@@ -1,0 +1,108 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] LUT ranges
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20LUT%20ranges&In-Reply-To=%3C519288CC.10804%40wisc.edu%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001493.html">
+   <LINK REL="Next"  HREF="001495.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] LUT ranges</H1>
+    <B>Aivar Grislis</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20LUT%20ranges&In-Reply-To=%3C519288CC.10804%40wisc.edu%3E"
+       TITLE="[ImageJ-devel] LUT ranges">grislis at wisc.edu
+       </A><BR>
+    <I>Tue May 14 13:56:12 CDT 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001493.html">[ImageJ-devel] Announcment: personal update sites
+</A></li>
+        <LI>Next message: <A HREF="001495.html">[ImageJ-devel] ImageJ - KNIME Integration: open questions
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1494">[ date ]</a>
+              <a href="thread.html#1494">[ thread ]</a>
+              <a href="subject.html#1494">[ subject ]</a>
+              <a href="author.html#1494">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>This e-mail discusses some issues regarding what I would call the LUT 
+range, the min/max value that a LUT is mapped to.
+
+My motivation comes from SLIM Plugin:  In SLIM Plugin the min/max LUT 
+range is used to colorized fitted pixels and also to control the range 
+of generated histograms.  Suppose a user has fitted some data that has 
+been gathered for multiple spectral channels.  It would be useful to be 
+able to combine all of the channels when setting min/max, to see how the 
+channels relate to each other, and also to be able to set an individual 
+channel min/max independently, to zoom in on an individual channel.  I 
+can discuss further upon request.
+
+IJ1 only supported one min/max range per image, so only a combined 
+channels LUT range is possible.  IJ2 supports more than one, but it's 
+limited:
+
+IJ2 currently supports individual RealLUTConverters and hence individual 
+min/max ranges only for the special-cased CHANNEL Axis. Having 
+individual RealLUTConverters is essential to the way RGB images are 
+rendered (you need separate red, green, and blue converters).  However 
+being able to specify separate ranges is actually not important in that 
+case.
+
+(Currently there's a bug in DefaultDatasetView 
+<A HREF="http://trac.imagej.net/ticket/1866">http://trac.imagej.net/ticket/1866</A> . For RGB images each channel 
+converter is autoscaled independently, which only distorts the colors.  
+You want to set the same scale for all.  Here's a thought experiment:  
+Suppose you have an all-blue image with one gray pixel.  The only red in 
+the entire image is in that gray pixel.  You don't want to autoscale 
+that red component value so it becomes the maximal value possible.  See 
+the attached image for 1866.)
+
+For more flexibility I'd suggest adding two new properties to the Axis 
+class:  One would be whether it supports multiple LUTs.  The other would 
+be whether LUT ranges should be combined.
+
+The default would be for both properties to be false.  We'd have to 
+ensure they are both true in the RGB, CHANNEL Axis situation. Otherwise 
+a programmer could tweak these settings before the dataset is displayed, 
+especially when setting up a custom Axis type.
+
+Thanks!
+Aivar
+
+
+
+
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001493.html">[ImageJ-devel] Announcment: personal update sites
+</A></li>
+	<LI>Next message: <A HREF="001495.html">[ImageJ-devel] ImageJ - KNIME Integration: open questions
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1494">[ date ]</a>
+              <a href="thread.html#1494">[ thread ]</a>
+              <a href="subject.html#1494">[ subject ]</a>
+              <a href="author.html#1494">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

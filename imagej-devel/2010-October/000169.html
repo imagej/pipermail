@@ -1,0 +1,292 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Design meeting notes
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Design%20meeting%20notes&In-Reply-To=%3CAANLkTikk93hqnenbcuchL-es_1OyHACx1jHUs4i-MTwG%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000167.html">
+   <LINK REL="Next"  HREF="000172.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Design meeting notes</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Design%20meeting%20notes&In-Reply-To=%3CAANLkTikk93hqnenbcuchL-es_1OyHACx1jHUs4i-MTwG%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Design meeting notes">ctrueden at wisc.edu
+       </A><BR>
+    <I>Thu Oct  7 15:45:54 CDT 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000167.html">[ImageJ-devel] Design meeting notes
+</A></li>
+        <LI>Next message: <A HREF="000172.html">[ImageJ-devel] Design meeting notes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#169">[ date ]</a>
+              <a href="thread.html#169">[ thread ]</a>
+              <a href="subject.html#169">[ subject ]</a>
+              <a href="author.html#169">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Lee,
+
+Thanks for your feedback!
+
+*&quot;Each plugin pushes the result forward in the chain using an image
+&gt;<i> dispatcher&quot;*
+</I>&gt;<i>
+</I>
+This was an idea that Aivar was trying to communicate to the rest of us,
+which I captured very badly in the notes. So unfortunately I am unable to
+elaborate further. As we continue to discuss the plugin architecture, I am
+sure it will come up again.
+
+I'd recommend CellProfiler's approach and note that @parameter for images
+&gt;<i> could let any UI, along with the user, determine which images are associated
+</I>&gt;<i> with which arguments. A UI should suggest any previous output image as a
+</I>&gt;<i> possible input image for a later stage. For interactive ImageJ, this is a
+</I>&gt;<i> list of whatever images are open, for a pipelined or batch model, this is a
+</I>&gt;<i> list of the outputs of previous pipeline steps.
+</I>&gt;<i>
+</I>
+This approach makes a lot of sense to me.
+
+Is there any mechanism that lets a plugin validate the consistency of its
+&gt;<i> arguments? For instance, a certain combination of options may not make sense
+</I>&gt;<i> - most typical case would be a minimum and maximum numeric value with the
+</I>&gt;<i> maximum larger than the minimum.
+</I>&gt;<i>
+</I>
+Nothing yet. At the moment the plugin itself would need to throw an
+exception or something in the run method.
+
+It would be better for the interface to have a method for checking whether
+the current combination of values is valid. Ideally, it would return some
+sort of data structure indicating, for each parameter, whether it is valid,
+and if not, an explanatory message indicating why not. If we had that, the
+UI code could do first class interactive input validation on the fly, a la
+many modern web forms, with e.g. a little red X and error message next to
+each invalid entry.
+
+Related, some @parameters will be superfluous under some circumstances: as
+&gt;<i> an example, CellProfiler's mixture of gaussians thresholding method asks
+</I>&gt;<i> &quot;what percentage of the image is foreground?&quot;, but the Otsu thresholding
+</I>&gt;<i> method does not. CellProfiler does this by asking the module for the
+</I>&gt;<i> settings to display (and the user doesn't have to implement the method in
+</I>&gt;<i> which case all are displayed). How would such a method in ImageJ name the
+</I>&gt;<i> parameters to display? (string matching the field name? Tags in @parameters
+</I>&gt;<i> matching a string array returned by the method?
+</I>&gt;<i>
+</I>
+Hmm, sounds tricky. Maybe it work similarly to the idea above for
+validation, where an interface method exists that reports, for each
+parameter, whether it is currently relevant based on the values of other
+parameters. A nice demo for this functionality might be as simple as an
+&quot;configure advanced options&quot; checkbox that opens up a bunch more options.
+When the box is unchecked, the advanced options all disappear.
+
+Of course, allowing options to be grouped together would ease some of the
+declarative burden, since you could group all the advanced options into an
+explicit &quot;advanced options&quot; category.
+
+Johannes, have you considered any of these ideas?
+
+*How to specify choices*? For instance, our Otsu thresholding method takes 2
+&gt;<i> or 3 classes or maximizes the inter-class variance or entropy. (and there
+</I>&gt;<i> are about 8 thresholding algorithms to choose from other than Otsu). I would
+</I>&gt;<i> recommend a &quot;choices&quot; attribute in @parameter. I am hoping that you all can
+</I>&gt;<i> make the architecturally elegant choice of how to link an ordered array of
+</I>&gt;<i> strings to the attribute.
+</I>&gt;<i>
+</I>
+Right, the idea is to limit the valid selections to an enumeration. From a
+UI perspective we would use a Swing JComboBox, AWT Choice, or similar. Rick
+was working on it, and an initial version was commited:
+
+  <A HREF="http://dev.imagejdev.org/trac/imagej/changeset/1439">http://dev.imagejdev.org/trac/imagej/changeset/1439</A>
+
+Not perfect, but hopefully it does the job for the time being. Of course,
+every time we make improvements like this, the CellProfiler code also has to
+change to support it...
+
+Help annotations in @parameter - user-visible explanations of the effect of
+&gt;<i> each parameter. CellProfiler uses a bastardized HTML here (limitations of
+</I>&gt;<i> our HTML control).
+</I>&gt;<i>
+</I>
+Yep, good idea.
+
+&quot;Nudge&quot;: the controller can nudge the view, possibly does not need to nudge
+&gt;<i> the model. UIs can be slow, in CellProfiler, the nudge is pretty coarse:
+</I>&gt;<i> &quot;View, completely reconstruct yourself&quot;.
+</I>&gt;<i>
+</I>
+Right, that is the simplest possible update call, and is usually good/fast
+enough. We can think about edge cases where more performance is needed
+later.
+
+Maybe think of ways that plugin developers can add both controller and
+&gt;<i> display elements and reference them from their plugin - the developer's
+</I>&gt;<i> package registers controller and display names that are used by the plugin.
+</I>&gt;<i> This would encourage contribution of generic controller and display code
+</I>&gt;<i> that would be reusable instead of buried in a single plugin.
+</I>&gt;<i>
+</I>
+Right, I agree that this is the sort of thing we should be striving to do.
+
+*Action items*
+&gt;<i> * *
+</I>&gt;<i> * *Lee: CellProfiler demo
+</I>&gt;<i>
+</I>
+It is still in my queue to review the work you have done, as well as the
+poster, and the paper (the latter before tomorrow morning...).
+
+-Curtis
+
+On Thu, Oct 7, 2010 at 8:40 AM, Lee Kamentsky &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">leek at broadinstitute.org</A>&gt;wrote:
+
+&gt;<i>  My notes on your notes - I'm not wedded to any of the positions taken
+</I>&gt;<i> below, so if yours differ, try to convince me otherwise:
+</I>&gt;<i>
+</I>&gt;<i> *&quot;Each plugin pushes the result forward in the chain using an image
+</I>&gt;<i> dispatcher&quot;*
+</I>&gt;<i> I'd recommend CellProfiler's approach and note that @parameter for images
+</I>&gt;<i> could let any UI, along with the user, determine which images are associated
+</I>&gt;<i> with which arguments. A UI should suggest any previous output image as a
+</I>&gt;<i> possible input image for a later stage. For interactive ImageJ, this is a
+</I>&gt;<i> list of whatever images are open, for a pipelined or batch model, this is a
+</I>&gt;<i> list of the outputs of previous pipeline steps.
+</I>&gt;<i>
+</I>&gt;<i> *View: 8 GenericDialog
+</I>&gt;<i> *
+</I>&gt;<i>
+</I>&gt;<i>    - Is there any mechanism that lets a plugin validate the consistency of
+</I>&gt;<i>    its arguments? For instance, a certain combination of options may not make
+</I>&gt;<i>    sense - most typical case would be a minimum and maximum numeric value with
+</I>&gt;<i>    the maximum larger than the minimum.
+</I>&gt;<i>       - Related, some @parameters will be superfluous under some
+</I>&gt;<i>       circumstances: as an example, CellProfiler's mixture of gaussians
+</I>&gt;<i>       thresholding method asks &quot;what percentage of the image is foreground?&quot;, but
+</I>&gt;<i>       the Otsu thresholding method does not. CellProfiler does this by asking the
+</I>&gt;<i>       module for the settings to display (and the user doesn't have to implement
+</I>&gt;<i>       the method in which case all are displayed). How would such a method in
+</I>&gt;<i>       ImageJ name the parameters to display? (string matching the field name? Tags
+</I>&gt;<i>       in @parameters matching a string array returned by the method?
+</I>&gt;<i>        - *How to specify choices*? For instance, our Otsu thresholding
+</I>&gt;<i>    method takes 2 or 3 classes or maximizes the inter-class variance or
+</I>&gt;<i>    entropy. (and there are about 8 thresholding algorithms to choose from other
+</I>&gt;<i>    than Otsu). I would recommend a &quot;choices&quot; attribute in @parameter. I am
+</I>&gt;<i>    hoping that you all can make the architecturally elegant choice of how to
+</I>&gt;<i>    link an ordered array of strings to the attribute.
+</I>&gt;<i>     - Help annotations in @parameter - user-visible explanations of the
+</I>&gt;<i>    effect of each parameter. CellProfiler uses a bastardized HTML here
+</I>&gt;<i>    (limitations of our HTML control).
+</I>&gt;<i>    - &quot;Nudge&quot;: the controller can nudge the view, possibly does not need to
+</I>&gt;<i>    nudge the model. UIs can be slow, in CellProfiler, the nudge is pretty
+</I>&gt;<i>    coarse: &quot;View, completely reconstruct yourself&quot;.
+</I>&gt;<i>
+</I>&gt;<i> *Display plugin architecture*
+</I>&gt;<i> My prejudice here is to find ways to be clever and keep UI out of the
+</I>&gt;<i> plugin. The trick is to imagine the plugin as being unable to concieve of
+</I>&gt;<i> the concept of UI and you have to ask the stupid thing questions that get
+</I>&gt;<i> past its lack of imagination: &quot;Which of your parameters are relevant for
+</I>&gt;<i> your operation?&quot; = &quot;what parameters should be displayed on screen&quot;. If the
+</I>&gt;<i> plugin hankers to display something, maybe that's an output parameter and
+</I>&gt;<i> maybe there are hints as to how it might be displayed, but little more than
+</I>&gt;<i> that: histogram of a vector of values, scattergram of pairs of values. I
+</I>&gt;<i> have my personal reasons for these choices (make it work with CellProfiler),
+</I>&gt;<i> but the result of these choices is an architecture that will not lock you
+</I>&gt;<i> into display particulars, will regularize the appearance and interactions
+</I>&gt;<i> across plugins and will give plugin developers easy to use tools to do the
+</I>&gt;<i> things they need to do.
+</I>&gt;<i>
+</I>&gt;<i> Be extremely clever here - it can be a game, how dumb can you make a
+</I>&gt;<i> plugin? A plugin wants the user to select points or regions or wants to draw
+</I>&gt;<i> on an image - the drawing, etc, is an input parameter to the algorithm and
+</I>&gt;<i> it isn't the plugin's job to control the interaction.
+</I>&gt;<i>
+</I>&gt;<i> Maybe think of ways that plugin developers can add both controller and
+</I>&gt;<i> display elements and reference them from their plugin - the developer's
+</I>&gt;<i> package registers controller and display names that are used by the plugin.
+</I>&gt;<i> This would encourage contribution of generic controller and display code
+</I>&gt;<i> that would be reusable instead of buried in a single plugin.
+</I>&gt;<i>
+</I>&gt;<i> *Demo of CellProfiler
+</I>&gt;<i>
+</I>&gt;<i> *I think Curtis has either the binary or a link to one - trunk
+</I>&gt;<i> CellProfiler build that is demoable for Tubeness. *Grant* is looking over
+</I>&gt;<i> my mods to Tubeness - *Johannes*, you are a Tubeness author, my mods to it
+</I>&gt;<i> are attached and you are welcome to correct my mistakes, also if you have
+</I>&gt;<i> any other favorite plugins that you want to mod or have me mod, I'd love
+</I>&gt;<i> that.
+</I>&gt;<i>
+</I>&gt;<i> *Action items
+</I>&gt;<i>
+</I>&gt;<i> *Lee: CellProfiler demo
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On 10/6/2010 6:02 PM, Curtis Rueden wrote:
+</I>&gt;<i>
+</I>&gt;<i> Hi everyone,
+</I>&gt;<i>
+</I>&gt;<i> A few of us met for several hours today to discuss some design issues for
+</I>&gt;<i> ImageJ 2.0. The original goal of the meeting was to begin defining a new
+</I>&gt;<i> core class hierarchy corresponding to many of ImageJ's historically most
+</I>&gt;<i> central classes: e.g., ImagePlus, ImageStack, ImageProcessor. However, we
+</I>&gt;<i> discussed several other architectural issues as well. I tried to take notes
+</I>&gt;<i> but they ended up being very terse. Nonetheless, I wanted to mention their
+</I>&gt;<i> availability at:
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> <A HREF="https://docs.google.com/document/pub?id=13zVORIFldha5xT8C3wUPLPGr_ok30rh9whLrEsxYA_s">https://docs.google.com/document/pub?id=13zVORIFldha5xT8C3wUPLPGr_ok30rh9whLrEsxYA_s</A>
+</I>&gt;<i>
+</I>&gt;<i> There are not really any detailed class and/or interface definitions
+</I>&gt;<i> yet&#8212;when the design is that far along we will post details, diagrams, etc.
+</I>&gt;<i> to the imagejdev.org web site. But for the moment we are focusing on some
+</I>&gt;<i> concrete milestones within the existing ImageJ v1.x codebase, to present at
+</I>&gt;<i> the ImageJ conference later this month.
+</I>&gt;<i>
+</I>&gt;<i> -Curtis
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">listImageJ-devel at imagejdev.orghttp</A>://imagejdev.org/mailman/listinfo/imagej-devel
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagejdev.org</A>
+</I>&gt;<i> <A HREF="http://imagejdev.org/mailman/listinfo/imagej-devel">http://imagejdev.org/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20101007/48c4c639/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20101007/48c4c639/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000167.html">[ImageJ-devel] Design meeting notes
+</A></li>
+	<LI>Next message: <A HREF="000172.html">[ImageJ-devel] Design meeting notes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#169">[ date ]</a>
+              <a href="thread.html#169">[ thread ]</a>
+              <a href="subject.html#169">[ subject ]</a>
+              <a href="author.html#169">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

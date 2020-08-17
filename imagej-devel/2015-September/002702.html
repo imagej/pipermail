@@ -1,0 +1,598 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Parameter synchronisation IJ1&lt;-&gt;IJ2 (was: Status and API of ROIs in ImageJ2 ?)
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Parameter%20synchronisation%20IJ1%3C-%3EIJ2%20%28was%3A%20Status%20and%0A%20API%20of%20ROIs%20in%20ImageJ2%20%3F%29&In-Reply-To=%3Cweb-161527356%40univ-paris7.fr%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002700.html">
+   <LINK REL="Next"  HREF="002692.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Parameter synchronisation IJ1&lt;-&gt;IJ2 (was: Status and API of ROIs in ImageJ2 ?)</H1>
+    <B>Adrian Daerr</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Parameter%20synchronisation%20IJ1%3C-%3EIJ2%20%28was%3A%20Status%20and%0A%20API%20of%20ROIs%20in%20ImageJ2%20%3F%29&In-Reply-To=%3Cweb-161527356%40univ-paris7.fr%3E"
+       TITLE="[ImageJ-devel] Parameter synchronisation IJ1&lt;-&gt;IJ2 (was: Status and API of ROIs in ImageJ2 ?)">adrian.daerr at univ-paris-diderot.fr
+       </A><BR>
+    <I>Fri Sep 25 03:40:49 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002700.html">[ImageJ-devel] Status and API of ROIs in ImageJ2 ?
+</A></li>
+        <LI>Next message: <A HREF="002692.html">[ImageJ-devel] Disable automatic showing of command output
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2702">[ date ]</a>
+              <a href="thread.html#2702">[ thread ]</a>
+              <a href="subject.html#2702">[ subject ]</a>
+              <a href="author.html#2702">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Dear Curtis,
+
+Thanks for the explanation. Don't worry about debugging this, I
+worked around this by using imp.getRoi() if non-null and
+overlayService.getSelectionBounds() otherwise [1] (and the image
+size if the latter is larger than the image [2]), which is
+resilient enough to work in all cases.
+
+regards,
+Adrian
+
+
+[1]
+<A HREF="https://github.com/adaerr/pendent-drop/commit/6bd16ab181154d6c28d776f7ca935ebe961ccc44">https://github.com/adaerr/pendent-drop/commit/6bd16ab181154d6c28d776f7ca935ebe961ccc44</A>
+[2]
+<A HREF="https://github.com/adaerr/pendent-drop/commit/97a69c086ae383dae0014f74a1f15f0499330c44">https://github.com/adaerr/pendent-drop/commit/97a69c086ae383dae0014f74a1f15f0499330c44</A>
+
+
+On Thu, 24 Sep 2015 12:04:51 -0500
+  Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt; wrote:
+&gt;<i> Hi Adrian,
+</I>&gt;<i> 
+</I>&gt;&gt;<i> It's as if the ImageDisplay parameter was getting populated by the
+</I>&gt;&gt;<i> image before cropping
+</I>&gt;<i> 
+</I>&gt;<i> It seems that the ROI syncing between IJ1 and IJ2 is not happening 
+</I>&gt;<i>as
+</I>&gt;<i> expected. When your command runs, a sync is supposed to happen 
+</I>&gt;<i>during
+</I>&gt;<i> preprocessing because you have a Dataset parameter. But maybe the 
+</I>&gt;<i>sync is
+</I>&gt;<i> incomplete for some reason. Sorry I don't have time to investigate 
+</I>&gt;<i>it right
+</I>&gt;<i> now, though.
+</I>&gt;<i> 
+</I>&gt;&gt;<i> What are those WARNINGs printed upon plugin invokation ?
+</I>&gt;<i> 
+</I>&gt;<i> Those were debugging statements, which were erroneously set to 
+</I>&gt;<i>log.warn. I
+</I>&gt;<i> fixed it [1].
+</I>&gt;<i> 
+</I>&gt;<i> Regards,
+</I>&gt;<i> Curtis
+</I>&gt;<i> 
+</I>&gt;<i> [1]
+</I>&gt;<i> <A HREF="https://github.com/imagej/imagej-legacy/commit/2015336482fe284954d2603fede892d616d20960">https://github.com/imagej/imagej-legacy/commit/2015336482fe284954d2603fede892d616d20960</A>
+</I>&gt;<i> 
+</I>&gt;<i> On Fri, Sep 4, 2015 at 2:29 PM, Adrian Daerr &lt;
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">adrian.daerr at univ-paris-diderot.fr</A>&gt; wrote:
+</I>&gt;<i> 
+</I>&gt;&gt;<i> Hi Curtis,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> OverlayService.getSelectionBounds seems to behave stranger yet. Take 
+</I>&gt;&gt;<i>the
+</I>&gt;&gt;<i> Foo_Bar test plugin source from my previous post, compile it and 
+</I>&gt;&gt;<i>place it
+</I>&gt;&gt;<i> in ImageJ's plugins directory. Start ImageJ, create a new image (say
+</I>&gt;&gt;<i> 400x400 8bpp), draw a rectangular selection inside and invoke 
+</I>&gt;&gt;<i>Foo_Bar: as
+</I>&gt;&gt;<i> reported in my last mail it will report a getSelectionBounds of 
+</I>&gt;&gt;<i>399x399
+</I>&gt;&gt;<i> instead of the expected dimension of the rectangular selection. Now 
+</I>&gt;&gt;<i>crop
+</I>&gt;&gt;<i> the image to the rectangular selection via Image-&gt;Crop, and invoke 
+</I>&gt;&gt;<i>Foo_Bar
+</I>&gt;&gt;<i> again. It will report the same getSelectionBounds (width 399, height 
+</I>&gt;&gt;<i>399)
+</I>&gt;&gt;<i> although the active image is now strictly smaller. It's as if the
+</I>&gt;&gt;<i> ImageDisplay parameter was getting populated by the image before 
+</I>&gt;&gt;<i>cropping
+</I>&gt;&gt;<i> (and of course still without rectangular selection).
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> How is one supposed to use OverlayService.getSelectionBounds ?
+</I>&gt;&gt;<i> What are those WARNINGs printed upon plugin invokation ?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> [WARNING] ====&gt; Roi class = ij.gui.Roi
+</I>&gt;&gt;<i> [WARNING] ====&gt; RECTANGLE: Roi[Rectangle, x=76, y=92, width=209,
+</I>&gt;&gt;<i> height=160]
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> cheers,
+</I>&gt;&gt;<i> Adrian
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> On Tue, 01 Sep 2015 20:41:30 +0200
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>  &quot;Adrian Daerr&quot; &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">adrian.daerr at univ-paris-diderot.fr</A>&gt; wrote:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Hi Curtis, hi all,
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> If all you care about is the bounding box of the active selection, 
+</I>&gt;&gt;&gt;<i>you
+</I>&gt;&gt;&gt;&gt;<i> can just do it the same way as the ImageJ2 CropImageJ command:
+</I>&gt;&gt;&gt;&gt;<i> by calling OverlayService.getSelectionBounds. Then you would
+</I>&gt;&gt;&gt;&gt;<i> avoid some of the current weirdness associated with Overlay
+</I>&gt;&gt;&gt;&gt;<i> parameters.
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> This was working fine with a programmatically added rectangular
+</I>&gt;&gt;&gt;<i> overlay/selection, but when I call getSelectionBounds on an image 
+</I>&gt;&gt;&gt;<i>with an
+</I>&gt;&gt;&gt;<i> interactively created rectangular selection it returns the whole 
+</I>&gt;&gt;&gt;<i>image
+</I>&gt;&gt;&gt;<i> dimension. It does not seem to be aware of the ROI. Below is a MVCE 
+</I>&gt;&gt;&gt;<i>to
+</I>&gt;&gt;&gt;<i> reproduce. After compiling and placing it in the plugins folder, I 
+</I>&gt;&gt;&gt;<i>start
+</I>&gt;&gt;&gt;<i> imagej, create a new image, draw a rectangular selection using 
+</I>&gt;&gt;&gt;<i>ImageJ's
+</I>&gt;&gt;&gt;<i> leftmost tool and then invoque the plugin. It logs the following to 
+</I>&gt;&gt;&gt;<i>the
+</I>&gt;&gt;&gt;<i> console:
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> [WARNING] ====&gt; Roi class = ij.gui.Roi
+</I>&gt;&gt;&gt;<i> [WARNING] ====&gt; RECTANGLE: Roi[Rectangle, x=100, y=163, width=196,
+</I>&gt;&gt;&gt;<i> height=112]
+</I>&gt;&gt;&gt;<i> [INFO] image: plugin:class net.imagej.display.DefaultImageDisplay:
+</I>&gt;&gt;&gt;<i> type=interface net.imagej.display.DataView, name=Untitled,
+</I>&gt;&gt;&gt;<i> objects={<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">net.imagej.display.DefaultDatasetView at 757dbeaf</A>,
+</I>&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">net.imagej.display.DefaultOverlayView at 2198a037</A>}
+</I>&gt;&gt;&gt;<i> [INFO] region: +0.0 +0.0, 559.0 x 559.0
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> I expected the region in the last line (that obtained through
+</I>&gt;&gt;&gt;<i> OverlayService.getSelectionBounds) to coincide with the Roi 
+</I>&gt;&gt;&gt;<i>mentionned in
+</I>&gt;&gt;&gt;<i> the WARNING.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> The CropImage command you mentionned does not do anything either 
+</I>&gt;&gt;&gt;<i>before
+</I>&gt;&gt;&gt;<i> calling getSelectionBounds, and cropping works fine. Do you 
+</I>&gt;&gt;&gt;<i>understand what
+</I>&gt;&gt;&gt;<i> is going on ?
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Cheers,
+</I>&gt;&gt;&gt;<i> Adrian
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> import net.imagej.display.ImageDisplay;
+</I>&gt;&gt;&gt;<i> import net.imagej.display.OverlayService;
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> import org.scijava.command.Command;
+</I>&gt;&gt;&gt;<i> import org.scijava.log.LogService;
+</I>&gt;&gt;&gt;<i> import org.scijava.plugin.Parameter;
+</I>&gt;&gt;&gt;<i> import org.scijava.plugin.Plugin;
+</I>&gt;&gt;&gt;<i> import org.scijava.util.RealRect;
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> @Plugin(type = Command.class, menuPath = &quot;Plugins&gt;Foo_Bar&quot;)
+</I>&gt;&gt;&gt;<i> public class Foo_Bar implements Command {
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>     @Parameter
+</I>&gt;&gt;&gt;<i>     private ImageDisplay display;
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>     @Parameter
+</I>&gt;&gt;&gt;<i>     private OverlayService overlayService;
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>     @Parameter
+</I>&gt;&gt;&gt;<i>     private LogService log;
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>     @Override
+</I>&gt;&gt;&gt;<i>     public void run() {
+</I>&gt;&gt;&gt;<i>         RealRect r = overlayService.getSelectionBounds(display);
+</I>&gt;&gt;&gt;<i>         log.info(&quot;image: &quot;+display);
+</I>&gt;&gt;&gt;<i>         log.info(&quot;region: +&quot; + r.x + &quot; +&quot; +  r.y
+</I>&gt;&gt;&gt;<i>                  + &quot;, &quot; +  r.width + &quot; x &quot; + r.height);
+</I>&gt;&gt;&gt;<i>     }
+</I>&gt;&gt;&gt;<i> }
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> On Mon, 24 Aug 2015 16:22:15 -0500
+</I>&gt;&gt;&gt;<i>  Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt; wrote:
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> Hi Adrian,
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> Glad to hear you found a working solution!
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> The short answer about ROIs is that they have not been a focus of 
+</I>&gt;&gt;&gt;&gt;<i>ImageJ2
+</I>&gt;&gt;&gt;&gt;<i> or ImgLib2 development in recent years. Support for labelings 
+</I>&gt;&gt;&gt;&gt;<i>(highly
+</I>&gt;&gt;&gt;&gt;<i> related to ROIs) was rewritten this January [1], but a rewrite of 
+</I>&gt;&gt;&gt;&gt;<i>the
+</I>&gt;&gt;&gt;&gt;<i> core
+</I>&gt;&gt;&gt;&gt;<i> ImgLib2 ROI library [2] is still pending. And there is a substantial
+</I>&gt;&gt;&gt;&gt;<i> pending redesign of the ImageJ Common data model planned as well --
+</I>&gt;&gt;&gt;&gt;<i> though
+</I>&gt;&gt;&gt;&gt;<i> it is unlikely anyone will work on it this year.
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> At this juncture, the most effective balance for most plugin 
+</I>&gt;&gt;&gt;&gt;<i>developers
+</I>&gt;&gt;&gt;&gt;<i> is
+</I>&gt;&gt;&gt;&gt;<i> probably to use parameterized commands and/or scripts, but with the
+</I>&gt;&gt;&gt;&gt;<i> ImageJ1
+</I>&gt;&gt;&gt;&gt;<i> data structures (ij.ImagePlus, etc.) -- unless you need access to a 
+</I>&gt;&gt;&gt;&gt;<i>new
+</I>&gt;&gt;&gt;&gt;<i> capability that ImageJ2 + ImgLib2 make possible (&gt;5D images, very 
+</I>&gt;&gt;&gt;&gt;<i>large
+</I>&gt;&gt;&gt;&gt;<i> image planes, very large numbers of image planes, dynamically 
+</I>&gt;&gt;&gt;&gt;<i>generated
+</I>&gt;&gt;&gt;&gt;<i> images, images stored in places besides disk, cell-based image 
+</I>&gt;&gt;&gt;&gt;<i>caching,
+</I>&gt;&gt;&gt;&gt;<i> image types beyond uint8/uint16/float32, etc.).
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> That said, your feedback is very much appreciated.
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> And some issues will be ironed out in the next couple of weeks as we
+</I>&gt;&gt;&gt;&gt;<i> revamp
+</I>&gt;&gt;&gt;&gt;<i> the tutorials for the upcoming ImageJ conference.
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> The easiest way to give a plugin a (rectangular) roi is to ... just
+</I>&gt;&gt;&gt;&gt;&gt;<i> declare a net.imagej.overlay.RectangularOverlay as an input 
+</I>&gt;&gt;&gt;&gt;&gt;<i>parameter.
+</I>&gt;&gt;&gt;&gt;&gt;<i> It is properly populated by the origin and extent of a rectangular
+</I>&gt;&gt;&gt;&gt;&gt;<i> selection drawn on the active image.
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> If all you care about is the bounding box of the active selection, 
+</I>&gt;&gt;&gt;&gt;<i>you
+</I>&gt;&gt;&gt;&gt;<i> can
+</I>&gt;&gt;&gt;&gt;<i> just do it the same way as the ImageJ2 CropImageJ command: by 
+</I>&gt;&gt;&gt;&gt;<i>calling
+</I>&gt;&gt;&gt;&gt;<i> OverlayService.getSelectionBounds [3]. Then you would avoid some of 
+</I>&gt;&gt;&gt;&gt;<i>the
+</I>&gt;&gt;&gt;&gt;<i> current weirdness associated with Overlay parameters.
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> If I launch the default UI, then the ROI will not show, but the 
+</I>&gt;&gt;&gt;&gt;<i>plugin
+</I>&gt;&gt;&gt;&gt;&gt;<i> can launch. If on the other hand I launch the &quot;swing&quot; UI as in the
+</I>&gt;&gt;&gt;&gt;&gt;<i> tutorial, I do see the ROI
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> Yes, that tutorial was written when the ImageJ2 Swing UI was still 
+</I>&gt;&gt;&gt;&gt;<i>the
+</I>&gt;&gt;&gt;&gt;<i> default. It is not tested/working with the Legacy UI (which is now 
+</I>&gt;&gt;&gt;&gt;<i>the
+</I>&gt;&gt;&gt;&gt;<i> default). I will try to remedy that very soon.
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> (not until I call Image&gt;Adjust&gt;Brightness/Contrast..., but that's a
+</I>&gt;&gt;&gt;&gt;&gt;<i> minor detail),
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> Yes, that annoying bug has been around for quite a while. Many 
+</I>&gt;&gt;&gt;&gt;<i>things
+</I>&gt;&gt;&gt;&gt;<i> that
+</I>&gt;&gt;&gt;&gt;<i> refresh the display will do, such as pressing + then - to zoom 
+</I>&gt;&gt;&gt;&gt;<i>in/out.
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> but now the invocation of the plugin at the end of main() will throw 
+</I>&gt;&gt;&gt;&gt;<i>a
+</I>&gt;&gt;&gt;&gt;&gt;<i> MethodCallException with the stackTrace pasted below. How can the
+</I>&gt;&gt;&gt;&gt;&gt;<i> choice of a UI make the plugin execution fail ?
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> ...
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i> Caused by: java.lang.NullPointerException
+</I>&gt;&gt;&gt;&gt;&gt;<i>         at Goutte_pendante.initTitle(Goutte_pendante.java:94)
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> In 2014, we made a conscious decision to support the ImageJ 1.x 
+</I>&gt;&gt;&gt;&gt;<i>classes
+</I>&gt;&gt;&gt;&gt;<i> _only_ from the legacy UI. You cannot use them from the Swing UI. In 
+</I>&gt;&gt;&gt;&gt;<i>your
+</I>&gt;&gt;&gt;&gt;<i> case: the ActiveImagePlusPreprocessor cannot set the active 
+</I>&gt;&gt;&gt;&gt;<i>ImagePlus
+</I>&gt;&gt;&gt;&gt;<i> because WindowManager.getCurrentImage() returns null [4], because no
+</I>&gt;&gt;&gt;&gt;<i> ImageJ
+</I>&gt;&gt;&gt;&gt;<i> 1.x user interface exists. So it stays null and then your 
+</I>&gt;&gt;&gt;&gt;<i>initializer
+</I>&gt;&gt;&gt;&gt;<i> throws the NPE.
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> Regards,
+</I>&gt;&gt;&gt;&gt;<i> Curtis
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> [1]
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> <A HREF="https://github.com/imglib/imglib2-roi/tree/imglib2-roi-0.3.2/src/main/java/net/imglib2/labeling">https://github.com/imglib/imglib2-roi/tree/imglib2-roi-0.3.2/src/main/java/net/imglib2/labeling</A>
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> [2] <A HREF="https://github.com/imglib/imglib2-roi">https://github.com/imglib/imglib2-roi</A>
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> [3]
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> <A HREF="https://github.com/imagej/imagej-plugins-commands/blob/imagej-plugins-commands-0.5.1/src/main/java/net/imagej/plugins/commands/imglib/CropImage.java#L104">https://github.com/imagej/imagej-plugins-commands/blob/imagej-plugins-commands-0.5.1/src/main/java/net/imagej/plugins/commands/imglib/CropImage.java#L104</A>
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> [4]
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> <A HREF="https://github.com/imagej/imagej-legacy/blob/imagej-legacy-0.17.1/src/main/java/net/imagej/legacy/plugin/ActiveImagePlusPreprocessor.java#L49-L52">https://github.com/imagej/imagej-legacy/blob/imagej-legacy-0.17.1/src/main/java/net/imagej/legacy/plugin/ActiveImagePlusPreprocessor.java#L49-L52</A>
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> On Sun, Aug 23, 2015 at 6:30 AM, Adrian Daerr &lt;
+</I>&gt;&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">adrian.daerr at univ-paris-diderot.fr</A>&gt; wrote:
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> Hello,
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i> While I am still interested in answers concerning the 
+</I>&gt;&gt;&gt;&gt;&gt;<i>status/API/roadmap
+</I>&gt;&gt;&gt;&gt;&gt;<i> for ROIs and overlays beyond what's on <A HREF="http://imagej.net/ROIs,">http://imagej.net/ROIs,</A> I 
+</I>&gt;&gt;&gt;&gt;&gt;<i>have
+</I>&gt;&gt;&gt;&gt;&gt;<i> solved the problem at hand which was keeping me from making 
+</I>&gt;&gt;&gt;&gt;&gt;<i>progress,
+</I>&gt;&gt;&gt;&gt;&gt;<i> so I
+</I>&gt;&gt;&gt;&gt;&gt;<i> post the (rather obvious, once I found the net.imagej.overlay 
+</I>&gt;&gt;&gt;&gt;&gt;<i>package)
+</I>&gt;&gt;&gt;&gt;&gt;<i> solution here for the record and to close this thread.
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i> The easiest way to give a plugin a (rectangular) roi is to ...
+</I>&gt;&gt;&gt;&gt;&gt;<i> just declare a net.imagej.overlay.RectangularOverlay as an input
+</I>&gt;&gt;&gt;&gt;&gt;<i> parameter. It is properly populated by the origin and extent of a
+</I>&gt;&gt;&gt;&gt;&gt;<i> rectangular selection drawn on the active image.
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i> cheers,
+</I>&gt;&gt;&gt;&gt;&gt;<i> Adrian
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i> On Wed, 19 Aug 2015 17:10:06 +0200
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i>  &quot;Adrian Daerr&quot; &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">adrian.daerr at univ-paris-diderot.fr</A>&gt; wrote:
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> Dear ImageJ developers,
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> I have included code from the AddROIs tutorial into the main()
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> method of my plugin (for the moment essentially one of Curtis'
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> commands-with-preview example), to select a Rectangle before
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> calling the plugin. The source is available here:
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> <A HREF="https://gitlab.com/pendant-drop/pendant-drop">https://gitlab.com/pendant-drop/pendant-drop</A>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> (in Goutte_pendante.java)
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> If I launch the default UI, then the ROI will not show, but the
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> plugin can launch. If on the other hand I launch the &quot;swing&quot; UI
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> as in the tutorial, I do see the ROI (not until I call
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> Image&gt;Adjust&gt;Brightness/Contrast..., but that's a minor detail),
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> but now the invocation of the plugin at the end of main() will
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> throw a MethodCallException with the stackTrace pasted below. How
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> can the choice of a UI make the plugin execution fail ?
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> Is there any other way that main can set a ROI on a loaded image
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> that the plugin, which still uses an ImagePlus as input
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> parameter, will see when calling imp.getProcessor().getRoi() ?
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> TIA
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> Adrian
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> $&gt; mvn package
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> $&gt; fiji --class-path target/pendant_drop-2.0.0-SNAPSHOT.jar
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> Goutte_pendante.class
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> [INFO] Overriding About Pendant Drop; identifier:
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> command:About_Pendant_Drop; jar:
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> file:/home/adrian/Programmes/plugins_ImageJ_src/Traitement_Gouttes/target/pendant_drop-2.0.0-SNAPSHOT.jar
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> [INFO] Overriding Pendant Drop; identifier: command:Goutte_pendante;
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> jar:
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> file:/home/adrian/Programmes/plugins_ImageJ_src/Traitement_Gouttes/target/pendant_drop-2.0.0-SNAPSHOT.jar
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> [INFO] Populating metadata
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> [INFO] Populating metadata
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> [INFO] Found 10 JHotDraw adapters.
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> org.scijava.module.MethodCallException: Error executing method:
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> Goutte_pendante#initTitle
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>         at org.scijava.module.MethodRef.execute(MethodRef.java:73)
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>         at
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> org.scijava.module.AbstractModuleItem.initialize(AbstractModuleItem.java:199)
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>         at
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> org.scijava.module.AbstractModule.initialize(AbstractModule.java:86)
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>         at
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> org.scijava.command.CommandModule.initialize(CommandModule.java:147)
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>         at
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> org.scijava.module.process.InitPreprocessor.process(InitPreprocessor.java:60)
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>         at
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> org.scijava.module.ModuleRunner.preProcess(ModuleRunner.java:104)
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>         at 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>org.scijava.module.ModuleRunner.run(ModuleRunner.java:156)
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>         at 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>org.scijava.module.ModuleRunner.call(ModuleRunner.java:126)
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>         at 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>org.scijava.module.ModuleRunner.call(ModuleRunner.java:65)
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>         at
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> org.scijava.thread.DefaultThreadService$2.call(DefaultThreadService.java:191)
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>         at
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> java.util.concurrent.FutureTask$Sync.innerRun(FutureTask.java:303)
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>         at java.util.concurrent.FutureTask.run(FutureTask.java:138)
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>         at
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> java.util.concurrent.ThreadPoolExecutor$Worker.runTask(ThreadPoolExecutor.java:886)
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>         at
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:908)
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>         at java.lang.Thread.run(Thread.java:662)
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> Caused by: java.lang.reflect.InvocationTargetException
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>         at sun.reflect.NativeMethodAccessorImpl.invoke0(Native 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>Method)
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>         at
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:39)
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>         at
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:25)
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>         at java.lang.reflect.Method.invoke(Method.java:597)
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>         at org.scijava.module.MethodRef.execute(MethodRef.java:69)
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>         ... 14 more
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> Caused by: java.lang.NullPointerException
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>         at Goutte_pendante.initTitle(Goutte_pendante.java:94)
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>         ... 19 more
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> [ERROR] Module threw exception
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> java.lang.NullPointerException
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>         at Goutte_pendante.cancel(Goutte_pendante.java:87)
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>         at
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> org.scijava.command.CommandModule.cancel(CommandModule.java:140)
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>         at
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> org.scijava.module.ModuleRunner.cleanupAndBroadcastCancelation(ModuleRunner.java:189)
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>         at 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>org.scijava.module.ModuleRunner.run(ModuleRunner.java:161)
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>         at 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>org.scijava.module.ModuleRunner.call(ModuleRunner.java:126)
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>         at 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>org.scijava.module.ModuleRunner.call(ModuleRunner.java:65)
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>         at
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> org.scijava.thread.DefaultThreadService$2.call(DefaultThreadService.java:191)
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>         at
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> java.util.concurrent.FutureTask$Sync.innerRun(FutureTask.java:303)
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>         at java.util.concurrent.FutureTask.run(FutureTask.java:138)
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>         at
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> java.util.concurrent.ThreadPoolExecutor$Worker.runTask(ThreadPoolExecutor.java:886)
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>         at
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:908)
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>         at java.lang.Thread.run(Thread.java:662)
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> On Sat, 15 Aug 2015 13:14:13 +0200
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>  Adrian Daerr &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">adrian.daerr at univ-paris-diderot.fr</A>&gt; wrote:
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> Hello,
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> I am seizing a major rewrite of a plugin as an opportunity to switch
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> from ImageJ1 to ImageJ2, also to avoid concurrency issues[*], and 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i>now
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> lots of questions come up. Some concern the way ROIs are handled. 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i>What
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> has happened in this regard since
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i>   <A HREF="http://imagej.net/ROIs">http://imagej.net/ROIs</A>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> was last updated ?
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> [*] cf discussion on the ImageJ list archived at
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> <A HREF="http://imagej.1557.x6.nabble.com/ExtendedPlugInFilter-GenericDialog-and-synchronization-td5013333.html">http://imagej.1557.x6.nabble.com/ExtendedPlugInFilter-GenericDialog-and-synchronization-td5013333.html</A>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> Here are two concrete questions:
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> 1) My plugin relies on a rectangular ROI being drawn on the image to
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> know which area to include in the computation. How do I draw this 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i>ROI
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> once I have loaded the image as a dataset in the main() method that 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i>is
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> used for testing purposes ?
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> public static void main(final String... args) throws Exception {
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i>     final String testImagePath = &quot;testImage.jpg&quot;;
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i>     // Launch ImageJ as usual.
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i>     final ImageJ ij = net.imagej.Main.launch(args);
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i>     // Open test image.
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i>     final Dataset dataset = ij.dataset().open(testImagePath);
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i>     // display the dataset
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i>     ij.ui().show(dataset);
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i>     // create rectangular ROI
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i>     //imp.setRoi(120,60,340,420);// How to do this on a dataset ?
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i>     // Launch the &quot;Foo_Bar&quot; command.
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i>     ij.command().run(Foo_Bar.class, true);
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> }
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> (alternatively, how would I generate a new dataset, or I guess
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> something
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> like a &quot;View&quot; in ImageJ2 terminology, of the ROI sub-image of the
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> original
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> dataset ? I could then substitute the original dataset with this
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> sub-image
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> and have the plugin operate on the whole image by default)
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> 2) The plugin preview generates overlays using java.awt.geom.Path2D,
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> java.awt.geom.Area and java.awt.Shape, which are then converted via
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> ij.gui.ShapeRoi() and ij.gui.Overlay(), assembled with 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i>overlay.add(),
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> and drawn using imp.setOverlay(). Is there a new IJ2-way to do this
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> (especially since the cited web page (rightly) insists on separation
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> of selection and visualisation shapes) ?
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> TIA,
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> Adrian
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> --
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> <A HREF="http://www.msc.univ-paris-diderot.fr/~daerr/">http://www.msc.univ-paris-diderot.fr/~daerr/</A>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i> --
+</I>&gt;&gt;&gt;&gt;&gt;<i> <A HREF="http://www.msc.univ-paris-diderot.fr/~daerr/">http://www.msc.univ-paris-diderot.fr/~daerr/</A>
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;&gt;&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;&gt;&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> --
+</I>&gt;&gt;&gt;<i> <A HREF="http://www.msc.univ-paris-diderot.fr/~daerr/">http://www.msc.univ-paris-diderot.fr/~daerr/</A>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> --
+</I>&gt;&gt;<i> <A HREF="http://www.msc.univ-paris-diderot.fr/~daerr/">http://www.msc.univ-paris-diderot.fr/~daerr/</A>
+</I>&gt;&gt;<i>
+</I>
+-- 
+<A HREF="http://www.msc.univ-paris-diderot.fr/~daerr/">http://www.msc.univ-paris-diderot.fr/~daerr/</A>
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002700.html">[ImageJ-devel] Status and API of ROIs in ImageJ2 ?
+</A></li>
+	<LI>Next message: <A HREF="002692.html">[ImageJ-devel] Disable automatic showing of command output
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2702">[ date ]</a>
+              <a href="thread.html#2702">[ thread ]</a>
+              <a href="subject.html#2702">[ subject ]</a>
+              <a href="author.html#2702">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

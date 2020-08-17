@@ -1,0 +1,150 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Local Neighborhood stuff
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Local%20Neighborhood%20stuff&In-Reply-To=%3C88A20083-627D-4DBB-88BB-6EE16F0E9886%40pasteur.fr%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001111.html">
+   <LINK REL="Next"  HREF="001114.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Local Neighborhood stuff</H1>
+    <B>Jean-Yves Tinevez</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Local%20Neighborhood%20stuff&In-Reply-To=%3C88A20083-627D-4DBB-88BB-6EE16F0E9886%40pasteur.fr%3E"
+       TITLE="[ImageJ-devel] Local Neighborhood stuff">tinevez at pasteur.fr
+       </A><BR>
+    <I>Thu Jul 26 02:30:03 CDT 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001111.html">[ImageJ-devel] Local Neighborhood stuff
+</A></li>
+        <LI>Next message: <A HREF="001114.html">[ImageJ-devel] Local Neighborhood stuff
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1112">[ date ]</a>
+              <a href="thread.html#1112">[ thread ]</a>
+              <a href="subject.html#1112">[ subject ]</a>
+              <a href="author.html#1112">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi all
+
+&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> I cc'ed the imagej-devel list, because this should be of wider interest.
+</I>&gt;&gt;<i> The gist of the mails quoted below is that we (Christian Dietz,
+</I>&gt;&gt;<i> Jean-Yves Tinevez) are trying to unify the LocalNeighborhood (-Cursors)
+</I>&gt;&gt;<i> that have been popping up in different places in ImgLib2.
+</I>&gt;&gt;<i> Currently, most of the relevant source can be found in package
+</I>&gt;&gt;<i> net.imglib2.algorithm.region.localneighborhood in algorithms-gpl.
+</I>&gt;&gt;<i> Maybe Jean-Yves and Christian could provide some more information on the
+</I>&gt;&gt;<i> individual neighborhoods that are implemented.
+</I>&gt;<i> 
+</I>&gt;<i> BufferedRectangularNeighborhood is a very simple ring-buffer implementation, to reduce the number of pixel-accesses (yes there is a speed-up).
+</I>&gt;<i> Additionaly I wrapped the HyperSphere stuff of Stephan Preibisch (HyperSphereNeighborhood).
+</I>&gt;<i> 
+</I>I think there is no need for that: there is already a HyperSphere class which has the role of the neighborhood. We need to convince Stephan to tweak it to fit into the hierarchy. 
+&gt;&gt;<i> 
+</I>&gt;&gt;<i> 1.) Factory vs. CopyOn()
+</I>&gt;&gt;<i> A factory could be constructed with parameters, for instance the
+</I>&gt;&gt;<i> CellContainerFactory is constructed with cell dimensions. So a
+</I>&gt;&gt;<i> HypersphereNeighborhood could be constructed with the radius for
+</I>&gt;&gt;<i> example. However, I don't see much harm in adding the copyOn() method.
+</I>&gt;&gt;<i> Having only updateSource() would be too little, as we might want to
+</I>&gt;&gt;<i> change the type T of the Neighborhood in copyOn() and only keep the
+</I>&gt;&gt;<i> structure.In general, I don't like the updateSource() very much. For
+</I>&gt;&gt;<i> instance,what happens if the new source has a different number of
+</I>&gt;&gt;<i> dimensions?
+</I>&gt;<i> I agree. As long as one can simulate the updateSource() behaviour (maybe with copyOn) everything is fine.
+</I>&gt;<i> But as you mentoined, how would we handle sources with more dimensions in copyOn? For instance copyOn on a RectangularNeighborhood (with 3,5,7 spans) is called with a
+</I>&gt;<i> 4-d source. What would be the span in this dimension?
+</I>
+I suggest by contract: 0. We would copy the span array to the new copy, and take the smallest array size as a limit. So that has soon as the numDimensions() are not equal, 0s are fed to the span. It is the role of the concrete implementation to ensure it makes sense. E.g.: copying a sphere to a 2D image should make it a disc. 
+
+&gt;<i> 
+</I>&gt;&gt;<i> 2.) Neighborhood interface
+</I>&gt;&gt;<i> In addition to Positionable and IterableInterval, it could extend Localizable to get the position of the center.
+</I>&gt;<i> 
+</I>&gt;<i> Yap. Perfect.
+</I>&gt;<i> 
+</I>setSpan(long[] span);
+span(long[] span);
+copyOn(RandomAccessible&lt;T&gt; target)
+
+I would like also to have a mother interface for the cursor, that would allow methods like
+
+relativeDistance(int dim); // from the neighborhood center
+relativeSquareDistance();
+etc...
+
+
+&gt;&gt;<i> 
+</I>&gt;&gt;<i> 3.) IN extends RandomAccessibleInterval&lt;T&gt; parameter in AbstractNeighborhood, etc
+</I>&gt;&gt;<i> I think all the Neighborhoods should be constructed on
+</I>&gt;&gt;<i> RandomAccessible&lt;T&gt; instead of RandomAccessibleInterval&lt;T&gt;.
+</I>&gt;&gt;<i> If interval extension is required then this should be done outside of
+</I>&gt;&gt;<i> the Neighborhood. If we do this, then the IN parameter is no longer
+</I>&gt;&gt;<i> required, right? The Neighborhood is just constructed with any
+</I>&gt;&gt;<i> RandomAccessible&lt;T&gt;.
+</I>&gt;<i> 
+</I>&gt;<i> Agree.
+</I>&gt;<i> 
+</I>Tobias also suggest to make a double type to be more generic than just ExtendedRI etc&#8230; Could you do it? I am not strong enough with the generics to make it right.
+
+
+&gt;&gt;<i> 4.) move to imglib2 core
+</I>&gt;&gt;<i> Eventually, the neighborhood should be moved to the core, maybe with the
+</I>&gt;&gt;<i> exception of rather special-case stuff like DiscNeighborhood.
+</I>&gt;&gt;<i> Or is ops a better place? What do you think?
+</I>&gt;<i> 
+</I>&gt;<i> From my point of view it should be in the core, as these are basic data-structures.
+</I>&gt;<i> 
+</I>When the first 3 concrete implementations are done ok? 
+
+Also i plan on removing DiscNeighborhood and SphereNeighborhood from imglib2: they are too specific and clumsy and do not fit what we are designing here. They are related to the ability to position a neighborhood using calibrated, real coordinates, as is x = 6.5 &#181;m, etc.. taking advantage of the calibration in IngPlus&lt;T&gt; 
+
+The neighborhood hierarchy we are designing deal with pixel coordinates only and this is right. 
+
+Cheers
+jy
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20120726/bb9e5ca3/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20120726/bb9e5ca3/attachment.html</A>&gt;
+</PRE>
+
+
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001111.html">[ImageJ-devel] Local Neighborhood stuff
+</A></li>
+	<LI>Next message: <A HREF="001114.html">[ImageJ-devel] Local Neighborhood stuff
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1112">[ date ]</a>
+              <a href="thread.html#1112">[ thread ]</a>
+              <a href="subject.html#1112">[ subject ]</a>
+              <a href="author.html#1112">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

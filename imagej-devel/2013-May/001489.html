@@ -1,0 +1,117 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] experiments with a new ops framework for imglib2
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20experiments%20with%20a%20new%20ops%20framework%20for%20imglib2&In-Reply-To=%3C518A0509.4000805%40uni-konstanz.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001488.html">
+   <LINK REL="Next"  HREF="001490.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] experiments with a new ops framework for imglib2</H1>
+    <B>Christian Dietz</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20experiments%20with%20a%20new%20ops%20framework%20for%20imglib2&In-Reply-To=%3C518A0509.4000805%40uni-konstanz.de%3E"
+       TITLE="[ImageJ-devel] experiments with a new ops framework for imglib2">christian.dietz at uni-konstanz.de
+       </A><BR>
+    <I>Wed May  8 02:55:53 CDT 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001488.html">[ImageJ-devel] experiments with a new ops framework for imglib2
+</A></li>
+        <LI>Next message: <A HREF="001490.html">[ImageJ-devel] Tons of &quot;back to normal&quot; Jenkins messages
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1489">[ date ]</a>
+              <a href="thread.html#1489">[ thread ]</a>
+              <a href="subject.html#1489">[ subject ]</a>
+              <a href="author.html#1489">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Tobias,
+
+this sounds amazing. I'm looking forward to adapt our KNIME related code 
+to the new ops/ROIs. See below for some comments on the problems you 
+mentioned.
+
+Am 05/07/2013 03:26 PM, schrieb Tobias Pietzsch:
+&gt;<i> Problems
+</I>&gt;<i> ========
+</I>&gt;<i> Performance:
+</I>&gt;<i> We have seen that we now are at nesting levels where the JIT becomes quite
+</I>&gt;<i> unpredictable. So performance tuning for this stuff is not easy. In Madison,
+</I>&gt;<i> Johannes showed that for special cases we can become very fast using javassist
+</I>&gt;<i> to basically compile it ourselves.
+</I>
+This is really important for us. We should think about optimizing
+the iteration over special ROIs like 0-1-planes in a n-dimensional 
+image, as we already started in Octobre 
+(<A HREF="https://github.com/imagej/imglib/tree/subinterval-cursor">https://github.com/imagej/imglib/tree/subinterval-cursor</A>).
+
+&gt;<i> Temporaries:
+</I>&gt;<i> One problem that is completely unsolved in this proposal is the creation of
+</I>&gt;<i> temporary results (pixels, images, etc...). I had discussions with Christian
+</I>&gt;<i> Dietz about this, because they really need this in KNIME. I mainly remember,
+</I>&gt;<i> that there are all kinds of problems and we couldn't come up with a satisfying
+</I>&gt;<i> solution. Christian, maybe you can comment a bit, on what the requirements for
+</I>&gt;<i> temporary creation are.
+</I>
+If you concatenate operations, you are often not interested in the 
+intermediate results. For example if you do n-iterations of a 
+morphological erode, you really just need to know the final output.
+If you process tons of images, one may want to avoid creating an output 
+(e.g. a temporary image) for each of the intermediate results, as in 
+many cases one temporary image is sufficient.
+
+So the requirements would be, that if you concatenate ops, some 
+OperationBuilder is capable to reduce the amount of created temporary 
+images. Ideally, the OperationBuilder would also recognize, that e.g. a 
+Img&lt;FloatType&gt; could be used as a Img&lt;BitType&gt; temporary image.
+
+&gt;<i> Copying Ops:
+</I>&gt;<i> For parallelization it is necessary that we copy Ops (which can be rather
+</I>&gt;<i> complicated nested trees) in order to run on partitions of the input data in
+</I>&gt;<i> parallel. This is not trivial, because the copying mechanism has to decide
+</I>&gt;<i> which temporaries to recreate, reassign ports between copied ops, etc...
+</I>
+This is also crucial for us. As we already run the current ops in 
+parallel on partitions of the input data.
+Two more questions: Are there plans to merge your 
+implementations/concept of ROIs with the work of Lee? What about 
+Labelings in ImgLib2 and ImageJ2, did you talk about them?
+
+Best regards,
+
+Christian
+
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001488.html">[ImageJ-devel] experiments with a new ops framework for imglib2
+</A></li>
+	<LI>Next message: <A HREF="001490.html">[ImageJ-devel] Tons of &quot;back to normal&quot; Jenkins messages
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1489">[ date ]</a>
+              <a href="thread.html#1489">[ thread ]</a>
+              <a href="subject.html#1489">[ subject ]</a>
+              <a href="author.html#1489">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

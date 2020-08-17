@@ -1,0 +1,214 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] ImageJ scripts in OMERO
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImageJ%20scripts%20in%20OMERO&In-Reply-To=%3CCADN69y%3D9Xp8jrtmpBzP03H6B9zJPWaApjrjtomUq%2BpbhHT%3DhDA%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001973.html">
+   <LINK REL="Next"  HREF="001975.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] ImageJ scripts in OMERO</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImageJ%20scripts%20in%20OMERO&In-Reply-To=%3CCADN69y%3D9Xp8jrtmpBzP03H6B9zJPWaApjrjtomUq%2BpbhHT%3DhDA%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] ImageJ scripts in OMERO">ctrueden at wisc.edu
+       </A><BR>
+    <I>Sun Mar  9 06:42:55 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001973.html">[ImageJ-devel] [Bug 708] Edit&gt;Selection&gt;Properties behavior
+</A></li>
+        <LI>Next message: <A HREF="001975.html">[ImageJ-devel] Cannot run or debug a project with Netbeans
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1974">[ date ]</a>
+              <a href="thread.html#1974">[ thread ]</a>
+              <a href="subject.html#1974">[ subject ]</a>
+              <a href="author.html#1974">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Will,
+
+Sorry for the delay in reply; I have been busy with the ImageJ OPS
+hackathon in Konstanz this past week.
+(<A HREF="https://github.com/imagej/imagej-opsif">https://github.com/imagej/imagej-opsif</A> you're interested)
+
+I am CCing the ome-devel and imagej-devel lists in case other developers in
+the community are interested in details of the ImageJ/OMERO integration.
+
+&gt;<i> Could you give us an outline of the functionality that you're working
+</I>&gt;<i> on - what the stack looks like etc so I can pass this on to them.
+</I>
+On a technical level, the dependency stack is briefly summarized here:
+<A HREF="https://github.com/imagej/imagej-omero#set-up-imagej2">https://github.com/imagej/imagej-omero#set-up-imagej2</A>
+
+You need OMERO 5, Jython available on your path, and ImageJ2 installed into
+omero/lib/ImageJ.app, along with the scifio-omero and ij-omero libraries in
+the ImageJ.app/jars folder. You can install whatever other plugins you want
+into jars/ and plugins/, and any ImageJ scripts you want into scripts/.
+
+There are some loose ends I must finish for ImageJ parameterized scripts to
+fully work in OMERO, but I will complete that work as soon I return from
+the EU (or maybe even do it while I am visiting Josh later this week).
+
+&gt;<i> - E.g. what will be the requirements of a headless analysis plugin,
+</I>
+The two major rules of thumb are:
+
+1) For it to work headless, do not use java.awt or javax.swing. Technically
+you can use certain things, but why? Better to just avoid those packages
+all together.
+
+2) For it to be usable, it must declare its inputs and outputs as
+parameters (rather than doing something dirty like harvesting them from a
+UI, config file, etc.). That way, the integration layer will map them to
+OMERO script parameters and they will be fully integrated with OMERO.
+Supported parameter types currently are:
+- All primitive types and primitive wrappers
+- Big numbers
+- Dates
+- Colors
+- Files
+- Images
+
+With support to come later for:
+- Results tables (<A HREF="https://github.com/imagej/imagej-omero/issues/1">https://github.com/imagej/imagej-omero/issues/1</A>)
+- ROIs (<A HREF="https://github.com/imagej/imagej-omero/issues/2">https://github.com/imagej/imagej-omero/issues/2</A>)
+
+There will also be lots of usability enhancements to do later (e.g.,
+<A HREF="https://github.com/imagej/imagej-omero/issues/4">https://github.com/imagej/imagej-omero/issues/4</A>) but those are less urgent.
+
+&gt;<i> how parameters are presented to OMERO scripts
+</I>
+OMERO treats each ImageJ module parameter as a script parameter. The
+mapping is 1-to-1.
+
+&gt;<i> how ImageJ connects to OMERO
+</I>
+It connects via Ice, of course, using the omero-client library. ImageJ runs
+in an separate JVM from OMERO, which is spun up by the system call to
+jython.
+
+&gt;<i> what API/gateway does it use etc.
+</I>
+Metadata parsing:
+<A HREF="https://github.com/scifio/scifio-omero/blob/scifio-omero-0.2.1/src/main/java/io/scif/omero/OMEROFormat.java#L358">https://github.com/scifio/scifio-omero/blob/scifio-omero-0.2.1/src/main/java/io/scif/omero/OMEROFormat.java#L358</A>
+
+Reading pixels:
+<A HREF="https://github.com/scifio/scifio-omero/blob/scifio-omero-0.2.1/src/main/java/io/scif/omero/OMEROFormat.java#L403">https://github.com/scifio/scifio-omero/blob/scifio-omero-0.2.1/src/main/java/io/scif/omero/OMEROFormat.java#L403</A>
+
+Writing pixels:
+<A HREF="https://github.com/scifio/scifio-omero/blob/scifio-omero-0.2.1/src/main/java/io/scif/omero/OMEROFormat.java#L447">https://github.com/scifio/scifio-omero/blob/scifio-omero-0.2.1/src/main/java/io/scif/omero/OMEROFormat.java#L447</A>
+
+OMERO session management and utility methods:
+<A HREF="https://github.com/scifio/scifio-omero/blob/scifio-omero-0.2.1/src/main/java/io/scif/omero/OMEROSession.java#L51">https://github.com/scifio/scifio-omero/blob/scifio-omero-0.2.1/src/main/java/io/scif/omero/OMEROSession.java#L51</A>
+
+&gt;<i> Can we extend server script analysis functionality by adding
+</I>&gt;<i> recognised jar files to the server install. These jars would provide
+</I>&gt;<i> server side analysis as per OMERO scripts.
+</I>
+Yes, that is exactly the idea, and it works very well. ImageJ2 uses the
+SciJava Common plugin mechanism for extensibility and discovery, so
+extensions on the classpath work with zero configuration. And new ImageJ
+scripts in the ImageJ.app/scripts subtree are automatically discovered, too.
+
+The only wrinkle there is that the OMERO script wrappers (in
+omero/lib/scripts/imagej) must be regenerated by running &quot;genScripts.py&quot;
+afterwards. But we can automate that (see
+<A HREF="https://github.com/imagej/imagej-omero/issues/5">https://github.com/imagej/imagej-omero/issues/5</A>).
+
+&gt;<i> Gus and I are visiting Alex Herbert at Sussex Uni and he's interested
+</I>&gt;<i> to hear about ImageJ &amp; OMERO.
+</I>
+Yeah, it would be great to get Alex's work unified with the ImageJ2
+integration. It is probably a couple of months early for that, though.
+However, I am excited that we now have a solid plan to get ImageJ 2.0.0
+released within the next few months. In particular, we are on the cusp of
+supporting &quot;mixed world&quot; commands in ImageJ, so that the IJ1 interface can
+execute IJ2-style parameterized commands and scripts on ImageJ1 data
+structures. Combined with our IJ1 patching to enable headless support, it
+will become feasible to expose many IJ1 plugins within OMERO by porting
+them to the IJ2 parameterized approach, but without needing to port the
+data structures being used.
+
+When that is further along I will provide more documentation so that A)
+users can seriously start using ImageJ from within OMERO; and B) developers
+can better understand the requirements for ImageJ commands to work headless
+from OMERO.
+
+Regards,
+Curtis
+
+
+On Mon, Mar 3, 2014 at 8:13 AM, Will Moore &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">will at lifesci.dundee.ac.uk</A>&gt;wrote:
+
+&gt;<i> Hi Curtis,
+</I>&gt;<i>
+</I>&gt;<i> Next Monday Gus and I are visiting Alex Herbert at Sussex Uni and he's
+</I>&gt;<i> interested to hear about ImageJ &amp; OMERO.
+</I>&gt;<i>
+</I>&gt;<i> His e-mail:
+</I>&gt;<i>
+</I>&gt;<i> *Image Analysis:*
+</I>&gt;<i>
+</I>&gt;<i> We use custom ImageJ routines for some analysis. I would like to know how
+</I>&gt;<i> the integration with ImageJ2 is progressing. ...
+</I>&gt;<i>
+</I>&gt;<i> Can we extend server script analysis functionality by adding recognised
+</I>&gt;<i> jar files to the server install. These jars would provide server side
+</I>&gt;<i> analysis as per OMERO scripts.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Could you give us an outline of the functionality that you're working on -
+</I>&gt;<i> what the stack looks like etc so I can pass this on to them.
+</I>&gt;<i>
+</I>&gt;<i>  - E.g. what will be the requirements of a headless analysis plugin, how
+</I>&gt;<i> parameters are presented to OMERO scripts, how ImageJ connects to OMERO,
+</I>&gt;<i> what API/gateway does it use etc.
+</I>&gt;<i>
+</I>&gt;<i> I think I'll be doing a presentation of some sort, so would like to add a
+</I>&gt;<i> slide or two on ImageJ.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Many thanks!
+</I>&gt;<i>
+</I>&gt;<i> Cheers,
+</I>&gt;<i>
+</I>&gt;<i>   Will.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140309/5b8b729a/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20140309/5b8b729a/attachment.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001973.html">[ImageJ-devel] [Bug 708] Edit&gt;Selection&gt;Properties behavior
+</A></li>
+	<LI>Next message: <A HREF="001975.html">[ImageJ-devel] Cannot run or debug a project with Netbeans
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1974">[ date ]</a>
+              <a href="thread.html#1974">[ thread ]</a>
+              <a href="subject.html#1974">[ subject ]</a>
+              <a href="author.html#1974">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

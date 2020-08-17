@@ -1,0 +1,171 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-bugs] [Bug 863] Very slow opening images and Memory leak
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%20863%5D%20Very%20slow%20opening%20images%20and%20Memory%20leak&In-Reply-To=%3Cbug-863-19-tCQR2H1GRT%40http.fiji.sc/bugzilla/%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000042.html">
+   <LINK REL="Next"  HREF="000058.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-bugs] [Bug 863] Very slow opening images and Memory leak</H1>
+    <B>bugzilla at fiji.sc</B> 
+    <A HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%20863%5D%20Very%20slow%20opening%20images%20and%20Memory%20leak&In-Reply-To=%3Cbug-863-19-tCQR2H1GRT%40http.fiji.sc/bugzilla/%3E"
+       TITLE="[ImageJ-bugs] [Bug 863] Very slow opening images and Memory leak">bugzilla at fiji.sc
+       </A><BR>
+    <I>Tue Jul 22 08:47:45 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000042.html">[ImageJ-bugs] [Bug 863] Very slow opening images and Memory leak
+</A></li>
+        <LI>Next message: <A HREF="000058.html">[ImageJ-bugs] [Bug 863] Very slow opening images and Memory leak
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#44">[ date ]</a>
+              <a href="thread.html#44">[ thread ]</a>
+              <a href="subject.html#44">[ subject ]</a>
+              <a href="author.html#44">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE><A HREF="http://fiji.sc/bugzilla/show_bug.cgi?id=863">http://fiji.sc/bugzilla/show_bug.cgi?id=863</A>
+
+Johannes Schindelin &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">johannes.schindelin at gmx.de</A>&gt; changed:
+
+           What    |Removed                     |Added
+----------------------------------------------------------------------------
+                 CC|                            |<A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">johannes.schindelin at gmx.de</A>
+
+--- Comment #2 from Johannes Schindelin &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">johannes.schindelin at gmx.de</A>&gt; ---
+Whoops, mid-air collision! However, I still would like to provide my input:
+
+First of all, thank you for the bug report. As you well know, the ImageJ/Fiji
+projects only work because of the collaborative spirit of the ImageJ community.
+
+Now some background: in ImageJ 1.x, there is not really any good extension
+mechanism for file input/output. Sure, there are some plugins implementing
+readers and writers, although they frequently miss metadata due to the utterly
+free nature of plugins that provide little guiding for implementers.
+
+The first attempt at an extension mechanism was made by Greg Jefferis who
+implemented the method where you can provide a plugin class called
+`HandleExtraFileTypes` that ImageJ 1.x looks for if it does not know about a
+certain file type, letting that (meta) plugin handle the file loading.
+
+However, the `HandleExtraFileTypes` approach has three obvious shortcomings:
+
+- just like with Highlander, there can be only one. Two independent projects
+cannot extend the file input/output independently: if users install two .jar
+files containing a `HandleExtraFileTypes` class each, only one will win. The
+other will be ignored. We had a lot of fun with that in Fiji.
+
+- since `HandleExtraFileTypes` is a meta plugin, handing off based on some
+indicators inferred from the file name and/or the first 1024 bytes, it inherits
+all the problems about lacking metadata (or even worse, metadata provided in
+incompatible ways by different reader plugins).
+
+- some file types cannot be handled by `HandleExtraFileTypes` because ImageJ
+1.x thinks it knows them. The most prominent example is certainly the OME-TIFF:
+it has the file extension .ome.tiff, but ImageJ 1.x misinterprets the .tiff
+extension to mean that its internal `TiffDecoder` class -- which does not know
+the first thing about OME-TIFFs of course, missing all the metadata. Of course,
+the OME-TIFF issue could be worked around in ImageJ 1.x by special-casing
+.ome.tiff, but that would just paper over the fundamental issue that ImageJ 1.x
+simply cannot be extended in a way overriding its internal readers and writers.
+
+The last point also illuminates another crucial point about the ImageJ 1.x file
+input/output handling: the *core* readers/writers of ImageJ 1.x do not use the
+same mechanism as third-party readers/writers have to use, thereby making
+things inconsistent.
+
+To address this issue, the architecture of ImageJ2 demanded a switch to
+consistent, powerful file input/output plugins, using the very same mechanism
+for *all* file input/output, including for the default readers/writers. The
+default readers/writers can also be overridden by implementing plugins with a
+higher priority.
+
+Now, the ImageJ2 project has a long term vision -- which makes things a little
+more complicated in the short run, but ultimately infinitely more robust even
+in the intermediate future. For example, the plugin framework has been made
+modular -- recognizing the fact that it is not specific to image processing at
+all -- and put into its own component: scijava-common.
+
+Likewise, the file input/output does not need to be specific to ImageJ now,
+does it? That is why it lives in its own component, SCIFIO. The benefit should
+be quite obvious when you look how widely usable SCIFIO is even *outside*
+ImageJ: ITK, for example, a very powerful (and complex) C++ library, uses
+SCIFIO to support hundreds of file types.
+
+Back to your concrete report, I see that you actually have *two* issues, one of
+which needs feedback.
+
+1) there is a memory leak. Actually, I do not really know about that because
+you use the task manager which is notoriously unreliable to assess memory usage
+by Java virtual machines (due to the specifics of JVM memory management). We
+will have to invest some time here to figure out whether it is a *real* or an
+*unreal* issue: if the JVM deallocates memory only reluctantly, for performance
+reasons, you would see the symptoms you described, but it would actually *not*
+be a problem.
+
+2) the slowness of SCIFIO. Since SCIFIO -- like `HandleExtraFileTypes` --
+relies on format-specific plugins, it is not enough to report that it is slow.
+You will need to provide us with an example image (the smaller the example
+image is without sacrificing the slowness symptom, the better): just upload it
+with Help&gt;Upload Sample Image and leave a note in this bug report.
+
+As to 2) a word of caution: we often see that users compare in particular the
+performance of SCIFIO's Tiff reader with ImageJ 1.x' TiffDecoder, not knowing
+that the latter takes a couple of shortcuts that actually violate the Tiff
+standard. In other words, we try to make SCIFIO's readers *robust* and
+*correct* at the moment and hope to soon enter the phase where we also make
+them *fast*.
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-bugs/attachments/20140722/ce622c54/attachment.html">http://imagej.net/pipermail/imagej-bugs/attachments/20140722/ce622c54/attachment.html</A>&gt;
+</PRE>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000042.html">[ImageJ-bugs] [Bug 863] Very slow opening images and Memory leak
+</A></li>
+	<LI>Next message: <A HREF="000058.html">[ImageJ-bugs] [Bug 863] Very slow opening images and Memory leak
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#44">[ date ]</a>
+              <a href="thread.html#44">[ thread ]</a>
+              <a href="subject.html#44">[ subject ]</a>
+              <a href="author.html#44">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-bugs">More information about the Imagej-bugs
+mailing list</a><br>
+</body></html>

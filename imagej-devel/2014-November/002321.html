@@ -1,0 +1,128 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Opinion needed: POM parent versioning
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Opinion%20needed%3A%20POM%20parent%20versioning&In-Reply-To=%3C61168522-AA84-47F0-8CD6-C12C04D6CB7C%40gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002319.html">
+   <LINK REL="Next"  HREF="002322.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Opinion needed: POM parent versioning</H1>
+    <B>Tobias Pietzsch</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Opinion%20needed%3A%20POM%20parent%20versioning&In-Reply-To=%3C61168522-AA84-47F0-8CD6-C12C04D6CB7C%40gmail.com%3E"
+       TITLE="[ImageJ-devel] Opinion needed: POM parent versioning">tobias.pietzsch at gmail.com
+       </A><BR>
+    <I>Mon Nov 17 14:31:26 CST 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002319.html">[ImageJ-devel] Opinion needed: POM parent versioning
+</A></li>
+        <LI>Next message: <A HREF="002322.html">[ImageJ-devel] [fiji-devel] Re: Opinion needed: POM parent	versioning
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2321">[ date ]</a>
+              <a href="thread.html#2321">[ thread ]</a>
+              <a href="subject.html#2321">[ subject ]</a>
+              <a href="author.html#2321">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Curtis,
+
+I would prefer SemVer, but mainly because this seems closer to the way its currently done and I&#8217;m getting used to that way. So really no strong opinion at all.
+
+What would be nice would be some kind of notification when new pom parents are released. When revisiting some projects I haven&#8217;t been working on for a while, I often find myself checking maven.imagej.net to find out, eg, what the latest pom-fiji version is, so that I can use the latest and greatest as a parent. Is there already some mailing-list or similar in place that sends such release notifications?
+
+best regards,
+Tobias
+
+On 17 Nov 2014, at 20:39, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt; wrote:
+
+&gt;<i> Hi everyone,
+</I>&gt;<i> 
+</I>&gt;<i> This is a question for anyone consuming the pom-* parents of the SciJava software stack.
+</I>&gt;<i> 
+</I>&gt;<i> We want to start versioning these POM parents according to consistent rules. (Unfortunately, right now, the approach is vague and potentially inconsistent [1].) We came up with the following two possible schemes, and would like your feedback on which one you would prefer.
+</I>&gt;<i> 
+</I>&gt;<i> == 1) SemVer ==
+</I>&gt;<i> 
+</I>&gt;<i> Every POM parent has three digits, X.Y.Z.
+</I>&gt;<i> 
+</I>&gt;<i> The X digit is &quot;major&quot; and when incremented indicates a breaking change of some sort: either A) plugin config changes requiring downstream changes, or more commonly B) major SemVer dependency version bumps (e.g., managed scijava-common version updated from 2.35.0 to 3.0.0). This would exclude 0.x and beta components though (so e.g. imglib2-realtransform could go from 2.0.0-beta-27 to 2.0.0-beta-28 without bumping pom-imglib2's X digit).
+</I>&gt;<i> 
+</I>&gt;<i> The Y digit is &quot;minor&quot; and incremented when dependency versions change in a SemVer-compatible manner, or when plugin configuration is added or improved.
+</I>&gt;<i> 
+</I>&gt;<i> For critical bug-fixes where a given POM parent is somehow compromised or broken, the third digit Z can be bumped before going to the next Y. (See e.g. the recent pom-fiji 5.0.Z series of releases.)
+</I>&gt;<i> 
+</I>&gt;<i> == 2) Bread crumb version trail ==
+</I>&gt;<i> 
+</I>&gt;<i> The pom-scijava parent would have a single version digit. The pom-imagej (which is the next POM down) would have two: the first in lockstep with its pom-scijava parent, and the second being its dedicated version digit. POMs which extend pom-imagej (i.e.: pom-scifio, pom-imglib2 and pom-fiji) would have three digits: the first two in lockstep with pom-imagej and the third their own. And so on down the line&#8212;e.g., pom-trakem2 would need four digits: the first three matching the pom-fiji parent and the fourth its own.
+</I>&gt;<i> 
+</I>&gt;<i> == Pros and cons ==
+</I>&gt;<i> 
+</I>&gt;<i> Option 1:
+</I>&gt;<i> [PRO] Semantic meaning. You can reason whether a given POM is somehow &quot;breaking&quot;.
+</I>&gt;<i> [PRO] Succinctness. Every parent POM has at most three digits at any one time.
+</I>&gt;<i> [CON] Lack of provenance. Not obvious which parent POMs go together without leaning on a tool.
+</I>&gt;<i> 
+</I>&gt;<i> Option 2:
+</I>&gt;<i> [PRO] Clear provenance. You can trivially derive the chain of parent POM versions.
+</I>&gt;<i> [CON] Lack of semantics. Harder to tell which POM parent releases might break backwards compatibility.
+</I>&gt;<i> [CON] Aesthetics. More than 3 digits in a version string may not be desirable.
+</I>&gt;<i> 
+</I>&gt;<i> Note that either way, we are in the process of creating a scijava-maven-plugin goal to dump all the component version properties associated with a given parent POM.
+</I>&gt;<i> 
+</I>&gt;<i> Since either scheme is consistent and useful, we want to institute whichever scheme will annoy everyone less. ;-) So which do people like better: SemVer or breadcrumbs?
+</I>&gt;<i> 
+</I>&gt;<i> Thanks,
+</I>&gt;<i> Curtis
+</I>&gt;<i> 
+</I>&gt;<i> [1] The 5.x POM versioning approach was an attempt to achieve _both_ options above, but Mark &amp; I realized today that the two goals are rather mutually exclusive. That is, we cannot keep POM parent versions fully in lockstep while also maintaining a SemVer versioning scheme.
+</I>&gt;<i> 
+</I>&gt;<i> -- 
+</I>&gt;<i> You received this message because you are subscribed to the Google Groups &quot;scijava&quot; group.
+</I>&gt;<i> To unsubscribe from this group and stop receiving emails from it, send an email to <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">scijava+unsubscribe at googlegroups.com.</A>
+</I>&gt;<i> For more options, visit <A HREF="https://groups.google.com/d/optout.">https://groups.google.com/d/optout.</A>
+</I>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20141117/62405e6b/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20141117/62405e6b/attachment-0001.html</A>&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20141117/62405e6b/attachment-0001.pgp">http://imagej.net/pipermail/imagej-devel/attachments/20141117/62405e6b/attachment-0001.pgp</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002319.html">[ImageJ-devel] Opinion needed: POM parent versioning
+</A></li>
+	<LI>Next message: <A HREF="002322.html">[ImageJ-devel] [fiji-devel] Re: Opinion needed: POM parent	versioning
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2321">[ date ]</a>
+              <a href="thread.html#2321">[ thread ]</a>
+              <a href="subject.html#2321">[ subject ]</a>
+              <a href="author.html#2321">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

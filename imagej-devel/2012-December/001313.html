@@ -1,0 +1,170 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] IJ2 - headless operation
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20IJ2%20-%20headless%20operation&In-Reply-To=%3C50cb9cdc.8e11e00a.275a.1211%40mx.google.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001312.html">
+   <LINK REL="Next"  HREF="001314.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] IJ2 - headless operation</H1>
+    <B>Lee Kamentsky</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20IJ2%20-%20headless%20operation&In-Reply-To=%3C50cb9cdc.8e11e00a.275a.1211%40mx.google.com%3E"
+       TITLE="[ImageJ-devel] IJ2 - headless operation">leek at broadinstitute.org
+       </A><BR>
+    <I>Fri Dec 14 15:40:42 CST 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001312.html">[ImageJ-devel] IJ2 - headless operation
+</A></li>
+        <LI>Next message: <A HREF="001314.html">[ImageJ-devel] Legacy Mode work
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1313">[ date ]</a>
+              <a href="thread.html#1313">[ thread ]</a>
+              <a href="subject.html#1313">[ subject ]</a>
+              <a href="author.html#1313">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Thanks, Curtis, I'll take a look at the different strategies. Picking 
+and choosing .jars is probably not so bad. Hopefully I can exclude a 
+couple key ones and everything will work.
+
+On 12/14/2012 4:25 PM, Curtis Rueden wrote:
+&gt;<i> Hi Lee,
+</I>&gt;<i>
+</I>&gt;<i> &gt; how should I start ImageJ headless
+</I>&gt;<i>
+</I>&gt;<i> It sounds like you want a full-featured ImageJ context with all 
+</I>&gt;<i> available services except for maybe a couple of them (the ones that 
+</I>&gt;<i> touch AWT).
+</I>&gt;<i>
+</I>&gt;<i> The easiest way to ensure your ImageJ context is headless is to 
+</I>&gt;<i> exclude problematic JARs from your distribution completely. 
+</I>&gt;<i> Specifically: do not include ij-legacy or any of the ij-ui-* UI 
+</I>&gt;<i> implementations (e.g., ij-ui-swing).
+</I>&gt;<i>
+</I>&gt;<i> Then you can create an ImageJ context simply with &quot;new 
+</I>&gt;<i> imagej.ImageJ()&quot; (note that this invocation changed a couple of days 
+</I>&gt;<i> ago from the previous static &quot;imagej.ImageJ.createContext()&quot; but it is 
+</I>&gt;<i> otherwise the same).
+</I>&gt;<i>
+</I>&gt;<i> If for some reason you need or want to include those problematic JARs 
+</I>&gt;<i> in your classpath, you can still avoid the ImageJ context including 
+</I>&gt;<i> them by passing an explicit list of services to the ImageJ 
+</I>&gt;<i> constructor. Or, if you would rather approach it from an &quot;exclusion&quot; 
+</I>&gt;<i> rather than &quot;inclusion&quot; standpoint, you could do something like:
+</I>&gt;<i>
+</I>&gt;<i>   final PluginIndex pluginIndex = new PluginIndex();
+</I>&gt;<i>   pluginIndex.discover();
+</I>&gt;<i>   final List&lt;PluginInfo&lt;Service&gt;&gt; services 
+</I>&gt;<i> = pluginIndex.getPlugins(Service.class);
+</I>&gt;<i>
+</I>&gt;<i> And then cherry-picking everything from the list that doesn't violate 
+</I>&gt;<i> your exclusion rules.
+</I>&gt;<i>
+</I>&gt;<i> For that latter approach though, we should probably provide some 
+</I>&gt;<i> helper routine somewhere to make this easier; if you take a look at 
+</I>&gt;<i> ServiceHelper#findServiceClasses, you'll see the code, but it's 
+</I>&gt;<i> currently private. We could make that a public static utility method 
+</I>&gt;<i> for you instead. Or provide something even higher level.
+</I>&gt;<i>
+</I>&gt;<i> &gt; how headless is headless?
+</I>&gt;<i>
+</I>&gt;<i> Ideally, we want headless to truly mean no usage of AWT whatsoever. 
+</I>&gt;<i> That said, we do violate that rule in one big place right now: the 
+</I>&gt;<i> ThreadService. The DefaultThreadService uses java.awt.EventQueue to 
+</I>&gt;<i> queue and invoke operations. With a normal JVM with 
+</I>&gt;<i> java.awt.headless=true, this is unlikely to cause problems. But if it 
+</I>&gt;<i> does for some reason, you could provide your own ThreadService 
+</I>&gt;<i> implementation with a higher priority than that of 
+</I>&gt;<i> DefaultThreadService, and the ImageJ service loader will automagically 
+</I>&gt;<i> use it instead.
+</I>&gt;<i>
+</I>&gt;<i> Regards,
+</I>&gt;<i> Curtis
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On Fri, Dec 14, 2012 at 3:09 PM, Lee Kamentsky 
+</I>&gt;<i> &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">leek at broadinstitute.org</A> &lt;mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">leek at broadinstitute.org</A>&gt;&gt; wrote:
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>     Hi all,
+</I>&gt;<i>     I'm getting pretty far along with the CellProfiler integration and I'm
+</I>&gt;<i>     at the point where I'd like to get a headless ImageJ context. My first
+</I>&gt;<i>     guess was that I should call imagej.ImageJ.createContext() with a list
+</I>&gt;<i>     containing only the ConsoleService.  The list (see below) has most of
+</I>&gt;<i>     what I want (module service, command service, dataset service, display
+</I>&gt;<i>     service), but is missing a few others (overlay service and scripting
+</I>&gt;<i>     service). I've been running ImageJ with the DefaultUIService while
+</I>&gt;<i>     running CellProfiler with a UI and it seems to operate pretty
+</I>&gt;<i>     smoothly -
+</I>&gt;<i>     some error messages when it can't find viewers for displays, but
+</I>&gt;<i>     otherwise without any apparent UI interaction.
+</I>&gt;<i>
+</I>&gt;<i>     So my first question is how should I start ImageJ headless and my
+</I>&gt;<i>     second
+</I>&gt;<i>     question is &quot;how headless is headless?&quot; (will it ever touch AWT?
+</I>&gt;<i>     Will it
+</I>&gt;<i>     exclude the legacy layer?).
+</I>&gt;<i>
+</I>&gt;<i>     Created service: imagej.thread.DefaultThreadService
+</I>&gt;<i>     Created service: imagej.event.DefaultEventService
+</I>&gt;<i>     Created service: imagej.plugin.DefaultPluginService
+</I>&gt;<i>     Created service: imagej.module.DefaultModuleService
+</I>&gt;<i>     Created service: imagej.command.DefaultCommandService
+</I>&gt;<i>     Created service: imagej.options.DefaultOptionsService
+</I>&gt;<i>     Created service: imagej.event.DefaultStatusService
+</I>&gt;<i>     Created service: imagej.object.DefaultObjectService
+</I>&gt;<i>     Created service: imagej.data.DefaultDatasetService
+</I>&gt;<i>     Created service: imagej.io.DefaultIOService
+</I>&gt;<i>     Created service: imagej.display.DefaultDisplayService
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>     _______________________________________________
+</I>&gt;<i>     ImageJ-devel mailing list
+</I>&gt;<i>     <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A> &lt;mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>&gt;
+</I>&gt;<i>     <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20121214/bc582664/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20121214/bc582664/attachment.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001312.html">[ImageJ-devel] IJ2 - headless operation
+</A></li>
+	<LI>Next message: <A HREF="001314.html">[ImageJ-devel] Legacy Mode work
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1313">[ date ]</a>
+              <a href="thread.html#1313">[ thread ]</a>
+              <a href="subject.html#1313">[ subject ]</a>
+              <a href="author.html#1313">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

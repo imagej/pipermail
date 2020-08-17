@@ -1,0 +1,236 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Help with Java Code?
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Help%20with%20Java%20Code%3F&In-Reply-To=%3CCAKmFSPdhdqjcMC9%3DKA0MqPtCQbFqUE-%2BO_utyHM6NsNOvvU%2Bhw%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002437.html">
+   <LINK REL="Next"  HREF="002440.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Help with Java Code?</H1>
+    <B>Francis OBrien</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Help%20with%20Java%20Code%3F&In-Reply-To=%3CCAKmFSPdhdqjcMC9%3DKA0MqPtCQbFqUE-%2BO_utyHM6NsNOvvU%2Bhw%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Help with Java Code?">francisobrien2007 at gmail.com
+       </A><BR>
+    <I>Wed Jan 28 19:36:41 CST 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002437.html">[ImageJ-devel] thinplate spline artifact on maven.imagej.net ?
+</A></li>
+        <LI>Next message: <A HREF="002440.html">[ImageJ-devel] Help with Java Code?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2438">[ date ]</a>
+              <a href="thread.html#2438">[ thread ]</a>
+              <a href="subject.html#2438">[ subject ]</a>
+              <a href="author.html#2438">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hello,
+
+How do I run the following code in ImageJ?
+
+/*
+ * #%L
+ * ImageJ software for multidimensional image processing and analysis.
+ * %%
+ * Copyright (C) 2009 - 2015 Board of Regents of the University of
+ * Wisconsin-Madison, Broad Institute of MIT and Harvard, and Max Planck
+ * Institute of Molecular Cell Biology and Genetics.
+ * %%
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ * #L%
+ */
+
+package net.imagej.autoscale;
+
+import net.imglib2.IterableInterval;
+import net.imglib2.histogram.Histogram1d;
+import net.imglib2.histogram.Real1dBinMapper;
+import net.imglib2.type.numeric.RealType;
+
+import org.scijava.plugin.Parameter;
+import org.scijava.plugin.Plugin;
+
+/**
+ * Computes a confidence interval containing percentages of the an entire set of
+ * values in an {@link IterableInterval}.
+ *
+ * @author Barry DeZonia
+ */
+@Plugin(type = AutoscaleMethod.class, name = &quot;Confidence Interval&quot;)
+public class ConfidenceIntervalAutoscaleMethod&lt;T extends RealType&lt;T&gt;&gt; extends
+	AbstractAutoscaleMethod&lt;T&gt;
+{
+
+	// -- instance variables --
+
+	private double lowerTail, upperTail;
+
+	@Parameter
+	private AutoscaleService autoscaleService;
+
+	// -- ConfidenceIntervalAutoscaleMethod methods --
+
+	/**
+	 * Construct a confidence interval that contains 95% of the data range.
+	 */
+	public ConfidenceIntervalAutoscaleMethod() {
+		this(0.025, 0.025); // fit 95% of the data range
+	}
+
+	/**
+	 * Construct a confidence interval with user specified percentages of the data
+	 * range. Ranges are specified as fractions of 1. They must sum to less than
+	 * 1.
+	 *
+	 * @param lowerTailProportion The proportion of the distribution to be treated
+	 *          as lower tail values
+	 * @param upperTailProportion The proportion of the distribution to be treated
+	 *          as upper tail values
+	 */
+	public ConfidenceIntervalAutoscaleMethod(double lowerTailProportion,
+		double upperTailProportion)
+	{
+		setTailProportions(lowerTailProportion, upperTailProportion);
+	}
+
+	/**
+	 * Returns the fractional proportion of the distribution to count as in lower
+	 * tail.
+	 */
+	public double getLowerTailProportion() {
+		return lowerTail;
+	}
+
+	/**
+	 * Returns the fractional proportion of the distribution to count as in upper
+	 * tail.
+	 */
+	public double getUpperTailProportion() {
+		return upperTail;
+	}
+
+	/**
+	 * Sets the fractional proportions of the distribution.
+	 *
+	 * @param lower A fraction of 1 specifying the size of the lower tail
+	 * @param upper A fraction of 1 specifying the size of the upper tail
+	 */
+	public void setTailProportions(double lower, double upper) {
+		if (lower &lt; 0 || lower &gt; 1) {
+			throw new IllegalArgumentException(
+				&quot;lower tail fraction must be between 0 and 1&quot;);
+		}
+		if (upper &lt; 0 || upper &gt; 1) {
+			throw new IllegalArgumentException(
+				&quot;upper tail fraction must be between 0 and 1&quot;);
+		}
+		if (lower + upper &gt;= 1) {
+			throw new IllegalArgumentException(&quot;tails must not span whole data range&quot;);
+		}
+		lowerTail = lower;
+		upperTail = upper;
+	}
+
+	// -- AutoscaleMethod methods --
+
+	@Override
+	public DataRange getRange(IterableInterval&lt;T&gt; interval) {
+		// pass one through data
+		DataRange range = autoscaleService.getDefaultIntervalRange(interval);
+		// pass two through data
+		Real1dBinMapper&lt;T&gt; mapper =
+			new Real1dBinMapper&lt;T&gt;(range.getMin(), range.getMax(), 1000, false);
+		Histogram1d&lt;T&gt; histogram = new Histogram1d&lt;T&gt;(mapper);
+		histogram.countData(interval);
+		// calc some sizes
+		long totValues = histogram.distributionCount();
+		long lowerSize = (long) Math.floor(lowerTail * totValues);
+		long upperSize = (long) Math.floor(upperTail * totValues);
+		// determine bin number containing &gt; than lower tail size
+		long soFar = 0;
+		int bottom = 0;
+		while (soFar &lt; lowerSize) {
+			soFar += histogram.frequency(bottom++);
+		}
+		while (histogram.frequency(bottom) == 0) {
+			bottom++;
+		}
+		// determine bin number containing &lt; upper tail size
+		soFar = 0;
+		int top = 999;
+		while (soFar &lt; upperSize) {
+			soFar += histogram.frequency(top--);
+		}
+		while (histogram.frequency(top) == 0) {
+			top--;
+		}
+		// determine approx boundaries
+		T approxMin = interval.firstElement().createVariable();
+		T approxMax = approxMin.createVariable();
+		histogram.getLowerBound(bottom, approxMin);
+		histogram.getUpperBound(top, approxMax);
+		double min = approxMin.getRealDouble();
+		double max = approxMax.getRealDouble();
+		// return them
+		return new DataRange(min, max);
+	}
+
+}
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20150128/9e469986/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20150128/9e469986/attachment.html</A>&gt;
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002437.html">[ImageJ-devel] thinplate spline artifact on maven.imagej.net ?
+</A></li>
+	<LI>Next message: <A HREF="002440.html">[ImageJ-devel] Help with Java Code?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2438">[ date ]</a>
+              <a href="thread.html#2438">[ thread ]</a>
+              <a href="subject.html#2438">[ subject ]</a>
+              <a href="author.html#2438">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

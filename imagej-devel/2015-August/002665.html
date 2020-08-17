@@ -1,0 +1,781 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] (headless) command execution
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%28headless%29%20command%20execution&In-Reply-To=%3CCADN69ym42%3DB9CuPFVZh2L6VY8ccAgWHYEzYQfazSCYcBE7Qntg%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002664.html">
+   <LINK REL="Next"  HREF="002666.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] (headless) command execution</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%28headless%29%20command%20execution&In-Reply-To=%3CCADN69ym42%3DB9CuPFVZh2L6VY8ccAgWHYEzYQfazSCYcBE7Qntg%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] (headless) command execution">ctrueden at wisc.edu
+       </A><BR>
+    <I>Fri Aug 21 22:13:12 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002664.html">[ImageJ-devel] Tables / TableDisplays / ResultsTables as input	parameters
+</A></li>
+        <LI>Next message: <A HREF="002666.html">[ImageJ-devel] Problems running Versatile Wand in batch mode
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2665">[ date ]</a>
+              <a href="thread.html#2665">[ thread ]</a>
+              <a href="subject.html#2665">[ subject ]</a>
+              <a href="author.html#2665">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Stefan and Birgit,
+
+More than one year later! Better late than never, hopefully.
+
+&gt;<i> &gt; Maybe we need a way to formally flag these &quot;required before
+</I>&gt;<i> &gt; initialize&quot; parameters in the annotation? What do you think?
+</I>&gt;<i> &gt; Would that help you?
+</I>&gt;<i>
+</I>&gt;<i> This would be different from autoFill() ?
+</I>
+Yes. The autoFill attribute is a way of saying to preprocessors: &quot;If you do
+some sort of automatic value setting, do not do it to me.&quot; E.g., it lets
+you have a single image or display input without the
+ActiveImagePreprocessor or Active*DisplayPreprocessor populating it. In the
+case of the ImageJ UI, the InputHarvester preprocessor will then include it
+in the dialog box (since the parameter is still not marked resolved), so
+the user can explicitly select the desired object.
+
+&gt;<i> Yes and no.
+</I>&gt;<i>
+</I>&gt;<i> In a way it makes responsibilities clear, in so far I feel comfortable
+</I>&gt;<i> with it.
+</I>
+Agreed, I like the declaration of intent there. But I'm not sure it would
+help anything programmatically.
+
+&gt;<i> However, it seems to me that there are (potentially very heavy)
+</I>&gt;<i> restrictions on the parameters which may be filled in advance
+</I>&gt;<i> (automaticcal and not by the user) in a sensible way. As far as I
+</I>&gt;<i> understand ij2 fills in parameters with what I think you called
+</I>&gt;<i> AutoFooPreprocessors, so active image and active display?
+</I>
+Indeed. Preprocessor plugins are contextual, meaning they have access to
+the entire state of the context. And since the context is extensible, I
+really have no idea what sorts of parameters are &quot;sensible&quot; to fill or not.
+It really depends on the use cases of the application(s) involved.
+
+&gt;<i> I cannot come up with further ones. How would we fill in an int
+</I>&gt;<i> parameter without knowledge of its meaning/sematics?
+</I>
+Right. Of course, the meaning/semantics would need to be known somehow. But
+that is outside the scope of the SciJava library design. As I said above, I
+can imagine (abstractly) that someone designs an application with various
+preprocessors that populate various parameters, including int[], in some
+predefined way for its use cases.
+
+&gt;<i> And even for images is only possible for commands with exactly one
+</I>&gt;<i> image or display. Obviously we could introduce a further flag for an
+</I>&gt;<i> image parameter to notify, that I what to be assigned the active image
+</I>&gt;<i> with. But this seems pretty specific. And probably not generic to be
+</I>&gt;<i> introduce to scijava but rather deferred to the &quot;application&quot;, e.g.
+</I>&gt;<i> imagej.
+</I>
+I agree; that flag would be too specific. That's what the preprocessor
+design is for: to avoid overspecifying how parameters might get populated,
+and instead leave it to the extensions (preprocessors) available to the
+context. The ImageJ paradigm is to have an &quot;active image&quot; which we can then
+use for populating image parameters, but this is far from the only valid
+paradigm.
+
+&gt;<i> And there might be aplications which call for more the two layers?
+</I>
+In a way, the preprocessor design accommodates N layers, because the
+preprocessors are run in priority order. But in practice there are two
+layers when it comes to the initializers: preprocessors that come before
+InitPreprocessor, and preprocessors that come after it. I think this is OK
+and there is no need to subdivide initialization farther than that, but if
+you have a use case that illustrates otherwise, we can figure it out.
+
+&gt;<i> Summing up, I am afraid that I do not have a cute idea.
+</I>
+Well, your cute idea was in the follow-up mail. We'll get to that below...
+
+&gt;<i> Of course I appreciate the functionality the set initial values or
+</I>&gt;<i> make the type of parameters depending on image features (like
+</I>&gt;<i> dimensionality, range of values). Still adding parameters seems
+</I>&gt;<i> awkward to be. Could we come by with &quot;only&quot; changing types of
+</I>&gt;<i> parameters. E.g. for DuplicateImage not add one parameter for each
+</I>&gt;<i> axes rather have one array parameter with its length determined by the
+</I>&gt;<i> dimensionality? And may be indicate via annotations, depending on
+</I>&gt;<i> which other parameter(s) the type of this parameter will change?
+</I>
+Yes, this is very related to a recent reply I sent to imagej-devel in
+another thread [1]. I will recapitulate it here:
+
+There are five different classes of modules:
+
+1) Totally fixed, with inputs and outputs known in advance.
+2) Updates parameter attributes (such as choices&#8212;but not # or type of
+inputs/outputs) once during initialization.
+3) Updates parameter number and type (i.e., adding/removing inputs/outputs)
+once during initialization.
+4) Updates parameter attributes repeatedly e.g. during callbacks.
+5) Updates parameter number and type repeatedly e.g. during callbacks.
+
+These five types of modules challenge us in different ways:
+
+#1 is easy -- I think everything can support it easily.
+
+#2 and #4 do not update the fundamental aspects of the module: the name and
+types of the parameters are known. So such modules can be classified as
+fundamentally &quot;well behaved&quot;.
+
+#3 and #5 are more difficult because they are fully dynamic: the names and
+types of parameters are not known a priori.
+
+I agree with you that it would be nice if #2 and #4 type commands did not
+need to extend DynamicCommand, but instead some other abstract class that
+indicates they are well behaved from a typing perspective.
+
+I filed an issue for it:
+<A HREF="https://github.com/scijava/scijava-common/issues/179">https://github.com/scijava/scijava-common/issues/179</A>
+
+While at it, I also filed an issue for commands which are iteratively
+dynamic (i.e., alter their parameters during callbacks):
+<A HREF="https://github.com/scijava/scijava-common/issues/180">https://github.com/scijava/scijava-common/issues/180</A>
+
+Though the distinction of &quot;iteratively dynamic&quot; may go away after
+implementing your idea to totally eliminate initializers in favor of
+callbacks.
+
+And for what it's worth, I agree that better support for List and array
+parameters will often times avoid the need to use dynamic modules at all.
+This is something we have wanted for a long time:
+<A HREF="https://github.com/scijava/scijava-common/issues/118">https://github.com/scijava/scijava-common/issues/118</A>
+
+&gt;<i> Thinking of module and parameter intitalizers it seems to be that I
+</I>&gt;<i> get more unsure. Is it exactly to do processing between the two layers
+</I>&gt;<i> of parameters.
+</I>
+Yes, that is one of the purposes, as discussed above. But not the sole
+purpose.
+
+&gt;<i> And it is to add further parameters
+</I>
+In the case of dynamic modules, yes. And I would classify that as a
+&quot;processing between two layers&quot; use case.
+
+&gt;<i> and set initial values to parameters?
+</I>
+Yes, that was the primary intended use case: when you want to set the
+initial value of a parameter and it cannot be expressed as a simple
+assignment. That is: if you want the default sigma to be 2.5, you simply
+write:
+
+  @Parameter
+  private double sigma = 2.5;
+
+But if you want to define it by writing code -- presumably to somehow
+derive its initial value from the application state -- you need an
+initializer. It is not enough to write:
+
+  @Parameter
+  private double sigma = initialSigma();
+
+  private double initialSigma() {
+    ...
+  }
+
+Because in that case, the initialSigma method is called when the object is
+first instantiated, but before any context is injected. The initializer,
+conversely, is typically called at a very specific point in the
+preprocessing chain.
+
+&gt;<i> Are initial parameter values execulsively meant to serve as defaults
+</I>&gt;<i> for the user or is it required that some initial values are set (in
+</I>&gt;<i> order to properly run the command)?
+</I>
+There is no hard assumption that initializers leave parameters &quot;open&quot; for
+further user alteration. Actually, a dynamic command could set any number
+of parameters to resolved during initializer routines, and then those
+parameters would not be shown to the user in the input harvester.
+
+As discussed earlier in this thread, the precondition of run is that all
+required parameters be non-null when run() is called. This can be achieved
+by the preprocessing chain, or because some/all parameter values were
+passed to the moduleService.run method and prepopulated that way.
+
+&gt;<i> If so: would this mean that for running a command head less in a non
+</I>interactive way makes the distiction of two layers is obsolete?
+
+The typically non-interactive use case is to pass all parameter values
+explicitly, which would make all the initializer stuff moot, yes. But it is
+not a hard requirement -- it really depends on your definition of
+&quot;non-interactive&quot;; if the preprocessing chain fulfills missing parameters
+in some other way, that is also acceptable from the standpoint of
+fulfilling the preconditions of run().
+
+&gt;<i> running the init preprocessor gives
+</I>&gt;<i> -----
+</I>&gt;<i> Exception in thread &quot;main&quot; java.lang.IllegalStateException: Context
+</I>&gt;<i> already injected: org.scijava.AbstractContextual#context
+</I>
+Given the long time frame since you sent this: did you resolve this issue
+in an acceptable way? Or is it still a problem for you? If it is still a
+problem, I will be happy to look in more detail and give some advice -- in
+a much more timely fashion this time.
+
+&gt;<i> Is this intended, i.e. that the init preprocessor for a module may be
+</I>&gt;<i> run only once?
+</I>
+Yes, module.initialize() is intended to be called only once. To execute a
+module again, create a new instance each time. The current code does still
+have this requirement, because CommandModule#initialize() injects the
+context, which is only allowed once.
+
+&gt;<i> What we want to do is essentially the following:
+</I>&gt;<i> * The user selects a Command via the GUI and we create a Window
+</I>&gt;<i> displaying the input parameters.
+</I>&gt;<i> * The user may change/supply these parameters and run the Command.
+</I>&gt;<i> * Upon return a window displaying the results pops up.
+</I>&gt;<i> * However, the first window displaying the input parameters is still
+</I>&gt;<i> available, the user may change one/some parameters an rerun the
+</I>&gt;<i> command.
+</I>&gt;<i> * This eases testing various parameter values or the same set of
+</I>&gt;<i> parameters on different images without the need to repeatatly select
+</I>&gt;<i> an operator/command.
+</I>&gt;<i>
+</I>&gt;<i> Have you further advise how we can accomplish this, i.e. reusing a
+</I>&gt;<i> command module?
+</I>
+I think you can accomplish all of the above without reusing the same module
+instance, but instead creating a new one every time. Is that how you are
+currently doing it these days?
+
+Alternately, if you don't call initialize() beyond the first time, that
+would probably do the trick as well, although reusing module instances is
+not a use case we have considered much.
+
+&gt;<i> BTW: I prefer to not set the parameters via the moduleService.run
+</I>&gt;<i> method, as the parameters are set elsewhere (either by the user via a
+</I>&gt;<i> GUI configuring the operator/command e.g. from grappa, or by parsing
+</I>&gt;<i> command line argument in case of the command line oprunner.
+</I>&gt;<i> Additionaly I rather invoke the moduls run-method directly, as it
+</I>&gt;<i> seems to me that via moduleservie a new thread is started, and at this
+</I>&gt;<i> point we like to have this under control.
+</I>
+All makes sense. You can populate the parameters prior to run() in whatever
+way you see fit. If you want to do it after initialization, you could
+create your own preprocessor that does it. Or just set them directly right
+away. Whatever works.
+
+&gt;<i> it seems, that the init preprocessor assigns the service parameters of
+</I>&gt;<i> a Command, not the Service preprocessor as I expected. Is the correct?
+</I>&gt;<i> (Probably related to &quot;shadowing&quot; the Service and Context parameters of
+</I>&gt;<i> a Command)
+</I>
+Yes, because the InitPreprocessor calls initialize() and for CommandModules
+that injects the context. And InitPreprocessor happens before
+ServicePreprocessor. I discussed this wrinkle in my previous reply.
+
+&gt;<i> BTW: what is the sematics of injecting a context (into a module?)
+</I>
+Does this answer your question:
+<A HREF="https://github.com/scijava/scijava-common/blob/scijava-common-2.44.2/src/main/java/org/scijava/Context.java#L340-L360">https://github.com/scijava/scijava-common/blob/scijava-common-2.44.2/src/main/java/org/scijava/Context.java#L340-L360</A>
+?
+
+Note that &quot;injecting a Context&quot; is something done to Java objects, not
+modules per se. Initializing a CommandModule instance injects its context
+into its associated Command instance [2]. But for other sorts of modules
+such as ScriptModule, there is no associated Java object.
+
+&gt;<i> &gt; Do you think that Commands should also include service and context
+</I>&gt;<i> &gt; inputs when iterating them? If so, we can try removing that
+</I>&gt;<i> &gt; exclusion and see what explodes... ;-)
+</I>&gt;<i>
+</I>&gt;<i> We would not need them rather hide the from the user.
+</I>
+OK, then I will not worry about changing this behavior any time soon -- I
+think it is tolerable for the time being. But unfortunately, to fully
+support all modules (not just commands), you still need the logic to hide
+service and context inputs, since other modules types like scripts will
+often have them.
+
+&gt;<i> no, we are hapy with one, just have to get hold of it (and use it in a
+</I>&gt;<i> static way)
+</I>
+Since you only need a single Context, you presumably either: A) have a
+standalone application, in which case you should just spin up a Context and
+keep a reference to it; or: B) have an ImageJ plugin, in which case you
+should implement Command and write &quot;@Parameter private Context context&quot; in
+your command and you'll magically get the context injected. Actually, it is
+most direct in that case to declare @Parameters for all your needed
+services, rather than the context itself, since typically what you will
+want to do is make various service calls.
+
+&gt;<i> We think we could do without command and parameter initializers but
+</I>&gt;<i> work only with the parameter's callback function
+</I>
+Great idea. This would elegant, and often superior in case of later changes
+to the relevant parameter(s). We can try to simplify this for SJC3, which
+is slated for release within the next few months [3]. I filed an issue for
+it [4]. There are some minor obstacles in certain cases, which I describe
+on the issue if you are interested, but they all seem surmountable.
+
+&gt;<i> What if this callback reqires/assumes one or several other parameters
+</I>&gt;<i> to aready have be set? It seems to be, that this necessarily is the
+</I>&gt;<i> responsibility of the callback function (resp. its programmer) to
+</I>&gt;<i> handle this.
+</I>
+Agreed. This is a secondary parameter which depends on multiple primary
+parameters. So they all need callbacks which recompute the secondary
+parameter -- presumably by calling the same helper method, which does
+nothing if any of the needed primary parameters are still null.
+
+&gt;<i> Otherwise the Command or its Parameters have to declare a predefine
+</I>&gt;<i> order in which parameters have to be set. (Which we have considered to
+</I>&gt;<i> introduce to alida/mitobo few years ago but abandoned this idea as it
+</I>&gt;<i> seems to messy/error prone.)
+</I>
+Again agreed: best not to mandate anything with respect to order.
+
+&gt;<i> in case of command execution via GUI (in contrast to
+</I>&gt;<i> programmatically): what if not all parameters which add further
+</I>&gt;<i> parameters are filled before the GUI is created and presented to the
+</I>&gt;<i> user and are set by the user? What we are considering is that the GUI
+</I>&gt;<i> to figure out such events have happened and then to adapt the GUI
+</I>&gt;<i> accordingly.
+</I>
+Yes, ideally we should support that in the ImageJ UI. I believe that
+CellProfiler handles it by rebuilding the UI every time anything changes
+structurally. We could do the same thing, and it would be efficient enough
+-- the ImageJ API requires specific method calls to mutate parameter
+attributes, which would tell us when a UI rebuild of the input harvester is
+necessary.
+
+&gt;<i> How to figure out that set set of parameter (or the type of an already
+</I>&gt;<i> existing parameter) was change by a callback function?
+</I>
+When a parameter _value_ is changed in a callback, it is typically a direct
+assignment to a field. So that would not trigger any additional callbacks.
+This makes infinite loops impossible, but also means it becomes the
+programmers responsibility to keep track of &quot;transitive parameter
+dependencies&quot; and update all downstream parameters accordingly.
+
+When a parameter attribute is changed in a callback (which only
+DynamicCommands can do), we can easily make the framework publish some
+event -- individual programmers would not need to deal with this, and
+everything would &quot;just work.&quot;
+
+&gt;<i> I favour the following guideline: A parameter, e.g. inputDisplay, may
+</I>&gt;<i> add (or remove) parameters to the command exclusively depending of its
+</I>&gt;<i> own value. Furthermore the parameter (names) potentially added by this
+</I>&gt;<i> parameter are disjoint from those parameters added by other parameters
+</I>&gt;<i> of the command. However, it is probably not possible to check or
+</I>&gt;<i> enforce this restriction.
+</I>
+While that would certainly provide some guarantees, I agree that it is not
+possible to enforce it. So I would favor not stating any restrictions of
+that sort.
+
+&gt;<i> A different issue I came across have a second look at the Parameter
+</I>&gt;<i> annotation, sepcifically its choices: The few examples of usage I had
+</I>&gt;<i> a look at are parameters of type String which announce valid values.
+</I>&gt;<i> It might me worth considering to drop this feature and use Enums
+</I>&gt;<i> instead of Strings which easily allows to generate an approprate
+</I>&gt;<i> selection by the GUI.
+</I>
+The problem with enums is they are not extensible. So if you want to
+dynamically generate the choices via callbacks, an enum will not work.
+IIRC, the module framework does already support enums as dropdown list
+boxes. But I think there is still a place for the choices attribute, too.
+Let me know if you see a way around it.
+
+Regards,
+Curtis
+
+[1] <A HREF="http://imagej.net/pipermail/imagej-devel/2015-August/002661.html">http://imagej.net/pipermail/imagej-devel/2015-August/002661.html</A>
+[2]
+<A HREF="https://github.com/scijava/scijava-common/blob/scijava-common-2.42.2/src/main/java/org/scijava/command/CommandModule.java#L146">https://github.com/scijava/scijava-common/blob/scijava-common-2.42.2/src/main/java/org/scijava/command/CommandModule.java#L146</A>
+[3] <A HREF="https://github.com/scijava/scijava-common/milestones/3.0.0">https://github.com/scijava/scijava-common/milestones/3.0.0</A>
+[4] <A HREF="https://github.com/scijava/scijava-common/issues/181">https://github.com/scijava/scijava-common/issues/181</A>
+
+
+
+On Wed, Apr 16, 2014 at 9:47 AM, Stefan Posch &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">posch at informatik.uni-halle.de</A>
+&gt;<i> wrote:
+</I>
+&gt;<i> Hi Curtis,
+</I>&gt;<i>
+</I>&gt;<i> regarding the concept of initializers I had a discussion with Birgit
+</I>&gt;<i> yesterday
+</I>&gt;<i> and we came up with the following ideas.
+</I>&gt;<i>
+</I>&gt;<i> We think we could do without command and parameter initializers but work
+</I>&gt;<i> only with
+</I>&gt;<i> the parameter's callback function which - as currently - are to be invoked
+</I>&gt;<i> upon setting/changing the corresponding parameters value.
+</I>&gt;<i>
+</I>&gt;<i> As currently, depending on parameter values, e.g. the image assigned to a
+</I>&gt;<i> Dataset,
+</I>&gt;<i> the command may add (or remove) parameters. This would be accomplished
+</I>&gt;<i> by the callback functions of the parameter whose value is the cause for
+</I>&gt;<i> these new parameters.
+</I>&gt;<i> E.g. the callback function of the inputDisplay of DuplicateImage would add
+</I>&gt;<i> the parameters
+</I>&gt;<i> (which is currently done by the command initializer).
+</I>&gt;<i> If some parameters should get (initial) values depending on the value of
+</I>&gt;<i> other
+</I>&gt;<i> parameters (e.g. your example of setting default brightness/contrast
+</I>&gt;<i> min,max values
+</I>&gt;<i> to current min,max of the input image) would we again the responsibility of
+</I>&gt;<i> the callback function of the cause, i.e. the input image.
+</I>&gt;<i>
+</I>&gt;<i> This would eleviate us of the need to fill in parameters required for the
+</I>&gt;<i> command initializer.
+</I>&gt;<i> If a parameter's value is set (either by a pre processor or
+</I>&gt;<i> programmatically)
+</I>&gt;<i> its callback function takes care of taking the apropriate actions.
+</I>&gt;<i>
+</I>&gt;<i> If the pre processor is run, it just needs to set the parameter values it
+</I>&gt;<i> decides to,
+</I>&gt;<i> and the callback functions would be could automatically.
+</I>&gt;<i>
+</I>&gt;<i> What remains is of course:
+</I>&gt;<i> (i) assume a parameter's value is changed, and its callback method
+</I>&gt;<i>   called accordingly. What if this callback reqires/assumes one or several
+</I>&gt;<i> other parameters
+</I>&gt;<i>   to aready have be set? It seems to be, that this necessarily is the
+</I>&gt;<i> responsibility
+</I>&gt;<i>   of the callback function (resp. its programmer) to handle this. I.e. to
+</I>&gt;<i> check
+</I>&gt;<i>   the validity of other parameters it requires. Otherwise the Command or
+</I>&gt;<i> its Parameters
+</I>&gt;<i>   have to declare a predefine order in which parameters have to be set.
+</I>&gt;<i>   (Which we have considered to introduce to alida/mitobo few years ago but
+</I>&gt;<i> abandoned this
+</I>&gt;<i>   idea as it seems to messy/error prone.)
+</I>&gt;<i> (ii) in case of command execution via GUI (in contrast to
+</I>&gt;<i> programmatically):
+</I>&gt;<i>     what if not all parameters which add further parameters are
+</I>&gt;<i>     filled before the GUI is created and presented to the user and are set
+</I>&gt;<i> by the user?
+</I>&gt;<i>     What we are considering is that the GUI to figure out such events have
+</I>&gt;<i> happened
+</I>&gt;<i>     and then to adapt the GUI accordingly.
+</I>&gt;<i>
+</I>&gt;<i>     How to figure out that set set of parameter (or the type of an already
+</I>&gt;<i> existing parameter)
+</I>&gt;<i>     was change by a callback function?
+</I>&gt;<i>     We see two possibilities:
+</I>&gt;<i>     (a) a parameter may announce via its annotation that it (occasionally)
+</I>&gt;<i>         _may_ change paramter definitions and the GUI always assumes that
+</I>&gt;<i> this had happend,
+</I>&gt;<i>         is such a parameter's value has changed (which the GUI knows at it
+</I>&gt;<i> controls this processes).
+</I>&gt;<i>     (b) the callback function is to fire events in case it changes
+</I>&gt;<i> parameter definitions.
+</I>&gt;<i>
+</I>&gt;<i>     (a) might be similar or be used in analogy to your idea of a parameter
+</I>&gt;<i> to announce &quot;required before initialize&quot;,
+</I>&gt;<i>        as the pre processor framework would know that setting of such a
+</I>&gt;<i> parameter probably/potentially
+</I>&gt;<i>        may add parameters and should better be set before creating the GUI
+</I>&gt;<i> to ask the user for
+</I>&gt;<i>        further parameters (and if it accomplishes to set all of those
+</I>&gt;<i> parameters and either excludes them from
+</I>&gt;<i>        the GUI - as currently done by IJ2 for input images - or prohibits
+</I>&gt;<i> changing these parameters,
+</I>&gt;<i>        we get rid of problem (i) stated above).
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> To make things conceptionally easier (for me) I favour the following
+</I>&gt;<i> guideline:
+</I>&gt;<i> A parameter, e.g. inputDisplay, may add (or remove) parameters to the
+</I>&gt;<i> command
+</I>&gt;<i> exclusively depending of its own value. Furthermore the parameter (names)
+</I>&gt;<i> potentially
+</I>&gt;<i> added by this parameter are disjoint from those parameters added by other
+</I>&gt;<i> parameters of
+</I>&gt;<i> the command. However, it is probably not possible to check or enforce this
+</I>&gt;<i> restriction.
+</I>&gt;<i> As stated above in (ii) in my view it would be the task of the programmer
+</I>&gt;<i> of the Comand anyway
+</I>&gt;<i> to cope with more complicated situations and does not affect to supporting
+</I>&gt;<i> &quot;runtime system&quot;,
+</I>&gt;<i> e.g. the functionality to run pre processors and creating GUIs to harvest
+</I>&gt;<i> input vlaues from the user.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Best regards
+</I>&gt;<i>
+</I>&gt;<i> Stefan
+</I>&gt;<i>
+</I>&gt;<i> PS.:
+</I>&gt;<i> A different issue I came across have a second look at the Parameter
+</I>&gt;<i> annotation, sepcifically
+</I>&gt;<i> its choices: The few examples of usage I had a look at are parameters of
+</I>&gt;<i> type String which
+</I>&gt;<i> announce valid values. It might me worth considering to drop this feature
+</I>&gt;<i> and use Enums instead
+</I>&gt;<i> of Strings which easily allows to generate an approprate selection by the
+</I>&gt;<i> GUI.
+</I>&gt;<i> --
+</I>&gt;<i> Prof. Dr.-Ing. Stefan Posch,
+</I>&gt;<i>         Institut fuer Informatik, Martin-Luther-Universitaet
+</I>&gt;<i> Halle-Wittenberg
+</I>&gt;<i>         Von-Seckendorff-Platz 1, 06099 Halle (Saale)
+</I>&gt;<i> phone:  ++49 345 55-24728
+</I>&gt;<i> fax:    ++49 345 55-27039
+</I>&gt;<i> e-mail: <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">Stefan.Posch at informatik.uni-halle.de</A>
+</I>&gt;<i> www:    www.informatik.uni-halle.de/~posch/
+</I>&gt;<i>
+</I>
+
+
+On Mon, Apr 14, 2014 at 10:16 AM, Stefan Posch &lt;
+<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">posch at informatik.uni-halle.de</A>&gt; wrote:
+
+&gt;<i> Hi Curtis,
+</I>&gt;<i>
+</I>&gt;<i> thanks for your reply, we are getting ahead, but still questions for
+</I>&gt;<i> running commands
+</I>&gt;<i>
+</I>&gt;<i> &gt;    * The run() method of a module can assume that all required input
+</I>&gt;<i> &gt;    parameters have been filled (i.e., are non-null). And the
+</I>&gt;<i> corresponding
+</I>&gt;<i> &gt;    post-condition of run() is that all required output parameters are now
+</I>&gt;<i> &gt;    filled.
+</I>&gt;<i> perfect, the same with us
+</I>&gt;<i>
+</I>&gt;<i> &gt;    * The initialize() method of a module cannot necessarily assume
+</I>&gt;<i> &gt;    anything about the state of its parameters. As you pointed out,
+</I>&gt;<i> ImageJ2
+</I>&gt;<i> &gt;    has various commands right now that *do* assume certain parameters
+</I>&gt;<i> have
+</I>&gt;<i> &gt;    been filled via preprocessing. This works in practice (at least from
+</I>&gt;<i> &gt;    the ImageJ application), but is not particularly rigorous.
+</I>&gt;<i> &gt;    * Similarly, ImageJ2 has several commands which assume their
+</I>&gt;<i> &gt;    initializer has been called, but it is not stated as a formal
+</I>&gt;<i> &gt;    precondition. Most probably it makes sense to state that in the
+</I>&gt;<i> &gt;    javadoc, would you agree? In other words: if you aren't going to
+</I>&gt;<i> &gt;    include the InitPreprocessor in the preprocessing chain, you are still
+</I>&gt;<i> &gt;    somehow responsible for calling module.initialize() before calling
+</I>&gt;<i> &gt;    module.run(). Is that fair?
+</I>&gt;<i> again: perfect
+</I>&gt;<i>
+</I>&gt;<i> &gt;    So the main sticky point is what to do about initialize() requiring
+</I>&gt;<i> &gt;    certain parameters to be already filled. This is useful for dynamic
+</I>&gt;<i> &gt;    modules, but also just for computing defaults -- e.g., setting default
+</I>&gt;<i> &gt;    brightness/contrast min &amp; max values to the current display min max of
+</I>&gt;<i> &gt;    the input image. So it seems there are two &quot;layers&quot; of input
+</I>&gt;<i> &gt;    parameters: those needed before initialize() and those not needed for
+</I>&gt;<i> &gt;    it.
+</I>&gt;<i> &gt;    Maybe we need a way to formally flag these &quot;required before
+</I>&gt;<i> initialize&quot;
+</I>&gt;<i> &gt;    parameters in the annotation? What do you think? Would that help you?
+</I>&gt;<i> This would be different from autoFill() ?
+</I>&gt;<i>
+</I>&gt;<i> Yes and no.
+</I>&gt;<i>
+</I>&gt;<i> In a way it makes responsibilities clear, in so far I feel comfortable
+</I>&gt;<i> with it.
+</I>&gt;<i>
+</I>&gt;<i> However, it seems to me that there are (potentially very heavy)
+</I>&gt;<i> restrictions
+</I>&gt;<i> on the parameters which may be filled in advance (automaticcal and not by
+</I>&gt;<i> the user)
+</I>&gt;<i> in a sensible way. As far as I understand ij2 fills in parameters with
+</I>&gt;<i> what I think
+</I>&gt;<i> you called AutoFooPreprocessors, so active image and active display?
+</I>&gt;<i> I cannot come up with further ones. How would we fill in an int parameter
+</I>&gt;<i> without knowledge of its meaning/sematics?
+</I>&gt;<i> And even for images is only possible for commands with exactly one image
+</I>&gt;<i> or display.
+</I>&gt;<i> Obviously we could introduce a further flag for an image parameter to
+</I>&gt;<i> notify,
+</I>&gt;<i> that I what to be assigned the active image with. But this seems pretty
+</I>&gt;<i> specific.
+</I>&gt;<i> And probably not generic to be introduce to scijava but rather deferred to
+</I>&gt;<i> the
+</I>&gt;<i> &quot;application&quot;, e.g. imagej.
+</I>&gt;<i> And there might be aplications which call for more the two layers?
+</I>&gt;<i>
+</I>&gt;<i> Summing up, I am afraid that I do not have a cute idea.
+</I>&gt;<i> Of course I appreciate the functionality the set initial values or make
+</I>&gt;<i> the type
+</I>&gt;<i> of parameters depending on image features (like dimensionality, range of
+</I>&gt;<i> values).
+</I>&gt;<i> Still adding parameters seems awkward to be. Could we come by with &quot;only&quot;
+</I>&gt;<i> changing
+</I>&gt;<i> types of parameters. E.g. for DuplicateImage not add one parameter for
+</I>&gt;<i> each axes rather
+</I>&gt;<i> have one array parameter with its length determined by the dimensionality?
+</I>&gt;<i> And may be indicate via annotations, depending on which other parameter(s)
+</I>&gt;<i> the
+</I>&gt;<i> type of this parameter will change?
+</I>&gt;<i>
+</I>&gt;<i> Rather more question:
+</I>&gt;<i> Thinking of module and parameter intitalizers it seems to be that I get
+</I>&gt;<i> more unsure.
+</I>&gt;<i> Is it exactly to do processing between the two layers of parameters.
+</I>&gt;<i> And it is to add further parameters and set initial values to parameters?
+</I>&gt;<i> Are initial parameter values execulsively meant to serve as defaults for
+</I>&gt;<i> the
+</I>&gt;<i> user or is it required that some initial values are set (in order to
+</I>&gt;<i> properly
+</I>&gt;<i> run the command)?
+</I>&gt;<i>
+</I>&gt;<i> If so: would this mean that for running a command head less in a non
+</I>&gt;<i> interactive way
+</I>&gt;<i> makes the distiction of two layers is obsolete?
+</I>&gt;<i>
+</I>&gt;<i> &gt;    One thing that may interest you is the recent ImageJ OPS announcement:
+</I>&gt;<i> &gt;       [1]<A HREF="http://developer.imagej.net/2014/04/04/announcing-imagej-ops">http://developer.imagej.net/2014/04/04/announcing-imagej-ops</A>
+</I>&gt;<i> &gt;    An Op is just an ImageJ command intended to be fully functional --
+</I>&gt;<i> That sounds great ...
+</I>&gt;<i>
+</I>&gt;<i> &gt;   Hi Stefan,
+</I>&gt;<i> &gt;   Thanks. Rather than doing this:
+</I>&gt;<i> &gt;     CommandInfo testopInfo = new CommandInfo(IJTestOp.class.getName());
+</I>&gt;<i> &gt;     testopModule = (CommandModule) testopInfo.createModule();
+</I>&gt;<i> &gt;   I suggest instead:
+</I>&gt;<i> &gt;     CommandInfo testopInfo = commandService.getCommand(IJTestOp.class);
+</I>&gt;<i> &gt;     testopModule = (CommandModule)
+</I>&gt;<i> &gt;   moduleService.createModule(testopInfo);
+</I>&gt;<i>
+</I>&gt;<i> the advise you gave works fine, however only for running a module for a
+</I>&gt;<i> given Command once.
+</I>&gt;<i>   (see attached source of RunTestOp.java, the zip is a tiny maven project
+</I>&gt;<i> ready to import to eclipse.
+</I>&gt;<i>    hopefully I do not forget the attachment again :-)
+</I>&gt;<i>
+</I>&gt;<i>   in short we have
+</I>&gt;<i>         CommandInfo testopInfo =
+</I>&gt;<i> commandService.getCommand(IJTestOp.class.getName());
+</I>&gt;<i>         CommandModule testopModule =
+</I>&gt;<i> (CommandModule)moduleService.createModule( testopInfo);
+</I>&gt;<i>
+</I>&gt;<i>    set some parameters
+</I>&gt;<i>
+</I>&gt;<i>    run the service and init preprocessor on the module, then
+</I>&gt;<i>
+</I>&gt;<i>         testopModule.run();
+</I>&gt;<i>     or as an alternative
+</I>&gt;<i>         moduleService.run(testopModule, false);
+</I>&gt;<i>
+</I>&gt;<i>    running the init preprocessor gives
+</I>&gt;<i> -----
+</I>&gt;<i> Exception in thread &quot;main&quot; java.lang.IllegalStateException: Context
+</I>&gt;<i> already injected: org.scijava.AbstractContextual#context
+</I>&gt;<i>         at org.scijava.Context.inject(Context.java:293)
+</I>&gt;<i>         at imagej.command.CommandModule.initialize(CommandModule.java:144)
+</I>&gt;<i>         at
+</I>&gt;<i> imagej.module.process.InitPreprocessor.process(InitPreprocessor.java:61)
+</I>&gt;<i>         at mainroutine.RunTestOp.main(RunTestOp.java:62)
+</I>&gt;<i> ------
+</I>&gt;<i>
+</I>&gt;<i>   Creating a new module for the same CommandInfo fixes the problem (line
+</I>&gt;<i> 60)
+</I>&gt;<i>
+</I>&gt;<i>   Is this intended, i.e. that the init preprocessor for a module may be
+</I>&gt;<i> run only once?
+</I>&gt;<i>   This would pose a serious problem to us:
+</I>&gt;<i>
+</I>&gt;<i>   What we want to do is essentially the following:
+</I>&gt;<i>   The user selects a Command via the GUI and we create a Window displaying
+</I>&gt;<i> the input parameters.
+</I>&gt;<i>   The user may change/supply these parameters and run the Command.
+</I>&gt;<i>   Upon return a window displaying the results pops up.
+</I>&gt;<i>   However, the first window displaying the input parameters is still
+</I>&gt;<i> available, the user may
+</I>&gt;<i>   change one/some parameters an rerun the command.
+</I>&gt;<i>   This eases testing various parameter values or the same set of
+</I>&gt;<i> parameters on different
+</I>&gt;<i>   images without the need to repeatatly select an operator/command.
+</I>&gt;<i>
+</I>&gt;<i>   Have you further advise how we can accomplish this, i.e. reusing a
+</I>&gt;<i> command module?
+</I>&gt;<i>
+</I>&gt;<i>   BTW: I prefer to not set the parameters via the moduleService.run
+</I>&gt;<i> method, as the parameters
+</I>&gt;<i>        are set elsewhere (either by the user via a GUI configuring the
+</I>&gt;<i> operator/command e.g. from grappa,
+</I>&gt;<i>        or by parsing command line argument in case of the command line
+</I>&gt;<i> oprunner.
+</I>&gt;<i>        Additionaly I rather invoke the moduls run-method directly, as it
+</I>&gt;<i> seems to me that
+</I>&gt;<i>        via moduleservie a new thread is started, and at this point we like
+</I>&gt;<i> to have this under control.
+</I>&gt;<i>
+</I>&gt;<i>   it seems, that the init preprocessor assigns the service parameters of a
+</I>&gt;<i> Command,
+</I>&gt;<i>   not the Service preprocessor as I expected. Is the correct?
+</I>&gt;<i>   (Probably related to &quot;shadowing&quot; the Service and Context parameters of a
+</I>&gt;<i> Command)
+</I>&gt;<i>
+</I>&gt;<i>   BTW: what is the sematics of injecting a context (into a module?)
+</I>&gt;<i>
+</I>&gt;<i> &gt;    So this is certainly inconsistent and confusing. Do you think that
+</I>&gt;<i> &gt;    Commands should also include service and context inputs when iterating
+</I>&gt;<i> &gt;    them? If so, we can try removing that exclusion and see what
+</I>&gt;<i> &gt;    explodes... ;-)
+</I>&gt;<i> We would not need them rather hide the from the user.
+</I>&gt;<i>
+</I>&gt;<i> &gt;    If you urgently need support for multiple simultaneous ImageJ contexts
+</I>&gt;<i> &gt;    created with the default constructor while ij-legacy is on the
+</I>&gt;<i> &gt;    classpath, and you want to try fixing the bug yourself, we would be
+</I>&gt;<i> &gt;    happy to elaborate further so that you can give it a shot.
+</I>&gt;<i> no, we are hapy with one, just have to get hold of it (and use it in a
+</I>&gt;<i> static way)
+</I>&gt;<i>
+</I>&gt;<i> Again, thanks again
+</I>&gt;<i>
+</I>&gt;<i> best regards   Stefan
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20150821/58d6159b/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20150821/58d6159b/attachment-0001.html</A>&gt;
+</PRE>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002664.html">[ImageJ-devel] Tables / TableDisplays / ResultsTables as input	parameters
+</A></li>
+	<LI>Next message: <A HREF="002666.html">[ImageJ-devel] Problems running Versatile Wand in batch mode
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2665">[ date ]</a>
+              <a href="thread.html#2665">[ thread ]</a>
+              <a href="subject.html#2665">[ subject ]</a>
+              <a href="author.html#2665">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,328 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Save/write image with SCIFIO/BF in python script
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Save/write%20image%20with%20SCIFIO/BF%20in%20python%20script&In-Reply-To=%3CCADN69ykm9X%2BUCxRVYBLW3zPtNKSPqChGHEDCcs9OtGEg%3DLOz%2BA%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002391.html">
+   <LINK REL="Next"  HREF="002393.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Save/write image with SCIFIO/BF in python script</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Save/write%20image%20with%20SCIFIO/BF%20in%20python%20script&In-Reply-To=%3CCADN69ykm9X%2BUCxRVYBLW3zPtNKSPqChGHEDCcs9OtGEg%3DLOz%2BA%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Save/write image with SCIFIO/BF in python script">ctrueden at wisc.edu
+       </A><BR>
+    <I>Thu Jan  8 17:09:00 CST 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002391.html">[ImageJ-devel] Save/write image with SCIFIO/BF in python script
+</A></li>
+        <LI>Next message: <A HREF="002393.html">[ImageJ-devel] Save/write image with SCIFIO/BF in python script
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2392">[ date ]</a>
+              <a href="thread.html#2392">[ thread ]</a>
+              <a href="subject.html#2392">[ subject ]</a>
+              <a href="author.html#2392">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Hadrien,
+
+&gt;<i> I would like to be able to crop a region in X and Y while
+</I>&gt;<i> keeping any other dimensions which could exist (C, Z, T).
+</I>
+Here's some Java:
+
+    int minX = 128, maxX = 255, minY = 128, minY = 255;
+    AxisType[] axes = { Axes.X, Axes.Y };
+    String[] ranges = { minX + &quot;-&quot; + maxX, minY + &quot;-&quot; + maxY };
+    config.imgOpenerSetRegion(new ImageRegion(axes, ranges));
+
+Adapted from here:
+<A HREF="https://github.com/scifio/scifio/blob/scifio-0.18.0/src/test/java/io/scif/img/utests/ImgOpenerTest.java#L189-L191">https://github.com/scifio/scifio/blob/scifio-0.18.0/src/test/java/io/scif/img/utests/ImgOpenerTest.java#L189-L191</A>
+
+And untested.
+
+HTH,
+Curtis
+
+On Thu, Jan 8, 2015 at 4:47 PM, Hadrien Mary &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">hadrien.mary at gmail.com</A>&gt; wrote:
+
+&gt;<i> After some investigations, I'm pretty sure I don't instanciate
+</I>&gt;<i> ImageRegion correctly. Doc and source code didn't help me... I would
+</I>&gt;<i> like to be able to crop a region in X and Y while keeping any other
+</I>&gt;<i> dimensions which could exist (C, Z, T).
+</I>&gt;<i>
+</I>&gt;<i> --
+</I>&gt;<i> Hadrien Mary
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On Thu, Jan 8, 2015 at 10:22 PM, Hadrien Mary &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">hadrien.mary at gmail.com</A>&gt;
+</I>&gt;<i> wrote:
+</I>&gt;<i> &gt; Thank you Curtis for the answer.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; I tried to apply what you told me and the code now works without
+</I>&gt;<i> &gt; error. However the saved cropped image is not cropped (same size as
+</I>&gt;<i> &gt; original) and pixel values are modified).
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Script:
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; from io.scif.config import SCIFIOConfig
+</I>&gt;<i> &gt; from io.scif.img import ImageRegion
+</I>&gt;<i> &gt; from io.scif.img import ImgOpener
+</I>&gt;<i> &gt; from io.scif.img import ImgSaver
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; fname = &quot;/home/hadim/original.ome.tif&quot;
+</I>&gt;<i> &gt; target = &quot;/home/hadim/cropped.ome.tif&quot;
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; config = SCIFIOConfig()
+</I>&gt;<i> &gt; region = ImageRegion(dict(x=2, y=2, width=10, height=10))
+</I>&gt;<i> &gt; config.imgOpenerSetRegion(region)
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; opener = ImgOpener()
+</I>&gt;<i> &gt; imps = opener.openImgs(fname, config)
+</I>&gt;<i> &gt; imp = imps[0]
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; print(imps)
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; saver = ImgSaver()
+</I>&gt;<i> &gt; saver.saveImg(target, imp)
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Thanks again for your time. Don't be sorry if you don't have time to
+</I>&gt;<i> &gt; write an example.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; I will be happy to provide some python/scifio examples scripts.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; --
+</I>&gt;<i> &gt; Hadrien Mary
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Ph.D student in Biology
+</I>&gt;<i> &gt; Tournier-Gachet Team
+</I>&gt;<i> &gt; CNRS - LBCMCP - UMR 5088
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Universit&#233; de Toulouse - B&#226;t. 4R3B1
+</I>&gt;<i> &gt; 118, route de Narbonne - 31062 Toulouse
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; On Thu, Jan 8, 2015 at 9:56 PM, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt; wrote:
+</I>&gt;<i> &gt;&gt; Hi Hadrien,
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt; I tried to use SCIFIO to write cropped image on disk but it doesn not
+</I>&gt;<i> &gt;&gt;&gt; work.
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; The error you see is because SCIFIO operates on ImgLib2 data
+</I>&gt;<i> structures, not
+</I>&gt;<i> &gt;&gt; ImagePlus objects.
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt; Is there is any &#8220;easy&#8221; alternative to BF setCropRegion function in
+</I>&gt;<i> &gt;&gt;&gt; SCIFIO ?
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; Yes: you create a SCIFIOConfig, calling imgOpenerSetRegion [1] on it,
+</I>&gt;<i> then
+</I>&gt;<i> &gt;&gt; pass it as an argument to the ImgOpener. You'll get back an ImgLib2 data
+</I>&gt;<i> &gt;&gt; object which can then be fed to the SCIFIO ImgSaver.
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; I'm sorry that I don't have time to whip up an example for you right
+</I>&gt;<i> now. It
+</I>&gt;<i> &gt;&gt; would be great to add more SCIFIO tutorials [2] that use the ImgOpener
+</I>&gt;<i> and
+</I>&gt;<i> &gt;&gt; ImgSaver, since they are much higher level APIs akin to the Bio-Formats
+</I>&gt;<i> &quot;BF&quot;
+</I>&gt;<i> &gt;&gt; functionality... please feel welcome to contribute some!
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; Regards,
+</I>&gt;<i> &gt;&gt; Curtis
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; [1]
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> <A HREF="http://javadoc.imagej.net/SCIFIO/io/scif/config/SCIFIOConfig.html#imgOpenerSetRegion(io.scif.img.ImageRegion">http://javadoc.imagej.net/SCIFIO/io/scif/config/SCIFIOConfig.html#imgOpenerSetRegion(io.scif.img.ImageRegion</A>)
+</I>&gt;<i> &gt;&gt; [2] <A HREF="https://github.com/scifio/scifio-tutorials">https://github.com/scifio/scifio-tutorials</A>
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; On Thu, Jan 8, 2015 at 2:18 PM, Hadrien Mary &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">hadrien.mary at gmail.com</A>&gt;
+</I>&gt;<i> wrote:
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt; Hi,
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt; I am writing a python macro which iterate over all rois in ROI Manager
+</I>&gt;<i> &gt;&gt;&gt; and then use setCropRegion function from bioformat plugin to open a
+</I>&gt;<i> &gt;&gt;&gt; cropped region of an image.
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt; I tried to use SCIFIO to write cropped image on disk but it doesn not
+</I>&gt;<i> &gt;&gt;&gt; work.
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt; (I am using an updated version of Fiji.)
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt; Here is my script:
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt; from ij.plugin.frame import RoiManager
+</I>&gt;<i> &gt;&gt;&gt; from ij import IJ
+</I>&gt;<i> &gt;&gt;&gt; from io.scif.img import ImgSaver
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt; from loci.plugins import BF
+</I>&gt;<i> &gt;&gt;&gt; from loci.plugins.in import ImporterOptions
+</I>&gt;<i> &gt;&gt;&gt; from loci.common import Region
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt; import os
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt; # Get current image filename
+</I>&gt;<i> &gt;&gt;&gt; imp = IJ.getImage()
+</I>&gt;<i> &gt;&gt;&gt; f = imp.getOriginalFileInfo()
+</I>&gt;<i> &gt;&gt;&gt; fname = os.path.join(f.directory, f.fileName)
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt; IJ.log('Image filename is %s' % fname)
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt; # Iterate over all ROIs from ROI Manager
+</I>&gt;<i> &gt;&gt;&gt; rois = RoiManager.getInstance().getRoisAsArray()
+</I>&gt;<i> &gt;&gt;&gt; for i, roi in enumerate(rois):
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt;     crop_id = i +1
+</I>&gt;<i> &gt;&gt;&gt;     IJ.log(&quot;Opening crop %i / %i&quot; % (crop_id, len(rois)))
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt;     bounds = roi.getBounds()
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt;     x = bounds.x
+</I>&gt;<i> &gt;&gt;&gt;     y = bounds.y
+</I>&gt;<i> &gt;&gt;&gt;     w = bounds.width
+</I>&gt;<i> &gt;&gt;&gt;     h = bounds.height
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt;     # Import only cropped region of the image
+</I>&gt;<i> &gt;&gt;&gt;     options = ImporterOptions()
+</I>&gt;<i> &gt;&gt;&gt;     options.setCrop(True)
+</I>&gt;<i> &gt;&gt;&gt;     options.setCropRegion(0, Region(x, y, w, h))
+</I>&gt;<i> &gt;&gt;&gt;     options.setId(fname)
+</I>&gt;<i> &gt;&gt;&gt;     imps = BF.openImagePlus(options)
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt;     imp = imps[0]
+</I>&gt;<i> &gt;&gt;&gt;     imp.show()
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt;     crop_basename = &quot;crop%i_%s&quot; % (crop_id, f.fileName)
+</I>&gt;<i> &gt;&gt;&gt;     crop_fname = os.path.join(f.directory, crop_basename)
+</I>&gt;<i> &gt;&gt;&gt;     imp.setTitle(crop_basename)
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt;     # Save image
+</I>&gt;<i> &gt;&gt;&gt;     IJ.log(&quot;Saving crop to %s&quot; % crop_fname)
+</I>&gt;<i> &gt;&gt;&gt;     saver = ImgSaver()
+</I>&gt;<i> &gt;&gt;&gt;     saver.saveImg(crop_basename, imp)
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt; IJ.log('Done')
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt; It fails with this error:
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt; Traceback (most recent call last):
+</I>&gt;<i> &gt;&gt;&gt;   File &quot;/home/hadim/local/Fiji.app/plugins/Crop_Multi_Roi.py&quot;, line
+</I>&gt;<i> &gt;&gt;&gt; 49, in &lt;module&gt;
+</I>&gt;<i> &gt;&gt;&gt;     saver.saveImg(crop_basename, imp)
+</I>&gt;<i> &gt;&gt;&gt; TypeError: saveImg(): 1st arg can't be coerced to io.scif.Writer,
+</I>&gt;<i> String
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt; at org.python.core.Py.TypeError(Py.java:235)
+</I>&gt;<i> &gt;&gt;&gt; at
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> org.python.core.PyReflectedFunction.throwError(PyReflectedFunction.java:209)
+</I>&gt;<i> &gt;&gt;&gt; at
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> org.python.core.PyReflectedFunction.throwBadArgError(PyReflectedFunction.java:312)
+</I>&gt;<i> &gt;&gt;&gt; at
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> org.python.core.PyReflectedFunction.throwError(PyReflectedFunction.java:321)
+</I>&gt;<i> &gt;&gt;&gt; at
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> org.python.core.PyReflectedFunction.__call__(PyReflectedFunction.java:167)
+</I>&gt;<i> &gt;&gt;&gt; at
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> org.python.core.PyReflectedFunction.__call__(PyReflectedFunction.java:204)
+</I>&gt;<i> &gt;&gt;&gt; at org.python.core.PyObject.__call__(PyObject.java:422)
+</I>&gt;<i> &gt;&gt;&gt; at org.python.core.PyObject.__call__(PyObject.java:426)
+</I>&gt;<i> &gt;&gt;&gt; at org.python.core.PyMethod.__call__(PyMethod.java:139)
+</I>&gt;<i> &gt;&gt;&gt; at
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> org.python.pycode._pyx7.f$0(/home/hadim/local/Fiji.app/plugins/Crop_Multi_Roi.py:51)
+</I>&gt;<i> &gt;&gt;&gt; at
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> org.python.pycode._pyx7.call_function(/home/hadim/local/Fiji.app/plugins/Crop_Multi_Roi.py)
+</I>&gt;<i> &gt;&gt;&gt; at org.python.core.PyTableCode.call(PyTableCode.java:165)
+</I>&gt;<i> &gt;&gt;&gt; at org.python.core.PyCode.call(PyCode.java:18)
+</I>&gt;<i> &gt;&gt;&gt; at org.python.core.Py.runCode(Py.java:1275)
+</I>&gt;<i> &gt;&gt;&gt; at
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> org.scijava.plugins.scripting.jython.JythonScriptEngine.eval(JythonScriptEngine.java:76)
+</I>&gt;<i> &gt;&gt;&gt; at org.scijava.script.ScriptModule.run(ScriptModule.java:175)
+</I>&gt;<i> &gt;&gt;&gt; at org.scijava.module.ModuleRunner.run(ModuleRunner.java:167)
+</I>&gt;<i> &gt;&gt;&gt; at org.scijava.module.ModuleRunner.call(ModuleRunner.java:126)
+</I>&gt;<i> &gt;&gt;&gt; at org.scijava.module.ModuleRunner.call(ModuleRunner.java:65)
+</I>&gt;<i> &gt;&gt;&gt; at
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> org.scijava.thread.DefaultThreadService$2.call(DefaultThreadService.java:164)
+</I>&gt;<i> &gt;&gt;&gt; at java.util.concurrent.FutureTask.run(FutureTask.java:262)
+</I>&gt;<i> &gt;&gt;&gt; at
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+</I>&gt;<i> &gt;&gt;&gt; at
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+</I>&gt;<i> &gt;&gt;&gt; at java.lang.Thread.run(Thread.java:745)
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt; Three questions:
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt; how can I write cropped image (I need to write them as OME Tiff so I
+</I>&gt;<i> &gt;&gt;&gt; need BF or SCIFIO).
+</I>&gt;<i> &gt;&gt;&gt; Is there is any &#8220;easy&#8221; alternative to BF setCropRegion function in
+</I>&gt;<i> SCIFIO
+</I>&gt;<i> &gt;&gt;&gt; ?
+</I>&gt;<i> &gt;&gt;&gt; I am currently using RoiManager.getInstance().getRoisAsArray() to
+</I>&gt;<i> &gt;&gt;&gt; retrieve all rois. How can I directly get a ROIManager instance from
+</I>&gt;<i> &gt;&gt;&gt; RoiSet.zip file ?
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt; Any help would be very appreciated.
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt; Thanks !
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt; &#8212;
+</I>&gt;<i> &gt;&gt;&gt; Hadrien Mary
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt; _______________________________________________
+</I>&gt;<i> &gt;&gt;&gt; ImageJ-devel mailing list
+</I>&gt;<i> &gt;&gt;&gt; <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> &gt;&gt;&gt; <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20150108/bd3e5595/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20150108/bd3e5595/attachment-0001.html</A>&gt;
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002391.html">[ImageJ-devel] Save/write image with SCIFIO/BF in python script
+</A></li>
+	<LI>Next message: <A HREF="002393.html">[ImageJ-devel] Save/write image with SCIFIO/BF in python script
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2392">[ date ]</a>
+              <a href="thread.html#2392">[ thread ]</a>
+              <a href="subject.html#2392">[ subject ]</a>
+              <a href="author.html#2392">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

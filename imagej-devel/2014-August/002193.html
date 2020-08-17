@@ -1,0 +1,144 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Eclipse and SciJava annotation processing
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Eclipse%20and%20SciJava%20annotation%20processing&In-Reply-To=%3Calpine.DEB.1.00.1408201002130.990%40s15462909.onlinehome-server.info%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002192.html">
+   <LINK REL="Next"  HREF="002195.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Eclipse and SciJava annotation processing</H1>
+    <B>Johannes Schindelin</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Eclipse%20and%20SciJava%20annotation%20processing&In-Reply-To=%3Calpine.DEB.1.00.1408201002130.990%40s15462909.onlinehome-server.info%3E"
+       TITLE="[ImageJ-devel] Eclipse and SciJava annotation processing">Johannes.Schindelin at gmx.de
+       </A><BR>
+    <I>Wed Aug 20 03:29:07 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002192.html">[ImageJ-devel] Apology for Jenkins mails
+</A></li>
+        <LI>Next message: <A HREF="002195.html">[ImageJ-devel] Image Orientation
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2193">[ date ]</a>
+              <a href="thread.html#2193">[ thread ]</a>
+              <a href="subject.html#2193">[ subject ]</a>
+              <a href="author.html#2193">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Steffi,
+
+since you mentioned it yesterday, and since we are collaborating on
+SciJava projects, I thought about writing up a brief description of the
+problems Eclipse has with annotation processing (which is used heavily by
+SciJava), along with two suggestions how to address them.
+
+For background, let be briefly introduce the concept of annotation
+processing. Developed in the context of Enterprise Java Beans (EJB),
+annotations allow developers to provide meta information for use with
+types (e.g. classes), fields and methods. The idea was to let so-called
+annotation processors parse those annotations and then generate code
+*during the compilation*. For example, a specific annotation processor
+could generate getters and setters for all appropriately annotated fields.
+
+Now, why does Eclipse have problems with that? The specification of Java5
+demands that all annotation processors on the class path are called *as
+part of the compilation*. Unfortunately, the interfaces annotation
+processors have to implement are tuned toward complete compilation, but
+Eclipse wants to build *incrementally*. Therefore, the Eclipse developers
+decided to punt and require special settings by the developers to force
+running specific annotation processors.
+
+To work around this problem, we have code in a class called EclipseHelper
+designed to detect when Eclipse-compiled code is in dear need of
+processing the annotations. The idea being that as a diligent developer,
+you always will run at least one unit test, or at least one interactive
+test, before shipping your build artifact, and the EclipseHelper would be
+triggered by the first code path accessing SciJava plugins. You always
+test your code in Eclipse before packaging and distributing it, right? ;-)
+
+Now, with Christian Dietz, I developed a pure Eclipse (non-Maven) example
+that makes sure that the annotations are processed -- even if you never
+test the code from within Eclipse -- and you can find the code here:
+
+	<A HREF="https://github.com/scijava/eclipse-scijava-project">https://github.com/scijava/eclipse-scijava-project</A>
+
+The README contains a brief description of the problem, too, and a link to
+the relevant commit adding the workaround.
+
+But as you pointed out that you appreciated the patience with which I
+helped you get into Maven (and subsequently benefit from everything that
+system provides for you), I guess it is time to make another, Maven-based,
+example, intended to be imported into Eclipse via Import&gt;Maven&gt;Import
+Existing Maven Project.
+
+The main idea here is to use a *profile*. A Maven profile is essentially a
+*conditional* part of the pom.xml. It looks roughly like this:
+
+	&lt;profiles&gt;
+		&lt;profile&gt;
+			&lt;id&gt;total-eclipse-of-my-heart&lt;/id&gt;
+
+			...
+		&lt;/profile&gt;
+	&lt;/profiles&gt;
+
+The part that is inside the &lt;profile&gt; block could be a &lt;build&gt; block,
+indented two levels more than usual. The profiles are conditional, and you
+can make them conditional upon some tell-tale such as the m2e property set
+by Eclipse's Maven integration. See a real-life example here:
+
+	<A HREF="https://github.com/scijava/scijava-common/blob/e53204823068a4313c618c362851a64b16a199b8/pom.xml#L200-L241">https://github.com/scijava/scijava-common/blob/e53204823068a4313c618c362851a64b16a199b8/pom.xml#L200-L241</A>
+
+(This is actually the real life example that lets you build SciJava
+common inside Eclipse, with all SciJava annotations properly processed.)
+
+I guess the best course of action would be to include this profile in
+pom-scijava, but we will have to make it conditional, somehow, on
+scijava-common being a dependency, otherwise we would fail builds of
+SciJava-related projects that do *not* have scijava-common as dependency
+(such as ImgLib2 core).
+
+Hopefully this clarifies the problem and the possible solutions,
+Johannes
+
+</PRE>
+
+
+
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002192.html">[ImageJ-devel] Apology for Jenkins mails
+</A></li>
+	<LI>Next message: <A HREF="002195.html">[ImageJ-devel] Image Orientation
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2193">[ date ]</a>
+              <a href="thread.html#2193">[ thread ]</a>
+              <a href="subject.html#2193">[ subject ]</a>
+              <a href="author.html#2193">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

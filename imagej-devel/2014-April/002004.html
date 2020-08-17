@@ -1,0 +1,382 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] (headless) command execution
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%28headless%29%20command%20execution&In-Reply-To=%3CCADN69ymnF9NOppKn7_qjtxcxup2EM_UiCm%3DDv3P6YXtq%2BTg%2B2A%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002003.html">
+   <LINK REL="Next"  HREF="002015.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] (headless) command execution</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%28headless%29%20command%20execution&In-Reply-To=%3CCADN69ymnF9NOppKn7_qjtxcxup2EM_UiCm%3DDv3P6YXtq%2BTg%2B2A%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] (headless) command execution">ctrueden at wisc.edu
+       </A><BR>
+    <I>Thu Apr  3 15:57:50 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002003.html">[ImageJ-devel] SimpleITK and maven
+</A></li>
+        <LI>Next message: <A HREF="002015.html">[ImageJ-devel] (headless) command execution
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2004">[ date ]</a>
+              <a href="thread.html#2004">[ thread ]</a>
+              <a href="subject.html#2004">[ subject ]</a>
+              <a href="author.html#2004">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Stefan,
+
+Very sorry for the long delay in reply. I should be faster in subsequent
+replies, if you have further questions.
+
+&gt;<i> What are the precoditions assumed when running a (headless) command
+</I>
+What happens is highly dependent on *how* you invoke the command...
+
+&gt;<i> may the command assume that its initializer, if any, has been executed
+</I>&gt;<i> prior to executing its run-Method?
+</I>
+I assume you are familiar with this tutorial:
+<A HREF="https://github.com/imagej/imagej-tutorials/blob/master/execute-commands/src/main/java/ExecuteCommands.java">https://github.com/imagej/imagej-tutorials/blob/master/execute-commands/src/main/java/ExecuteCommands.java</A>
+
+Note that when executing an ImageJ module using the ModuleService, the run
+methods (for the past couple of releases) have a &quot;boolean process&quot; flag.
+When process=true, the pre- and post-processing steps are run. This notably
+includes running the module initializer preprocessing step.
+
+&gt;<i> may the initializer-Method assume some of the parameter of the command
+</I>&gt;<i> already set (as e.g. a single ImageDisplay), and of course, which
+</I>&gt;<i> parameters?
+</I>
+The InitPreprocessor calls module#initialize(), whose behavior can be
+overridden, but the default implementation of which is here:
+
+<A HREF="https://github.com/imagej/imagej/blob/imagej-2.0.0-beta-7.8/core/core/src/main/java/imagej/module/AbstractModule.java#L75">https://github.com/imagej/imagej/blob/imagej-2.0.0-beta-7.8/core/core/src/main/java/imagej/module/AbstractModule.java#L75</A>
+
+In short: the module initializer is called first, followed by the
+individual initializers of each parameter, if any.
+
+As for *when* this occurs: the InitPreprocessor has &quot;HIGH&quot; priority:
+<A HREF="https://github.com/imagej/imagej/blob/imagej-2.0.0-beta-7.8/core/core/src/main/java/imagej/module/process/InitPreprocessor.java#L50">https://github.com/imagej/imagej/blob/imagej-2.0.0-beta-7.8/core/core/src/main/java/imagej/module/process/InitPreprocessor.java#L50</A>
+
+So it happens before many other preprocessors:
+
+$ grep 'priority = ' $(git ls-files | grep Preprocessor)
+core/core/src/main/java/imagej/display/ActiveDisplayPreprocessor.java: priority
+= Priority.VERY_HIGH_PRIORITY)
+core/core/src/main/java/imagej/module/process/CheckInputsPreprocessor.java:
+priority
+= InputHarvester.PRIORITY - 1)
+core/core/src/main/java/imagej/module/process/DebugPreprocessor.java:@Plugin(type
+= PreprocessorPlugin.class, priority = Priority.FIRST_PRIORITY)
+core/core/src/main/java/imagej/module/process/GatewayPreprocessor.java:
+priority
+= Priority.VERY_HIGH_PRIORITY)
+core/core/src/main/java/imagej/module/process/InitPreprocessor.java:@Plugin(type
+= PreprocessorPlugin.class, priority = Priority.HIGH_PRIORITY)
+core/core/src/main/java/imagej/module/process/LoadInputsPreprocessor.java:
+priority
+= Priority.VERY_LOW_PRIORITY + 1)
+core/core/src/main/java/imagej/module/process/SaveInputsPreprocessor.java:
+priority
+= Priority.VERY_LOW_PRIORITY - 1)
+core/core/src/main/java/imagej/module/process/ServicePreprocessor.java:
+priority
+= Priority.VERY_HIGH_PRIORITY)
+core/core/src/main/java/imagej/module/process/ValidityPreprocessor.java:
+priority
+= Priority.VERY_HIGH_PRIORITY + 1)
+core/data/src/main/java/imagej/data/display/ActiveImagePreprocessor.java:
+priority
+= Priority.VERY_HIGH_PRIORITY)
+core/ui/src/main/java/imagej/ui/FilePreprocessor.java: priority =
+Priority.VERY_LOW_PRIORITY + 1)
+core/ui/src/main/java/imagej/ui/UIPreprocessor.java:@Plugin(type =
+PreprocessorPlugin.class, priority = Priority.VERY_HIGH_PRIORITY)
+
+
+So the ones that happen before InitPreprocessor are:
+1) DebugPreprocessor
+2) ValidityPreprocessor
+3) ActiveDisplayPreprocessor
+4) ActiveImagePreprocessor
+5) GatewayPreprocessor
+6) ServicePreprocessor
+7) UIPreprocessor
+
+The DebugPreprocessor just logs some debugging output. The
+ValidityPreprocessor makes sure that the module is fundamentally
+well-formed (e.g., no &quot;final&quot; @Parameter variables, since those cannot be
+set via reflection). The other five (2-7) all set various types of
+variables based on the state of the ImageJ application context -- for
+example, all Service parameters are filled in. So that's why you never see
+the ImageJ UI prompt for them.
+
+It should be case that Alida can reuse the default pre- and post-processing
+plugin stack -- in other words, you should be able to pass &quot;process=true&quot;
+to the ModuleService#run and everything will &quot;just work&quot;. Let us know if
+not, and we can troubleshoot. As long as no UI has been shown, you will be
+in headless mode and no dialogs should ever be shown. (If one does pop up,
+it is probably a bug.)
+
+&gt;<i> as an example, the DuplicateImage command adds input parameters to
+</I>&gt;<i> itself in its initializer-method depending on the inputDisplay. Thus
+</I>&gt;<i> is seems that DuplicateImage requires, that inputDisplay is set prior
+</I>&gt;<i> to calling its initializer and that the user is asked for further
+</I>&gt;<i> parameters lateron.
+</I>
+Yes, it works in that case because the ActiveDisplayPreprocessor runs
+before the InitPreprocessor, so inputDisplay is indeed already set.
+
+&gt;<i> more generally, are there parameters of commands set by the standard
+</I>&gt;<i> ij2 preprocessos besides a single unresolved Dataset? And is there an
+</I>&gt;<i> easy way to figure out what preprocessors are run in which order in
+</I>&gt;<i> the standard ij2 context?
+</I>
+Yes, the preprocessors are (by default) those mentioned above. You can get
+the list of them programmatically:
+
+pre = pluginService.createInstancesOfType(PreprocessorPlugin.class)
+
+
+This gives you one instance each of each preprocessor, in priority order.
+Alternately, if you don't want to instantiate them but only inspect the
+plugin metadata:
+
+infos = pluginService.getPluginsOfType(PreprocessorPlugin.class)
+
+
+&gt;<i> What is your concept to run a headless command from command line (or
+</I>&gt;<i> shell script), which adds input parameters dependent on the value of
+</I>&gt;<i> other input parameters?
+</I>
+On the CLI, we'll harvest values from the user at the same point in time
+that we currently do it via the UI. So most of the other preprocessing will
+be done; there will be a &quot;CLIInputHarvesterPlugin&quot; that prompts the user to
+type in these values using System.in or similar. We have not yet created
+this preprocessor plugin, but it would be very straightforward. If you need
+this, let me know -- it would be a fun side project. :-)
+
+&gt;<i> Do you encourcage to dynamically add input parameters to commands?
+</I>
+Encourage? Definitely not. Unfortunately, there are certain commands that
+basically require this functionality. Use your IDE to check the subtype
+hierarchy of DynamicCommand to find them. But as a rule of thumb: headless
+modules should not be dynamic. Dynamic commands are *much* more challenging
+to support across many different environments (CellProfiler, KNIME, OMERO,
+Alida, etc.) *much* more challenging.
+
+&gt;<i> Is there (still) a static method to get hold of the context, as a
+</I>&gt;<i> while ago was possible via ImageJ.getContext() in order not to (very)
+</I>&gt;<i> often create a new context (or it the context impemented as a
+</I>&gt;<i> singelton)? And how does this work out if running command &quot;truely&quot;
+</I>&gt;<i> headless that is from command line without ij2 GUI?
+</I>
+The SciJava context is definitely not a singleton. But you can use it that
+way if you want: just create one a static variable in your own codebase
+somewhere; e.g.:
+
+
+public static final imagej.ImageJ IJ = new imagej.ImageJ();
+
+
+Then you'll always have your ImageJ gateway, easily accessible from all
+your code. But I would caution you that if your design relies on statics
+like that, it will be fundamentally less flexible then if you always inject
+a Context in places where one is needed. We have taken great pains to make
+all of ImageJ2 work in that way...
+
+&gt;<i> is it remnants, that some ContextCommands have services as parameters
+</I>&gt;<i> as they - if I understand correctly - could retrievee the services
+</I>&gt;<i> from their contex?
+</I>
+We feel that writing the services as @Parameters is cleaner, because those
+services are, in some sense, &quot;inputs&quot; to the module's operation. There are
+many ways to express a module's inputs, but our goal is for modules to
+declare their inputs in the most specific way possible. (We fall short of
+that goal in many places, but are very open to refactoring to improve
+things on a case by case basis.)
+
+For example, you could write:
+
+
+@Parameter
+
+private Context context;
+
+
+And then call &quot;context.service(ModuleService.class).run(...)&quot; but that is
+less specific than:
+
+@Parameter
+
+private ModuleService moduleService;
+
+
+And then calling &quot;moduleService.run(...)&quot;. This latter form more clearly
+expresses the fact that it is actually the ModuleService, and not the
+Context as a whole, that is required for operation.
+
+As another example, you could declare an ImageDisplayService parameter and
+then use it to extract the active image display, then extract the active
+dataset from that, and finally process it. But it is much cleaner to
+declare the parameter as a Dataset in the first place, so that the module
+*could* be used with inputs besides just the active image display's active
+dataset. For other environments (CellProfiler/KNIME/OMERO/Alida/etc.), the
+notion of an &quot;active image display&quot; might not make sense, so using a
+Dataset inputs is better.
+
+&gt;<i> has ij2 already support to execute a headless command from the command
+</I>&gt;<i> line or shell script
+</I>
+I actually added something like that last week: a rudimentary interactive
+script interpreter. It is mainly for testing the ImageJ OPS project right
+now, but it supports whatever scripting language you want to use, with
+whatever ImageJ code you want to throw at it.
+
+<A HREF="https://github.com/imagej/imagej-scripting-cli">https://github.com/imagej/imagej-scripting-cli</A>
+
+Example of usage:
+
+$ git clone <A HREF="git://github.com/imagej/imagej-scripting-cli">git://github.com/imagej/imagej-scripting-cli</A>
+... code is downloaded ...
+$ cd imagej-scripting-cli
+$ mvn
+... code compiles ...
+$ mvn exec:exec
+... Maven spits out some stuff ...
+ImageJ script interpreter: javascript
+&gt;<i> dataset = ij.dataset().open(&quot;/Users/curtis/data/toucan.png&quot;);
+</I>toucan.png
+&gt;<i> w = dataset.max(0);
+</I>160
+&gt;<i> h = dataset.max(1);
+</I>148
+
+&gt;<i> future = ij.command().run(&quot;imagej.plugins.commands.app.AboutImageJ&quot;,
+</I>true, []);
+<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">java.util.concurrent.FutureTask at 2698dd08</A>
+&gt;<i> module = future.get();
+</I>imagej.plugins.commands.app.AboutImageJ
+&gt;<i> module.getOutput(&quot;display&quot;).getClass();
+</I>class imagej.data.display.DefaultImageDisplay
+
+
+Once we have the CLI input harvesting plugin, this will be a little slicker
+in that &quot;ij.module().run(...)&quot; and &quot;ij.command().run(...)&quot; will be usable
+for modules that take &quot;real&quot; inputs.
+
+Regards,
+Curtis
+
+On Thu, Mar 13, 2014 at 4:39 AM, Stefan Posch &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">posch at informatik.uni-halle.de</A>
+&gt;<i> wrote:
+</I>
+&gt;<i> Hi Curtis, hi Johannes,
+</I>&gt;<i>
+</I>&gt;<i> we have a few questions regarding commands and command execution
+</I>&gt;<i> to wrap them for our graphical editor and also command line execution
+</I>&gt;<i> of operators resp. commands.
+</I>&gt;<i>
+</I>&gt;<i> What are the precoditions assumed when running a (headless) command
+</I>&gt;<i>
+</I>&gt;<i>   o may the command assume that its initializer, if any, has been executed
+</I>&gt;<i> prior to executing its run-Method?
+</I>&gt;<i>
+</I>&gt;<i>   o may the initializer-Method assume some of the parameter of the command
+</I>&gt;<i> already set
+</I>&gt;<i>     (as e.g. a single ImageDisplay), and of course, which parameters?
+</I>&gt;<i>
+</I>&gt;<i>     as an example, the DuplicateImage command adds input parameters to
+</I>&gt;<i> itself
+</I>&gt;<i>     in its initializer-method depending on the inputDisplay.
+</I>&gt;<i>     Thus is seems that DuplicateImage requires, that inputDisplay is set
+</I>&gt;<i> prior to
+</I>&gt;<i>     calling its initializer and that the user is asked for further
+</I>&gt;<i> parameters lateron.
+</I>&gt;<i>
+</I>&gt;<i>   o more generally, are there parameters of commands set by the standard
+</I>&gt;<i> ij2 preprocessos
+</I>&gt;<i>     besides a single unresolved Dataset?
+</I>&gt;<i>     And is there an easy way to figure out
+</I>&gt;<i>     what preprocessors are run in which order in the standard ij2 context?
+</I>&gt;<i>
+</I>&gt;<i> - What is your concept to run a headless command from command line (or
+</I>&gt;<i> shell script), which
+</I>&gt;<i>   adds input parameters dependent on the value of other input parameters?
+</I>&gt;<i>
+</I>&gt;<i>   Do you encourcage to dynamically add input parameters to commands?
+</I>&gt;<i>
+</I>&gt;<i> - Is there (still) a static method to get hold of the context, as a while
+</I>&gt;<i> ago was
+</I>&gt;<i>   possible via ImageJ.getContext() in order not to (very) often create a
+</I>&gt;<i> new
+</I>&gt;<i>   context (or it the context impemented as a singelton)?
+</I>&gt;<i>   And how does this work out if running command &quot;truely&quot; headless that is
+</I>&gt;<i>   from command line without ij2 GUI?
+</I>&gt;<i>
+</I>&gt;<i> - is it remnants, that some ContextCommands have services as parameters
+</I>&gt;<i>   as they - if I understand correctly - could retrievee the services from
+</I>&gt;<i> their contex?
+</I>&gt;<i>
+</I>&gt;<i> - has ij2 already support to execute a headless command from the command
+</I>&gt;<i> line or shell script
+</I>&gt;<i>
+</I>&gt;<i> Thanks a lot and cheers
+</I>&gt;<i>
+</I>&gt;<i> Stefan
+</I>&gt;<i> --
+</I>&gt;<i> Prof. Dr.-Ing. Stefan Posch,
+</I>&gt;<i>         Institut fuer Informatik, Martin-Luther-Universitaet
+</I>&gt;<i> Halle-Wittenberg
+</I>&gt;<i>         Von-Seckendorff-Platz 1, 06099 Halle (Saale)
+</I>&gt;<i> phone:  ++49 345 55-24728
+</I>&gt;<i> fax:    ++49 345 55-27039
+</I>&gt;<i> e-mail: <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">Stefan.Posch at informatik.uni-halle.de</A>
+</I>&gt;<i> www:    www.informatik.uni-halle.de/~posch/
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140403/f9d00437/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20140403/f9d00437/attachment-0001.html</A>&gt;
+</PRE>
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002003.html">[ImageJ-devel] SimpleITK and maven
+</A></li>
+	<LI>Next message: <A HREF="002015.html">[ImageJ-devel] (headless) command execution
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2004">[ date ]</a>
+              <a href="thread.html#2004">[ thread ]</a>
+              <a href="subject.html#2004">[ subject ]</a>
+              <a href="author.html#2004">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

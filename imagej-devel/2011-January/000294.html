@@ -1,0 +1,159 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] OpenCL plugin
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20OpenCL%20plugin&In-Reply-To=%3CAANLkTi%3D71BHuCKkiK4DV%3DR5vcrB3DkT244sO1siYzt3V%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000293.html">
+   <LINK REL="Next"  HREF="000295.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] OpenCL plugin</H1>
+    <B>Rick Lentz</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20OpenCL%20plugin&In-Reply-To=%3CAANLkTi%3D71BHuCKkiK4DV%3DR5vcrB3DkT244sO1siYzt3V%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] OpenCL plugin">rwlentz at wisc.edu
+       </A><BR>
+    <I>Wed Jan 12 13:16:46 CST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000293.html">[ImageJ-devel] New Lanczos-Interpolation
+</A></li>
+        <LI>Next message: <A HREF="000295.html">[ImageJ-devel] Fwd: OpenCL plugin
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#294">[ date ]</a>
+              <a href="thread.html#294">[ thread ]</a>
+              <a href="subject.html#294">[ subject ]</a>
+              <a href="author.html#294">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Pol,
+
+  Regarding your first question it is likely that the linker is missing a
+reference to OpenGL.  My instructions were for a prior major release of
+Ubuntu as well as a prior minor release of NVidia's CUDA SDK.  I have
+updated the setup instructions to reflect the current versions as well as
+tested against 64bit Mac and Linux OSs.
+
+  With regard to your specific problem, many of NVidia's examples include
+use of OpenGL.  NVidia's documentation indicates that libgl.so is referenced
+via static link to appear to be located in /usr/lib/libgl.so (per
+<A HREF="http://developer.download.nvidia.com/compute/cuda/3_2_prod/drivers/docs/README_Linux.txtunder">http://developer.download.nvidia.com/compute/cuda/3_2_prod/drivers/docs/README_Linux.txtunder</A>
+Chapter 5, Listing of Installed Components, 4th bullet).  Chapter 5 of
+NVidia's documentation goes on to describe the linking process that happens
+when installing the developer drivers.  Perhaps this linking did not happen
+when you installed the NVidia development drivers for Linux.  Did you get an
+error during installation of the developer drivers reporting something in
+this regard?  Chapter 5 concludes on how to check a Linux dynamic library
+using the command line tool ldd.  In this case, ldd /usr/lib/libGL.so
+
+Here is the output I get when running ldd /usr/lib/libGL.so
+
+ldd /usr/lib/libGL.so
+linux-vdso.so.1 =&gt;  (0x00007ffff33e6000)
+ libnvidia-tls.so.260.19.14 =&gt; /usr/lib/tls/libnvidia-tls.so.260.19.14
+(0x00007fc82b46b000)
+libnvidia-glcore.so.260.19.14 =&gt; /usr/lib/libnvidia-glcore.so.260.19.14
+(0x00007fc82987f000)
+ libX11.so.6 =&gt; /usr/lib/libX11.so.6 (0x00007fc829549000)
+libXext.so.6 =&gt; /usr/lib/libXext.so.6 (0x00007fc829337000)
+ libc.so.6 =&gt; /lib/libc.so.6 (0x00007fc828f93000)
+libdl.so.2 =&gt; /lib/libdl.so.2 (0x00007fc828d8f000)
+ libm.so.6 =&gt; /lib/libm.so.6 (0x00007fc828b0c000)
+libxcb.so.1 =&gt; /usr/lib/libxcb.so.1 (0x00007fc8288ef000)
+ /lib64/ld-linux-x86-64.so.2 (0x00007fc82b974000)
+libXau.so.6 =&gt; /usr/lib/libXau.so.6 (0x00007fc8286eb000)
+ libXdmcp.so.6 =&gt; /usr/lib/libXdmcp.so.6 (0x00007fc8284e5000)
+
+
+If the libGL.so file is present and linked property, you can double check
+for inclusion of libGL.so path by ensuring its path in your bash profile
+under the variable LD_LIBRARY_PATH.  NVidia asks for the installer to add
+these additions in the Linux install documents.  Here is the line in my
+.bashrc file that allows the linker to find libGL.so (specifically the
+&quot;:/usr/lib&quot; portion of this line):
+
+export
+LD_LIBRARY_PATH=&quot;/usr/lib:/usr/local/cuda/lib64:/usr/local/cuda/lib:/usr/lib32:/usr/local/lib&quot;
+
+I also had issues compiling the most recent version of NVidia's C samples.
+ I reflected a work around in the updated web documents (see the bottom of:
+<A HREF="http://www.imagejdev.org/setting-host-machine">http://www.imagejdev.org/setting-host-machine</A> ).
+
+Please let me know if you have any more questions or difficulties with the
+ImageJ OpenCL plugin examples.
+
+Sincerely,
+
+Rick Lentz
+
+
+On Tue, Jan 11, 2011 at 4:20 AM, Pol kennel &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pol.kennel at gmail.com</A>&gt; wrote:
+
+&gt;<i> Hello,
+</I>&gt;<i>
+</I>&gt;<i> I am a PhD student working on image segmentation by texture analysis with
+</I>&gt;<i> an application on remote sensing images (Montpellier, France). So i have to
+</I>&gt;<i> process very large images (e.g. 15000*8000).
+</I>&gt;<i> All methods I developed are formed as plugin under ImageJ API that I really
+</I>&gt;<i> like, but not yet applicable on this sort of image.
+</I>&gt;<i> Recently, I tough to use finally my graphic card (Nvidia GTS240) which I
+</I>&gt;<i> think will help me a lot in my process. So after several search on the web,
+</I>&gt;<i> I found this &lt;<A HREF="http://imagejdev.org/plugins/opencl-plugin">http://imagejdev.org/plugins/opencl-plugin</A>&gt; (OpenCL plugin
+</I>&gt;<i> you wrote) great ! it's precisely what i need.
+</I>&gt;<i>
+</I>&gt;<i> So I decided to follow your tutorial to setup the environment but met some
+</I>&gt;<i> problems... :
+</I>&gt;<i>
+</I>&gt;<i>    1. When launching makefile in &quot;~/NVIDIA_GPU_Computing_SDK/C/ &quot; and
+</I>&gt;<i>    &quot;~/NVIDIA_GPU_Computing_SDK/OpenCL&quot; I had following error &quot;/usr/bin/ld:
+</I>&gt;<i>    cannot find -lGL&quot;. Plus, I dont have the same demo files, maybe because of
+</I>&gt;<i>    version ? (cudatoolkit_3.2.16_linux_64, gpucomputingsdk_3.2.16 and
+</I>&gt;<i>    devdriver_3.2_linux_64_260.19.26 on Ubuntu 10.10). On the other side demos I
+</I>&gt;<i>    have work perfectly (ooclDCT8x8, oclHistogram,...)
+</I>&gt;<i>    2. *Main problem is that the repository you indicate to get the example
+</I>&gt;<i>    project (<A HREF="http://www.loci.wisc.edu/svn/decon">http://www.loci.wisc.edu/svn/decon</A>) doesn't work... *&quot;
+</I>&gt;<i>    <A HREF="http://dev.loci.wisc.edu/svn/software/branches/maven/projects/opencl-decon">http://dev.loci.wisc.edu/svn/software/branches/maven/projects/opencl-decon</A>&quot;
+</I>&gt;<i>    repository works well. Is is the same ?
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Thanks a lot if you find time to answer me (and sorry for my english).
+</I>&gt;<i>
+</I>&gt;<i> And thanks you for work you are doing on ImageJ.
+</I>&gt;<i>
+</I>&gt;<i> Best regards,
+</I>&gt;<i> *
+</I>&gt;<i> *
+</I>&gt;<i> --
+</I>&gt;<i> Pol Kennel
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20110112/1099c826/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20110112/1099c826/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000293.html">[ImageJ-devel] New Lanczos-Interpolation
+</A></li>
+	<LI>Next message: <A HREF="000295.html">[ImageJ-devel] Fwd: OpenCL plugin
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#294">[ date ]</a>
+              <a href="thread.html#294">[ thread ]</a>
+              <a href="subject.html#294">[ subject ]</a>
+              <a href="author.html#294">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

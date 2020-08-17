@@ -1,0 +1,193 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] imglib2-neon project for runtime bytecode	transformation
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20imglib2-neon%20project%20for%20runtime%20bytecode%0A%09transformation&In-Reply-To=%3C908D1BB1-E5E7-4E62-AF01-C7EB1AEE9A03%40mpi-cbg.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002251.html">
+   <LINK REL="Next"  HREF="002254.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] imglib2-neon project for runtime bytecode	transformation</H1>
+    <B>Tobias Pietzsch</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20imglib2-neon%20project%20for%20runtime%20bytecode%0A%09transformation&In-Reply-To=%3C908D1BB1-E5E7-4E62-AF01-C7EB1AEE9A03%40mpi-cbg.de%3E"
+       TITLE="[ImageJ-devel] imglib2-neon project for runtime bytecode	transformation">pietzsch at mpi-cbg.de
+       </A><BR>
+    <I>Wed Sep 24 08:51:13 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002251.html">[ImageJ-devel] imglib2-neon project for runtime bytecode	transformation
+</A></li>
+        <LI>Next message: <A HREF="002254.html">[ImageJ-devel] imglib2-neon project for runtime bytecode	transformation
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2253">[ date ]</a>
+              <a href="thread.html#2253">[ thread ]</a>
+              <a href="subject.html#2253">[ subject ]</a>
+              <a href="author.html#2253">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Christian,
+
+On 24 Sep 2014, at 11:47, Christian Dietz &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">christian.dietz at uni-konstanz.de</A>&gt; wrote:
+
+&gt;<i> Hi Tobias,
+</I>&gt;<i> 
+</I>&gt;<i> I know we talked a lot about these issues and it's great that you found some time to tackle them. So, thank you very much for your effort. I really see the potential. ImageJ-Ops definitively can benefit from this approach indirectly (ImgLib2 using ASM) but also directly (using ASM n ImageJ-Ops). Unfortunately I will not take part at the next hackathon in Madison, but I can easily join you with Skype whenever you want to discuss ASM &amp; Ops.
+</I>&gt;<i> 
+</I>&gt;<i> Anyway, I'm a bit puzzled concerning the benchmark on SubIntervals. Even the &quot;unoptimized&quot; iteration has a dramatic improvement in run-time using the agent. Is this due to the fact, the ImgLib2 already suffered from the megamorphic call-sites? Or do I misunderstand something?
+</I>
+Yes, exactly.
+This is the last of several iterations through the whole benchmark, so the call in the loop has already been made megamorphic.
+In the first iteration, you would see for the non-neon version the same performance for
+&gt;&gt;<i> normal cursor | array img
+</I>
+and then degrading from there.
+So indeed, just the fact that several cursors have &#8220;gone through the code&#8221; makes the &quot;normal cursor | array img | Optimized&#8221; go from 8ms runtime up to 371ms.
+(And similar degradation for the other cursors.)
+
+best regards,
+Tobias
+
+&gt;<i> 
+</I>&gt;<i> Again, thank you for the effort! This seems to be exactly what we need on the ImgLib2 side.
+</I>&gt;<i> 
+</I>&gt;<i> Christian
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> On 24.09.2014 01:02, Tobias Pietzsch wrote:
+</I>&gt;&gt;<i> Hi guys,
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> As a weekend project I have started to look into bytecode modification using the wonderful ASM library (<A HREF="http://asm.ow2.org">http://asm.ow2.org</A>).
+</I>&gt;&gt;<i> I have cleaned up what I have played with and put it on github <A HREF="https://github.com/tpietzsch/neon.">https://github.com/tpietzsch/neon.</A>
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> It tackles a long-standing imglib obstacle, namely megamorphic call-sites in certain methods, where the JIT fails to recognise that the runtime target of the polymorphic changes between calls to a method but doesn&#8217;t change in the hot inner loop of the method during a single call. I have been talking about ideas to address this for quite some time, most recently here <A HREF="https://github.com/imglib/imglib/issues/71#issuecomment-51227237.">https://github.com/imglib/imglib/issues/71#issuecomment-51227237.</A> Now I went ahead and actually tried to do something about it.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> I have applied it to an example in imglib, which is described below. But for anyone not familiar with this particular issue (which is everyone except Christian probably) there
+</I>&gt;&gt;<i> is an illustrative example with explanations in the README on github <A HREF="https://github.com/tpietzsch/neon/blob/master/README.md.">https://github.com/tpietzsch/neon/blob/master/README.md.</A>
+</I>&gt;&gt;<i> This does not involve imglib at all and is a clear illustration of the problem (and my solution).
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> I&#8217;m quite happy with how it turned out so far. It certainly has to be applied with care, but I think this can be potentially huge for imglib2. It might open up new possibilities that we have shied away from because of performance reasons, such as internal iteration for IterableIntervals.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> Curtis, Johannes and Christian, I would also be interested what you think of this as a potential tool for imagej-ops.
+</I>&gt;&gt;<i> I think it is orthogonal to what you do with compile-time code generation currently and therefore might complement it nicely.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> I hope you have a look and tell me what you think.
+</I>&gt;&gt;<i> I would be especially interested in whether you can think of optimization idioms besides the @Instantiate @ByTypeOf that is implemented right now.
+</I>&gt;&gt;<i> It would be cool if we discuss this in the upcoming imglib hackathon.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> Okay, everybody except Christian might as well stop reading now.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> all the best,
+</I>&gt;&gt;<i> Tobias
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> PS: the imglib stuff...
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> For the imglib issue <A HREF="https://github.com/imglib/imglib/issues/71,">https://github.com/imglib/imglib/issues/71,</A> we played with ways of iterating pixels which can be optimized for certain subintervals of larger images.
+</I>&gt;&gt;<i> The optimizations work out nicely when done on their own, but everything really breaks down when a single method is used with differnent Cursor incarnations.
+</I>&gt;&gt;<i> This is actually already a potential problem in standard imglib, when Cursors from different Img types are uses in a single method. But adding the new optimized versions
+</I>&gt;&gt;<i> only made it more probable that the problem actually occurs.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> Here is numbers from a recent test, at a stage where 4 different kinds of cursors are in play:
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> normal cursor | array img
+</I>&gt;&gt;<i> walk through a subinterval
+</I>&gt;&gt;<i> 	| Unoptimized 	| Optimized 	| Speedup Time 	| Speedup % 	|
+</I>&gt;&gt;<i> Best	|	566	|	371	| 195ms   	| 34.4%   	|
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> localizing cursor | array img
+</I>&gt;&gt;<i> walk through a subinterval
+</I>&gt;&gt;<i> 	| Unoptimized 	| Optimized 	| Speedup Time 	| Speedup % 	|
+</I>&gt;&gt;<i> Best	|	907	|	584	| 323ms   	| 35.6%   	|
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> normal cursor | planar img
+</I>&gt;&gt;<i> walk through a subinterval
+</I>&gt;&gt;<i> 	| Unoptimized 	| Optimized 	| Speedup Time 	| Speedup % 	|
+</I>&gt;&gt;<i> Best	|	562	|	373	| 189ms   	| 33.6%   	|
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> localizing cursor | planar img
+</I>&gt;&gt;<i> walk through a subinterval
+</I>&gt;&gt;<i> 	| Unoptimized 	| Optimized 	| Speedup Time 	| Speedup % 	|
+</I>&gt;&gt;<i> Best	|	928	|	611	| 317ms   	| 34.1%   	|
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> With the neon java agent this improves to:
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> normal cursor | array img
+</I>&gt;&gt;<i> walk through a subinterval
+</I>&gt;&gt;<i> 	| Unoptimized 	| Optimized 	| Speedup Time 	| Speedup % 	|
+</I>&gt;&gt;<i> Best	|	153	|	8	| 145ms   	| 94.7%   	|
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> localizing cursor | array img
+</I>&gt;&gt;<i> walk through a subinterval
+</I>&gt;&gt;<i> 	| Unoptimized 	| Optimized 	| Speedup Time 	| Speedup % 	|
+</I>&gt;&gt;<i> Best	|	235	|	200	| 35ms   	| 14.8%   	|
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> normal cursor | planar img
+</I>&gt;&gt;<i> walk through a subinterval
+</I>&gt;&gt;<i> 	| Unoptimized 	| Optimized 	| Speedup Time 	| Speedup % 	|
+</I>&gt;&gt;<i> Best	|	128	|	8	| 120ms   	| 93.7%   	|
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> localizing cursor | planar img
+</I>&gt;&gt;<i> walk through a subinterval
+</I>&gt;&gt;<i> 	| Unoptimized 	| Optimized 	| Speedup Time 	| Speedup % 	|
+</I>&gt;&gt;<i> Best	|	217	|	208	| 9ms   	| 4.1%   	|
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> A speedup of factor ~4 to ~40 can be observed.
+</I>&gt;&gt;<i> These two runs were made with exactly the same code, but for the second one, the program was run with the option
+</I>&gt;&gt;<i>    java -javaagent:/path/to/neon-1.0.0-SNAPSHOT.jar &#8230;
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> I just pushed the example to <A HREF="https://github.com/imglib/imglib/commit/a9b70d923e9a84c4055acae96f71d05ca4a26344">https://github.com/imglib/imglib/commit/a9b70d923e9a84c4055acae96f71d05ca4a26344</A>
+</I>&gt;&gt;<i> 
+</I>&gt;<i> 
+</I>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140924/0a672e08/attachment-0001.pgp">http://imagej.net/pipermail/imagej-devel/attachments/20140924/0a672e08/attachment-0001.pgp</A>&gt;
+</PRE>
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002251.html">[ImageJ-devel] imglib2-neon project for runtime bytecode	transformation
+</A></li>
+	<LI>Next message: <A HREF="002254.html">[ImageJ-devel] imglib2-neon project for runtime bytecode	transformation
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2253">[ date ]</a>
+              <a href="thread.html#2253">[ thread ]</a>
+              <a href="subject.html#2253">[ subject ]</a>
+              <a href="author.html#2253">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

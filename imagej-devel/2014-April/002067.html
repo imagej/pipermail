@@ -1,0 +1,137 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [LOCI ImageJ] IJ2 Plugin Service
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5BLOCI%20ImageJ%5D%20IJ2%20Plugin%20Service&In-Reply-To=%3C853DAAEA-E381-4A8A-8ACB-F2608E63BB7F%40wisc.edu%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002066.html">
+   <LINK REL="Next"  HREF="002056.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [LOCI ImageJ] IJ2 Plugin Service</H1>
+    <B>Jay Warrick</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5BLOCI%20ImageJ%5D%20IJ2%20Plugin%20Service&In-Reply-To=%3C853DAAEA-E381-4A8A-8ACB-F2608E63BB7F%40wisc.edu%3E"
+       TITLE="[ImageJ-devel] [LOCI ImageJ] IJ2 Plugin Service">warrick at wisc.edu
+       </A><BR>
+    <I>Wed Apr 30 19:49:27 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002066.html">[ImageJ-devel] [LOCI ImageJ] IJ2 Plugin Service
+</A></li>
+        <LI>Next message: <A HREF="002056.html">[ImageJ-devel] Converting ImgPlus to ImagePlus
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2067">[ date ]</a>
+              <a href="thread.html#2067">[ thread ]</a>
+              <a href="subject.html#2067">[ subject ]</a>
+              <a href="author.html#2067">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi All,
+
+Thanks for all these replies folks. Digging around yesterday afternoon and evening essentially painted a picture much like what Johannes indicated in his email. The getResource() method works just fine and works roughly the same whether you do A) jars-in-a-jar or B) jars (reference libraries) in a folder next to a jar (my program), which are two of the 3 possible modes of exporting runnable jars. The third option, C), actually extracts all the class files and reorganizes them into a single flat jar (i.e., not jar-in-jar but just a single uber-jar of classes in folders), which I haven't used in the past for other reasons as well. 
+
+Instead, it seems (I say seems because I only dabble in ClassLoaders) their is no way to compile a list of my program's class files for indexing annotation using just the method getResource() or getResources() without knowing the name of at least a single resource in my program's jar. The getResources() method just gives a list of the referenced jars and not the main program's jar itself.  However, if I want sci-java to work agnostic of who's using it, I can't assume within the sci-java code that I ever know of a specific resource to look for. Even if getResource() does give a path to my program's jar, the jar does not have the META-INF/json/&lt;package&gt;.Plugin file that contains the results of indexing. The key to the EclipseHelper is that it actually uses the getURLs() method of the URLClassLoader instead of the getResources(). When running from eclipse, this method gives the path to my referenced jars and the programs bin folder. When running from jar, the getURLs() method returns both the referenced libraries and my programs jar file (yay). However, since the jar file is not a directory, the EclipseHelper method does not index it and write the META-INF/json/&lt;package&gt;.Plugin file. The iteration method it uses requires directories, which is fine and dandy when running from within Eclipse but my program's JarFile doesn't look like a directory so the exact same mechanism doesn't work. However, it looks like a method analogous to this approach but for JarFiles might work., right? I think, to work, it would have to iteratively index the contents of the JarFile and add a META-INF/json/&lt;package&gt;.Plugin file as a new Jar entry (as far as I can see anyway, I could definitely be wrong). I am trying to hack something together to show whether this would work at all but if any of you think this approach would benefit others, I'd welcome suggestions and would try to clean it up as much as I can for a pull request. It seems like the EclipseHelper is used when the class loader is an instance of URLClassLoader (plus some other tests...) which happens to occur both when running from eclipse and when exported as a runnable jar. So, on the surface at least, it looks like the EclipseHelper class could be used for both scenarios but am happy to change tacks if you think otherwise.
+
+However, I have a couple specific questions, that if answered would help me to know if this might work at all and move forward.
+
+0) Does my take on the situation seem right?
+
+1) If I edit the programs jar file during run time by adding the META-INF/json/&lt;package&gt;.Plugin jar entry, will that majorly hose things?
+
+2) The Index class still uses the getResources() method to find things and it will still only link to the referenced jar files. In this case we can't assume that the ClassLoader is a URLClassLoader to be able to use the getURLs method. I don't recall noticing when or how the indexing mechanism looks for these META-INF/json/&lt;package&gt;.Plugin files to compile all the annotation information. I assume it is via the getResource() method because I believe by knowing what to look for (i.e., a META-INF/json/&lt;package&gt;.Plugin file), we can just ask for the resource directly? In other words, if I can get the META-INF/json/&lt;package&gt;.Plugin written to my program's jar analogous to the other referenced jars, then everything will be OK?
+
+Thanks thanks thanks,
+
+Jay
+
+On Apr 30, 2014, at 12:51 PM, Johannes Schindelin &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">Johannes.Schindelin at gmx.de</A>&gt; wrote:
+
+&gt;<i> Hi,
+</I>&gt;<i> 
+</I>&gt;<i> On Wed, 30 Apr 2014, Curtis Rueden wrote:
+</I>&gt;<i> 
+</I>&gt;&gt;&gt;<i> when I export the application as a runnable jar, ij.plugin()service
+</I>&gt;&gt;&gt;<i> returns all the Command.class plugins but 0 plugins of type
+</I>&gt;&gt;&gt;<i> JEXPlugin.class
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> This is an issue we have discussed before: Eclipse creates uberjars using a
+</I>&gt;&gt;<i> &quot;jar-in-jar&quot; approach, and SciJava Common's plugin mechanism does not read
+</I>&gt;&gt;<i> the metadata out of a jar-in-jar.
+</I>&gt;<i> 
+</I>&gt;<i> Please note that the jar-in-jar poses no problem, unless the ClassLoader
+</I>&gt;<i> used to access them is broken: it needs to support the getResources() call
+</I>&gt;<i> properly and find the resource files contained in the nested .jar files.
+</I>&gt;<i> 
+</I>&gt;<i> However, in the reported case I believe it is not triggered by the uber
+</I>&gt;<i> jar or jar-in-jar scenario.
+</I>&gt;<i> 
+</I>&gt;<i> Background: The internal technique behind the plugins uses annotation
+</I>&gt;<i> processors run at compile time. They basically look at each file that has
+</I>&gt;<i> a @Plugin annotation and write out index files that get included into the
+</I>&gt;<i> .jar files.
+</I>&gt;<i> 
+</I>&gt;<i> Except that Eclipse -- violating the Java specification -- does not run
+</I>&gt;<i> annotation processors. At least not by default, and even if you switch it
+</I>&gt;<i> on (manually, for each and every project you maintain, one by one), it
+</I>&gt;<i> *still* only runs them on full builds (i.e. after Project&gt;Clean).
+</I>&gt;<i> 
+</I>&gt;<i> So it looks to me that in the reported case, the annotation processor is
+</I>&gt;<i> never run, and as a consequence, the index file is never written, and
+</I>&gt;<i> therefore it cannot be found at runtime.
+</I>&gt;<i> 
+</I>&gt;<i> Of course, Eclipse being such a prevalent platform to develop in, we tried
+</I>&gt;<i> to come up with a workaround: whenever the annotation indexes are read, a
+</I>&gt;<i> class called &quot;EclipseHelper&quot; tries to detect whether it needs to create
+</I>&gt;<i> the index files because Eclipse failed to run the annotation processors.
+</I>&gt;<i> 
+</I>&gt;<i> This works amazingly well because many developers have written unit tests
+</I>&gt;<i> and run them before bundling .jar files manually. These unit tests verify
+</I>&gt;<i> that plugins work, of course, which is why the EclipseHelper works around
+</I>&gt;<i> the problem successfully in most cases.
+</I>&gt;<i> 
+</I>&gt;<i> Also, here is a lesson for everybody choosing to learn from our past
+</I>&gt;<i> mistakes and experiences: any possible convenience of uber jars is
+</I>&gt;<i> outweighed multiple times over by the disadvantages it incurs to users: it
+</I>&gt;<i> makes updating really costly (every time it's time to update, a new
+</I>&gt;<i> monster .jar needs to be downloaded), it makes collaboration between
+</I>&gt;<i> projects difficult at best, and it certainly asks for version skew.
+</I>&gt;<i> 
+</I>&gt;<i> Ciao,
+</I>&gt;<i> Johannes
+</I>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140430/8155fa73/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20140430/8155fa73/attachment-0001.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002066.html">[ImageJ-devel] [LOCI ImageJ] IJ2 Plugin Service
+</A></li>
+	<LI>Next message: <A HREF="002056.html">[ImageJ-devel] Converting ImgPlus to ImagePlus
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2067">[ date ]</a>
+              <a href="thread.html#2067">[ thread ]</a>
+              <a href="subject.html#2067">[ subject ]</a>
+              <a href="author.html#2067">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

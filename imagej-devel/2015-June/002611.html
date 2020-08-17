@@ -1,0 +1,151 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] built ins
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20built%20ins&In-Reply-To=%3CCAMWa8i3%3D%3DGvRy0LCpOQXN3wB6cE9KBHHOvxSOu7wDL35piwfFw%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002609.html">
+   <LINK REL="Next"  HREF="002610.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] built ins</H1>
+    <B>Brian Northan</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20built%20ins&In-Reply-To=%3CCAMWa8i3%3D%3DGvRy0LCpOQXN3wB6cE9KBHHOvxSOu7wDL35piwfFw%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] built ins">bnorthan at gmail.com
+       </A><BR>
+    <I>Tue Jun 30 09:04:27 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002609.html">[ImageJ-devel] built ins
+</A></li>
+        <LI>Next message: <A HREF="002610.html">[ImageJ-devel] Bug? using ConnectedComponents and LabelRegion(s) with ImageJFunctions.wrapByte(ImagePlus imp)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2611">[ date ]</a>
+              <a href="thread.html#2611">[ thread ]</a>
+              <a href="subject.html#2611">[ subject ]</a>
+              <a href="author.html#2611">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Thanks Curtis
+
+I was able to get it working.  The error message from the unit test were
+very helpful.  I'll let you know if any issues come up.
+
+Brian
+
+On Mon, Jun 29, 2015 at 2:49 PM, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt; wrote:
+
+&gt;<i> Hi Brian,
+</I>&gt;<i>
+</I>&gt;<i> &gt; Is there documentation anywhere on how to update the built-ins after
+</I>&gt;<i> &gt; updating the signature of an op??
+</I>&gt;<i>
+</I>&gt;<i> Not yet. We can make a wiki page. The other thing missing is a top-level
+</I>&gt;<i> &quot;built-ins completeness test&quot; to make sure that all built-ins are actually
+</I>&gt;<i> present and being tested for. (Right now, each unit tests covers a specific
+</I>&gt;<i> op name, but there is no test that verifies all op names are being tested.)
+</I>&gt;<i>
+</I>&gt;<i> Due to limitations in generic type matching (as described at
+</I>&gt;<i> <A HREF="https://github.com/imagej/imagej-ops/issues/19">https://github.com/imagej/imagej-ops/issues/19</A>), we were not able to
+</I>&gt;<i> fully automate generation of the built-in methods. So unfortunately they
+</I>&gt;<i> must be added manually. But there is a significant unit testing
+</I>&gt;<i> infrastructure that tries hard to verify everything matches.
+</I>&gt;<i>
+</I>&gt;<i> Here's a quick rundown:
+</I>&gt;<i>
+</I>&gt;<i> 1A) If you add a new concrete op implementation for an existing op name,
+</I>&gt;<i> then the existing built-in test method will pick it up.
+</I>&gt;<i>
+</I>&gt;<i> 1B) Or if the implementation corresponds to a new name foo, you can add
+</I>&gt;<i> the completeness test by adding a new testFoo() method to the appropriate
+</I>&gt;<i> namespace test class (e.g., MathNamespaceTest for math, LogicNamespaceTest
+</I>&gt;<i> for logic, or GlobalNamespaceTest for methods in the OpService itself).
+</I>&gt;<i>
+</I>&gt;<i> 2) The unit test will notice that your new op does not have corresponding
+</I>&gt;<i> built-in method signature(s), and spit out a detailed error message
+</I>&gt;<i> suggesting the method bodies to be added. The method bodies are pretty
+</I>&gt;<i> close to correct except for they are missing generic parameters. So you
+</I>&gt;<i> must tweak the argument types by hand to make the generics match the fields
+</I>&gt;<i> of the concrete op implementation.
+</I>&gt;<i>
+</I>&gt;<i> 3) Then just paste the method body into the appropriate namespace class
+</I>&gt;<i> (e.g., MathNamespace for math, LogicNamespace for logic, or OpService and
+</I>&gt;<i> DefaultOpService for global. Then the relevant completeness test should
+</I>&gt;<i> pass again.
+</I>&gt;<i>
+</I>&gt;<i> 4) If multiple ops have clashing signatures, you can make a single
+</I>&gt;<i> built-in method with an @OpMethod annotation the specifies multiple
+</I>&gt;<i> concrete op classes in its &quot;ops&quot; attribute. Method parameters and return
+</I>&gt;<i> type must then use the most common compatible superclass of all involved
+</I>&gt;<i> ops.
+</I>&gt;<i>
+</I>&gt;<i> Let me know if any of that needs clarification; happy to elaborate
+</I>&gt;<i> further, and point out specific examples as needed.
+</I>&gt;<i>
+</I>&gt;<i> Regards,
+</I>&gt;<i> Curtis
+</I>&gt;<i>
+</I>&gt;<i> On Mon, Jun 29, 2015 at 9:21 AM, Brian Northan &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">bnorthan at gmail.com</A>&gt; wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> Hi everyone
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Just noticed that built-ins were added recently.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> <A HREF="https://github.com/imagej/imagej-ops/pull/145">https://github.com/imagej/imagej-ops/pull/145</A>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Is there documentation anywhere on how to update the built-ins after
+</I>&gt;&gt;<i> updating the signature of an op??
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Mainly I'm wondering if there is any scripts or automated code generation
+</I>&gt;&gt;<i> steps to perform??
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> If it is just a matter of updating the signatures manually I can figure
+</I>&gt;&gt;<i> out how to do that.  Just want to make I don't miss an automated step I
+</I>&gt;&gt;<i> should be running.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Thanks
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Brian
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20150630/4ec9432e/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20150630/4ec9432e/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002609.html">[ImageJ-devel] built ins
+</A></li>
+	<LI>Next message: <A HREF="002610.html">[ImageJ-devel] Bug? using ConnectedComponents and LabelRegion(s) with ImageJFunctions.wrapByte(ImagePlus imp)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2611">[ date ]</a>
+              <a href="thread.html#2611">[ thread ]</a>
+              <a href="subject.html#2611">[ subject ]</a>
+              <a href="author.html#2611">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

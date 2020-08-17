@@ -1,0 +1,275 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] @parameter choice update in component callback
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%40parameter%20choice%20update%20in%20component%20callback&In-Reply-To=%3CCADN69y%3Dpm0FPELAC0yp9hnOjET8gRAeL%3D_gS30qLk5euP98%3Dvg%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002662.html">
+   <LINK REL="Next"  HREF="002673.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] @parameter choice update in component callback</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%40parameter%20choice%20update%20in%20component%20callback&In-Reply-To=%3CCADN69y%3Dpm0FPELAC0yp9hnOjET8gRAeL%3D_gS30qLk5euP98%3Dvg%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] @parameter choice update in component callback">ctrueden at wisc.edu
+       </A><BR>
+    <I>Fri Aug 21 23:10:06 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002662.html">[ImageJ-devel] @parameter choice update in component callback
+</A></li>
+        <LI>Next message: <A HREF="002673.html">[ImageJ-devel] @parameter choice update in component callback
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2667">[ date ]</a>
+              <a href="thread.html#2667">[ thread ]</a>
+              <a href="subject.html#2667">[ subject ]</a>
+              <a href="author.html#2667">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Adrian,
+
+&gt;<i> Doesn't that allow doing what Felix would like to do, by populating
+</I>&gt;<i> the combobox through such an initialiser ?
+</I>
+I think what Felix wants is to set a parameter's &quot;choices&quot; attribute --
+i.e., the values that will appear in the input harvester UI's dropdown list
+box.
+
+It can be done with a DynamicCommand, but right now it only works from an
+initializer, not from a callback. So if you want to populate the choice
+once from, say, the active Dataset, it works. But if you want to update the
+choices e.g. every time the user moves a numerical slider, it will not work
+because the UI will not update.
+
+See also:
+* <A HREF="https://github.com/scijava/scijava-common/issues/180">https://github.com/scijava/scijava-common/issues/180</A>
+* <A HREF="https://github.com/scijava/scijava-common/issues/181">https://github.com/scijava/scijava-common/issues/181</A>
+
+&gt;<i> Are the parameters populated/initialised in the order they appear? In
+</I>&gt;<i> particular, is the initialisation done serially or can there be
+</I>&gt;<i> parallel execution of initialisers ?
+</I>
+Initialization is currently implemented serially [1].
+
+&gt;<i> I have parameters a, b, c whose initialisation depend on a common
+</I>&gt;<i> calculation (depending on the image gotten through a previous
+</I>&gt;<i> @Parameter ImagePlus imp): can I do this calculation in the
+</I>&gt;<i> initialiser for the first parameter a, and then in the initialisers of
+</I>&gt;<i> b and c rely on the fact that the calculation was already done ?
+</I>
+Perhaps simplest at the moment would be to give your command a global
+initializer -- i.e., set the initializer method in the @Plugin annotation
+itself, rather than on specific parameters. The ImagePlus will be populated
+by a preprocessor _before_ the initialize method is called, so when your
+global initializer gets called you will already have access to the
+ImagePlus.
+
+But again, scijava/scijava-common#181 is very relevant here.
+
+Regards,
+Curtis
+
+[1]
+<A HREF="https://github.com/scijava/scijava-common/blob/scijava-common-2.42.2/src/main/java/org/scijava/module/AbstractModule.java#L75-L88">https://github.com/scijava/scijava-common/blob/scijava-common-2.42.2/src/main/java/org/scijava/module/AbstractModule.java#L75-L88</A>
+
+On Fri, Aug 21, 2015 at 6:18 AM, Adrian Daerr &lt;
+<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">adrian.daerr at univ-paris-diderot.fr</A>&gt; wrote:
+
+&gt;<i> Hi Curtis, Felix, Jan, and others,
+</I>&gt;<i>
+</I>&gt;<i> In the CommandWithPreview tutorial example[*] that Curtis sent to
+</I>&gt;<i> the list a few weeks back, there is a @Parameter which is
+</I>&gt;<i> initialised to a value depending on the initialisation of another
+</I>&gt;<i> parameter:
+</I>&gt;<i>
+</I>&gt;<i> @Parameter private ImagePlus imp;
+</I>&gt;<i>
+</I>&gt;<i> @Parameter(persist = false, initializer = &quot;initTitle&quot;) private String
+</I>&gt;<i> title;
+</I>&gt;<i>
+</I>&gt;<i> /** Initializes the {@link #title} parameter. */
+</I>&gt;<i> protected void initTitle() {
+</I>&gt;<i>         title = initialTitle = imp.getTitle();
+</I>&gt;<i> }
+</I>&gt;<i>
+</I>&gt;<i> [*]
+</I>&gt;<i>
+</I>&gt;<i> <A HREF="https://github.com/imagej/imagej-tutorials/blob/master/commands-with-preview/src/main/java/CommandWithPreview.java">https://github.com/imagej/imagej-tutorials/blob/master/commands-with-preview/src/main/java/CommandWithPreview.java</A>
+</I>&gt;<i>
+</I>&gt;<i> Doesn't that allow doing what Felix would like to do, by
+</I>&gt;<i> populating the combobox through such an initialiser ?
+</I>&gt;<i>
+</I>&gt;<i> Are the parameters populated/initialised in the order they
+</I>&gt;<i> appear? In particular, is the initialisation done serially or can
+</I>&gt;<i> there be parallel execution of initialisers ? I ask because I
+</I>&gt;<i> have parameters a, b, c whose initialisation depend on a common
+</I>&gt;<i> calculation (depending on the image gotten through a previous
+</I>&gt;<i> @Parameter ImagePlus imp): can I do this calculation in the
+</I>&gt;<i> initialiser for the first parameter a, and then in the
+</I>&gt;<i> initialisers of b and c rely on the fact that the calculation was
+</I>&gt;<i> already done ?
+</I>&gt;<i>
+</I>&gt;<i> cheers,
+</I>&gt;<i> Adrian
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On Thu, 20 Aug 2015 17:13:11 -0500
+</I>&gt;<i>  Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt; wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> Hi Felix, Jan and everyone,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I couldn&#8217;t find any hint that it is possible to update the choices of
+</I>&gt;&gt;&gt;<i> a parameter (declared with the annotator) in a callback that for
+</I>&gt;&gt;&gt;<i> another parameter.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> It is possible to dynamically adjust parameters from Java code [1]. You
+</I>&gt;&gt;<i> can
+</I>&gt;&gt;<i> also dynamically add and remove parameters. Such commands extend the
+</I>&gt;&gt;<i> DynamicCommand class.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> There are many examples currently in the imagej-plugins-commands project;
+</I>&gt;&gt;<i> e.g.:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> <A HREF="https://github.com/imagej/imagej-plugins-commands/blob/imagej-plugins-commands-0.5.1/src/main/java/net/imagej/plugins/commands/restructure/AddAxis.java">https://github.com/imagej/imagej-plugins-commands/blob/imagej-plugins-commands-0.5.1/src/main/java/net/imagej/plugins/commands/restructure/AddAxis.java</A>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> However, a couple of notes:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> - This pattern makes the command less reusable from other contexts,
+</I>&gt;&gt;<i> because
+</I>&gt;&gt;<i> some contexts require a priori knowledge about the number and types of
+</I>&gt;&gt;<i> input and output parameters.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> - The user interface currently does not properly refresh the input
+</I>&gt;&gt;<i> harvester dialog if changes are made to parameters from a callback. So
+</I>&gt;&gt;<i> while you can technically do things like change the choices array of a
+</I>&gt;&gt;<i> multiple-choice input, the user will not actually see it.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> - What does work currently is to determine the multiple-choice values at
+</I>&gt;&gt;<i> initialization time, based on the values of parameters which have already
+</I>&gt;&gt;<i> been populated earlier, such as an active dataset. This is what many of
+</I>&gt;&gt;<i> the
+</I>&gt;&gt;<i> DynamicCommand implementations in imagej-plugins-commands do.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Really, there are _five_ different classes of commands here:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> 1) Totally fixed, with inputs and outputs known in advance.
+</I>&gt;&gt;<i> 2) Updates parameter attributes (such as choices&#8212;but not # or type of
+</I>&gt;&gt;<i> inputs/outputs) once during initialization.
+</I>&gt;&gt;<i> 3) Updates parameter number and type (i.e., adding/removing
+</I>&gt;&gt;<i> inputs/outputs)
+</I>&gt;&gt;<i> once during initialization.
+</I>&gt;&gt;<i> 4) Updates parameter attributes repeatedly e.g. during callbacks.
+</I>&gt;&gt;<i> 5) Updates parameter number and type repeatedly e.g. during callbacks.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Of these, type #1 is most desirable for a variety of reasons. Failing
+</I>&gt;&gt;<i> that,
+</I>&gt;&gt;<i> types #2 and #3 can be done right now using DynamicCommand and it works
+</I>&gt;&gt;<i> properly from the ImageJ UI&#8212;but not from other contexts like CellProfiler,
+</I>&gt;&gt;<i> KNIME, etc. Types #4 and #5 can also be coded but will not work properly
+</I>&gt;&gt;<i> from the UI in ImageJ because the input harvester is not rebuilt on
+</I>&gt;&gt;<i> callbacks.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> See also:
+</I>&gt;&gt;<i> * <A HREF="https://github.com/scijava/scijava-common/issues/42">https://github.com/scijava/scijava-common/issues/42</A>
+</I>&gt;&gt;<i> * <A HREF="https://github.com/scijava/scijava-common/issues/43">https://github.com/scijava/scijava-common/issues/43</A>
+</I>&gt;&gt;<i> * <A HREF="https://github.com/CellProfiler/CellProfiler/issues/647">https://github.com/CellProfiler/CellProfiler/issues/647</A>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Regards,
+</I>&gt;&gt;<i> Curtis
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> [1] Dynamically updating parameters from scripts would be a different
+</I>&gt;&gt;<i> story. No plans to do that any time soon...
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> On Thu, Aug 20, 2015 at 6:50 AM, Jan Eglinger &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">jan.eglinger at gmail.com</A>&gt;
+</I>&gt;&gt;<i> wrote:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Hi Felix and all,
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> On 20.08.2015 10:06, MEYENHOFER Felix wrote:
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> I couldn&#8217;t find any hint that it is possible to update the choices of a
+</I>&gt;&gt;&gt;&gt;<i> parameter (declared with the annotator) in a callback that for another
+</I>&gt;&gt;&gt;&gt;<i> parameter. For example; I have a file chooser and once a file hase been
+</I>&gt;&gt;&gt;&gt;<i> chosen, I want to read some file metadata and then update the choices of
+</I>&gt;&gt;&gt;&gt;<i> the combobox that allows to select the images series.
+</I>&gt;&gt;&gt;&gt;<i> Since I could not figure a way to do it, I wanted to ask here if it is
+</I>&gt;&gt;&gt;&gt;<i> possible at all?
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> I think dynamic adjustment of parameters isn't possible currently, but I
+</I>&gt;&gt;&gt;<i> agree that it would be a great thing to have.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> I know quite some use cases where either a DialogListener or a series of
+</I>&gt;&gt;&gt;<i> subsequent dialogs are used in ImageJ 1.x plugins to adjust parameter
+</I>&gt;&gt;&gt;<i> choice to previously harvested input.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Furthermore, is it possible to get a directory chooser instead of a file
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> chooser in the configuration dialog of a command using the @Parameter
+</I>&gt;&gt;&gt;&gt;<i> annotation?
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> Yes, by using the
+</I>&gt;&gt;&gt;<i>     style = &quot;directory&quot;
+</I>&gt;&gt;&gt;<i> attribute. See *Templates &gt; Python &gt; Process Folder* in the script
+</I>&gt;&gt;&gt;<i> editor,
+</I>&gt;&gt;&gt;<i> and this related discussion:
+</I>&gt;&gt;&gt;<i>   <A HREF="https://github.com/imagej/imagej-legacy/pull/114">https://github.com/imagej/imagej-legacy/pull/114</A>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Best,
+</I>&gt;&gt;&gt;<i> Jan
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;<i> --
+</I>&gt;<i> <A HREF="http://www.msc.univ-paris-diderot.fr/~daerr/">http://www.msc.univ-paris-diderot.fr/~daerr/</A>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20150821/d0a4b208/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20150821/d0a4b208/attachment.html</A>&gt;
+</PRE>
+
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002662.html">[ImageJ-devel] @parameter choice update in component callback
+</A></li>
+	<LI>Next message: <A HREF="002673.html">[ImageJ-devel] @parameter choice update in component callback
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2667">[ date ]</a>
+              <a href="thread.html#2667">[ thread ]</a>
+              <a href="subject.html#2667">[ subject ]</a>
+              <a href="author.html#2667">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

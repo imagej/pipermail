@@ -1,0 +1,292 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Local Neighborhood stuff
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Local%20Neighborhood%20stuff&In-Reply-To=%3C500E760B.7060802%40mpi-cbg.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001138.html">
+   <LINK REL="Next"  HREF="001111.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Local Neighborhood stuff</H1>
+    <B>Tobias Pietzsch</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Local%20Neighborhood%20stuff&In-Reply-To=%3C500E760B.7060802%40mpi-cbg.de%3E"
+       TITLE="[ImageJ-devel] Local Neighborhood stuff">pietzsch at mpi-cbg.de
+       </A><BR>
+    <I>Tue Jul 24 05:16:43 CDT 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001138.html">[ImageJ-devel] [fiji-devel] LOCI crashes with current Fiji	build on runtime
+</A></li>
+        <LI>Next message: <A HREF="001111.html">[ImageJ-devel] Local Neighborhood stuff
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1097">[ date ]</a>
+              <a href="thread.html#1097">[ thread ]</a>
+              <a href="subject.html#1097">[ subject ]</a>
+              <a href="author.html#1097">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+I cc'ed the imagej-devel list, because this should be of wider interest.
+The gist of the mails quoted below is that we (Christian Dietz,
+Jean-Yves Tinevez) are trying to unify the LocalNeighborhood (-Cursors)
+that have been popping up in different places in ImgLib2.
+Currently, most of the relevant source can be found in package
+net.imglib2.algorithm.region.localneighborhood in algorithms-gpl.
+Maybe Jean-Yves and Christian could provide some more information on the
+individual neighborhoods that are implemented.
+
+Some comments with respect to the previous mails
+
+1.) Factory vs. CopyOn()
+A factory could be constructed with parameters, for instance the
+CellContainerFactory is constructed with cell dimensions. So a
+HypersphereNeighborhood could be constructed with the radius for
+example. However, I don't see much harm in adding the copyOn() method.
+Having only updateSource() would be too little, as we might want to
+change the type T of the Neighborhood in copyOn() and only keep the
+structure.In general, I don't like the updateSource() very much. For
+instance,what happens if the new source has a different number of
+dimensions?
+
+2.) Neighborhood interface
+In addition to Positionable and IterableInterval, it could extend 
+Localizable to get the position of the center.
+
+3.) IN extends RandomAccessibleInterval&lt;T&gt; parameter in 
+AbstractNeighborhood, etc
+I think all the Neighborhoods should be constructed on
+RandomAccessible&lt;T&gt; instead of RandomAccessibleInterval&lt;T&gt;.
+If interval extension is required then this should be done outside of
+the Neighborhood. If we do this, then the IN parameter is no longer
+required, right? The Neighborhood is just constructed with any
+RandomAccessible&lt;T&gt;.
+
+4.) move to imglib2 core
+Eventually, the neighborhood should be moved to the core, maybe with the
+exception of rather special-case stuff like DiscNeighborhood.
+Or is ops a better place? What do you think?
+
+best regards,
+Tobias
+
+
+
+
+On 07/24/2012 09:12 AM, Jean-Yves Tinevez wrote:
+ &gt;
+ &gt;
+ &gt; On Tue, Jul 24, 2012 at 8:53 AM, Christian Dietz
+ &gt; &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">christian.dietz at uni-konstanz.de</A>
+ &gt; &lt;mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">christian.dietz at uni-konstanz.de</A>&gt;&gt; wrote:
+ &gt;
+ &gt; Hi Tobi,
+ &gt;
+ &gt; thinking of parameters. Each neighborhood may have a different amount
+ &gt; of parameters like radius, spans etc...
+ &gt;
+ &gt;
+ &gt; Which leads us to the question: What do we want in the Neighborhood
+ &gt; interface? It has to be Positionable and IntervalIterable, but what
+ &gt; do we add to this?
+ &gt;
+ &gt; Initially I put a setSpan(long[] size); method, because I thought
+ &gt; that every neighborhood would have some size that could be set. The
+ &gt; span would then have the meaning of the bounding box radius. It doe
+ &gt; snot work if we want to put /e.g./ Brensenham lines there.
+ &gt;
+ &gt; What else?
+
+On 07/23/2012 08:45 PM, Christian Dietz wrote:
+ &gt; Hi,
+ &gt;
+ &gt; yes I was also thinking about a factory, but again I ran into
+ &gt; problems. Imagine the following scenario:
+ &gt;
+ &gt; You've an operation which operates on a Neighborhood &amp; Image, so you
+ &gt; give it a Neighborhood in the Constructor. Any Img&lt;T&gt; is passed in
+ &gt; the compute call of the. The operation can be applied on any Img&lt;T&gt;
+ &gt; (e.g. compute(A img, A res)), but if the op can't set the source of a
+ &gt; neighborhood the op can't be reused.
+ &gt;
+ &gt; Best regards,
+ &gt;
+ &gt; Christian
+ &gt;
+ &gt;
+ &gt;
+ &gt; -----Original Message----- From: Tobias Pietzsch
+ &gt; [mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pietzsch at mpi-cbg.de</A>] Sent: Montag, 23. Juli 2012 17:27 To:
+ &gt; Christian Dietz Cc: 'Jean-Yves Tinevez' Subject: Re: Local
+ &gt; Neighborhood stuff
+ &gt;
+ &gt; Hi,
+ &gt;
+ &gt; In similar situations we often used a factory in imglib2. So, would a
+ &gt; NeighborhoodFactory instead of a copy/updateSource method work here?
+ &gt;
+ &gt; best regards, Tobias
+ &gt;
+ &gt; On 07/21/2012 09:03 PM, Christian Dietz wrote:
+ &gt;&gt; Just one more remark (as I ran into problems ;))
+ &gt;&gt;
+ &gt;&gt; Just recognized that instead of the copy(IN source) something like
+ &gt;&gt; updateSource(IN source) would be better. In addition a constructor
+ &gt;&gt; of a AbstractNeighborhood(int numDims,&#8230; xy) should also be
+ &gt;&gt; available (see knip_deployment for examples).
+ &gt;&gt;
+ &gt;&gt; What do you think?
+ &gt;&gt;
+ &gt;&gt; *From:*Jean-Yves Tinevez [mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">jeanyves.tinevez at gmail.com</A>]
+ &gt;&gt; *Sent:* Samstag, 21. Juli 2012 20:32 *To:* Christian Dietz *Cc:*
+ &gt;&gt; Tobias Pietzsch; Martin Horn *Subject:* Re: Local Neighborhood
+ &gt;&gt; stuff
+ &gt;&gt;
+ &gt;&gt; Sorry mail was sent a bit early. I should not write with a baby on
+ &gt;&gt; my lap.
+ &gt;&gt;
+ &gt;&gt; I just had a look again at the LocalNeighborhood stuff which came
+ &gt;&gt; up the last days in algorithms-gpl.
+ &gt;&gt;
+ &gt;&gt; It looks pretty much as the things we did some weeks ago. Our
+ &gt;&gt; solution was less sophisticated, that&#8217;s  why I converted the
+ &gt;&gt; &#8220;delta&#8221; to the solution of Jean-Yves
+ &gt;&gt; (BufferedRectangleNeighborhoodCursor and the Wrapper for the
+ &gt;&gt; HyperSphere/Cursor of Stephan P.).
+ &gt;&gt;
+ &gt;&gt;
+ &gt;&gt; Ok careful, the Sphere iterator is not a wrapper for the
+ &gt;&gt; HyperSphere of Stephan: It gives you an actual ellipsoid (3
+ &gt;&gt; different semi axes) and only iterate over the first 3 dimension by
+ &gt;&gt; privileging the Z axis. Stephan Hypersphere is nD generic, and is
+ &gt;&gt; an actual sphere in pixel coordinates.
+ &gt;&gt;
+ &gt;&gt; Several questions/suggestions came up, which I would like to
+ &gt;&gt; discuss with you so that we maybe have one consolidated package to
+ &gt;&gt; work on? ; )
+ &gt;&gt;
+ &gt;&gt; (i)Why in algorithms-gpl? Could also be put into the core of
+ &gt;&gt; algorithms or even imglib2?
+ &gt;&gt;
+ &gt;&gt; Because I thought the code was clumsy compared to the elegance of
+ &gt;&gt; Stephan's sphere, and I did not dare put it in the core.
+ &gt;&gt;
+ &gt;&gt; (ii)Could we parameterize AbstractNeighborhood&lt;T, IN extends
+ &gt;&gt; RandomAccessibleInterval&lt;T&gt;&gt;? Especially in the case of the
+ &gt;&gt; OutOfBoundsStrategy this could make sense (less casting).
+ &gt;&gt;
+ &gt;&gt; Oki.
+ &gt;&gt;
+ &gt;&gt; (iii)Could we add a method like copy(IN source) to
+ &gt;&gt; AbstractNeighborhood? It&#8217;s nice if one could create instances of
+ &gt;&gt; any AbstractNeighborhood from a given neighborhood.
+ &gt;&gt;
+ &gt;&gt; You mean create the same kind of neighborhood on a different
+ &gt;&gt; source? Oki.
+ &gt;&gt;
+ &gt;&gt; (iv)Maybe we could add an Interface Neighborhood&lt;T, IN extends
+ &gt;&gt; RandomAccessibleInterbal&lt;T&gt;&gt;?
+ &gt;&gt;
+ &gt;&gt;
+ &gt;&gt; Tobias?
+ &gt;&gt;
+ &gt;&gt; We should also add the HyperSphere/Cursor of Stephan to this
+ &gt;&gt; package.
+ &gt;&gt;
+ &gt;&gt; I made some changes and pushed them into knip_deployment
+ &gt;&gt; algorithms-gpl etc!
+ &gt;&gt;
+ &gt;&gt;
+ &gt;&gt; As soon as I am back to University I will also fix the formatting,
+ &gt;&gt; sorry for that ;)
+ &gt;&gt;
+ &gt;&gt; Have a nice weekend,
+ &gt;&gt;
+ &gt;&gt;
+ &gt;&gt; Thanks! cheers jy
+ &gt;&gt;
+ &gt;
+
+On 07/21/2012 07:01 PM, Christian Dietz wrote:
+&gt;<i> Hi Tobi &amp; Jean-Yves,
+</I>&gt;<i>
+</I>&gt;<i> I just had a look again at the LocalNeighborhood stuff which came up the
+</I>&gt;<i> last days in algorithms-gpl.
+</I>&gt;<i>
+</I>&gt;<i> It looks pretty much as the things we did some weeks ago. Our solution
+</I>&gt;<i> was less sophisticated, that&#8217;s  why I converted the &#8220;delta&#8221; to the
+</I>&gt;<i> solution of Jean-Yves (BufferedRectangleNeighborhoodCursor and the
+</I>&gt;<i> Wrapper for the HyperSphere/Cursor of Stephan P.).
+</I>&gt;<i>
+</I>&gt;<i> Several questions/suggestions came up, which I would like to discuss
+</I>&gt;<i> with you so that we maybe have one consolidated package to work on? ; )
+</I>&gt;<i>
+</I>&gt;<i> (i)Why in algorithms-gpl? Could also be put into the core of algorithms
+</I>&gt;<i> or even imglib2?
+</I>&gt;<i>
+</I>&gt;<i> (ii)Could we parameterize AbstractNeighborhood&lt;T, IN extends
+</I>&gt;<i> RandomAccessibleInterval&lt;T&gt;&gt;? Especially in the case of the
+</I>&gt;<i> OutOfBoundsStrategy this could make sense (less casting).
+</I>&gt;<i>
+</I>&gt;<i> (iii)Could we add a method like copy(IN source) to AbstractNeighborhood?
+</I>&gt;<i> It&#8217;s nice if one could create instances of any AbstractNeighborhood from
+</I>&gt;<i> a given neighborhood.
+</I>&gt;<i>
+</I>&gt;<i> (iv)Maybe we could add an Interface Neighborhood&lt;T, IN extends
+</I>&gt;<i> RandomAccessibleInterbal&lt;T&gt;&gt;?
+</I>&gt;<i>
+</I>&gt;<i> We should also add the HyperSphere/Cursor of Stephan to this package.
+</I>&gt;<i>
+</I>&gt;<i> I made some changes and pushed them into knip_deployment algorithms-gpl etc!
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> As soon as I am back to University I will also fix the formatting, sorry
+</I>&gt;<i> for that ;)
+</I>&gt;<i>
+</I>&gt;<i> Have a nice weekend,
+</I>&gt;<i>
+</I>&gt;<i> Christian
+</I>&gt;<i>
+</I>
+
+</PRE>
+
+
+
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001138.html">[ImageJ-devel] [fiji-devel] LOCI crashes with current Fiji	build on runtime
+</A></li>
+	<LI>Next message: <A HREF="001111.html">[ImageJ-devel] Local Neighborhood stuff
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1097">[ date ]</a>
+              <a href="thread.html#1097">[ thread ]</a>
+              <a href="subject.html#1097">[ subject ]</a>
+              <a href="author.html#1097">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

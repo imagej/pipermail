@@ -1,0 +1,245 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Bug in ImageJ2 ?
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Bug%20in%20ImageJ2%20%3F&In-Reply-To=%3CCADN69ymph_rkk1EPNE-yYNJc-C5%2BaS%3DDWnFkY8eCdukTetoC4A%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001219.html">
+   <LINK REL="Next"  HREF="001221.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Bug in ImageJ2 ?</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Bug%20in%20ImageJ2%20%3F&In-Reply-To=%3CCADN69ymph_rkk1EPNE-yYNJc-C5%2BaS%3DDWnFkY8eCdukTetoC4A%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Bug in ImageJ2 ?">ctrueden at wisc.edu
+       </A><BR>
+    <I>Thu Sep 20 13:43:21 CDT 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001219.html">[ImageJ-devel] IJ2 work/Histogram
+</A></li>
+        <LI>Next message: <A HREF="001221.html">[ImageJ-devel] ImageJ on Android talk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1220">[ date ]</a>
+              <a href="thread.html#1220">[ thread ]</a>
+              <a href="subject.html#1220">[ subject ]</a>
+              <a href="author.html#1220">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Michael,
+
+Sorry to hear that the POM version detection is not working for KNIME. If
+the problem is *only* with the deprecated static VERSION, we plan to
+eliminate that soon anyway. But if the ImageJ#getVersion() method always
+returns null, that is a bad thing and we will need to fix it.
+
+To debug this, I would need to set up a KNIP developer environment on my
+machine here so that I can reproduce and debug the issue. Are there
+instructions for doing that online?
+
+Thanks,
+Curtis
+
+P.S. Please CC imagej-devel on replies. Sometimes other developers may
+reply more quickly than I do, so it may save you time.
+
+
+On Mon, Sep 17, 2012 at 2:15 AM, Michael Zinsmaier &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">michael.zinsmaier at gmx.de</A>
+&gt;<i> wrote:
+</I>
+&gt;<i>  Hi Curtis,
+</I>&gt;<i>
+</I>&gt;<i> thanks for your reply and the explenation. Unfortunately I have already a
+</I>&gt;<i> new issue. We tried to migrate the KNIME Image Extension
+</I>&gt;<i> to the beta 4 version of ImageJ and we have some problems with the
+</I>&gt;<i> introduced integration of the POM file. The getPOM method
+</I>&gt;<i> does not work in the plugin/eclipse environment that is used by KNIME I
+</I>&gt;<i> think this might be related to some OSGI stuff having separate
+</I>&gt;<i> class loaders for each plugin...
+</I>&gt;<i> In any case getPOM does not find the POM file although it is packed into
+</I>&gt;<i> the ImageJ jar file. Especially the static loading of the version number
+</I>&gt;<i> causes therefore some problems for us.
+</I>&gt;<i>
+</I>&gt;<i>     /** @deprecated Use {@link ImageJ#getVersion()} instead. */
+</I>&gt;<i>     @Deprecated
+</I>&gt;<i>     public static final String VERSION = POM.getPOM(ImageJ.class,
+</I>&gt;<i> &quot;net.imagej&quot;, &quot;ij-core&quot;).getVersion();
+</I>&gt;<i>
+</I>&gt;<i> Do you have an idea how this could be resolved?
+</I>&gt;<i>
+</I>&gt;<i> Best regards,
+</I>&gt;<i> Michael
+</I>&gt;<i>
+</I>&gt;<i>  Hi Michael,
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;&gt;<i> There seems to be an issue with the InputHarvester and the SwingPanel if
+</I>&gt;&gt;<i> the object types of primitive java types are used as input parameters (e.g.
+</I>&gt;&gt;<i> Boolean instead of boolean).
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>  Sorry for the delay in my reply. I fixed the bug shortly after sending
+</I>&gt;<i> my first mail, but was waiting to reply back until I did some more thorough
+</I>&gt;<i> investigation of the widget framework.
+</I>&gt;<i>
+</I>&gt;<i>  In short, the NPE is fixed, and both plugins will work now.
+</I>&gt;<i>
+</I>&gt;<i>  The long story is that despite that, there is one remaining issue of
+</I>&gt;<i> sorts with certain types of widgets. The toggle widget (with big B
+</I>&gt;<i> Booleans) is one of them, and the choice widget is another. The issue is
+</I>&gt;<i> that in some cases, the widget is not totally capable of reflecting the
+</I>&gt;<i> model state.
+</I>&gt;<i>
+</I>&gt;<i>  In the case of Boolean, the widget model may begin with a null value,
+</I>&gt;<i> but the toggle widget is only capable of displaying false or true. It will
+</I>&gt;<i> display unchecked for null, and if the user presses OK right away, the
+</I>&gt;<i> Boolean will be null (the widget changes nothing right now). But if you
+</I>&gt;<i> check and then uncheck the box again, the parameter value goes from null to
+</I>&gt;<i> true, and then from true to false. There is no way to set it back to null.
+</I>&gt;<i>
+</I>&gt;<i>  In the case of the choice widget, the model may begin with a value that
+</I>&gt;<i> is not on the list of allowed choices (again, null in particular is a big
+</I>&gt;<i> offender here). The choice widget immediately constrains the dropdown box
+</I>&gt;<i> to the first item on the list and overwrites the model. So the widget ends
+</I>&gt;<i> up being the reason the parameter doesn't end up with an (invalid) null
+</I>&gt;<i> value.
+</I>&gt;<i>
+</I>&gt;<i>  This behavior is inconsistent, and ideally the model itself would
+</I>&gt;<i> enforce value constraints, and the widgets would not overwrite them.
+</I>&gt;<i>
+</I>&gt;<i>  However, given the amount of time needed to correct this admittedly
+</I>&gt;<i> rather trivial inconsistency/deficiency, we are not going to worry about it
+</I>&gt;<i> for the time being.
+</I>&gt;<i>
+</I>&gt;<i>  Please let us know if you have any other questions or problems with
+</I>&gt;<i> ImageJ2!
+</I>&gt;<i>
+</I>&gt;<i>  Regards,
+</I>&gt;<i> Curtis
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On Thu, Aug 23, 2012 at 9:57 AM, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt; wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> Hi Michael,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> There seems to be an issue with the InputHarvester and the SwingPanel if
+</I>&gt;&gt;&gt;<i> the object types of primitive java types are used as input parameters (e.g.
+</I>&gt;&gt;&gt;<i> Boolean instead of boolean).
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>  Thanks for the report. It's definitely a bug due to our recent
+</I>&gt;&gt;<i> refactoring of the widget system. Both Boolean and boolean are supposed to
+</I>&gt;&gt;<i> work. I'll look into fixing it today.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>  -Curtis
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>  P.S. Hopefully I will have time to respond to your ImgLib mail from
+</I>&gt;&gt;<i> yesterday, too. I really appreciate you taking the time to look at and
+</I>&gt;&gt;<i> improve the Projector logic. We did the minimum necessary at the time to
+</I>&gt;&gt;<i> get something working, but currently everything is planar, and there is no
+</I>&gt;&gt;<i> built-in (i.e., ImgLib2) zoom capability, which we will eventually need.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> On Thu, Aug 23, 2012 at 8:24 AM, Michael Zinsmaier &lt;
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">michael.zinsmaier at gmx.de</A>&gt; wrote:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>  Hi Curtis,
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> I try currently to integrate the new imglib and ImageJ2 version (stuff
+</I>&gt;&gt;&gt;<i> from yesterday) into the KNIME ImageJ2 plugin.
+</I>&gt;&gt;&gt;<i> There seems to be an issue with the InputHarvester and the SwingPanel if
+</I>&gt;&gt;&gt;<i> the object types of primitive java types are
+</I>&gt;&gt;&gt;<i> used as input parameters (e.g. Boolean instead of boolean).
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> The following plugin works fine:
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> @Plugin(menu = {@Menu(label = &quot;works&quot;)},
+</I>&gt;&gt;&gt;<i>          headless=true)
+</I>&gt;&gt;&gt;<i> public class Working&lt;T extends RealType&lt;T&gt;&gt; implements RunnablePlugin {
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>     @Parameter(type = ItemIO.INPUT)
+</I>&gt;&gt;&gt;<i>     private boolean test;
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>     @Parameter(type = ItemIO.OUTPUT)
+</I>&gt;&gt;&gt;<i>     private String output;
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>     public void run() {
+</I>&gt;&gt;&gt;<i>             if (test) {
+</I>&gt;&gt;&gt;<i>                     output = &quot;plugins can be defined as fragments of
+</I>&gt;&gt;&gt;<i> imagej.core&quot;;
+</I>&gt;&gt;&gt;<i>             }
+</I>&gt;&gt;&gt;<i>     }
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> }
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> while this plugin (Boolean instead of boolean) cannot be executed and
+</I>&gt;&gt;&gt;<i> results in a null pointer exception.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> @Plugin(menu = {@Menu(label = &quot;works not&quot;)},
+</I>&gt;&gt;&gt;<i>          headless=true)
+</I>&gt;&gt;&gt;<i> public class NotWorking&lt;T extends RealType&lt;T&gt;&gt; implements RunnablePlugin
+</I>&gt;&gt;&gt;<i> {
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>     @Parameter(type = ItemIO.INPUT)
+</I>&gt;&gt;&gt;<i>     private Boolean test;
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>     @Parameter(type = ItemIO.OUTPUT)
+</I>&gt;&gt;&gt;<i>     private String output;
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>     public void run() {
+</I>&gt;&gt;&gt;<i>             if (test) {
+</I>&gt;&gt;&gt;<i>                     output = &quot;plugins can be defined as fragments of
+</I>&gt;&gt;&gt;<i> imagej.core&quot;;
+</I>&gt;&gt;&gt;<i>             }
+</I>&gt;&gt;&gt;<i>     }
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> }
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Are only primitive types supported or is it a bug?
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Regards
+</I>&gt;&gt;&gt;<i> Michael
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20120920/bc229010/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20120920/bc229010/attachment.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001219.html">[ImageJ-devel] IJ2 work/Histogram
+</A></li>
+	<LI>Next message: <A HREF="001221.html">[ImageJ-devel] ImageJ on Android talk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1220">[ date ]</a>
+              <a href="thread.html#1220">[ thread ]</a>
+              <a href="subject.html#1220">[ subject ]</a>
+              <a href="author.html#1220">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

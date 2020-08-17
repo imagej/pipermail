@@ -1,0 +1,156 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Labeling / segmentation proposal for imglib
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Labeling%20/%20segmentation%20proposal%20for%20imglib&In-Reply-To=%3C4CE40BD8.9010409%40broadinstitute.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000248.html">
+   <LINK REL="Next"  HREF="000250.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Labeling / segmentation proposal for imglib</H1>
+    <B>Lee Kamentsky</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Labeling%20/%20segmentation%20proposal%20for%20imglib&In-Reply-To=%3C4CE40BD8.9010409%40broadinstitute.org%3E"
+       TITLE="[ImageJ-devel] Labeling / segmentation proposal for imglib">leek at broadinstitute.org
+       </A><BR>
+    <I>Wed Nov 17 11:07:36 CST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000248.html">[ImageJ-devel] Labeling / segmentation proposal for imglib
+</A></li>
+        <LI>Next message: <A HREF="000250.html">[ImageJ-devel] NetBeans references and background
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#249">[ date ]</a>
+              <a href="thread.html#249">[ thread ]</a>
+              <a href="subject.html#249">[ subject ]</a>
+              <a href="author.html#249">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Lots of good points Gabriel,
+If I understand right, you'd like the perimeter points in this order:
+
+     1.....2
+    3........4
+    5...6 7...8
+     9.10 11.12
+
+(or do you want all the points, not just the ends, in clockwise order?)
+
+We could store it that way internally - an efficient run-length encoding 
+and easy enough to use it to build all of the cursors. The 
+eight-connected compression scheme is elegant; that would be a great 
+storage format.
+
+Your point regarding the perimeter is well-taken; the perimeter is 
+typically greater than the count of the pixels that make up the 
+perimeter. I suppose you're right about area as well, but the magnitude 
+of the error is far less.
+
+--Lee
+
+On 11/17/2010 11:35 AM, Gabriel Landini wrote:
+&gt;<i> Hi Lee,
+</I>&gt;<i>
+</I>&gt;<i> On Wednesday 17 Nov 2010  14:48:03 Lee Kamentsky wrote:
+</I>&gt;&gt;<i> Do you think the specification should include a cursor that iterates
+</I>&gt;&gt;<i> along the pixels on the perimeter? That would save everyone the trouble
+</I>&gt;&gt;<i> of reimplementing Chang.
+</I>&gt;<i> Do you mean to: given an XStart YStart, this cursor would go round the blob
+</I>&gt;<i> and compute a collection of parameters?
+</I>&gt;<i> If so, yes it might be a really good idea.
+</I>&gt;<i>
+</I>&gt;&gt;<i> It's somewhat trivial for me to include the
+</I>&gt;&gt;<i> start coordinates in the interface (I'm guessing something like &quot;int []
+</I>&gt;&gt;<i> Start(T label);&quot; or &quot;int Start(T label, int dim) instead of or in
+</I>&gt;&gt;<i> addition to &quot;int Start[X,Y,Z](T label)&quot; to align to the imglib spirit)
+</I>&gt;&gt;<i> if they're of general use.
+</I>&gt;<i> Good. Yes, there is a definite advantage one has all the blobs labelled to be
+</I>&gt;<i> able to target each one from a table of positions rather than going all over
+</I>&gt;<i> the image. I mentioned StartZ (I realised now that in IJ these are called
+</I>&gt;<i> XStart, etc) but currently there is no native method to isolate 3D blobs.
+</I>&gt;<i>
+</I>&gt;&gt;<i> The outline pixels can be recovered from a list of pixel coordinates for
+</I>&gt;&gt;<i> each label by sorting the coordinates by x then y and finding the ones
+</I>&gt;&gt;<i> without y neighbors on either side, and then sorting by y, then x and
+</I>&gt;&gt;<i> repeating, although labeling using Chang is clearly more efficient if
+</I>&gt;&gt;<i> you have a binary thresholding of the image.
+</I>&gt;<i> Here is where Freeman's algorithm (walking around each blob) is efficient
+</I>&gt;<i> because it gives the boundary already sorted in the sequence along of the
+</I>&gt;<i> walk. Currently IJ uses a different algorithm to compute the perimeter length.
+</I>&gt;<i> (results for large blobs are similar to Freeman's but if I recall correctly
+</I>&gt;<i> there is some discrepancy for small ones). Also IJ uses the number of pixels
+</I>&gt;<i> as &quot;area&quot;. While some might not bother too much about this detail, others
+</I>&gt;<i> might think differently (me included :-) ). If a pixel is a point, the area
+</I>&gt;<i> cannot be 1 and it should have no perimeter and no circularity, etc. Freeman's
+</I>&gt;<i> encoding solves this, I think, a bit better and we should try to provide both,
+</I>&gt;<i> area inside the bounding perimeter and number of pixels in the blob.
+</I>&gt;<i>
+</I>&gt;<i> Also one wants that perimeter sorted for a number of other reasons. For
+</I>&gt;<i> example one can compute the yardstick fractal dimension using this sorted list
+</I>&gt;<i> of coordinates. And one can also use this list and save the blob outlines as a
+</I>&gt;<i> chain encoded profile (this is used by some imaging systems). The file size is
+</I>&gt;<i> minuscule as it encodes one of the 8 possible positions of the next pixel and
+</I>&gt;<i> one can pack several &quot;next positions&quot; per byte).
+</I>&gt;<i> After going round the profile and one reaches the starting pixel (plus
+</I>&gt;<i> checking that the pixel at x-1, y+1 is either visited or empty, if not one
+</I>&gt;<i> still has some boundary to walk) one already has the perimeter and the area
+</I>&gt;<i> under the enclosed perimeter. So one can compute circularity in one operation.
+</I>&gt;<i> The cursor could return the perimeter length and the area enclosed by the
+</I>&gt;<i> perimeter. But now that the perimeter has been computer, one can also extract
+</I>&gt;<i> the convex hull from the sorted list, and the convex area, and once you have
+</I>&gt;<i> the convex hull, the feret diameter is computed easily, and its angle with the
+</I>&gt;<i> horizontal frame, and the breadth. Furthermore, the centroid can be computed
+</I>&gt;<i> as the average of all the coordinates in one of those passes too.
+</I>&gt;<i> The other family of morphological parameters relates to the labelling of the
+</I>&gt;<i> pixels. These include the number of pixels, and all the greyscale statistics
+</I>&gt;<i> of the blob (for example via redirection to an image holding the greyscale
+</I>&gt;<i> values) and the centre of mass. There is an advantage in computing this whole
+</I>&gt;<i> block together too, as the code for computing the mean grey level is already
+</I>&gt;<i> almost there to allow computing the standard deviation, skewness, kurtosis,
+</I>&gt;<i> etc. One accesses each pixel in the blob only once.
+</I>&gt;<i>
+</I>&gt;&gt;<i> We do have a use case in which pixels are multiply labeled (current
+</I>&gt;&gt;<i> research has images of objects that cross and share pixels) which means
+</I>&gt;&gt;<i> that the most general case can't use reconstruction of a binary image to
+</I>&gt;&gt;<i> recover the labeling.
+</I>&gt;<i> I see, well yes that brings in new issues. Perhaps one could implement a
+</I>&gt;<i> cursor that processes binary images and which is very fast, while multi-label
+</I>&gt;<i> images require some special treatment?
+</I>&gt;<i>
+</I>&gt;<i> We might want to keep in mind that it is useful to have both 8- and 4-
+</I>&gt;<i> connected particle encodings for the analysis of blobs.
+</I>&gt;<i>
+</I>&gt;<i> Thanks for listening!
+</I>&gt;<i> Regards
+</I>&gt;<i>
+</I>&gt;<i> Gabriel
+</I>
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000248.html">[ImageJ-devel] Labeling / segmentation proposal for imglib
+</A></li>
+	<LI>Next message: <A HREF="000250.html">[ImageJ-devel] NetBeans references and background
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#249">[ date ]</a>
+              <a href="thread.html#249">[ thread ]</a>
+              <a href="subject.html#249">[ subject ]</a>
+              <a href="author.html#249">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

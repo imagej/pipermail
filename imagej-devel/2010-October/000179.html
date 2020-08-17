@@ -1,0 +1,130 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Design meeting notes
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Design%20meeting%20notes&In-Reply-To=%3CAANLkTik9x6OJnM9RBN_4a-8CGN3%3DtWqS1Zbv-LAUZEFQ%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000172.html">
+   <LINK REL="Next"  HREF="000186.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Design meeting notes</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Design%20meeting%20notes&In-Reply-To=%3CAANLkTik9x6OJnM9RBN_4a-8CGN3%3DtWqS1Zbv-LAUZEFQ%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Design meeting notes">ctrueden at wisc.edu
+       </A><BR>
+    <I>Mon Oct 11 12:34:12 CDT 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000172.html">[ImageJ-devel] Design meeting notes
+</A></li>
+        <LI>Next message: <A HREF="000186.html">[ImageJ-devel] Design meeting notes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#179">[ date ]</a>
+              <a href="thread.html#179">[ thread ]</a>
+              <a href="subject.html#179">[ subject ]</a>
+              <a href="author.html#179">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Dscho,
+
+No. The time I spent on the plugin design since March, I have tried to
+&gt;<i> come up with a sensible architecture to handle something like &quot;Keep aspect
+</I>&gt;<i> ratio&quot; feedback (without requiring the developer to provide a metric ton
+</I>&gt;<i> of methods to that end). So far, I haven't been successful (a single check
+</I>&gt;<i> method has the disadvantage that it cannot set the other number
+</I>&gt;<i> automatically).
+</I>&gt;<i>
+</I>
+How about this:
+
+    @Parameter
+    public int width = 640;
+
+    @Parameter(label = &quot;A double&quot;, digits = 3, columns = 5, units =
+&quot;microns&quot;)
+    public int height = 480;
+
+    @Parameter(label = &quot;Keep aspect ratio&quot;, callback = aspectRatioChanged)
+    public boolean keepAspectRatio = false;
+
+So that the developer defines their own callback methods for each parameter
+to which they want to react? Easy for each dialog implementation to attach
+listeners and callback by reflection, right?
+
+-Curtis
+
+On Sat, Oct 9, 2010 at 10:33 AM, Johannes Schindelin &lt;
+<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">Johannes.Schindelin at gmx.de</A>&gt; wrote:
+
+&gt;<i> Hi,
+</I>&gt;<i>
+</I>&gt;<i> sorry, I am really tight on time at the moment, so I am not able to put
+</I>&gt;<i> much thought into this for now.
+</I>&gt;<i>
+</I>&gt;<i> On Thu, 7 Oct 2010, Curtis Rueden wrote:
+</I>&gt;<i>
+</I>&gt;<i> &gt; &gt; Related, some @parameters will be superfluous under some
+</I>&gt;<i> &gt; &gt; circumstances: as an example, CellProfiler's mixture of gaussians
+</I>&gt;<i> &gt; &gt; thresholding method asks &quot;what percentage of the image is
+</I>&gt;<i> &gt; &gt; foreground?&quot;, but the Otsu thresholding method does not. CellProfiler
+</I>&gt;<i> &gt; &gt; does this by asking the module for the settings to display (and the
+</I>&gt;<i> &gt; &gt; user doesn't have to implement the method in which case all are
+</I>&gt;<i> &gt; &gt; displayed). How would such a method in ImageJ name the parameters to
+</I>&gt;<i> &gt; &gt; display? (string matching the field name? Tags in @parameters matching
+</I>&gt;<i> &gt; &gt; a string array returned by the method?
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Hmm, sounds tricky. Maybe it work similarly to the idea above for
+</I>&gt;<i> &gt; validation, where an interface method exists that reports, for each
+</I>&gt;<i> &gt; parameter, whether it is currently relevant based on the values of other
+</I>&gt;<i> &gt; parameters. A nice demo for this functionality might be as simple as an
+</I>&gt;<i> &gt; &quot;configure advanced options&quot; checkbox that opens up a bunch more
+</I>&gt;<i> &gt; options. When the box is unchecked, the advanced options all disappear.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Of course, allowing options to be grouped together would ease some of
+</I>&gt;<i> &gt; the declarative burden, since you could group all the advanced options
+</I>&gt;<i> &gt; into an explicit &quot;advanced options&quot; category.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Johannes, have you considered any of these ideas?
+</I>&gt;<i>
+</I>&gt;<i> No. The time I spent on the plugin design since March, I have tried to
+</I>&gt;<i> come up with a sensible architecture to handle something like &quot;Keep aspect
+</I>&gt;<i> ratio&quot; feedback (without requiring the developer to provide a metric ton
+</I>&gt;<i> of methods to that end). So far, I haven't been successful (a single check
+</I>&gt;<i> method has the disadvantage that it cannot set the other number
+</I>&gt;<i> automatically).
+</I>&gt;<i>
+</I>&gt;<i> Ciao,
+</I>&gt;<i> Dscho
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20101011/c25065a4/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20101011/c25065a4/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000172.html">[ImageJ-devel] Design meeting notes
+</A></li>
+	<LI>Next message: <A HREF="000186.html">[ImageJ-devel] Design meeting notes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#179">[ date ]</a>
+              <a href="thread.html#179">[ thread ]</a>
+              <a href="subject.html#179">[ subject ]</a>
+              <a href="author.html#179">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

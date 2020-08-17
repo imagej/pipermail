@@ -1,0 +1,213 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Auto-Documentation of Processing Chain: Extension of @Parameter Annotation
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Auto-Documentation%20of%20Processing%20Chain%3A%0A%20Extension%20of%20%40Parameter%20Annotation&In-Reply-To=%3CAANLkTin-FPgW0ixG5C7s_ZmwW-2uz7JHPu3oNn5aAPpF%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000325.html">
+   <LINK REL="Next"  HREF="000329.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Auto-Documentation of Processing Chain: Extension of @Parameter Annotation</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Auto-Documentation%20of%20Processing%20Chain%3A%0A%20Extension%20of%20%40Parameter%20Annotation&In-Reply-To=%3CAANLkTin-FPgW0ixG5C7s_ZmwW-2uz7JHPu3oNn5aAPpF%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Auto-Documentation of Processing Chain: Extension of @Parameter Annotation">ctrueden at wisc.edu
+       </A><BR>
+    <I>Thu Mar 17 16:18:01 CDT 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000325.html">[ImageJ-devel] Auto-Documentation of Processing Chain: Extension of @Parameter Annotation
+</A></li>
+        <LI>Next message: <A HREF="000329.html">[ImageJ-devel] Auto-Documentation of Processing Chain: Extension of @Parameter Annotation
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#327">[ date ]</a>
+              <a href="thread.html#327">[ thread ]</a>
+              <a href="subject.html#327">[ subject ]</a>
+              <a href="author.html#327">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Oliver,
+
+Good to hear from you again. Sorry for the long delay in reply, and thanks
+for checking out the ImageJ2 plugin framework.
+
+First, a little background: as Johannes mentioned, there has been initial
+development of a &quot;workflow engine&quot; for ImageJ2:
+
+
+<A HREF="http://dev.imagejdev.org/trac/imagej/browser/trunk/extra/workflow/src/main/java/imagej/workflow">http://dev.imagejdev.org/trac/imagej/browser/trunk/extra/workflow/src/main/java/imagej/workflow</A>
+
+We have begun a reconciliation of the workflow engine with the plugin
+framework. Essentially, the toplevel idea is that of a &quot;module&quot; with inputs
+and outputs; see:
+
+
+<A HREF="http://dev.imagejdev.org/trac/imagej/browser/trunk/core/plugin/src/main/java/imagej/module">http://dev.imagejdev.org/trac/imagej/browser/trunk/core/plugin/src/main/java/imagej/module</A>
+
+The plugin framework implements the module interfaces, while providing the
+annotations needed to make writing standalone plugins easy:
+
+
+<A HREF="http://dev.imagejdev.org/trac/imagej/browser/trunk/core/plugin/src/main/java/imagej/plugin">http://dev.imagejdev.org/trac/imagej/browser/trunk/core/plugin/src/main/java/imagej/plugin</A>
+
+The workflow engine was used to create a proof-of-concept UI called Workflow
+Pipes (similar to the ImageFlow project mentioned by Johannes) for
+graphically connecting together plugins into a directed object graph. In the
+future, we hope to flesh out this UI further and include with core ImageJ.
+
+Anyway, none of this work precludes your implementation from being useful as
+well, since our focus was not on data provenance at all yet (though we are
+very interested in supporting it).
+
+Would it be possible to extend or modify the @Parameter annotation to
+&gt;<i> categorize a field as input, output, parameter or supplemental?
+</I>&gt;<i>
+</I>
+Certainly! How about a &quot;visibility&quot; enum with values: NORMAL (default),
+TRANSIENT (for no history), and INVISIBLE (for no recording nor history). If
+anyone has an idea for better names, I'm all ears. In the meantime, I have
+committed an initial version of this enum to SVN and updated the Parameter
+class:
+
+  <A HREF="http://dev.imagejdev.org/trac/imagej/changeset/2413">http://dev.imagejdev.org/trac/imagej/changeset/2413</A>
+
+Our annotation also takes an &quot;explanation&quot; string to describe the
+&gt;<i> parameter in human-readable form, but it is not essential for the
+</I>&gt;<i> automatic documentation.
+</I>&gt;<i>
+</I>
+Sure, I have added a &quot;String description&quot; field to @Parameter, which should
+serve:
+
+  <A HREF="http://dev.imagejdev.org/trac/imagej/changeset/2412">http://dev.imagejdev.org/trac/imagej/changeset/2412</A>
+
+We would really like to merge these annotations, because the processing
+&gt;<i> chain documentation could be easily employed by IJ plugins that use the
+</I>&gt;<i> @Parameter annotation and no additional annotation would be necessary.
+</I>&gt;<i>
+</I>
+Great, please let us know what else you need to make this happen!
+
+Another question: Is there any interest in an automatic documentation of
+&gt;<i> the processing chain?
+</I>&gt;<i>
+</I>
+I think so, but am not sure what you mean. Could you elaborate? What I would
+like to see is a way for plugins to self-document their parameters more
+thoroughly (tooltips etc.), similar to how the Bio-Formats Importer plugin
+works in ImageJ 1.x now. This would reduce the need for external wiki pages
+about plugins in many cases.
+
+Lastly, I will second Johannes's question: are you planning to open source
+this work? Or is it already available somewhere? Would you be interested in
+integrating it into ImageJ2 core?
+
+Regards,
+Curtis
+
+P.S. Sorry I have not had time to read over your manual. As we pursue this
+functionality further, hopefully I'll learn more about your data provenance
+model.
+
+On Tue, Mar 8, 2011 at 6:26 AM, Oliver Gress &lt;
+<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">oliver.gress at informatik.uni-halle.de</A>&gt; wrote:
+
+&gt;<i> Hi all,
+</I>&gt;<i>
+</I>&gt;<i> we have developed a way for automatic documentation of the processing
+</I>&gt;<i> chain of an image or other results in ImageJ.
+</I>&gt;<i> For improved integration with IJ, we would like to discuss a
+</I>&gt;<i> modification/extension of the @Parameter annotation in IJ-Dev.
+</I>&gt;<i>
+</I>&gt;<i> The basic concept is to consider each processing step as an &quot;operator&quot;,
+</I>&gt;<i> that takes some input and computes results, which might become input to
+</I>&gt;<i> another operator. Such an operator may be an ImageJ plugin or any java
+</I>&gt;<i> class that satisfies the specification.
+</I>&gt;<i>
+</I>&gt;<i> The specific interface of such an operator is described by inputs,
+</I>&gt;<i> parameters, supplementals and outputs.
+</I>&gt;<i> Inputs and outputs are used to trace the processing chain, from which a
+</I>&gt;<i> &quot;history&quot; graph is created.
+</I>&gt;<i> Parameters are inputs that are not traced but recorded. Supplementals
+</I>&gt;<i> are not recorded at all and are intended for parameters that have no
+</I>&gt;<i> effect on the results (e.g. a verbose flag).
+</I>&gt;<i>
+</I>&gt;<i> We employ java annotations to determine the above interpretation of the
+</I>&gt;<i> fields of a class and thus the interface of an operator.
+</I>&gt;<i> At the moment, we use our own annotation class, because @Parameter from
+</I>&gt;<i> IJ-Dev does not allow the detailed categorization of arguments that
+</I>&gt;<i> would be required by our concept. It only allows to specify if an
+</I>&gt;<i> argument is output or not.
+</I>&gt;<i> I know that @Parameter is intended to describe the parameters of a
+</I>&gt;<i> plugin, e.g. to create a parameter dialog automatically.
+</I>&gt;<i> I'd like to ask if the idea of @Parameter could be extended to a more
+</I>&gt;<i> general point of view:
+</I>&gt;<i>
+</I>&gt;<i> Would it be possible to extend or modify the @Parameter annotation to
+</I>&gt;<i> categorize a field as input, output, parameter or supplemental?
+</I>&gt;<i> Our annotation also takes an &quot;explanation&quot; string to describe the
+</I>&gt;<i> parameter in human-readable form, but it is not essential for the
+</I>&gt;<i> automatic documentation.
+</I>&gt;<i>
+</I>&gt;<i> We would really like to merge these annotations, because the processing
+</I>&gt;<i> chain documentation could be easily employed by IJ plugins that use the
+</I>&gt;<i> @Parameter annotation and no additional annotation would be necessary.
+</I>&gt;<i>
+</I>&gt;<i> Another question: Is there any interest in an automatic documentation of
+</I>&gt;<i> the processing chain?
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> I have uploaded an excerpt of our manual for further reading on the
+</I>&gt;<i> operator and history concept:
+</I>&gt;<i> <A HREF="http://users.informatik.uni-halle.de/~gress/mitobo_manual_excerpt.pdf">http://users.informatik.uni-halle.de/~gress/mitobo_manual_excerpt.pdf</A>
+</I>&gt;<i> The manual is rewritten at the moment, therefore only an excerpt. If you
+</I>&gt;<i> find a link to our website, please don't refer to the resources that can
+</I>&gt;<i> be found there because they are outdated. There will be a new version
+</I>&gt;<i> soon (depending on the annotation issue).
+</I>&gt;<i>
+</I>&gt;<i> Our annotation can be found here:
+</I>&gt;<i> <A HREF="http://users.informatik.uni-halle.de/~gress/MTBArgumentAnnotation.java">http://users.informatik.uni-halle.de/~gress/MTBArgumentAnnotation.java</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Best regards
+</I>&gt;<i> Oliver
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagejdev.org</A>
+</I>&gt;<i> <A HREF="http://imagejdev.org/mailman/listinfo/imagej-devel">http://imagejdev.org/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20110317/a924b08d/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20110317/a924b08d/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000325.html">[ImageJ-devel] Auto-Documentation of Processing Chain: Extension of @Parameter Annotation
+</A></li>
+	<LI>Next message: <A HREF="000329.html">[ImageJ-devel] Auto-Documentation of Processing Chain: Extension of @Parameter Annotation
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#327">[ date ]</a>
+              <a href="thread.html#327">[ thread ]</a>
+              <a href="subject.html#327">[ subject ]</a>
+              <a href="author.html#327">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

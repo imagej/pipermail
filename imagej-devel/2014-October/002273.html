@@ -1,0 +1,263 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] ImageJ OPS hackathon results
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImageJ%20OPS%20hackathon%20results&In-Reply-To=%3CCADN69ykJymrEP%2BvXp5V_HkB7g_DQ-5GOO1QuE9jU33oQFs3%2Bpg%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002272.html">
+   <LINK REL="Next"  HREF="002274.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] ImageJ OPS hackathon results</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImageJ%20OPS%20hackathon%20results&In-Reply-To=%3CCADN69ykJymrEP%2BvXp5V_HkB7g_DQ-5GOO1QuE9jU33oQFs3%2Bpg%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] ImageJ OPS hackathon results">ctrueden at wisc.edu
+       </A><BR>
+    <I>Fri Oct  3 17:36:48 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002272.html">[ImageJ-devel] ImageJ OPS hackathon results
+</A></li>
+        <LI>Next message: <A HREF="002274.html">[ImageJ-devel] ImageJ OPS hackathon results
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2273">[ date ]</a>
+              <a href="thread.html#2273">[ thread ]</a>
+              <a href="subject.html#2273">[ subject ]</a>
+              <a href="author.html#2273">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Jay,
+
+&gt;<i> is there the potential to create a OpService#run method that would
+</I>&gt;<i> take, for example, alternating strings and objects to allow calls to
+</I>&gt;<i> be &quot;more explicit&quot; or &quot;transparent&quot;
+</I>
+All Ops are Modules, and the ModuleService has this feature:
+
+<A HREF="http://jenkins.imagej.net/job/SciJava-common-javadoc/javadoc/org/scijava/command/CommandService.html#run(java.lang.Class,%20boolean,%20java.lang.Object..">http://jenkins.imagej.net/job/SciJava-common-javadoc/javadoc/org/scijava/command/CommandService.html#run(java.lang.Class,%20boolean,%20java.lang.Object..</A>
+.)
+
+Or more type-safe using a Map&lt;String, Object&gt;:
+
+<A HREF="http://jenkins.imagej.net/job/SciJava-common-javadoc/javadoc/org/scijava/command/CommandService.html#run(java.lang.Class,%20boolean,%20java.util.Map">http://jenkins.imagej.net/job/SciJava-common-javadoc/javadoc/org/scijava/command/CommandService.html#run(java.lang.Class,%20boolean,%20java.util.Map</A>)
+
+Regards,
+Curtis
+
+On Fri, Oct 3, 2014 at 5:25 PM, Jay Warrick &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">warrick at wisc.edu</A>&gt; wrote:
+
+&gt;<i> Very helpful. Thanks.
+</I>&gt;<i>
+</I>&gt;<i> Not that I need this capability, but is there the potential to create a
+</I>&gt;<i> OpService#run method that would take, for example, alternating strings and
+</I>&gt;<i> objects to allow calls to be &quot;more explicit&quot; or &quot;transparent&quot; (i.e.,
+</I>&gt;<i> OpService#runExplicit(&quot;myOp&quot;, &quot;max&quot;, max, &quot;min&quot;, min) and potentially more
+</I>&gt;<i> extensible in case order of arguments change or there end up being
+</I>&gt;<i> additional optional arguments. Obviously you link yourself to names as
+</I>&gt;<i> opposed to order. I guess there is always a give and take with these things.
+</I>&gt;<i>
+</I>&gt;<i> I could try and draft up such a method if you think it useful and doesn't
+</I>&gt;<i> go against what you are trying to shoot for.
+</I>&gt;<i>
+</I>&gt;<i> Cheers,
+</I>&gt;<i>
+</I>&gt;<i> Jay
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On Oct 3, 2014, at 12:39 PM, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt; wrote:
+</I>&gt;<i>
+</I>&gt;<i> Hi Jay,
+</I>&gt;<i>
+</I>&gt;<i> &gt; 1) When should we use the &quot;Command&quot; style method of doing things where
+</I>&gt;<i> &gt; all information is specified using the @Parameter methodology and run
+</I>&gt;<i> &gt; via the &quot;run&quot; method, and when should we use the &quot;Function&quot; style of
+</I>&gt;<i> &gt; things with a typed input and output &quot;compute&quot; method?
+</I>&gt;<i> &gt; Advantages/disadvantages of each? Can you get by with either?
+</I>&gt;<i>
+</I>&gt;<i> We started OPS with the &quot;Command&quot; paradigm, then found that for the vast
+</I>&gt;<i> majority of ops, there was one &quot;special&quot; input over which you want to
+</I>&gt;<i> iterate (either per pixel, or in a multi-threaded context, or both), and
+</I>&gt;<i> one main output of the op. That common case is a Function (you extend
+</I>&gt;<i> either AbstractStrictFunction or AbstractOutputFunction, depending on
+</I>&gt;<i> whether you want to force the caller to pass in a preallocated output or
+</I>&gt;<i> not).
+</I>&gt;<i>
+</I>&gt;<i> In short: use Function if you want your op to usable by the &quot;map&quot; op to
+</I>&gt;<i> execute it iteratively over an entire image (e.g., an Iterable or
+</I>&gt;<i> IterableInterval). Use a plain Op if you don't need that, don't care or are
+</I>&gt;<i> lazy.
+</I>&gt;<i>
+</I>&gt;<i> As always in programming: model your code after existing code (&quot;when in
+</I>&gt;<i> Rome&quot;) for best results.
+</I>&gt;<i>
+</I>&gt;<i> &gt; 2) I couldn't see how some of the @Parameter objects would be or are
+</I>&gt;<i> &gt; injected or set.
+</I>&gt;<i>
+</I>&gt;<i> Calling OpService#run to execute the op automatically finds the best
+</I>&gt;<i> matching op, and then injects the parameter values in the specified order.
+</I>&gt;<i>
+</I>&gt;<i> &gt; how are potential ambiguities resolved when trying to set two
+</I>&gt;<i> &gt; parameters of the same type?
+</I>&gt;<i> ...
+</I>&gt;<i> &gt; Order that it is listed in the Op class def and order of args provided
+</I>&gt;<i> &gt; to the ops.run() methods?
+</I>&gt;<i>
+</I>&gt;<i> Yes. The order defined in the class must match the order of arguments
+</I>&gt;<i> given to the OpService#run method.
+</I>&gt;<i>
+</I>&gt;<i> Call OpService#help(String) for a full list of ops with the given name,
+</I>&gt;<i> including expected parameters.
+</I>&gt;<i>
+</I>&gt;<i> Regards,
+</I>&gt;<i> Curtis
+</I>&gt;<i>
+</I>&gt;<i> On Thu, Oct 2, 2014 at 4:53 PM, Jay Warrick &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">warrick at wisc.edu</A>&gt; wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> Curtis - Sweet! I like it. I can see myself making small packages of Ops
+</I>&gt;&gt;<i> for things we do in our research that we could easily make available for
+</I>&gt;&gt;<i> others. It's also a great way for us to reuse capabilities across different
+</I>&gt;&gt;<i> JEX functions we create that allows us to share them with the rest of the
+</I>&gt;&gt;<i> community instead of just creating static methods hoarded in various
+</I>&gt;&gt;<i> &quot;utility classes&quot; in our software, not that we would ever do that :-)
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Curtis and everyone else :-) - First of all, thanks to all for their hard
+</I>&gt;&gt;<i> work to lay the foundation for this really useful Ops package. 2 things,
+</I>&gt;&gt;<i> though, I would appreciate some help with. Although I've looked at most of
+</I>&gt;&gt;<i> the Ops and the tutorials on creating and using Ops, I still have a couple
+</I>&gt;&gt;<i> questions.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> 1) When should we use the &quot;Command&quot; style method of doing things where
+</I>&gt;&gt;<i> all information is specified using the @Parameter methodology and run via
+</I>&gt;&gt;<i> the &quot;run&quot; method, and when should we use the &quot;Function&quot; style of things
+</I>&gt;&gt;<i> with a typed input and output &quot;compute&quot; method? Advantages/disadvantages of
+</I>&gt;&gt;<i> each? Can you get by with either?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> 2) I couldn't see how some of the @Parameter objects would be or are
+</I>&gt;&gt;<i> injected or set. What is the &quot;sleekest&quot; method for setting these parameters
+</I>&gt;&gt;<i> if I wanted to use these Ops in my own program without resorting to setting
+</I>&gt;&gt;<i> private Parameter fields accessible etc (e.g., the @Parameter
+</I>&gt;&gt;<i> private T threshold;&quot; of the ApplyConstantThreshold.java Op)? Am I
+</I>&gt;&gt;<i> forgetting some tool/method for easily injecting/setting Op/Command
+</I>&gt;&gt;<i> parameters? It seems like calls to ij.op().&lt;whatever&gt; only pass parameters
+</I>&gt;&gt;<i> to compute method and don't do any @Parameter object injection/setting. Am
+</I>&gt;&gt;<i> I wrong? Or, eventually, would these Ops have getters and setters. Are
+</I>&gt;&gt;<i> getters and setters automatically generated already that I'm not aware of
+</I>&gt;&gt;<i> by just looking over the code?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Thanks,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Jay
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> On Oct 2, 2014, at 12:35 PM, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt; wrote:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Hi Jay,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> &gt; Am I right that Ops sort of occupies the niche between ImgLib2 and
+</I>&gt;&gt;<i> &gt; ImageJ Plugins... something that makes it easier to do the image
+</I>&gt;&gt;<i> &gt; manipulations but can be reused a bit more easily given they don't
+</I>&gt;&gt;<i> &gt; require many of the Service parameters and preprocessors that many of
+</I>&gt;&gt;<i> &gt; the plugins take/need?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Yes, OPS is intended for pure image processing operations and functions.
+</I>&gt;&gt;<i> The rule of thumb is that they be deterministic, and have no side effects.
+</I>&gt;&gt;<i> So you give same inputs, you get same outputs, every time. Many of them are
+</I>&gt;&gt;<i> also multithreadable, though that is not a requirement. And OPS are also
+</I>&gt;&gt;<i> supposed to be &quot;static&quot; rather than dynamic -- i.e., they shouldn't have a
+</I>&gt;&gt;<i> variable number of input or output parameters, unlike commands in general.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> That said, OPS are still allowed to depend on services, but it is
+</I>&gt;&gt;<i> expected that the service methods you call will not compromise the
+</I>&gt;&gt;<i> determinism of the op -- i.e., only utility methods of services should
+</I>&gt;&gt;<i> really be used. Perhaps in the future we could add annotations to each
+</I>&gt;&gt;<i> service method indicating what sort of method it is, and hence where it is
+</I>&gt;&gt;<i> &quot;safe&quot; to use.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I want to thank you for your feedback and discussion from a few months
+</I>&gt;&gt;<i> ago, regarding reuse of ImageJ2 commands in JEX. Your perspective provided
+</I>&gt;&gt;<i> some of the inspiration for the design of OPS, because it became clear that
+</I>&gt;&gt;<i> we need a &quot;pure functional&quot; layer for image processing that does not rely
+</I>&gt;&gt;<i> on side effects from services, etc. The idea is that KNIME Image
+</I>&gt;&gt;<i> Processing, CellProfiler, OMERO, JEX, etc., can all consume and expose the
+</I>&gt;&gt;<i> ops with the assumption that they will behave well (work headless, etc.).
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Regards,
+</I>&gt;&gt;<i> Curtis
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> On Thu, Oct 2, 2014 at 12:08 PM, Jay Warrick &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">warrick at wisc.edu</A>&gt; wrote:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Looks promising. Am I right that Ops sort of occupies the niche between
+</I>&gt;&gt;&gt;<i> ImgLib2 and ImageJ Plugins... something that makes it easier to do the
+</I>&gt;&gt;&gt;<i> image manipulations but can be reused a bit more easily given they don't
+</I>&gt;&gt;&gt;<i> require many of the Service parameters and preprocessors that many of the
+</I>&gt;&gt;&gt;<i> plugins take/need?
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> On Oct 1, 2014, at 4:58 PM, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt; wrote:
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Hi everyone,
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> The ImageJ2 and KNIME Image Processing teams met in Madison during the
+</I>&gt;&gt;&gt;<i> week of September 15 - 19, to work on ImageJ OPS, which seeks to be a
+</I>&gt;&gt;&gt;<i> unifying library for scientific image processing.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> On behalf of the OPS development team, I am pleased to announce the
+</I>&gt;&gt;&gt;<i> results of that hackathon, including accomplishments, project goals and
+</I>&gt;&gt;&gt;<i> milestones. See the news post for full details:
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> <A HREF="http://imagej.net/2014-10-01_-_ImageJ_OPS_Hackathon">http://imagej.net/2014-10-01_-_ImageJ_OPS_Hackathon</A>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Regards,
+</I>&gt;&gt;&gt;<i> Curtis Rueden
+</I>&gt;&gt;&gt;<i> ImageJ2 project lead
+</I>&gt;&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20141003/0864475b/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20141003/0864475b/attachment-0001.html</A>&gt;
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002272.html">[ImageJ-devel] ImageJ OPS hackathon results
+</A></li>
+	<LI>Next message: <A HREF="002274.html">[ImageJ-devel] ImageJ OPS hackathon results
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2273">[ date ]</a>
+              <a href="thread.html#2273">[ thread ]</a>
+              <a href="subject.html#2273">[ subject ]</a>
+              <a href="author.html#2273">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

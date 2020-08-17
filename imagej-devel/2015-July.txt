@@ -1,0 +1,2106 @@
+From cyril.mongis at googlemail.com  Mon Jul  6 08:19:04 2015
+From: cyril.mongis at googlemail.com (Mongis Cyril)
+Date: Mon, 6 Jul 2015 15:19:04 +0200
+Subject: [ImageJ-devel] Calculate overlay statistics
+Message-ID: <CAJf7PRedTNQM4=9q7CLASPGf6U-LQYb3VYkbJUpC-nzvGFnzWQ@mail.gmail.com>
+
+Dear everyone,
+
+I'm trying to calculate the statistics of a an overlay for the active
+display.
+I try to use the PointSet but it doesn't work. The thread is just blocked :
+
+public double getMean(ImageDisplay imageDisplay, Overlay overlay) {
+     final PointSet ps = new RoiPointSet(overlay.getRegionOfInterest());
+     return (double) opService.mean(ps);
+}
+
+The PointSet API seems to be deprecated and when I dig into the Ops code,
+it seems that the statistic function just accept an iterable. From what I
+understood, PointSet are set of coordinates inside the image. I guess I
+need to associate the coordinates to a dataset and get an Iterable/Function
+out of it. Is there a service that already does this ? Or is it the wrong
+approach ?
+
+Cheers,
+
+Cyril
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150706/4163c50a/attachment.html>
+
+From ctrueden at wisc.edu  Tue Jul  7 16:49:41 2015
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Tue, 7 Jul 2015 16:49:41 -0500
+Subject: [ImageJ-devel] JavaFX packaging update
+In-Reply-To: <45D59077-B9A5-4189-B196-005702BCBAA3@nih.gov>
+References: <CADN69ykfAcm+dg000rs+yTUUZ-Lbpk90AkGsg+FvTxmk9LGgJA@mail.gmail.com>
+	<537BE791-5096-4463-97D6-5CCBBB63722E@nih.gov>
+	<CADN69y=F9nn-CRCr01db=6bbA1P2WCrC5hOP+VAYJx-m+Tuzgw@mail.gmail.com>
+	<4D674B7F-DAA1-4CC7-81AB-A64080B0C6B6@nih.gov>
+	<CADN69ym8+FxJZjLo=BESPqfXvOa4CGBeKMq=ef5ifZ=FX8LCCA@mail.gmail.com>
+	<BA1496DC-8E83-40BA-8BE8-F874FC6FE154@nih.gov>
+	<CADN69ykTFoBjCRbaZG+44M8vKd-oCqsQ6kd+1TjyJ1ig5C=tCw@mail.gmail.com>
+	<C6239FBD-974D-48C0-8E68-4FA3B3359582@nih.gov>
+	<CADN69ykqsxbgZPaswGZShQaAsEO4iztJwiRWHRDrbhweh6OAVg@mail.gmail.com>
+	<45D59077-B9A5-4189-B196-005702BCBAA3@nih.gov>
+Message-ID: <CADN69ynS2zrwhW8O8_5mEZqidXWAw56166rfH_XibFYcRmKMOQ@mail.gmail.com>
+
+Hi Wayne,
+
+> The shell script launcher at
+>
+>     https://github.com/tofi86/universalJavaApplicationStub
+>
+> appears to work well.
+
+Thanks for the pointer, and apologies for the delay in reply.
+
+It is a cool project. My main concerns are:
+
+* It is not Oracle's official deployment strategy. But we could very likely
+hack the JavaFX build to overwrite the stock launcher with this one.
+
+* It is specific to OS X. So it solves the problem of passing JVM args for
+OS X only, but not for Windows or Linux. Of course, we want a solution that
+works for all supported platforms.
+
+But we'll definitely keep it in mind as we migrate ImageJ2 towards Java 8
+in the next couple of months.
+
+Regards,
+Curtis
+
+On Mon, Jun 22, 2015 at 12:51 PM, Rasband, Wayne (NIH/NIMH) [E] <
+rasbandw at mail.nih.gov> wrote:
+
+> Hi Curtis,
+>
+> The shell script launcher at
+>
+>     https://github.com/tofi86/universalJavaApplicationStub
+>
+> appears to work well. I was able to modify it to use a bundled JRE, pass
+> JVM args and set the working directory so that ImageJ finds the plugins
+> folder. There is an ImageJ distribution at
+>
+>     http://wsr.imagej.net/download/ImageJ-osx-java8.zip
+>
+> that uses it.
+>
+> -wayne
+>
+>
+> > On Jun 18, 2015, at 12:17 PM, Curtis Rueden <ctrueden at WISC.EDU> wrote:
+> >
+> > Hi Wayne,
+> >
+> > > Running mvn a couple of times resolved the issue.
+> >
+> > Great.
+> >
+> > > The next two issues are how to tell ImageJ where the plugins folder is
+> > > and how to set the memory limit. Is there a way to define in
+> > > Info.plist a "plugins.dir? property with the value ?$APPDIR", which I
+> > > assume is the directory containing ImageJ.app?
+> >
+> > The way the JavaFX launcher works is that it picks up any JVM settings
+> from the Java Preferences API at launch time. And all arguments passed on
+> the CLI go straight to the main method args. So we will be updating ImageJ2
+> over the summer to process args on the Java side that were previously
+> handled by the launcher, including -Dfoo style system property settings
+> (since in most cases it is fine to set them early in the application
+> startup). Of course, not all args will be possible to support this way?e.g.
+> max heap size (but see below).
+> >
+> > Unfortunately, the current JavaFX launcher does not yet have a means to
+> dynamically pass JVM args to Java itself. I have an SO issue posted about
+> it [1] as well as a bug report in to Oracle (still under review; no public
+> URL yet). Maybe the JavaFX team will add a way, since this packaging
+> mechanism is being actively maintained and developed. But really it is not
+> that urgent, since you can run "java -Dplugins.dir=... -jar ImageJ.jar" or
+> whatever from the CLI as a developer. I.e.: the native launchers maybe do
+> not need those features. Regardless, we will also add shell scripts to make
+> common workflows (e.g., remote debugging) as simple as possible.
+> >
+> > From a user standpoint, for things like max heap size, there is a nice
+> UserJvmOptionsService API [2] that we will use to expose common JVM
+> settings in an options dialog box. It lets you set arbitrary arguments to
+> pass to java (stored via the Java Preferences API) which take effect the
+> next time the application is launched.
+> >
+> > See also imagej/imagej-launcher#33 on GitHub [3].
+> >
+> > Regards,
+> > Curtis
+> >
+> > [1] http://stackoverflow.com/q/30809330/1207769
+> > [2]
+> http://docs.oracle.com/javase/8/docs/technotes/guides/deploy/jvm_options_api.html
+> > [3] https://github.com/imagej/imagej-launcher/issues/33
+> >
+> > On Thu, Jun 18, 2015 at 10:30 AM, Rasband, Wayne (NIH/NIMH) [E] <
+> rasbandw at mail.nih.gov> wrote:
+> > Hi Curtis,
+> >
+> > Running mvn a couple of times resolved the issue. The next two issues
+> are how to tell ImageJ where the plugins folder is and how to set the
+> memory limit. Is there a way to define in Info.plist a "plugins.dir?
+> property with the value ?$APPDIR", which I assume is the directory
+> containing ImageJ.app?
+> >
+> > Best regards,
+> >
+> > -wayne
+> >
+> >
+> > > On Jun 17, 2015, at 10:34 PM, Curtis Rueden <ctrueden at WISC.EDU> wrote:
+> > >
+> > > Hi Wayne,
+> > >
+> > > It looks like the Maven command failed to build the project. The
+> directory listing is only the source code from Git.
+> > >
+> > > The error indicates something went wrong downloading artifacts for the
+> Maven build system. The first time you run Maven it downloads many things,
+> but they all get cached into ~/.m2/repository, so subsequent builds are
+> much more reasonable. It looks like you had a connectivity-related error,
+> which can probably be resolved simply by running "mvn" again, or perhaps
+> "mvn -U" to force an update.
+> > >
+> > > If running "mvn" and/or 'mvn -U" a couple more times does not resolve
+> the issue, let me know.
+> > >
+> > > Regards,
+> > > Curtis
+> > >
+> > > On Wed, Jun 17, 2015 at 7:18 PM, Rasband, Wayne (NIH/NIMH) [E] <
+> rasbandw at mail.nih.gov> wrote:
+> > > Hi Curtis,
+> > >
+> > > I was able to install maven after doing "brew update?. I followed your
+> instructions for building platform bundles for ImageJ 1.x, and it appeared
+> to work except for this error:
+> > >
+> > > [ERROR] Failed to execute goal
+> org.apache.maven.plugins:maven-enforcer-plugin:1.3.1:enforce
+> (enforce-rules) on project ij: Execution enforce-rules of goal
+> org.apache.maven.plugins:maven-enforcer-plugin:1.3.1:enforce failed: Plugin
+> org.apache.maven.plugins:maven-enforcer-plugin:1.3.1 or one of its
+> dependencies could not be resolved: Could not transfer artifact
+> org.eclipse.aether:aether-util:jar:0.9.0.M2 from/to central (
+> https://repo.maven.apache.org/maven2): Connect to
+> repo.maven.apache.org:443 [repo.maven.apache.org/199.27.76.215] failed:
+> Operation timed out -> [Help 1]
+> > >
+> > > It generated an ImageJA folder but there is no target folder in it.
+> This is what the ImageJA directory looks like:
+> > >
+> > > ImageJA
+> > >    applet.html
+> > >    aREADME.txt
+> > >    build.xml
+> > >    pom.xml
+> > >    release-notes.html
+> > >    src/
+> > >       main/
+> > >          deploy/
+> > >             package/
+> > >                macosx/
+> > >                   ImageJ-volume.icns
+> > >                   ImageJ.icns
+> > >                windows/
+> > >                   ImageJ.ico
+> > >          java/
+> > >             ij/
+> > >                CommandListener.java
+> > >                CompositeImage.java
+> > >                ?
+> > >
+> > > Thanks for your help,
+> > >
+> > > -wayne
+> > >
+> > >
+> > >
+> > >
+> > > > On Jun 17, 2015, at 3:33 PM, Curtis Rueden <ctrueden at WISC.EDU>
+> wrote:
+> > > >
+> > > > Hi Wayne,
+> > > >
+> > > > It may be that the Maven download is choosing a mirror with wrong
+> SHA1. Or it may be that your download is truly incomplete.
+> > > >
+> > > > Did you try to rm the file out of /Library/Caches/Homebrew and do it
+> again?
+> > > >
+> > > > Did you try "brew update" first?
+> > > >
+> > > > http://stackoverflow.com/q/12757694/1207769
+> > > > http://apple.stackexchange.com/q/57172
+> > > >
+> > > > Regards,
+> > > > Curtis
+> > > >
+> > > > On Wed, Jun 17, 2015 at 1:51 PM, Rasband, Wayne (NIH/NIMH) [E] <
+> rasbandw at mail.nih.gov> wrote:
+> > > > Hi Curtis,
+> > > >
+> > > > I am still not having much luck. This is what I get when I try to
+> use "brew install maven? to install maven:
+> > > >
+> > > > bash-3.2$ brew install maven
+> > > > ==> Downloading
+> http://www.apache.org/dyn/closer.cgi?path=maven/maven-3/3.2.3/binaries/apache-maven-3.2.3-bin.tar.gz
+> > > > ==> Best Mirror
+> http://apache.mesi.com.ar/maven/maven-3/3.2.3/binaries/apache-maven-3.2.3-bin.tar.gz
+> > > >
+> ########################################################################
+> 100.0%
+> > > > Error: SHA1 mismatch
+> > > > Expected: 1ce6641f7dcb4fd5785bedcdca2979da83f6d23f
+> > > > Actual: 2e7c28f3ebc08b95934336680365cfaac2697155
+> > > > Archive: /Library/Caches/Homebrew/maven-3.2.3.tar.gz
+> > > > To retry an incomplete download, remove the file above.
+> > > >
+> > > > Best regards,
+> > > >
+> > > > -wayne
+> > > >
+> > > > > On Jun 17, 2015, at 12:09 PM, Curtis Rueden <ctrueden at WISC.EDU>
+> wrote:
+> > > > >
+> > > > > Hi Wayne,
+> > > > >
+> > > > > I just pushed some commits to the ImageJA repository [1] so that
+> it can also build the same platform-specific application bundles -- but for
+> vanilla ImageJ1 alone.
+> > > > >
+> > > > > To install Maven on your OS X machine, I recommend using Homebrew
+> [2]. Then you can simply do:
+> > > > >
+> > > > >     brew install maven
+> > > > >
+> > > > > And you'll have a working mvn command.
+> > > > >
+> > > > > Note that the application bundling feature requires Java 8, since
+> it is JavaFX-related functionality.
+> > > > >
+> > > > > So the commands you need to build platform bundles for ImageJ 1.x
+> are:
+> > > > >
+> > > > >     git clone git://github.com/imagej/ImageJA
+> > > > >     cd ImageJA
+> > > > >     mvn -Pdist
+> > > > >
+> > > > > And it should create them in the target/jfx/native folder. There
+> should be .dmg and a .pkg installers, which including a Java 8 runtime
+> embedded (in the ImageJ.app/Contents/PlugIns/Java.runtime folder
+> internally). There should also be an ImageJ.app in there. There is also a
+> double-clickable ImageJ.jar in the target/jfx/app folder (with empty lib/
+> folder since ImageJ 1.x has no dependencies), as well another set of
+> installers that do _not_ include the JRE in the target/jfx/native-nojre
+> folder.
+> > > > >
+> > > > > Happy to help troubleshoot if you continue to have problems
+> getting this working.
+> > > > >
+> > > > > Regards,
+> > > > > Curtis
+> > > > >
+> > > > > P.S. You may notice one exception when building the ImageJA
+> bundles, relating to the version string not conforming to "x.y.z" pattern,
+> but it does not halt the build.
+> > > > >
+> > > > > [1] https://github.com/imagej/ImageJA
+> > > > > [2] http://brew.sh
+> > > > >
+> > > > > On Wed, Jun 17, 2015 at 9:59 AM, Rasband, Wayne (NIH/NIMH) [E] <
+> rasbandw at mail.nih.gov> wrote:
+> > > > >
+> > > > > > On Jun 16, 2015, at 6:09 PM, Curtis Rueden <ctrueden at WISC.EDU>
+> wrote:
+> > > > > >
+> > > > > > Hi everyone,
+> > > > > >
+> > > > > > For those curious about the new JavaFX packaging for ImageJ, the
+> relevant bits are now merged to master. So you can play with it if you like:
+> > > > > >
+> > > > > >   git clone git://github.com/imagej/imagej
+> > > > > >   mvn -Pdist
+> > > > > >
+> > > > > > And you should get some platform-specific application bundles in
+> target/jfx/app and target/jfx/native directories.
+> > > > > >
+> > > > > > Of course, the ImageJ Updater is still ignorant of the new
+> directory structure (with core ImageJ stuff in the lib/ folder instead of
+> jars/). And since the native launcher is no longer the ImageJ Launcher,
+> many CLI flags do not work at the moment. But we will keep working on it!
+> > > > >
+> > > > > Hi Curtis,
+> > > > >
+> > > > > Is there an OS X application bundle that includes Java 8 available
+> for download? I have not had any luck getting the the ?mvn' command to work.
+> > > > >
+> > > > > -wayne
+> > > > >
+> > > > >
+> > > > >
+> > > > >
+> > > > >
+> > > > > _______________________________________________
+> > > > > ImageJ-devel mailing list
+> > > > > ImageJ-devel at imagej.net
+> > > > > http://imagej.net/mailman/listinfo/imagej-devel
+> > > > >
+> > > >
+> > > >
+> > >
+> > >
+> >
+> >
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150707/ac5a2a36/attachment-0001.html>
+
+From dan at chalkie.org.uk  Thu Jul  9 03:40:41 2015
+From: dan at chalkie.org.uk (Daniel White)
+Date: Thu, 9 Jul 2015 10:40:41 +0200
+Subject: [ImageJ-devel] plugin dev in elcipse
+In-Reply-To: <CA+B=mGp6ZPc1bodo2oSPafSKj4CUtXLfCd9ts_ireOSXKQ6WFg@mail.gmail.com>
+References: <CAGskW5NKaKumB8uCx1cZHcy11o8H5VOiQFkYFqWqSCW-DQ9LTw@mail.gmail.com>
+	<CA+B=mGp6ZPc1bodo2oSPafSKj4CUtXLfCd9ts_ireOSXKQ6WFg@mail.gmail.com>
+Message-ID: <CAGskW5N9R1bnrAMrPkZTbdCE9ddqCV6HPjRC87goMwtuSsMYaQ@mail.gmail.com>
+
+Hi Mark, Hi Tom
+I seem to be having trouble getting the colocalization analysis plugins top
+build, this is in Eclipse mars.
+
+I imported the maven project, and imageJ runs fine from eclipse, but i dont
+see any place where the coloc .jar is biult and saved? Where should the
+built .jar be located by default?
+
+what would a main class look like for running the coloc plugin straight
+from ellipse, without having to copy a .jar into another fiji ?
+
+maybe i am missing something at
+http://imagej.net/Developing_Fiji_in_Eclipse#Running_and_Debugging
+its not obvious for an elclipse noob like me.
+
+cheers
+
+D
+
+
+
+On 25 June 2015 at 19:39, Mark Hiner <hiner at wisc.edu> wrote:
+
+> Hi Daniel,
+>
+> >The Fiji.sc docs describe how to do a plugin in the script editor,
+> >or how to develop imageJ itself in eclipse,
+> >but not how to get one of the external Fiji plugins, like coloc analysis,
+> >and then run Fiji with my hacked plugin code running from eclipse????
+>
+> This process is described in the Developing Fiji in Eclipse tutorial[1] -
+> which I just updated with a bit more information.
+>
+> >i can run imageJ from there by highlighting the ij jar and doing run as
+> java application
+>
+> If you are running ij.jar from the Maven dependencies of
+> Colocalisation_Analysis, then Eclipse is likely just literally executing
+> the jar without anything else on the classpath. Using Debug.run will give
+> you an ImageJ with your plugin loaded properly.
+>
+> Also, if you don't want to make a temporary main method, you can always
+> build the .jar for your plugin and put it into an existing Fiji
+> installation.
+>
+> Hope that helps.
+>
+> Best,
+> Mark
+>
+> [1] http://imagej.net/Developing_Fiji_in_Eclipse#Running_and_Debugging
+>
+>
+> On Thu, Jun 25, 2015 at 7:32 AM, Daniel White <dan at chalkie.org.uk> wrote:
+>
+>> Hi All,
+>>
+>> I'm setting up my plugin dev environment (win7 x64), by reading the docs
+>> on the fiji.sc pages.
+>> I got eclipse installed, new JDK installed and seen by eclipse,
+>> Colocalization_Analysis plugin cloned from github using github for windows
+>> I imported the plugin as described with the import maven project gadget
+>> in eclipse,
+>> and it got the dependencies as jars apparently.
+>>
+>> So i can run imageJ from there by highlighting the ij jar and doing run
+>> as java application,
+>> but the coloc_2 plugin doesnt appear in the Analyze menu??????
+>>
+>> The Fiji.sc docs describe how to do a plugin in the script editor,
+>> or how to develop imageJ itself in eclipse,
+>> but not how to get one of the external Fiji plugins, like coloc analysis,
+>> and then run Fiji with my hacked plugin code running from eclipse????
+>>
+>> Can I help fix the docs so noobs like me can get started easier,
+>> and in the process get myself up and running with a little help from on
+>> of you folks please?
+>>
+>> cheers
+>>
+>> Dan White
+>>
+>> _______________________________________________
+>> ImageJ-devel mailing list
+>> ImageJ-devel at imagej.net
+>> http://imagej.net/mailman/listinfo/imagej-devel
+>>
+>>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150709/e8add88a/attachment.html>
+
+From hiner at wisc.edu  Thu Jul  9 13:35:22 2015
+From: hiner at wisc.edu (Mark Hiner)
+Date: Thu, 9 Jul 2015 13:35:22 -0500
+Subject: [ImageJ-devel] plugin dev in elcipse
+In-Reply-To: <CAGskW5N9R1bnrAMrPkZTbdCE9ddqCV6HPjRC87goMwtuSsMYaQ@mail.gmail.com>
+References: <CAGskW5NKaKumB8uCx1cZHcy11o8H5VOiQFkYFqWqSCW-DQ9LTw@mail.gmail.com>
+	<CA+B=mGp6ZPc1bodo2oSPafSKj4CUtXLfCd9ts_ireOSXKQ6WFg@mail.gmail.com>
+	<CAGskW5N9R1bnrAMrPkZTbdCE9ddqCV6HPjRC87goMwtuSsMYaQ@mail.gmail.com>
+Message-ID: <CA+B=mGqP0dCNJTf5K6UhH6Ur9Loi6oy4jpmFs1FDzuh-YhpJcg@mail.gmail.com>
+
+Hi Dan,
+
+>its not obvious for an elclipse noob like me.
+
+No worries. I definitely found the instructions confusing as well (which is
+why for a long time I'd just build and copy the jars).
+
+>what would a main class look like for running the coloc plugin straight
+from ellipse
+
+Coloc 2 already has a dependency on fiji-lib, so you just need a class with
+two things:
+
+1. import fiji.Debug;
+
+2. a main method like this:
+    public static void main(String[] args) {
+        Debug.run(null, null);
+    }
+
+You can just put that method in Coloc_2.java, for example, and run it in
+Eclipse. It should start up an ImageJ instance with Coloc_2 installed
+properly.
+
+>i dont see any place where the coloc .jar is biult and saved? Where should
+the built .jar be located by default?
+
+If you build it as a Maven project Eclipse should create the .jars[1]. Also
+all ImageJ/Fiji projects can be built from the command line[2] by using
+mvn. In either case the output jar is in the /target subdirectory, per
+Maven convention.
+
+Let us know if you run into any more problems or if any of this is unclear!
+
+Best,
+Mark
+
+[1]
+http://stackoverflow.com/questions/12993504/my-maven-java-project-in-eclipse-doesnt-generate-jar-file
+[2] http://imagej.net/Developing_ImageJ_on_the_command_line#Build_the_source
+
+On Thu, Jul 9, 2015 at 3:40 AM, Daniel White <dan at chalkie.org.uk> wrote:
+
+> Hi Mark, Hi Tom
+> I seem to be having trouble getting the colocalization analysis plugins
+> top build, this is in Eclipse mars.
+>
+> I imported the maven project, and imageJ runs fine from eclipse, but i
+> dont see any place where the coloc .jar is biult and saved? Where should
+> the built .jar be located by default?
+>
+> what would a main class look like for running the coloc plugin straight
+> from ellipse, without having to copy a .jar into another fiji ?
+>
+> maybe i am missing something at
+> http://imagej.net/Developing_Fiji_in_Eclipse#Running_and_Debugging
+> its not obvious for an elclipse noob like me.
+>
+> cheers
+>
+> D
+>
+>
+>
+> On 25 June 2015 at 19:39, Mark Hiner <hiner at wisc.edu> wrote:
+>
+>> Hi Daniel,
+>>
+>> >The Fiji.sc docs describe how to do a plugin in the script editor,
+>> >or how to develop imageJ itself in eclipse,
+>> >but not how to get one of the external Fiji plugins, like coloc
+>> analysis,
+>> >and then run Fiji with my hacked plugin code running from eclipse????
+>>
+>> This process is described in the Developing Fiji in Eclipse tutorial[1] -
+>> which I just updated with a bit more information.
+>>
+>> >i can run imageJ from there by highlighting the ij jar and doing run as
+>> java application
+>>
+>> If you are running ij.jar from the Maven dependencies of
+>> Colocalisation_Analysis, then Eclipse is likely just literally executing
+>> the jar without anything else on the classpath. Using Debug.run will give
+>> you an ImageJ with your plugin loaded properly.
+>>
+>> Also, if you don't want to make a temporary main method, you can always
+>> build the .jar for your plugin and put it into an existing Fiji
+>> installation.
+>>
+>> Hope that helps.
+>>
+>> Best,
+>> Mark
+>>
+>> [1] http://imagej.net/Developing_Fiji_in_Eclipse#Running_and_Debugging
+>>
+>>
+>> On Thu, Jun 25, 2015 at 7:32 AM, Daniel White <dan at chalkie.org.uk> wrote:
+>>
+>>> Hi All,
+>>>
+>>> I'm setting up my plugin dev environment (win7 x64), by reading the docs
+>>> on the fiji.sc pages.
+>>> I got eclipse installed, new JDK installed and seen by eclipse,
+>>> Colocalization_Analysis plugin cloned from github using github for
+>>> windows
+>>> I imported the plugin as described with the import maven project gadget
+>>> in eclipse,
+>>> and it got the dependencies as jars apparently.
+>>>
+>>> So i can run imageJ from there by highlighting the ij jar and doing run
+>>> as java application,
+>>> but the coloc_2 plugin doesnt appear in the Analyze menu??????
+>>>
+>>> The Fiji.sc docs describe how to do a plugin in the script editor,
+>>> or how to develop imageJ itself in eclipse,
+>>> but not how to get one of the external Fiji plugins, like coloc
+>>> analysis,
+>>> and then run Fiji with my hacked plugin code running from eclipse????
+>>>
+>>> Can I help fix the docs so noobs like me can get started easier,
+>>> and in the process get myself up and running with a little help from on
+>>> of you folks please?
+>>>
+>>> cheers
+>>>
+>>> Dan White
+>>>
+>>> _______________________________________________
+>>> ImageJ-devel mailing list
+>>> ImageJ-devel at imagej.net
+>>> http://imagej.net/mailman/listinfo/imagej-devel
+>>>
+>>>
+>>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150709/743ac722/attachment.html>
+
+From dan at chalkie.org.uk  Fri Jul 10 03:31:14 2015
+From: dan at chalkie.org.uk (Daniel White)
+Date: Fri, 10 Jul 2015 10:31:14 +0200
+Subject: [ImageJ-devel] plugin dev in elcipse
+In-Reply-To: <CA+B=mGqP0dCNJTf5K6UhH6Ur9Loi6oy4jpmFs1FDzuh-YhpJcg@mail.gmail.com>
+References: <CAGskW5NKaKumB8uCx1cZHcy11o8H5VOiQFkYFqWqSCW-DQ9LTw@mail.gmail.com>
+	<CA+B=mGp6ZPc1bodo2oSPafSKj4CUtXLfCd9ts_ireOSXKQ6WFg@mail.gmail.com>
+	<CAGskW5N9R1bnrAMrPkZTbdCE9ddqCV6HPjRC87goMwtuSsMYaQ@mail.gmail.com>
+	<CA+B=mGqP0dCNJTf5K6UhH6Ur9Loi6oy4jpmFs1FDzuh-YhpJcg@mail.gmail.com>
+Message-ID: <CAGskW5PW52-Lthhm5ycfKd1236jDER=z9r=ALbYaSEoKtrJT4g@mail.gmail.com>
+
+Thanks Mark!
+
+I found the jar!
+Hiding in plain sight in the correct place.i just expected to see it also
+from eclipse.... But you don't. Noob error
+
+I will try the main method way too to see if it's easier or more
+comfortable.
+
+I can also update the wiki so this makes sense to a clueless noob like
+myself.
+
+Cheers
+
+D
+
+On Thursday, July 9, 2015, Mark Hiner <hiner at wisc.edu> wrote:
+
+> Hi Dan,
+>
+> >its not obvious for an elclipse noob like me.
+>
+> No worries. I definitely found the instructions confusing as well (which
+> is why for a long time I'd just build and copy the jars).
+>
+> >what would a main class look like for running the coloc plugin straight
+> from ellipse
+>
+> Coloc 2 already has a dependency on fiji-lib, so you just need a class
+> with two things:
+>
+> 1. import fiji.Debug;
+>
+> 2. a main method like this:
+>     public static void main(String[] args) {
+>         Debug.run(null, null);
+>     }
+>
+> You can just put that method in Coloc_2.java, for example, and run it in
+> Eclipse. It should start up an ImageJ instance with Coloc_2 installed
+> properly.
+>
+> >i dont see any place where the coloc .jar is biult and saved? Where
+> should the built .jar be located by default?
+>
+> If you build it as a Maven project Eclipse should create the .jars[1].
+> Also all ImageJ/Fiji projects can be built from the command line[2] by
+> using mvn. In either case the output jar is in the /target subdirectory,
+> per Maven convention.
+>
+> Let us know if you run into any more problems or if any of this is unclear!
+>
+> Best,
+> Mark
+>
+> [1]
+> http://stackoverflow.com/questions/12993504/my-maven-java-project-in-eclipse-doesnt-generate-jar-file
+> [2]
+> http://imagej.net/Developing_ImageJ_on_the_command_line#Build_the_source
+>
+> On Thu, Jul 9, 2015 at 3:40 AM, Daniel White <dan at chalkie.org.uk
+> <javascript:_e(%7B%7D,'cvml','dan at chalkie.org.uk');>> wrote:
+>
+>> Hi Mark, Hi Tom
+>> I seem to be having trouble getting the colocalization analysis plugins
+>> top build, this is in Eclipse mars.
+>>
+>> I imported the maven project, and imageJ runs fine from eclipse, but i
+>> dont see any place where the coloc .jar is biult and saved? Where should
+>> the built .jar be located by default?
+>>
+>> what would a main class look like for running the coloc plugin straight
+>> from ellipse, without having to copy a .jar into another fiji ?
+>>
+>> maybe i am missing something at
+>> http://imagej.net/Developing_Fiji_in_Eclipse#Running_and_Debugging
+>> its not obvious for an elclipse noob like me.
+>>
+>> cheers
+>>
+>> D
+>>
+>>
+>>
+>> On 25 June 2015 at 19:39, Mark Hiner <hiner at wisc.edu
+>> <javascript:_e(%7B%7D,'cvml','hiner at wisc.edu');>> wrote:
+>>
+>>> Hi Daniel,
+>>>
+>>> >The Fiji.sc docs describe how to do a plugin in the script editor,
+>>> >or how to develop imageJ itself in eclipse,
+>>> >but not how to get one of the external Fiji plugins, like coloc
+>>> analysis,
+>>> >and then run Fiji with my hacked plugin code running from eclipse????
+>>>
+>>> This process is described in the Developing Fiji in Eclipse tutorial[1]
+>>> - which I just updated with a bit more information.
+>>>
+>>> >i can run imageJ from there by highlighting the ij jar and doing run as
+>>> java application
+>>>
+>>> If you are running ij.jar from the Maven dependencies of
+>>> Colocalisation_Analysis, then Eclipse is likely just literally executing
+>>> the jar without anything else on the classpath. Using Debug.run will give
+>>> you an ImageJ with your plugin loaded properly.
+>>>
+>>> Also, if you don't want to make a temporary main method, you can always
+>>> build the .jar for your plugin and put it into an existing Fiji
+>>> installation.
+>>>
+>>> Hope that helps.
+>>>
+>>> Best,
+>>> Mark
+>>>
+>>> [1] http://imagej.net/Developing_Fiji_in_Eclipse#Running_and_Debugging
+>>>
+>>>
+>>> On Thu, Jun 25, 2015 at 7:32 AM, Daniel White <dan at chalkie.org.uk
+>>> <javascript:_e(%7B%7D,'cvml','dan at chalkie.org.uk');>> wrote:
+>>>
+>>>> Hi All,
+>>>>
+>>>> I'm setting up my plugin dev environment (win7 x64), by reading the
+>>>> docs on the fiji.sc pages.
+>>>> I got eclipse installed, new JDK installed and seen by eclipse,
+>>>> Colocalization_Analysis plugin cloned from github using github for
+>>>> windows
+>>>> I imported the plugin as described with the import maven project gadget
+>>>> in eclipse,
+>>>> and it got the dependencies as jars apparently.
+>>>>
+>>>> So i can run imageJ from there by highlighting the ij jar and doing run
+>>>> as java application,
+>>>> but the coloc_2 plugin doesnt appear in the Analyze menu??????
+>>>>
+>>>> The Fiji.sc docs describe how to do a plugin in the script editor,
+>>>> or how to develop imageJ itself in eclipse,
+>>>> but not how to get one of the external Fiji plugins, like coloc
+>>>> analysis,
+>>>> and then run Fiji with my hacked plugin code running from eclipse????
+>>>>
+>>>> Can I help fix the docs so noobs like me can get started easier,
+>>>> and in the process get myself up and running with a little help from on
+>>>> of you folks please?
+>>>>
+>>>> cheers
+>>>>
+>>>> Dan White
+>>>>
+>>>> _______________________________________________
+>>>> ImageJ-devel mailing list
+>>>> ImageJ-devel at imagej.net
+>>>> <javascript:_e(%7B%7D,'cvml','ImageJ-devel at imagej.net');>
+>>>> http://imagej.net/mailman/listinfo/imagej-devel
+>>>>
+>>>>
+>>>
+>>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150710/2f928088/attachment.html>
+
+From dan at chalkie.org.uk  Fri Jul 10 09:53:38 2015
+From: dan at chalkie.org.uk (Daniel White)
+Date: Fri, 10 Jul 2015 16:53:38 +0200
+Subject: [ImageJ-devel] Coloc_2 dedign notes page on fiji wiki
+Message-ID: <CAGskW5ONDL0p7ZCTa65v4Wngtfxd+H2S_883w+ghOxpB4HGkgg@mail.gmail.com>
+
+Hi all,
+
+I moved the disorganised and rambling Coloc_2 design notes doc from google
+docs to a Fiji.sc wiki page, as i think that's more appropriate, so folks
+and find it and contribute to it easier.
+
+http://fiji.sc/Coloc_2_designNotes
+
+I need to do a bunch of reformatting, but it was already nice to read back
+through all the old collected thoughts.. some of the contributors are now
+hard to find, so they are not cc'ed here, but maybe there will be more in
+future.
+
+As I try to implement a couple of trivial things, like % coloc by intensity
+or pixels in a ROI, and no of pixels in the ROI (done already in my branch)
+and rationalise the results values output to be the same in each case, GUI,
+IJ.log and PDF, I will go through and tidy up the docs etc.
+
+I also put a very high level TODO list and DONE list on the Fiji.sc/Coloc_2
+page so users can see what got fixed recently and what we are currently
+thinking about doing.
+
+best
+
+Dan
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150710/6b9f9525/attachment-0001.html>
+
+From wagner at biomedical-imaging.de  Sat Jul 11 04:14:17 2015
+From: wagner at biomedical-imaging.de (Thorsten Wagner)
+Date: Sat, 11 Jul 2015 11:14:17 +0200
+Subject: [ImageJ-devel] Problem getting the context
+Message-ID: <1436606057.11335.12.camel@biomedical-imaging.de>
+
+Dear List, dear Brian,
+
+we currently came across problems with ImageJ-OPs and TrackMate. 
+
+For some reasons we have to start TrackMate by the following main
+method:
+https://github.com/thorstenwagner/TrackMate/blob/master/src/main/java/f
+iji/plugin/trackmate/TrackMatePlugIn_.java#L134
+
+However, this always leads to the a exception at this line:
+https://github.com/thorstenwagner/TrackMate/blob/master/src/main/java/f
+iji/plugin/trackmate/detection/findmaxima/FindMaximaSpotDetector.java#L
+123
+
+This is the exception:
+http://pastebin.com/A3N5LQBw
+
+Any ideas?
+
+Cheers,
+Thorsten
+
+
+From wagner at biomedical-imaging.de  Sat Jul 11 04:17:18 2015
+From: wagner at biomedical-imaging.de (Thorsten Wagner)
+Date: Sat, 11 Jul 2015 11:17:18 +0200
+Subject: [ImageJ-devel] Problem getting the context
+In-Reply-To: <1436606057.11335.12.camel@biomedical-imaging.de>
+References: <1436606057.11335.12.camel@biomedical-imaging.de>
+Message-ID: <1436606238.11335.14.camel@biomedical-imaging.de>
+
+Just an additional information:
+
+I tried to start it by imagej2:
+
+net.imagej.Main.main(args);
+new TrackMatePlugIn_().run( "/home/thorsten/samples/FakeTracks.tif" );
+
+However, this just leads to another exception:
+http://pastebin.com/m0VCTZ4S
+
+Cheers,
+Thorsten
+
+Am Samstag, den 11.07.2015, 11:14 +0200 schrieb Thorsten Wagner:
+> Dear List, dear Brian,
+> 
+> we currently came across problems with ImageJ-OPs and TrackMate. 
+> 
+> For some reasons we have to start TrackMate by the following main
+> method:
+> https://github.com/thorstenwagner/TrackMate/blob/master/src/main/java
+> /f
+> iji/plugin/trackmate/TrackMatePlugIn_.java#L134
+> 
+> However, this always leads to the a exception at this line:
+> https://github.com/thorstenwagner/TrackMate/blob/master/src/main/java
+> /f
+> iji/plugin/trackmate/detection/findmaxima/FindMaximaSpotDetector.java
+> #L
+> 123
+> 
+> This is the exception:
+> http://pastebin.com/A3N5LQBw
+> 
+> Any ideas?
+> 
+> Cheers,
+> Thorsten
+
+
+From ctrueden at wisc.edu  Mon Jul 13 13:56:37 2015
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Mon, 13 Jul 2015 13:56:37 -0500
+Subject: [ImageJ-devel] ImageJ distributions for Linux
+Message-ID: <CADN69y=zTw_OD6YT86WgiSoDiL_5bTyABC0+wbcD7gJ9qcc-iA@mail.gmail.com>
+
+Hi Wayne,
+
+> I have been able to create ImageJ distributions for Mac and Windows
+> that bundle Java 8, but not for Linux.
+
+Sorry for the delay in reply. I had to upgrade my Ubuntu Linux VM through
+several new releases to get to 15.04 so that the openjdk-8 packages would
+be available, and I could attempt to reproduce.
+
+I was able to build a Debian Linux package for ImageJ2 by installing the
+openjdk-8-jdk and openjfx packages, then running "mvn -Pdist" from the
+imagej/imagej working copy. (I did not test for imagej/ImageJA but I expect
+it also works.)
+
+> on Linux, with Java 8, I get this error
+>
+>    Error occurred during initialization of VM
+>   java/lang/NoClassDefFoundError: java/lang/Object
+>
+> I get the same error if I try to run ImageJ using the Fiji launcher. I
+> tried setting the JAVA_HOME property, but that didn?t help.
+
+I have not seen that error, but a web search found this StackOverflow post,
+which is probably worth checking out:
+
+   http://stackoverflow.com/q/11808829
+
+In short, it sounds like an installation issue with Java itself. Did you
+install using your distro's package manager?
+
+HTH,
+Curtis
+
+
+On Tue, Jun 30, 2015 at 5:38 PM, Rasband, Wayne (NIH/NIMH) [E] <
+rasbandw at mail.nih.gov> wrote:
+
+> Hi Curtis,
+>
+> I have a question. I have been able to create ImageJ distributions for Mac
+> and Windows that bundle Java 8, but not for Linux. On Mac and Windows, and
+> Linux with Java 6, I can run ImageJ by typing
+>
+>     ./jre/bin/java -jar ij.jar
+>
+> But, on Linux, with Java 8, I get this error
+>
+>    Error occurred during initialization of VM
+>    java/lang/NoClassDefFoundError: java/lang/Object
+>
+> I get the same error if I try to run ImageJ using the Fiji launcher. I
+> tried setting the JAVA_HOME property, but that didn?t help.
+>
+> Best regards,
+>
+> -wayne
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150713/3f32c904/attachment.html>
+
+From ctrueden at wisc.edu  Tue Jul 14 06:25:52 2015
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Tue, 14 Jul 2015 06:25:52 -0500
+Subject: [ImageJ-devel] ImageJ distributions for Linux
+In-Reply-To: <AC50818C-29C8-419A-A2A4-7A0C9A7F01C5@nih.gov>
+References: <CADN69y=zTw_OD6YT86WgiSoDiL_5bTyABC0+wbcD7gJ9qcc-iA@mail.gmail.com>
+	<AC50818C-29C8-419A-A2A4-7A0C9A7F01C5@nih.gov>
+Message-ID: <CADN69ymBizzTGnA-O2hamPeY0Q909SGukjchiATWuQBMjRZSHQ@mail.gmail.com>
+
+HI Wayne,
+
+Great, glad to hear!
+
+Regards,
+Curtis
+On Jul 13, 2015 10:37 PM, "Rasband, Wayne (NIH/NIMH) [E]" <
+rasbandw at mail.nih.gov> wrote:
+
+> Hi Curtis,
+>
+> > On Jul 13, 2015, at 2:56 PM, Curtis Rueden <ctrueden at WISC.EDU> wrote:
+> >
+> > > on Linux, with Java 8, I get this error
+> > >
+> > >    Error occurred during initialization of VM
+> > >   java/lang/NoClassDefFoundError: java/lang/Object
+> > >
+> > > I get the same error if I try to run ImageJ using the Fiji launcher. I
+> > > tried setting the JAVA_HOME property, but that didn?t help.
+> >
+> > I have not seen that error, but a web search found this StackOverflow
+> post, which is probably worth checking out:
+> >
+> >    http://stackoverflow.com/q/11808829
+> >
+> > In short, it sounds like an installation issue with Java itself. Did you
+> install using your distro's package manager?
+>
+> Thanks. It was an installation error. I had not installed Java 8. The
+> StackOverflow post had the solution, which is to unpack the *.pack files in
+> the ire/lib folder.
+>
+> Best regards,
+>
+> -wayne
+>
+>
+> > On Tue, Jun 30, 2015 at 5:38 PM, Rasband, Wayne (NIH/NIMH) [E] <
+> rasbandw at mail.nih.gov> wrote:
+> > Hi Curtis,
+> >
+> > I have a question. I have been able to create ImageJ distributions for
+> Mac and Windows that bundle Java 8, but not for Linux. On Mac and Windows,
+> and Linux with Java 6, I can run ImageJ by typing
+> >
+> >     ./jre/bin/java -jar ij.jar
+> >
+> > But, on Linux, with Java 8, I get this error
+> >
+> >    Error occurred during initialization of VM
+> >    java/lang/NoClassDefFoundError: java/lang/Object
+> >
+> > I get the same error if I try to run ImageJ using the Fiji launcher. I
+> tried setting the JAVA_HOME property, but that didn?t help.
+> >
+> > Best regards,
+> >
+> > -wayne
+> >
+> >
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150714/0fe6d373/attachment.html>
+
+From hiner at wisc.edu  Tue Jul 14 09:45:38 2015
+From: hiner at wisc.edu (Mark Hiner)
+Date: Tue, 14 Jul 2015 09:45:38 -0500
+Subject: [ImageJ-devel] Problem getting the context
+In-Reply-To: <1436606238.11335.14.camel@biomedical-imaging.de>
+References: <1436606057.11335.12.camel@biomedical-imaging.de>
+	<1436606238.11335.14.camel@biomedical-imaging.de>
+Message-ID: <CA+B=mGqNvNwYpw+uaeC9LXY-m4+gJhQaFGTVsSR_46m2Jgtv1w@mail.gmail.com>
+
+Hi Thorsten,
+
+>For some reasons we have to start TrackMate by the following main method:
+
+How exactly are you trying to launch TrackMate? Are you using the latest
+TrackMate master[1]? When I run this class in Eclipse, it works for me -
+launching TrackMate and opening the sample image (although I did have to
+change the path to http://fiji.sc/samples/FakeTracks.tif)
+
+>This is the exception:
+>http://pastebin.com/A3N5LQBw
+
+Note that this exception message includes suggested debugging and
+workaround options. It may be sufficient to add the suggested static
+initializer.
+
+>However, this just leads to another exception:
+>http://pastebin.com/m0VCTZ4S
+
+My first guess would be a class path problem with the way you are launching
+TrackMate. Also, it may be helpful to lean on the Fiji Debug launcher[2] to
+set things up properly. If you can share the exact command you used to
+launch (or your IDE environment) I can try to reproduce and debug.
+
+Best,
+Mark
+
+[1] https://github.com/fiji/TrackMate/commits/master
+[2] http://imagej.net/Developing_Fiji_in_Eclipse#Running_and_Debugging
+
+On Sat, Jul 11, 2015 at 4:17 AM, Thorsten Wagner <
+wagner at biomedical-imaging.de> wrote:
+
+> Just an additional information:
+>
+> I tried to start it by imagej2:
+>
+> net.imagej.Main.main(args);
+> new TrackMatePlugIn_().run( "/home/thorsten/samples/FakeTracks.tif" );
+>
+> However, this just leads to another exception:
+> http://pastebin.com/m0VCTZ4S
+>
+> Cheers,
+> Thorsten
+>
+> Am Samstag, den 11.07.2015, 11:14 +0200 schrieb Thorsten Wagner:
+> > Dear List, dear Brian,
+> >
+> > we currently came across problems with ImageJ-OPs and TrackMate.
+> >
+> > For some reasons we have to start TrackMate by the following main
+> > method:
+> > https://github.com/thorstenwagner/TrackMate/blob/master/src/main/java
+> > /f
+> > iji/plugin/trackmate/TrackMatePlugIn_.java#L134
+> >
+> > However, this always leads to the a exception at this line:
+> > https://github.com/thorstenwagner/TrackMate/blob/master/src/main/java
+> > /f
+> > iji/plugin/trackmate/detection/findmaxima/FindMaximaSpotDetector.java
+> > #L
+> > 123
+> >
+> > This is the exception:
+> > http://pastebin.com/A3N5LQBw
+> >
+> > Any ideas?
+> >
+> > Cheers,
+> > Thorsten
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150714/6cc4c2b3/attachment.html>
+
+From wagner at biomedical-imaging.de  Tue Jul 14 10:20:47 2015
+From: wagner at biomedical-imaging.de (Thorsten Wagner)
+Date: Tue, 14 Jul 2015 17:20:47 +0200
+Subject: [ImageJ-devel] Problem getting the context
+In-Reply-To: <CA+B=mGqNvNwYpw+uaeC9LXY-m4+gJhQaFGTVsSR_46m2Jgtv1w@mail.gmail.com>
+References: <1436606057.11335.12.camel@biomedical-imaging.de>
+	<1436606238.11335.14.camel@biomedical-imaging.de>
+	<CA+B=mGqNvNwYpw+uaeC9LXY-m4+gJhQaFGTVsSR_46m2Jgtv1w@mail.gmail.com>
+Message-ID: <1436887247.4387.12.camel@biomedical-imaging.de>
+
+Dear Mark,
+thank you for your willingness to help me.
+No, we are not using the latest TrackMate master. I'm implementing the
+find-maxima detector for TrackMate and therefore I'm using a modified
+version [1] (this is the version which produces the exception) of the
+find-maxima branch of TrackMate [2] .
+To reproduce this error (sorry that I've forgotten this important
+information in my last mail!):
+ - Start TrackMate with the Main Method in the TrackMatePlugIn_.java
+(I'm using eclipse and select "Run as -> Java Application")
+ - Select "Next" in TrackMate
+ - Select the "Find Maxima" detector
+ - Select a arbitary threshold
+ - Press Preview
+The static initializer did not help.
+Thank you for your help!
+Cheers,
+Thorsten
+[1] https://github.com/thorstenwagner/TrackMate/tree/master/src/main/ja
+va/fiji/plugin/trackmate/detection/findmaxima (These classes containing
+all changes that I've made)
+[2] https://github.com/fiji/TrackMate/tree/find-maxima
+Am Dienstag, den 14.07.2015, 09:45 -0500 schrieb Mark Hiner:
+> Hi Thorsten,
+> 
+> >For some reasons we have to start TrackMate by the following main
+> method:
+> 
+> How exactly are you trying to launch TrackMate? Are you using the
+> latest TrackMate master[1]? When I run this class in Eclipse, it
+> works for me - launching TrackMate and opening the sample image
+> (although I did have to change the path to 
+> http://fiji.sc/samples/FakeTracks.tif)
+> 
+> >This is the exception:
+> >http://pastebin.com/A3N5LQBw
+> 
+> Note that this exception message includes suggested debugging and
+> workaround options. It may be sufficient to add the suggested static
+> initializer.
+> 
+> >However, this just leads to another exception:
+> >http://pastebin.com/m0VCTZ4S
+> 
+> My first guess would be a class path problem with the way you are
+> launching TrackMate. Also, it may be helpful to lean on the Fiji
+> Debug launcher[2] to set things up properly. If you can share the
+> exact command you used to launch (or your IDE environment) I can try
+> to reproduce and debug.
+> 
+> Best,
+> Mark
+> 
+> [1] https://github.com/fiji/TrackMate/commits/master
+> [2] 
+> http://imagej.net/Developing_Fiji_in_Eclipse#Running_and_Debugging
+> 
+> On Sat, Jul 11, 2015 at 4:17 AM, Thorsten Wagner <
+> wagner at biomedical-imaging.de> wrote:
+> > Just an additional information:
+> > 
+> > I tried to start it by imagej2:
+> > 
+> > net.imagej.Main.main(args);
+> > new TrackMatePlugIn_().run( "/home/thorsten/samples/FakeTracks.tif"
+> > );
+> > 
+> > However, this just leads to another exception:
+> > http://pastebin.com/m0VCTZ4S
+> > 
+> > Cheers,
+> > Thorsten
+> > 
+> > Am Samstag, den 11.07.2015, 11:14 +0200 schrieb Thorsten Wagner:
+> > > Dear List, dear Brian,
+> > >
+> > > we currently came across problems with ImageJ-OPs and TrackMate.
+> > >
+> > > For some reasons we have to start TrackMate by the following main
+> > > method:
+> > > https://github.com/thorstenwagner/TrackMate/blob/master/src/main/
+> > java
+> > > /f
+> > > iji/plugin/trackmate/TrackMatePlugIn_.java#L134
+> > >
+> > > However, this always leads to the a exception at this line:
+> > > https://github.com/thorstenwagner/TrackMate/blob/master/src/main/
+> > java
+> > > /f
+> > >
+> > iji/plugin/trackmate/detection/findmaxima/FindMaximaSpotDetector.ja
+> > va
+> > > #L
+> > > 123
+> > >
+> > > This is the exception:
+> > > http://pastebin.com/A3N5LQBw
+> > >
+> > > Any ideas?
+> > >
+> > > Cheers,
+> > > Thorsten
+> > 
+> > _______________________________________________
+> > ImageJ-devel mailing list
+> > ImageJ-devel at imagej.net
+> > http://imagej.net/mailman/listinfo/imagej-devel
+> > 
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150714/5b532d4e/attachment-0001.html>
+
+From hiner at wisc.edu  Wed Jul 15 11:24:26 2015
+From: hiner at wisc.edu (Mark Hiner)
+Date: Wed, 15 Jul 2015 11:24:26 -0500
+Subject: [ImageJ-devel] Problem getting the context
+In-Reply-To: <1436887247.4387.12.camel@biomedical-imaging.de>
+References: <1436606057.11335.12.camel@biomedical-imaging.de>
+	<1436606238.11335.14.camel@biomedical-imaging.de>
+	<CA+B=mGqNvNwYpw+uaeC9LXY-m4+gJhQaFGTVsSR_46m2Jgtv1w@mail.gmail.com>
+	<1436887247.4387.12.camel@biomedical-imaging.de>
+Message-ID: <CA+B=mGrOj-+Fr-9HZkDJHuzFq02PE984C76pNwjBovRG4ufm7A@mail.gmail.com>
+
+Hi Thorsten,
+
+>The static initializer did not help.
+
+Unfortunately the static initializer error message is missing some critical
+information: you can't launch from a class that will cause ImageJ 1.x
+classes to be loaded. TrackMatePlugin_.java contains fields that will cause
+ImageJ 1.x classes to be loaded, so a main method in that class will not be
+able to use an ImageJ2 context. Also, Curtis and I both prefer using
+Debug.run instead of a static initializer to launch from Eclipse.
+
+So I would recommend using the Main class in the test directory of
+TrackMate[1] to avoid premature IJ 1.x class loading. The existing
+runFilter call didn't work for me, but if you use: "Debug.run("Tracks for
+TrackMate (807K)", null);" in the main method then it will open Fiji, open
+the TrackMate sample image, and then you can run TrackMate and test
+FindMaxima.
+
+Hope that helps. Let me know if you run into problems.
+
+Best,
+Mark
+
+[1]
+https://github.com/fiji/TrackMate/blob/v2.7.4/src/test/java/fiji/plugin/trackmate/Main.java
+
+On Tue, Jul 14, 2015 at 10:20 AM, Thorsten Wagner <
+wagner at biomedical-imaging.de> wrote:
+
+> Dear Mark,
+>
+> thank you for your willingness to help me.
+>
+> No, we are not using the latest TrackMate master. I'm implementing the
+> find-maxima detector for TrackMate and therefore I'm using a modified
+> version [1] (this is the version which produces the exception) of the
+> find-maxima branch of TrackMate [2] .
+>
+> To reproduce this error (sorry that I've forgotten this important
+> information in my last mail!):
+>  - Start TrackMate with the Main Method in the TrackMatePlugIn_.java (I'm
+> using eclipse and select "Run as -> Java Application")
+>  - Select "Next" in TrackMate
+>  - Select the "Find Maxima" detector
+>  - Select a arbitary threshold
+>  - Press Preview
+>
+> The static initializer did not help.
+>
+> Thank you for your help!
+>
+> Cheers,
+> Thorsten
+>
+> [1]
+> https://github.com/thorstenwagner/TrackMate/tree/master/src/main/java/fiji/plugin/trackmate/detection/findmaxima (These
+> classes containing all changes that I've made)
+> [2] https://github.com/fiji/TrackMate/tree/find-maxima
+>
+> Am Dienstag, den 14.07.2015, 09:45 -0500 schrieb Mark Hiner:
+>
+> Hi Thorsten,
+>
+> >For some reasons we have to start TrackMate by the following main method:
+>
+> How exactly are you trying to launch TrackMate? Are you using the latest
+> TrackMate master[1]? When I run this class in Eclipse, it works for me -
+> launching TrackMate and opening the sample image (although I did have to
+> change the path to http://fiji.sc/samples/FakeTracks.tif)
+>
+> >This is the exception:
+> >http://pastebin.com/A3N5LQBw
+>
+> Note that this exception message includes suggested debugging and
+> workaround options. It may be sufficient to add the suggested static
+> initializer.
+>
+> >However, this just leads to another exception:
+> >http://pastebin.com/m0VCTZ4S
+>
+> My first guess would be a class path problem with the way you are
+> launching TrackMate. Also, it may be helpful to lean on the Fiji Debug
+> launcher[2] to set things up properly. If you can share the exact command
+> you used to launch (or your IDE environment) I can try to reproduce and
+> debug.
+>
+> Best,
+> Mark
+>
+> [1] https://github.com/fiji/TrackMate/commits/master
+> [2] http://imagej.net/Developing_Fiji_in_Eclipse#Running_and_Debugging
+>
+> On Sat, Jul 11, 2015 at 4:17 AM, Thorsten Wagner <
+> wagner at biomedical-imaging.de> wrote:
+>
+> Just an additional information:
+>
+> I tried to start it by imagej2:
+>
+> net.imagej.Main.main(args);
+> new TrackMatePlugIn_().run( "/home/thorsten/samples/FakeTracks.tif" );
+>
+> However, this just leads to another exception:
+> http://pastebin.com/m0VCTZ4S
+>
+> Cheers,
+> Thorsten
+>
+> Am Samstag, den 11.07.2015, 11:14 +0200 schrieb Thorsten Wagner:
+> > Dear List, dear Brian,
+> >
+> > we currently came across problems with ImageJ-OPs and TrackMate.
+> >
+> > For some reasons we have to start TrackMate by the following main
+> > method:
+> > https://github.com/thorstenwagner/TrackMate/blob/master/src/main/java
+> > /f
+> > iji/plugin/trackmate/TrackMatePlugIn_.java#L134
+> >
+> > However, this always leads to the a exception at this line:
+> > https://github.com/thorstenwagner/TrackMate/blob/master/src/main/java
+> > /f
+> > iji/plugin/trackmate/detection/findmaxima/FindMaximaSpotDetector.java
+> > #L
+> > 123
+> >
+> > This is the exception:
+> > http://pastebin.com/A3N5LQBw
+> >
+> > Any ideas?
+> >
+> > Cheers,
+> > Thorsten
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150715/b57106bf/attachment.html>
+
+From ctrueden at wisc.edu  Wed Jul 15 15:26:00 2015
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Wed, 15 Jul 2015 15:26:00 -0500
+Subject: [ImageJ-devel] Calculate overlay statistics
+In-Reply-To: <CAJf7PRedTNQM4=9q7CLASPGf6U-LQYb3VYkbJUpC-nzvGFnzWQ@mail.gmail.com>
+References: <CAJf7PRedTNQM4=9q7CLASPGf6U-LQYb3VYkbJUpC-nzvGFnzWQ@mail.gmail.com>
+Message-ID: <CADN69y=1EbC+zTKJhOYqXmGwZ1_-63_EPotJr=jjX79vQhw78A@mail.gmail.com>
+
+Hi Cyril,
+
+Awesome that you are trying out the OPS functionality.
+
+Yes, PointSet is deprecated. The latest ROI library is in the imglib2-roi
+component [1]. Unfortunately, there are not really any examples yet, since
+the new API was just created in January.
+
+The main problem you are encountering here is a clash of "layers" of the
+ImageJ2 API designed at different times. The imagej-common classes
+(ImageDisplay and Overlay) were created before we started OPS, so they use
+the old ROI library of ImgLib2, including extensions built on top, such as
+PointSets. The imagej-ops classes are much newer and IMHO well-designed,
+but have mostly focused on building on top of ImgLib2 data structures. (OPS
+does use the ImgPlus class but that needs to be redesigned very soon.)
+
+Ultimately, you have two options here:
+
+A) Stick with the deprecated-but-still-available API of PointSet and
+StatisticsService [2]. You can call
+StatisticsService.arithmeticMean(Dataset, PointSet) to get the answer you
+are looking for here.
+
+B) Use OPS, knowing you'll have to jump through some hoops right now as the
+layers of API are "repaved." In theory, you can compute the mean of a
+region using OPS, by doing something like:
+
+   opService.stats().mean(new DoubleType(), overlay.getRegionOfInterest());
+
+But I have not tested this. ImageJ2 components downstream from ops (e.g.,
+imagej-plugins-commands) are in dire need of an update to use OPS rather
+than the deprecated APIs, but we have not had time to work on it yet.
+
+Regards,
+Curtis
+
+[1] https://github.com/imglib/imglib2-roi
+[2]
+https://github.com/imagej/imagej-ops/blob/imagej-ops-0.15.0/src/main/java/net/imagej/measure/StatisticsService.java
+
+On Mon, Jul 6, 2015 at 8:19 AM, Mongis Cyril <cyril.mongis at googlemail.com>
+wrote:
+
+> Dear everyone,
+>
+> I'm trying to calculate the statistics of a an overlay for the active
+> display.
+> I try to use the PointSet but it doesn't work. The thread is just blocked :
+>
+> public double getMean(ImageDisplay imageDisplay, Overlay overlay) {
+>      final PointSet ps = new RoiPointSet(overlay.getRegionOfInterest());
+>      return (double) opService.mean(ps);
+> }
+>
+> The PointSet API seems to be deprecated and when I dig into the Ops code,
+> it seems that the statistic function just accept an iterable. From what I
+> understood, PointSet are set of coordinates inside the image. I guess I
+> need to associate the coordinates to a dataset and get an Iterable/Function
+> out of it. Is there a service that already does this ? Or is it the wrong
+> approach ?
+>
+> Cheers,
+>
+> Cyril
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150715/656b00f3/attachment.html>
+
+From ctrueden at wisc.edu  Tue Jul 21 11:10:10 2015
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Tue, 21 Jul 2015 11:10:10 -0500
+Subject: [ImageJ-devel] Getting channel names from a Dataset object
+In-Reply-To: <CAJf7PRdigkvGp6whFcOuAziamvNBqL5Z0sZdJ0RpWXSPS6Gf5Q@mail.gmail.com>
+References: <CAJf7PRdigkvGp6whFcOuAziamvNBqL5Z0sZdJ0RpWXSPS6Gf5Q@mail.gmail.com>
+Message-ID: <CADN69ykjWKA4yDXVHDtT2Tvk76YDo2S8S-qbECxRu5aog1FduA@mail.gmail.com>
+
+Hi Cyril,
+
+> I would like to display the channel names when available. I can
+> retrieve the Axis and detect which one is the channel axis. However, I
+> see nowhere where I could get the channel name. Are those informations
+> accessible from the Dataset object or should I use an other library to
+> re-read the metadata ?
+
+Sorry this slipped through the cracks till now.
+
+It is currently not possible to name individual points along each axis,
+although we certainly plan to add that to the data model.
+
+I added an issue:
+- https://github.com/imagej/imagej-common/issues/53
+
+And here are some other related issues in the trackers:
+- https://github.com/imagej/imagej-common/issues/21
+- https://github.com/scifio/scifio/issues/242
+- https://github.com/imagej/imagej-common/issues/47
+
+Regards,
+Curtis
+
+On Fri, May 29, 2015 at 3:57 AM, Mongis Cyril <cyril.mongis at googlemail.com>
+wrote:
+
+> Dear all,
+>
+> I would like to display the channel names when available. I can retrieve
+> the Axis and detect which one is the channel axis. However, I see nowhere
+> where I could get the channel name. Are those informations accessible from
+> the Dataset object or should I use an other library to re-read the metadata
+> ?
+>
+> Cheers,
+>
+> Cyril
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150721/bdb022d2/attachment.html>
+
+From warrick at wisc.edu  Tue Jul 21 19:22:46 2015
+From: warrick at wisc.edu (Jay Warrick)
+Date: Tue, 21 Jul 2015 19:22:46 -0500
+Subject: [ImageJ-devel] Getting channel names from a Dataset object
+In-Reply-To: <CADN69ykjWKA4yDXVHDtT2Tvk76YDo2S8S-qbECxRu5aog1FduA@mail.gmail.com>
+References: <CAJf7PRdigkvGp6whFcOuAziamvNBqL5Z0sZdJ0RpWXSPS6Gf5Q@mail.gmail.com>
+	<CADN69ykjWKA4yDXVHDtT2Tvk76YDo2S8S-qbECxRu5aog1FduA@mail.gmail.com>
+Message-ID: <4021E899-B471-4D4A-8601-F5DDBC6D3659@wisc.edu>
+
+I've done some thinking related to my work on data models for naming dimension values that might be helpful when that time comes along for datasets. Also fine with whatever approach you all develop.
+
+Cheers, 
+
+Jay
+
+> On Jul 21, 2015, at 11:10 AM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+> 
+> Hi Cyril,
+> 
+> > I would like to display the channel names when available. I can
+> > retrieve the Axis and detect which one is the channel axis. However, I
+> > see nowhere where I could get the channel name. Are those informations
+> > accessible from the Dataset object or should I use an other library to
+> > re-read the metadata ?
+> 
+> Sorry this slipped through the cracks till now.
+> 
+> It is currently not possible to name individual points along each axis, although we certainly plan to add that to the data model.
+> 
+> I added an issue:
+> - https://github.com/imagej/imagej-common/issues/53
+> 
+> And here are some other related issues in the trackers:
+> - https://github.com/imagej/imagej-common/issues/21
+> - https://github.com/scifio/scifio/issues/242
+> - https://github.com/imagej/imagej-common/issues/47
+> 
+> Regards,
+> Curtis
+> 
+>> On Fri, May 29, 2015 at 3:57 AM, Mongis Cyril <cyril.mongis at googlemail.com> wrote:
+>> Dear all,
+>> 
+>> I would like to display the channel names when available. I can retrieve the Axis and detect which one is the channel axis. However, I see nowhere where I could get the channel name. Are those informations accessible from the Dataset object or should I use an other library to re-read the metadata ?
+>> 
+>> Cheers,
+>> 
+>> Cyril
+>> 
+>> _______________________________________________
+>> ImageJ-devel mailing list
+>> ImageJ-devel at imagej.net
+>> http://imagej.net/mailman/listinfo/imagej-devel
+>> 
+> 
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150721/30bc0ff7/attachment.html>
+
+From nico.stuurman at ucsf.edu  Fri Jul 24 11:22:26 2015
+From: nico.stuurman at ucsf.edu (Nico Stuurman)
+Date: Fri, 24 Jul 2015 09:22:26 -0700
+Subject: [ImageJ-devel] Fiji.sc or ImageJ.net
+Message-ID: <55B26642.2070309@ucsf.edu>
+
+Would it be possible to explain somewhere public the relation between 
+Fiji.sc and ImageJ.net for both visitors and contributors?  It appears 
+these are the same with a different skin, but whereas editing a page on 
+Fiji.sc results in a server error, editing ImageJ.net is OK.  Some 
+explanation to contributors, for instance in a welcome email after 
+registering would save time.
+
+Best,
+
+Nico
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150724/ff793e1b/attachment.html>
+
+From ctrueden at wisc.edu  Fri Jul 24 11:51:15 2015
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Fri, 24 Jul 2015 11:51:15 -0500
+Subject: [ImageJ-devel] Fiji.sc or ImageJ.net
+In-Reply-To: <55B26642.2070309@ucsf.edu>
+References: <55B26642.2070309@ucsf.edu>
+Message-ID: <CADN69y=C2Z__jqtVvsTe1Ww6aG5jZxxbRPELiaejvvjvhWzUpA@mail.gmail.com>
+
+Hi Nico,
+
+> Would it be possible to explain somewhere public the relation between
+> Fiji.sc and ImageJ.net for both visitors and contributors?
+
+This is a good discussion to have with the community.
+
+Up till now, the idea has been that fiji.sc is more appropriate when giving
+links to Fiji-specific content (e.g.,
+http://fiji.sc/Fiji_contribution_requirements), whereas imagej.net is best
+for topics relevant to ImageJ in general.
+
+But, I think it will continue to be a source of confusion moving forward.
+It might be best if all fiji.sc URLs simply redirect to imagej.net in the
+future. What do others think?
+
+> It appears these are the same with a different skin
+
+That is correct.
+
+> editing a page on Fiji.sc results in a server error
+
+It should work if you click the "Edit source" link. The "Edit" link tries
+to load the WYSIWYG editor, which is currently broken. That said, I
+personally always just use imagej.net to edit.
+
+Regards,
+Curtis
+
+On Fri, Jul 24, 2015 at 11:22 AM, Nico Stuurman <nico.stuurman at ucsf.edu>
+wrote:
+
+>  Would it be possible to explain somewhere public the relation between
+> Fiji.sc and ImageJ.net for both visitors and contributors?  It appears
+> these are the same with a different skin, but whereas editing a page on
+> Fiji.sc results in a server error, editing ImageJ.net is OK.  Some
+> explanation to contributors, for instance in a welcome email after
+> registering would save time.
+>
+> Best,
+>
+> Nico
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150724/cd356066/attachment.html>
+
+From ctrueden at wisc.edu  Fri Jul 24 11:56:19 2015
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Fri, 24 Jul 2015 11:56:19 -0500
+Subject: [ImageJ-devel] Fiji.sc or ImageJ.net
+In-Reply-To: <CADN69y=C2Z__jqtVvsTe1Ww6aG5jZxxbRPELiaejvvjvhWzUpA@mail.gmail.com>
+References: <55B26642.2070309@ucsf.edu>
+	<CADN69y=C2Z__jqtVvsTe1Ww6aG5jZxxbRPELiaejvvjvhWzUpA@mail.gmail.com>
+Message-ID: <CADN69ymExfwvze_yh3JTzZVTheeq+5iDQxvm7-8zp3GbX-hTrA@mail.gmail.com>
+
+Hi Nico,
+
+A couple other details I forgot:
+
+1) imagej.net is more than just the wiki. It also serves ImageJ1 content;
+e.g.:
+
+http://imagej.net/index.html
+- The ImageJ1 home page
+
+http://imagej.net/ImageJ
+- A wiki page
+
+This works via proxying: imagej.net forwards the request to either
+http://mirror.imagej.net/ or http://wiki.imagej.net/ depending on the URL
+requested.
+
+2) fiji.sc has a couple of bells and whistles not present on imagej.net:
+
+- The Git repository mirrors: http://fiji.sc/git
+- The search shortcuts?e.g.: http://fiji.sc/ImageJ.java
+
+For the Git mirrors, my preference would be to put them on GitHub instead.
+
+For the search shortcuts, we now have http://search.imagej.net/ which is
+hopefully a better search solution overall (though there are pros and cons).
+
+Regards,
+Curtis
+
+On Fri, Jul 24, 2015 at 11:51 AM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+
+> Hi Nico,
+>
+> > Would it be possible to explain somewhere public the relation between
+> > Fiji.sc and ImageJ.net for both visitors and contributors?
+>
+> This is a good discussion to have with the community.
+>
+> Up till now, the idea has been that fiji.sc is more appropriate when
+> giving links to Fiji-specific content (e.g.,
+> http://fiji.sc/Fiji_contribution_requirements), whereas imagej.net is
+> best for topics relevant to ImageJ in general.
+>
+> But, I think it will continue to be a source of confusion moving forward.
+> It might be best if all fiji.sc URLs simply redirect to imagej.net in the
+> future. What do others think?
+>
+> > It appears these are the same with a different skin
+>
+> That is correct.
+>
+> > editing a page on Fiji.sc results in a server error
+>
+> It should work if you click the "Edit source" link. The "Edit" link tries
+> to load the WYSIWYG editor, which is currently broken. That said, I
+> personally always just use imagej.net to edit.
+>
+> Regards,
+> Curtis
+>
+> On Fri, Jul 24, 2015 at 11:22 AM, Nico Stuurman <nico.stuurman at ucsf.edu>
+> wrote:
+>
+>>  Would it be possible to explain somewhere public the relation between
+>> Fiji.sc and ImageJ.net for both visitors and contributors?  It appears
+>> these are the same with a different skin, but whereas editing a page on
+>> Fiji.sc results in a server error, editing ImageJ.net is OK.  Some
+>> explanation to contributors, for instance in a welcome email after
+>> registering would save time.
+>>
+>> Best,
+>>
+>> Nico
+>>
+>>
+>> _______________________________________________
+>> ImageJ-devel mailing list
+>> ImageJ-devel at imagej.net
+>> http://imagej.net/mailman/listinfo/imagej-devel
+>>
+>>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150724/10c2d1df/attachment.html>
+
+From nico.stuurman at ucsf.edu  Thu Jul 30 13:38:26 2015
+From: nico.stuurman at ucsf.edu (Nico Stuurman)
+Date: Thu, 30 Jul 2015 11:38:26 -0700
+Subject: [ImageJ-devel] plugin versioning
+Message-ID: <55BA6F22.5080101@ucsf.edu>
+
+What is the recommended strategy for versioning of plugins?  For 
+instance, I set up a maven project for my plugin, create a jar (named 
+myplugin_-0.1-SNAPSHOT.jar) and make that available through the Fiji 
+updater.  I then make some changes and want to increase the version in 
+my pom.xml file (lets say to 0.1.1-SNAPSHOT).  This will change the name 
+of the jar.  Will the updater figure it out that this is the same 
+plugin?  Are there guidelines for plugin developers to follow?
+
+Thanks!
+
+Nico
+
+
+From hiner at wisc.edu  Thu Jul 30 13:55:28 2015
+From: hiner at wisc.edu (Mark Hiner)
+Date: Thu, 30 Jul 2015 14:55:28 -0400
+Subject: [ImageJ-devel] plugin versioning
+In-Reply-To: <55BA6F22.5080101@ucsf.edu>
+References: <55BA6F22.5080101@ucsf.edu>
+Message-ID: <CA+B=mGpGuQ+B1+bn2cQj8sz=mnbt-X3zaUYv6C35HN3=R+x5Xg@mail.gmail.com>
+
+Hi Nico,
+
+> Are there guidelines for plugin developers to follow?
+
+The development section[1] of the wiki is, in general, intended to provide
+these guidelines. The versioning page[2] in particular is relevant here,
+along with the Fiji contribution requirements[3].
+
+>Will the updater figure it out that this is the same plugin?
+
+Yes - if you use one of the patterns on the versioning page then the
+updater will do the right thing and determine it's a new version of the
+same jar.
+
+Hope that helps.
+
+Best,
+Mark
+
+[1] http://imagej.net/Development
+[2] http://imagej.net/Versioning
+[3]
+http://imagej.net/Fiji_contribution_requirements#Versioning_and_dependency_convergence
+
+On Thu, Jul 30, 2015 at 2:38 PM, Nico Stuurman <nico.stuurman at ucsf.edu>
+wrote:
+
+> What is the recommended strategy for versioning of plugins?  For instance,
+> I set up a maven project for my plugin, create a jar (named
+> myplugin_-0.1-SNAPSHOT.jar) and make that available through the Fiji
+> updater.  I then make some changes and want to increase the version in my
+> pom.xml file (lets say to 0.1.1-SNAPSHOT).  This will change the name of
+> the jar.  Will the updater figure it out that this is the same plugin?  Are
+> there guidelines for plugin developers to follow?
+>
+> Thanks!
+>
+> Nico
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150730/9b3c6fb8/attachment.html>
+
+From hiner at wisc.edu  Thu Jul 30 15:02:20 2015
+From: hiner at wisc.edu (Mark Hiner)
+Date: Thu, 30 Jul 2015 16:02:20 -0400
+Subject: [ImageJ-devel] plugin versioning
+In-Reply-To: <55BA7654.2080608@ucsf.edu>
+References: <55BA6F22.5080101@ucsf.edu>
+	<CA+B=mGpGuQ+B1+bn2cQj8sz=mnbt-X3zaUYv6C35HN3=R+x5Xg@mail.gmail.com>
+	<55BA7654.2080608@ucsf.edu>
+Message-ID: <CA+B=mGqfiHPKxefax77E74EhL2J-gn4TWhU+4OGuhK3r-qdvPg@mail.gmail.com>
+
+Hi Nico,
+
+>How does it deal with the "SNAPSHOT" designation?  Does it see that as a
+separate plugin?
+
+It will parse out the "SNAPSHOT" from the name to determine the base jar
+name; so "imagej-common-0.5.1.jar" is a different version of the same
+"entity" as "imagej-common-0.7.0-SNAPSHOT.jar".
+
+>That page refers to plugins exposing APIs.  What if I do not want others
+to use my code as a library?  Should I put everything in an "internal"
+package?
+
+In Fiji there's no mechanism for designating an "internal" package, e.g. in
+the OSGi sense[2] - just standard java visibility[3]. I suppose if every
+class or method in your plugin was private, protected or package-private
+then versioning would be fairly arbitrary.
+
+But note that these questions are somewhat moot: for contributions to the
+Fiji update site only release versions (i.e. non-SNAPSHOTS) are used to
+facilitate reproducibility[1] and some sort of semantic versioning is
+required to distinguish those releases; for contributions to individual
+update sites there aren't any requirements.
+
+Let us know if you have more questions.
+
+Best,
+Mark
+
+[1] http://imagej.net/Reproducible_builds#Reproducible_builds
+[2] http://stackoverflow.com/questions/4903879/package-names-impl-v-internal
+[3] https://docs.oracle.com/javase/tutorial/java/javaOO/accesscontrol.html
+
+On Thu, Jul 30, 2015 at 3:09 PM, Nico Stuurman <nico.stuurman at ucsf.edu>
+wrote:
+
+> Hi Mark,
+>
+> > Are there guidelines for plugin developers to follow?
+>
+> The development section[1] of the wiki is, in general, intended to provide
+> these guidelines. The versioning page[2] in particular is relevant here,
+> along with the Fiji contribution requirements[3].
+>
+> That page refers to plugins exposing APIs.  What if I do not want others
+> to use my code as a library?  Should I put everything in an "internal"
+> package?
+>
+> >Will the updater figure it out that this is the same plugin?
+>
+> Yes - if you use one of the patterns on the versioning page then the
+> updater will do the right thing and determine it's a new version of the
+> same jar.
+>
+> How does it deal with the "SNAPSHOT" designation?  Does it see that as a
+> separate plugin?
+>
+>
+> Best,
+>
+> Nico
+>
+>
+>
+> Hope that helps.
+>
+> Best,
+> Mark
+>
+> [1] http://imagej.net/Development
+> [2] http://imagej.net/Versioning
+> [3]
+> http://imagej.net/Fiji_contribution_requirements#Versioning_and_dependency_convergence
+>
+> On Thu, Jul 30, 2015 at 2:38 PM, Nico Stuurman <nico.stuurman at ucsf.edu>
+> wrote:
+>
+>> What is the recommended strategy for versioning of plugins?  For
+>> instance, I set up a maven project for my plugin, create a jar (named
+>> myplugin_-0.1-SNAPSHOT.jar) and make that available through the Fiji
+>> updater.  I then make some changes and want to increase the version in my
+>> pom.xml file (lets say to 0.1.1-SNAPSHOT).  This will change the name of
+>> the jar.  Will the updater figure it out that this is the same plugin?  Are
+>> there guidelines for plugin developers to follow?
+>>
+>> Thanks!
+>>
+>> Nico
+>>
+>> _______________________________________________
+>> ImageJ-devel mailing list
+>> ImageJ-devel at imagej.net
+>> http://imagej.net/mailman/listinfo/imagej-devel
+>>
+>
+>
+> --
+> Nico Stuurman
+> Vale lab, UCSF/HHMI
+> Genentech Hall, N316, MC2200
+> 600 - 16th Street
+> San Francisco, CA 94158-2517415 514 3927nico.stuurman at ucsf.edu
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150730/d282095b/attachment.html>
+
+From nico.stuurman at ucsf.edu  Thu Jul 30 15:07:12 2015
+From: nico.stuurman at ucsf.edu (Nico Stuurman)
+Date: Thu, 30 Jul 2015 13:07:12 -0700
+Subject: [ImageJ-devel] plugin versioning
+In-Reply-To: <CA+B=mGpGuQ+B1+bn2cQj8sz=mnbt-X3zaUYv6C35HN3=R+x5Xg@mail.gmail.com>
+References: <55BA6F22.5080101@ucsf.edu>
+	<CA+B=mGpGuQ+B1+bn2cQj8sz=mnbt-X3zaUYv6C35HN3=R+x5Xg@mail.gmail.com>
+Message-ID: <55BA83F0.2060605@ucsf.edu>
+
+Hi Mark (resending I did not cc the list),
+> > Are there guidelines for plugin developers to follow?
+>
+> The development section[1] of the wiki is, in general, intended to 
+> provide these guidelines. The versioning page[2] in particular is 
+> relevant here, along with the Fiji contribution requirements[3].
+That page refers to plugins exposing APIs.  What if I do not want others 
+to use my code as a library?  Should I put everything in an "internal" 
+package?
+
+> >Will the updater figure it out that this is the same plugin?
+>
+> Yes - if you use one of the patterns on the versioning page then the 
+> updater will do the right thing and determine it's a new version of 
+> the same jar.
+How does it deal with the "SNAPSHOT" designation?  Does it see that as a 
+separate plugin?
+
+
+Best,
+
+Nico
+
+
+>
+> Hope that helps.
+>
+> Best,
+> Mark
+>
+> [1] http://imagej.net/Development
+> [2] http://imagej.net/Versioning
+> [3] 
+> http://imagej.net/Fiji_contribution_requirements#Versioning_and_dependency_convergence
+>
+> On Thu, Jul 30, 2015 at 2:38 PM, Nico Stuurman <nico.stuurman at ucsf.edu 
+> <mailto:nico.stuurman at ucsf.edu>> wrote:
+>
+>     What is the recommended strategy for versioning of plugins?  For
+>     instance, I set up a maven project for my plugin, create a jar
+>     (named myplugin_-0.1-SNAPSHOT.jar) and make that available through
+>     the Fiji updater.  I then make some changes and want to increase
+>     the version in my pom.xml file (lets say to 0.1.1-SNAPSHOT).  This
+>     will change the name of the jar.  Will the updater figure it out
+>     that this is the same plugin?  Are there guidelines for plugin
+>     developers to follow?
+>
+>     Thanks!
+>
+>     Nico
+>
+>     _______________________________________________
+>     ImageJ-devel mailing list
+>     ImageJ-devel at imagej.net <mailto:ImageJ-devel at imagej.net>
+>     http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+
+-- 
+Nico Stuurman
+Vale lab, UCSF/HHMI
+Genentech Hall, N316, MC2200
+600 - 16th Street
+San Francisco, CA 94158-2517
+415 514 3927
+nico.stuurman at ucsf.edu
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150730/fee1f443/attachment-0001.html>
+
+From nico.stuurman at ucsf.edu  Thu Jul 30 23:35:02 2015
+From: nico.stuurman at ucsf.edu (Nico Stuurman)
+Date: Thu, 30 Jul 2015 21:35:02 -0700
+Subject: [ImageJ-devel] plugin versioning
+In-Reply-To: <CA+B=mGqfiHPKxefax77E74EhL2J-gn4TWhU+4OGuhK3r-qdvPg@mail.gmail.com>
+References: <55BA6F22.5080101@ucsf.edu>
+	<CA+B=mGpGuQ+B1+bn2cQj8sz=mnbt-X3zaUYv6C35HN3=R+x5Xg@mail.gmail.com>
+	<55BA7654.2080608@ucsf.edu>
+	<CA+B=mGqfiHPKxefax77E74EhL2J-gn4TWhU+4OGuhK3r-qdvPg@mail.gmail.com>
+Message-ID: <55BAFAF6.4000008@ucsf.edu>
+
+Hi Mark,
+
+> >That page refers to plugins exposing APIs.  What if I do not want 
+> others to use my code as a library?  Should I put everything in an 
+> "internal" package?
+>
+> In Fiji there's no mechanism for designating an "internal" package, 
+> e.g. in the OSGi sense[2] - just standard java visibility[3].
+Serious?  Every class in Fiji is open to everyone to use?  There is no 
+distinction between API and implementing classes?  Oh dear, you are in 
+for years of trouble....
+
+Best,
+
+Nico
+
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150730/50329a61/attachment.html>
+

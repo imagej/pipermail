@@ -1,0 +1,128 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] IOService changed
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20IOService%20changed&In-Reply-To=%3CCADN69yneibrtefo6trgmSqGXQ930u9XGKJoAOnZGAbvNiz8xDw%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001706.html">
+   <LINK REL="Next"  HREF="001705.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] IOService changed</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20IOService%20changed&In-Reply-To=%3CCADN69yneibrtefo6trgmSqGXQ930u9XGKJoAOnZGAbvNiz8xDw%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] IOService changed">ctrueden at wisc.edu
+       </A><BR>
+    <I>Fri Jul 19 12:17:32 CDT 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001706.html">[ImageJ-devel] IOService changed
+</A></li>
+        <LI>Next message: <A HREF="001705.html">[ImageJ-devel] Tables / TableDisplays / ResultsTables as input	parameters
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1707">[ date ]</a>
+              <a href="thread.html#1707">[ thread ]</a>
+              <a href="subject.html#1707">[ subject ]</a>
+              <a href="author.html#1707">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Mohamed,
+
+&gt;<i> In you last update, you changed the IOService, and now it is not
+</I>&gt;<i> possible to use the ij.io().loadDataset method. the new ij.io().open
+</I>&gt;<i> method returns an object that cannot be cast into Dataset. Would you
+</I>&gt;<i> show us a little example on how to open a Dataset now?
+</I>
+The method does still exist, but moved to DatasetService:
+
+    ij.dataset().open(String)
+
+It still returns a Dataset (so no casting is necessary), but now throws
+only IOException instead of those ImgLib2-specific exceptions.
+
+As Johannes said, the idea is that ij.io().open is now more general purpose
+(&quot;open something&quot;) whereas other individual services are used to open their
+specific things. So of course DatasetService can open Datasets. And the
+LUTService can open ColorTables (method &quot;loadLUT&quot; probably needs to be
+renamed to &quot;open&quot; there), and the TextService can open text files.
+
+I have also updated the tutorials accordingly, in case that helps. Please
+let us know of any problems with it!
+
+Regards,
+Curtis
+
+On Fri, Jul 19, 2013 at 10:54 AM, Johannes Schindelin
+&lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">schindelin at wisc.edu</A>&gt;wrote:
+
+&gt;<i> Hi Mohamed,
+</I>&gt;<i>
+</I>&gt;<i> On Fri, 19 Jul 2013, Mohamed Tleis wrote:
+</I>&gt;<i>
+</I>&gt;<i> &gt; In you last update, you changed the IOService, and now it is not
+</I>&gt;<i> &gt; possible to use the ij.io().loadDataset method. the new ij.io().open
+</I>&gt;<i> &gt; method returns an object that cannot be cast into Dataset. Would you
+</I>&gt;<i> &gt; show us a little example on how to open a Dataset now?
+</I>&gt;<i>
+</I>&gt;<i> Please note that the I/O part of ImageJ2 in particular is still in heavy
+</I>&gt;<i> development mode. You need to expect it to change a lot.
+</I>&gt;<i>
+</I>&gt;<i> Now, to the IOService in particular: if you expect it to load only Dataset
+</I>&gt;<i> instances, you use the wrong service. Remember, ImageJ2 also wants to open
+</I>&gt;<i> macros and scripts, and result tables, and basically a *lot* on top of
+</I>&gt;<i> images. That is why the open() method now returns an object.
+</I>&gt;<i>
+</I>&gt;<i> If you *know* that you want to open an image (and you need to open it
+</I>&gt;<i> yourself rather than being nice and asking the user to open the image or
+</I>&gt;<i> create it or obtain in any way they want rather than the way you want them
+</I>&gt;<i> to) use the ImgOpener class of SCIFIO:
+</I>&gt;<i>
+</I>&gt;<i> <A HREF="http://jenkins.imagej.net/view/SCIFIO/job/SCIFIO-javadoc/javadoc/io/scif/img/ImgOpener.html">http://jenkins.imagej.net/view/SCIFIO/job/SCIFIO-javadoc/javadoc/io/scif/img/ImgOpener.html</A>
+</I>&gt;<i>
+</I>&gt;<i> However, I strongly suggest that you try to make your plugin as flexible
+</I>&gt;<i> as possible by stating that you want a Dataset as a @Parameter instead of
+</I>&gt;<i> forcing the user to store the image as a file and then read it back.
+</I>&gt;<i>
+</I>&gt;<i> Ciao,
+</I>&gt;<i> Johannes
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20130719/340f42a0/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20130719/340f42a0/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001706.html">[ImageJ-devel] IOService changed
+</A></li>
+	<LI>Next message: <A HREF="001705.html">[ImageJ-devel] Tables / TableDisplays / ResultsTables as input	parameters
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1707">[ date ]</a>
+              <a href="thread.html#1707">[ thread ]</a>
+              <a href="subject.html#1707">[ subject ]</a>
+              <a href="author.html#1707">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

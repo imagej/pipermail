@@ -1,0 +1,2706 @@
+From bugzilla at fiji.sc  Tue Feb  2 06:06:43 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Tue, 02 Feb 2016 12:06:43 +0000
+Subject: [ImageJ-bugs] [Bug 1220] New: RoiEncoder throws
+ NullPointerException when saving multipoint selections
+Message-ID: <bug-1220-19@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1220
+
+            Bug ID: 1220
+           Summary: RoiEncoder throws NullPointerException when saving
+                    multipoint selections
+           Product: Fiji
+           Version: unspecified
+          Hardware: All
+                OS: All
+            Status: NEW
+          Severity: normal
+          Priority: P5
+         Component: ImageJ1
+          Assignee: wsr at nih.gov
+          Reporter: jan.eglinger at gmail.com
+                CC: imagej-bugs at imagej.net
+
+Here's a macro to reproduce the issue (just select a few points and click ok on
+the two dialogs):
+
+    run("Fluorescent Cells (400K)");
+
+    setTool("multipoint");
+    run("Select None");
+    waitForUser("Select points. Then press 'OK'");
+    run("Add to Manager");
+    run("Select None");
+    c=roiManager("count");
+    roiManager("select", c-1);
+    roiManager("Rename", "points1");
+
+    makePoint(0, 0);
+    run("Add to Manager");
+    run("Select None");
+    c=roiManager("count");
+    roiManager("select", c-1);
+    roiManager("Rename", "single_point");
+
+    setTool("multipoint");
+    run("Select None");
+    waitForUser("Select more points. Then press 'OK'");
+    run("Add to Manager");
+    run("Select None");
+    c=roiManager("count");
+    roiManager("select", c-1);
+    roiManager("Rename", "points2");
+
+    roiManager("Save", getDirectory("temp") + File.separator +
+"test_rois.zip");
+
+
+This will throw the exception below (using up-to-date Fiji as well as the Dec
+2015 life-line version), tested on Windows and Mac OSX. The behavior is
+specific to multi-channel images.
+Everything works fine when using the Nov 2014 life-line version of Fiji.
+
+
+    (Fiji Is Just) ImageJ 2.0.0-rc-44/1.50e; Java 1.8.0_66 [64-bit]; Windows 7
+6.1; 425MB of 96000MB (<1%)
+
+    java.lang.NullPointerException
+    at ij.io.RoiEncoder.putPointCounters(RoiEncoder.java:409)
+    at ij.io.RoiEncoder.putHeader2(RoiEncoder.java:384)
+    at ij.io.RoiEncoder.write(RoiEncoder.java:230)
+    at ij.io.RoiEncoder.write(RoiEncoder.java:56)
+    at ij.plugin.frame.RoiManager.saveMultiple(RoiManager.java:827)
+    at ij.plugin.frame.RoiManager.save(RoiManager.java:2036)
+    at ij.plugin.frame.RoiManager.runCommand(RoiManager.java:1931)
+    at ij.macro.Functions.roiManager(Functions.java:2729)
+    at ij.macro.Functions.getFunctionValue(Functions.java:230)
+    at ij.macro.Interpreter.getFactor(Interpreter.java:1385)
+    at ij.macro.Interpreter.getTerm(Interpreter.java:1356)
+    at ij.macro.Interpreter.getStringExpression(Interpreter.java:1496)
+    at ij.macro.Interpreter.getStringTerm(Interpreter.java:1315)
+    at ij.macro.Interpreter.getString(Interpreter.java:1272)
+    at ij.macro.Interpreter.doStatement(Interpreter.java:281)
+    at ij.macro.Interpreter.doStatements(Interpreter.java:218)
+    at ij.macro.Interpreter.run(Interpreter.java:115)
+    at ij.macro.Interpreter.run(Interpreter.java:85)
+    at ij.macro.Interpreter.run(Interpreter.java:96)
+    at ij.plugin.Macro_Runner.runMacro(Macro_Runner.java:153)
+    at ij.IJ.runMacro(IJ.java:129)
+    at ij.IJ.runMacro(IJ.java:118)
+    at net.imagej.legacy.IJ1Helper$3.call(IJ1Helper.java:936)
+    at net.imagej.legacy.IJ1Helper$3.call(IJ1Helper.java:933)
+    at net.imagej.legacy.IJ1Helper.runMacroFriendly(IJ1Helper.java:899)
+    at net.imagej.legacy.IJ1Helper.runMacro(IJ1Helper.java:933)
+    at net.imagej.legacy.plugin.IJ1MacroEngine.eval(IJ1MacroEngine.java:116)
+    at net.imagej.legacy.plugin.IJ1MacroEngine.eval(IJ1MacroEngine.java:163)
+    at org.scijava.script.ScriptModule.run(ScriptModule.java:174)
+    at org.scijava.module.ModuleRunner.run(ModuleRunner.java:167)
+    at org.scijava.module.ModuleRunner.call(ModuleRunner.java:126)
+    at org.scijava.module.ModuleRunner.call(ModuleRunner.java:65)
+    at
+org.scijava.thread.DefaultThreadService$2.call(DefaultThreadService.java:191)
+    at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+    at
+java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+    at
+java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
+    at java.lang.Thread.run(Thread.java:745)
+
+-- 
+You are receiving this mail because:
+You are on the CC list for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160202/607795c9/attachment.html>
+
+From bugzilla at fiji.sc  Wed Feb  3 21:19:43 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Thu, 04 Feb 2016 03:19:43 +0000
+Subject: [ImageJ-bugs] [Bug 1220] RoiEncoder throws NullPointerException
+ when saving multipoint selections
+In-Reply-To: <bug-1220-19@http.fiji.sc/bugzilla/>
+References: <bug-1220-19@http.fiji.sc/bugzilla/>
+Message-ID: <bug-1220-19-QfNr8HpAHu@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1220
+
+Wayne Rasband <wsr at nih.gov> changed:
+
+           What    |Removed                     |Added
+----------------------------------------------------------------------------
+             Status|NEW                         |RESOLVED
+         Resolution|---                         |FIXED
+
+--- Comment #1 from Wayne Rasband <wsr at nih.gov> ---
+This bug is fixed in the latest ImageJ daily build (1.50g12).
+
+-- 
+You are receiving this mail because:
+You are on the CC list for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160204/de36cda0/attachment.html>
+
+From bugzilla at fiji.sc  Thu Feb  4 10:12:35 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Thu, 04 Feb 2016 16:12:35 +0000
+Subject: [ImageJ-bugs] [Bug 1214] java.lang.IllegalStateException when
+ trying to open new script
+In-Reply-To: <bug-1214-19@http.fiji.sc/bugzilla/>
+References: <bug-1214-19@http.fiji.sc/bugzilla/>
+Message-ID: <bug-1214-19-MbvupCJZQs@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1214
+
+Curtis Rueden <ctrueden at wisc.edu> changed:
+
+           What    |Removed                     |Added
+----------------------------------------------------------------------------
+             Status|CONFIRMED                   |RESOLVED
+         Resolution|---                         |FIXED
+
+--- Comment #4 from Curtis Rueden <ctrueden at wisc.edu> ---
+After consulting with Hongkee Moon, we discovered that the Micro-Manager-dev
+update site, used by the OpenSPIM update site, had many invalid/obsolete
+duplicate libraries present in the plugins/Micro-Manager subfolder.
+
+These duplicates interfered with the normal operations of ImageJ.
+
+I have removed all the duplicates from the Micro-Manager-dev update site, so
+this problem should not bite others using OpenSPIM anymore -- at least for now.
+
+To repair your local installation, remove all
+plugins/Micro-Manager/scijava-common-*.jar files from your installation. Then
+launch OpenSPIM and run the updater (which should now launch successfully) to
+update everything else.
+
+And please feel free to reopen this issue if the problem recurs.
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160204/5cb0d9ce/attachment.html>
+
+From bugzilla at fiji.sc  Thu Feb  4 13:56:24 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Thu, 04 Feb 2016 19:56:24 +0000
+Subject: [ImageJ-bugs] [Bug 1221] New: Scale Bar Does Not Copy Over
+Message-ID: <bug-1221-19@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1221
+
+            Bug ID: 1221
+           Summary: Scale Bar Does Not Copy Over
+           Product: Fiji
+           Version: unspecified
+          Hardware: PC
+                OS: Windows
+            Status: NEW
+          Severity: normal
+          Priority: P4
+         Component: Plugins
+          Assignee: imagej-bugs at imagej.net
+          Reporter: rajeev.chaudhary86 at gmail.com
+                CC: rajeev.chaudhary86 at gmail.com
+
+Hello,
+
+ I used to be able to copy images from Fiji with scale bars I placed on the
+images.  Now, anytime I try to copy the image with the scale bar, when it
+pastes the scale bar is removed.
+
+Please help at your convenience!
+
+Best,
+
+Rajeev
+
+Information about your version of Java:
+
+  os.arch => amd64
+  os.name => Windows 7
+  os.version => 6.1
+  java.version => 1.6.0_24
+  java.vendor => Sun Microsystems Inc.
+  java.runtime.name => Java(TM) SE Runtime Environment
+  java.runtime.version => 1.6.0_24-b07
+  java.vm.name => Java HotSpot(TM) 64-Bit Server VM
+  java.vm.version => 19.1-b02
+  java.vm.vendor => Sun Microsystems Inc.
+  java.vm.info => mixed mode
+  java.awt.graphicsenv => sun.awt.Win32GraphicsEnvironment
+  java.specification.name => Java Platform API Specification
+  java.specification.version => 1.6
+  sun.cpu.endian => little
+  sun.desktop => windows
+  file.separator => \
+
+The up-to-date check says: REMIND_LATER
+
+Information relevant to JAVA_HOME related problems:
+
+  JAVA_HOME is set to:
+C:\Users\Rajeev\Desktop\Fiji.app/java/win64/jdk1.6.0_24//jre
+  imagej.dir => C:\Users\Rajeev\Desktop\Fiji.app
+
+Information about the version of each plugin:
+
+Activated update sites:
+ImageJ: http://update.imagej.net/ (last check:20151221201554)
+Fiji: http://update.fiji.sc/ (last check:20151221222403)
+
+Files not up-to-date:
+  6c6df3e1 (MODIFIED) 20151222085552 jars/imagej-updater-0.7.8.jar
+  9ccc296f (MODIFIED) 20160204115009 jars/imagej-updater-0.7.9.jar
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160204/f3a0ef0e/attachment.html>
+
+From bugzilla at fiji.sc  Fri Feb  5 23:21:28 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Sat, 06 Feb 2016 05:21:28 +0000
+Subject: [ImageJ-bugs] [Bug 1221] Scale Bar Does Not Copy Over
+In-Reply-To: <bug-1221-19@http.fiji.sc/bugzilla/>
+References: <bug-1221-19@http.fiji.sc/bugzilla/>
+Message-ID: <bug-1221-19-nndVEFvlIK@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1221
+
+Wayne Rasband <wsr at nih.gov> changed:
+
+           What    |Removed                     |Added
+----------------------------------------------------------------------------
+             Status|NEW                         |RESOLVED
+                 CC|                            |wsr at nih.gov
+         Resolution|---                         |FIXED
+
+--- Comment #1 from Wayne Rasband <wsr at nih.gov> ---
+This bug is fixed in the latest ImageJ daily build (1.50g14), or work around
+the bug by flattening the image (Image>Overlay>Flatten) before copying it, or
+by unchecking "Overlay" in the dialog when creating the scale bar.
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160206/b4b6bc2a/attachment.html>
+
+From bugzilla at fiji.sc  Wed Feb 10 13:59:01 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Wed, 10 Feb 2016 19:59:01 +0000
+Subject: [ImageJ-bugs] [Bug 1222] New: Error message when closing
+Message-ID: <bug-1222-19@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1222
+
+            Bug ID: 1222
+           Summary: Error message when closing
+           Product: Fiji
+           Version: unspecified
+          Hardware: PC
+                OS: Windows
+            Status: NEW
+          Severity: normal
+          Priority: P4
+         Component: Plugins
+          Assignee: imagej-bugs at imagej.net
+          Reporter: emilie.peco at yahoo.fr
+                CC: emilie.peco at yahoo.fr
+
+Upon ImageJ closure, an error window appears: 
+
+Error Saving Preferences  
+
+C:\Users\Emilie\.imagej\IJ_Prefs.txt (Acc?s refus?)
+
+(I run Windows10,  64bit)
+
+Information about your version of Java:
+
+  os.arch => amd64
+  os.name => Windows NT (unknown)
+  os.version => 6.2
+  java.version => 1.6.0_24
+  java.vendor => Sun Microsystems Inc.
+  java.runtime.name => Java(TM) SE Runtime Environment
+  java.runtime.version => 1.6.0_24-b07
+  java.vm.name => Java HotSpot(TM) 64-Bit Server VM
+  java.vm.version => 19.1-b02
+  java.vm.vendor => Sun Microsystems Inc.
+  java.vm.info => mixed mode
+  java.awt.graphicsenv => sun.awt.Win32GraphicsEnvironment
+  java.specification.name => Java Platform API Specification
+  java.specification.version => 1.6
+  sun.cpu.endian => little
+  sun.desktop => windows
+  file.separator => \
+
+The up-to-date check says: REMIND_LATER
+
+Information relevant to JAVA_HOME related problems:
+
+  JAVA_HOME is set to:
+C:\Users\Emilie\DOCUME~1\Fiji.app/java/win64/jdk1.6.0_24//jre
+  imagej.dir => C:\Users\Emilie\DOCUME~1\Fiji.app
+
+Information about the version of each plugin:
+
+Activated update sites:
+ImageJ: http://update.imagej.net/ (last check:20160121065533)
+Fiji: http://update.fiji.sc/ (last check:20160126132757)
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160210/8369c967/attachment.html>
+
+From bugzilla at fiji.sc  Wed Feb 10 18:55:07 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Thu, 11 Feb 2016 00:55:07 +0000
+Subject: [ImageJ-bugs] [Bug 1223] New: Unable to open .czi or BigTiff files
+Message-ID: <bug-1223-19@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1223
+
+            Bug ID: 1223
+           Summary: Unable to open .czi or BigTiff files
+           Product: Fiji
+           Version: unspecified
+          Hardware: Macintosh
+                OS: Mac OS
+            Status: NEW
+          Severity: normal
+          Priority: P4
+         Component: Plugins
+          Assignee: imagej-bugs at imagej.net
+          Reporter: jorgens at ohsu.edu
+                CC: jorgens at ohsu.edu
+
+Hello, 
+
+After previously being able to open and interact with both .czi and the BigTiff
+files I suddenly cannot.  I've been using BioFormats to import the images and
+selecting what I think are the appropiate check boxes.  The images are 2D,
+taken on a Zeiss Axioscanner in .czi format with JPXR compression.  The
+BigTiffs were generated from these .czis within the Zen software.  All of the
+images are between 500MB and 8GB.
+
+Information about your version of Java:
+
+  os.arch => x86_64
+  os.name => Mac OS X
+  os.version => 10.9.5
+  java.version => 1.8.0_73
+  java.vendor => Oracle Corporation
+  java.runtime.name => Java(TM) SE Runtime Environment
+  java.runtime.version => 1.8.0_73-b02
+  java.vm.name => Java HotSpot(TM) 64-Bit Server VM
+  java.vm.version => 25.73-b02
+  java.vm.vendor => Oracle Corporation
+  java.vm.info => mixed mode
+  java.awt.graphicsenv => sun.awt.CGraphicsEnvironment
+  java.specification.name => Java Platform API Specification
+  java.specification.version => 1.8
+  sun.cpu.endian => little
+  sun.desktop => null
+  file.separator => /
+
+The up-to-date check says: UP_TO_DATE
+
+Information relevant to JAVA_HOME related problems:
+
+  JAVA_HOME is set to: /Library/Internet
+Plug-Ins/JavaAppletPlugin.plugin/Contents/Home/
+  imagej.dir => /Applications/Fiji.app
+
+Information about the version of each plugin:
+
+Activated update sites:
+ImageJ: http://update.imagej.net/ (last check:20160121035533)
+Fiji: http://update.fiji.sc/ (last check:20160126102757)
+
+Files not up-to-date:
+  96a5c0e2 (MODIFIED) 20160210093946 Contents/Info.plist
+  80e5d193 (MODIFIED) 20160125154925 jars/ij-1.50e.jar
+  76b56dbc (LOCAL_ONLY) 20151207181220 plugins/DiameterJ_1-016.ijm
+  f48d1368 (LOCAL_ONLY) 20151207181251 plugins/DiameterJ_Segment.ijm
+  ec17890b (LOCAL_ONLY) 20140123090126
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/JHotDraw.jar
+  91ece67d (LOCAL_ONLY) 20140123090208
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/JWlz.jar
+  36cb5c0a (LOCAL_ONLY) 20140123090126
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/TableLayout.jar
+  c3a86bd0 (LOCAL_ONLY) 20140123090208
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/assumeng.jar
+  7c4005e7 (LOCAL_ONLY) 20050801102630
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/axis-wsdl4j.jar
+  364315a9 (LOCAL_ONLY) 20140123090126
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/axis.jar
+  3370a633 (LOCAL_ONLY) 20070427143948
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/axis2-saaj.jar
+  0af1624e (LOCAL_ONLY) 20140714161754
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/backport-util-concurrent.jar
+  07f50124 (LOCAL_ONLY) 20150427193612
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/blitz-javadoc.jar
+  ab21bcc1 (LOCAL_ONLY) 20150427193542
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/blitz-sources.jar
+  63fdcaa4 (LOCAL_ONLY) 20150427193618
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/blitz.jar
+  189f61fa (LOCAL_ONLY) 20140123090126
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/bufr.jar
+  94e35e33 (LOCAL_ONLY) 20150427193306
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/common-javadoc.jar
+  3646964f (LOCAL_ONLY) 20150427193302
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/common-sources.jar
+  c0f30819 (LOCAL_ONLY) 20150427193306
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/common.jar
+  940245e0 (LOCAL_ONLY) 20140123090126
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/commons-codec.jar
+  64d8a654 (LOCAL_ONLY) 20140123090126
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/commons-collections.jar
+  86ab9004 (LOCAL_ONLY) 20140123090126
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/commons-digester.jar
+  9e9eb622 (LOCAL_ONLY) 20140123090126
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/commons-discovery.jar
+  d59d3e4c (LOCAL_ONLY) 20140123090126
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/commons-io.jar
+  f6139801 (LOCAL_ONLY) 20100225002342
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/commons-lang.jar
+  fa9b8239 (LOCAL_ONLY) 20141210140056
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/commons-logging.jar
+  60a83b54 (LOCAL_ONLY) 20140123090126
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/commons-validator.jar
+  abf211c5 (LOCAL_ONLY) 20140123090126
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/ehcache-core.jar
+  e33cecc2 (LOCAL_ONLY) 20140123090126
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/grib.jar
+  2cd0d04c (LOCAL_ONLY) 20141125101518
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/guava.jar
+  85c28658 (LOCAL_ONLY) 20140123090126
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/hibernate-jpa-2.0-api.jar
+  0c6e277e (LOCAL_ONLY) 20141210140056
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/httpclient.jar
+  9f61e37d (LOCAL_ONLY) 20141210140056
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/httpcore.jar
+  d216e98a (LOCAL_ONLY) 20141210140056
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/httpmime.jar
+  1911c9e1 (LOCAL_ONLY) 20140123090126
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/ice-glacier2.jar
+  b1d709fb (LOCAL_ONLY) 20140123090126
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/ice-grid.jar
+  c49b8fa2 (LOCAL_ONLY) 20140123090126
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/ice-storm.jar
+  53aa5393 (LOCAL_ONLY) 20140123090126
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/ice.jar
+  84b54b46 (LOCAL_ONLY) 20150218193626
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/ij.jar
+  6ce638fb (LOCAL_ONLY) 20140123090126
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/ini4j.jar
+  f1b65457 (LOCAL_ONLY) 20140123090126
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/java-getopt.jar
+  c827227f (LOCAL_ONLY) 20140123090126
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/java-image-scaling.jar
+  e72f9b2b (LOCAL_ONLY) 20140123090126
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/jaxrpc.jar
+  07f15e96 (LOCAL_ONLY) 20140724163642
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/jcommon.jar
+  c4eeeb8f (LOCAL_ONLY) 20140731133446
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/jfreechart.jar
+  5defc8da (LOCAL_ONLY) 20150320205720
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/jhdf5.jar
+  df7a0b63 (LOCAL_ONLY) 20140123090126
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/jna.jar
+  4c09d41c (LOCAL_ONLY) 20140123090208
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/joda-time.jar
+  4a754817 (LOCAL_ONLY) 20140929140200
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/kryo.jar
+  b47bd885 (LOCAL_ONLY) 20150427193148
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/lwf-stubs.jar
+  ab8ff4ee (LOCAL_ONLY) 20150218193636
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/metadata-extractor.jar
+  16b765c2 (LOCAL_ONLY) 20140929140200
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/minlog.jar
+  c74b45b0 (LOCAL_ONLY) 20150427193258
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/model-psql-javadoc.jar
+  0436d2f4 (LOCAL_ONLY) 20150427193246
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/model-psql-sources.jar
+  6267f51d (LOCAL_ONLY) 20150427193258
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/model-psql.jar
+  66de339f (LOCAL_ONLY) 20140905201058
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/native-lib-loader.jar
+  a51a31db (LOCAL_ONLY) 20140123090208
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/netcdf.jar
+  aff28c0e (LOCAL_ONLY) 20140929140200
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/objenesis.jar
+  18382f06 (LOCAL_ONLY) 20140123090126
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/ome-java.jar
+  7af6ddeb (LOCAL_ONLY) 20140123090208
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/perf4j.jar
+  b3056152 (LOCAL_ONLY) 20140123090126
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/platform.jar
+  4ef2cfd3 (LOCAL_ONLY) 20140123090126
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/poi.jar
+  eedc0cd9 (LOCAL_ONLY) 20140123090126
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/serializer.jar
+  5085d943 (LOCAL_ONLY) 20140321135832
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/slf4j-api.jar
+  228d9879 (LOCAL_ONLY) 20150427193144
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/specification.jar
+  ba32bfdf (LOCAL_ONLY) 20140123090126
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/swingx.jar
+  c8694e76 (LOCAL_ONLY) 20140123090126
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/xalan.jar
+  93f166fd (LOCAL_ONLY) 20150218193636
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/xercesImpl.jar
+  a5c15945 (LOCAL_ONLY) 20150218193636
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/libs/xmpcore.jar
+  d428b86d (LOCAL_ONLY) 20150427194034
+plugins/OMERO.insight-ij-5.1.1-ice35-b43/omero_ij.jar
+  3d1bc91a (LOCAL_ONLY) 20151208110612 plugins/OrientationJ.txt
+  c8bd9352 (LOCAL_ONLY) 20151207181310 plugins/OrientationJ_.jar
+  f5e32ac2 (LOCAL_ONLY) 20151207181301 plugins/Skeleton_Intersections.jar
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160211/923385cb/attachment.html>
+
+From bugzilla at fiji.sc  Thu Feb 11 08:48:37 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Thu, 11 Feb 2016 14:48:37 +0000
+Subject: [ImageJ-bugs] [Bug 1224] New: B&C tool doesnt show all whole number
+ is more than 6 digits, in 32 bit numbers can be larger
+Message-ID: <bug-1224-19@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1224
+
+            Bug ID: 1224
+           Summary: B&C tool doesnt show all whole number is more than 6
+                    digits, in 32 bit numbers can be larger
+           Product: Fiji
+           Version: unspecified
+          Hardware: PC
+                OS: Linux
+            Status: NEW
+          Severity: normal
+          Priority: P4
+         Component: Plugins
+          Assignee: imagej-bugs at imagej.net
+          Reporter: dan at chalkie.org.uk
+                CC: dan at chalkie.org.uk
+
+open an image with values larger then 99999, and in the bottom and top of range
+numbers in the Brighness and contrast tool, you will see numbers displayes
+incorrectly...
+
+Information about your version of Java:
+
+  os.arch => amd64
+  os.name => Linux
+  os.version => 3.19.0-49-generic
+  java.version => 1.7.0_95
+  java.vendor => Oracle Corporation
+  java.runtime.name => OpenJDK Runtime Environment
+  java.runtime.version => 1.7.0_95-b00
+  java.vm.name => OpenJDK 64-Bit Server VM
+  java.vm.version => 24.95-b01
+  java.vm.vendor => Oracle Corporation
+  java.vm.info => mixed mode
+  java.awt.graphicsenv => sun.awt.X11GraphicsEnvironment
+  java.specification.name => Java Platform API Specification
+  java.specification.version => 1.7
+  sun.cpu.endian => little
+  sun.desktop => gnome
+  file.separator => /
+
+The up-to-date check says: REMIND_LATER
+
+Information relevant to JAVA_HOME related problems:
+
+  JAVA_HOME is set to: /usr/lib/jvm/java-7-openjdk-amd64/jre
+  imagej.dir => /home/dan/Documents/Fiji.app
+
+Information about the version of each plugin:
+
+Activated update sites:
+ImageJ: http://update.imagej.net/ (last check:20160121125533)
+Fiji: http://update.fiji.sc/ (last check:20160126192757)
+
+Files not up-to-date:
+  6a7750c0 (OBSOLETE_UNINSTALLED) 20150812172757
+jars/ffmpeg-2.6.1-0.11-android-arm.jar
+  fd2b5490 (OBSOLETE_UNINSTALLED) 20150812172757
+jars/ffmpeg-2.6.1-0.11-android-x86.jar
+  4653bdb4 (OBSOLETE_UNINSTALLED) 20150812172757
+jars/ffmpeg-2.6.1-0.11-linux-x86.jar
+  977eac28 (OBSOLETE_UNINSTALLED) 20150812172757
+jars/ffmpeg-2.6.1-0.11-linux-x86_64.jar
+  8e223ac3 (OBSOLETE_UNINSTALLED) 20150812172757
+jars/ffmpeg-2.6.1-0.11-macosx-x86_64.jar
+  ccd3679d (OBSOLETE_UNINSTALLED) 20150812172757
+jars/ffmpeg-2.6.1-0.11-windows-x86.jar
+  a314dfd6 (OBSOLETE_UNINSTALLED) 20150812172757
+jars/ffmpeg-2.6.1-0.11-windows-x86_64.jar
+  c295a4c5 (OBSOLETE_UNINSTALLED) 20150812172757 jars/jdom-2.0.2.jar
+  64241209 (OBSOLETE_UNINSTALLED) 20150812172757 jars/jdom-contrib.jar
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160211/35a67a26/attachment-0001.html>
+
+From bugzilla at fiji.sc  Fri Feb 12 05:28:53 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Fri, 12 Feb 2016 11:28:53 +0000
+Subject: [ImageJ-bugs] [Bug 1225] New: AVI writer writen .avi (no
+ compression) cant be opened in MS power point.
+Message-ID: <bug-1225-19@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1225
+
+            Bug ID: 1225
+           Summary: AVI writer writen .avi (no compression) cant be opened
+                    in MS power point.
+           Product: Fiji
+           Version: unspecified
+          Hardware: PC
+                OS: Linux
+            Status: NEW
+          Severity: normal
+          Priority: P4
+         Component: Plugins
+          Assignee: imagej-bugs at imagej.net
+          Reporter: dan at chalkie.org.uk
+                CC: dan at chalkie.org.uk
+
+Fiji with imageJ 1.50e - 64 bit linux PC. 
+open bat cochlea sample image
+save as AVI, no compression, 7 fps
+import of .avi into power point on windows 7 pc,  (office professional plus
+2010, 14.0.7165.5000 32 bit) fails with error message
+"PowerPoint  cannot insert a video from the selected file. Verify that the
+necessary codec for this media format is installed, and then try again.
+
+Same process with Fiji / ImageJ1.50b on windows 7 pc works as expected.
+
+Using JPEG compression also fails for version 1.50e, but the movie is imported
+into powerpoint, but its got a red cross in it and says in it "this image can
+not currently be displayed"  
+
+apple quicktime is nbot installed on this 
+
+So the change from IJ version 1.50b to 1.50e broke it, or its somehow differnt
+on linux and windows and it's not the  IJ  version change?
+
+https://github.com/imagej/ImageJA/commit/40afa1d8cf4b4ca74a16f25fba711dd7fd4d2142#diff-cdc09dcb7033fb2c926411bc8c2f6e6e
+???
+
+Information about your version of Java:
+
+  os.arch => amd64
+  os.name => Linux
+  os.version => 3.19.0-49-generic
+  java.version => 1.7.0_95
+  java.vendor => Oracle Corporation
+  java.runtime.name => OpenJDK Runtime Environment
+  java.runtime.version => 1.7.0_95-b00
+  java.vm.name => OpenJDK 64-Bit Server VM
+  java.vm.version => 24.95-b01
+  java.vm.vendor => Oracle Corporation
+  java.vm.info => mixed mode
+  java.awt.graphicsenv => sun.awt.X11GraphicsEnvironment
+  java.specification.name => Java Platform API Specification
+  java.specification.version => 1.7
+  sun.cpu.endian => little
+  sun.desktop => gnome
+  file.separator => /
+
+The up-to-date check says: REMIND_LATER
+
+Information relevant to JAVA_HOME related problems:
+
+  JAVA_HOME is set to: /usr/lib/jvm/java-7-openjdk-amd64/jre
+  imagej.dir => /home/dan/Documents/Fiji.app
+
+Information about the version of each plugin:
+
+Activated update sites:
+ImageJ: http://update.imagej.net/ (last check:20160121125533)
+Fiji: http://update.fiji.sc/ (last check:20160126192757)
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160212/ffb3d0f6/attachment.html>
+
+From bugzilla at fiji.sc  Fri Feb 12 05:35:38 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Fri, 12 Feb 2016 11:35:38 +0000
+Subject: [ImageJ-bugs] [Bug 1225] AVI writer writen .avi (no compression)
+ cant be opened in MS power point.
+In-Reply-To: <bug-1225-19@http.fiji.sc/bugzilla/>
+References: <bug-1225-19@http.fiji.sc/bugzilla/>
+Message-ID: <bug-1225-19-DLzAX7oGEM@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1225
+
+--- Comment #1 from Dan White <dan at chalkie.org.uk> ---
+not fixed by imageJ 1.50f on linux
+works as expected if downgrade to 1.49f using update imageJ menu tool.
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160212/37d5bd4f/attachment.html>
+
+From bugzilla at fiji.sc  Fri Feb 12 05:36:16 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Fri, 12 Feb 2016 11:36:16 +0000
+Subject: [ImageJ-bugs] [Bug 1225] AVI writer writen .avi (no compression or
+ JPEG compression) cant be opened in MS power point.
+In-Reply-To: <bug-1225-19@http.fiji.sc/bugzilla/>
+References: <bug-1225-19@http.fiji.sc/bugzilla/>
+Message-ID: <bug-1225-19-red013tBZx@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1225
+
+Dan White <dan at chalkie.org.uk> changed:
+
+           What    |Removed                     |Added
+----------------------------------------------------------------------------
+            Summary|AVI writer writen .avi (no  |AVI writer writen .avi (no
+                   |compression) cant be opened |compression or JPEG
+                   |in MS power point.          |compression) cant be opened
+                   |                            |in MS power point.
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160212/9654499c/attachment.html>
+
+From bugzilla at fiji.sc  Fri Feb 12 05:49:40 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Fri, 12 Feb 2016 11:49:40 +0000
+Subject: [ImageJ-bugs] [Bug 1225] AVI writer writen .avi (no compression or
+ JPEG compression) cant be opened in MS power point.
+In-Reply-To: <bug-1225-19@http.fiji.sc/bugzilla/>
+References: <bug-1225-19@http.fiji.sc/bugzilla/>
+Message-ID: <bug-1225-19-fLKLykKax6@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1225
+
+--- Comment #2 from Dan White <dan at chalkie.org.uk> ---
+Created attachment 278
+  --> http://fiji.sc/bugzilla/attachment.cgi?id=278&action=edit
+working avi from 1.49v
+
+open in power point and also in imageJ2
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160212/c1b0ba72/attachment.html>
+
+From bugzilla at fiji.sc  Fri Feb 12 05:50:52 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Fri, 12 Feb 2016 11:50:52 +0000
+Subject: [ImageJ-bugs] [Bug 1225] AVI writer writen .avi (no compression or
+ JPEG compression) cant be opened in MS power point.
+In-Reply-To: <bug-1225-19@http.fiji.sc/bugzilla/>
+References: <bug-1225-19@http.fiji.sc/bugzilla/>
+Message-ID: <bug-1225-19-Qstf6mwnJM@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1225
+
+--- Comment #3 from Dan White <dan at chalkie.org.uk> ---
+Created attachment 279
+  --> http://fiji.sc/bugzilla/attachment.cgi?id=279&action=edit
+broken avi file from ij1.50f
+
+doesnt import in power point, and also imageJ2 doesnt open it
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160212/2271d894/attachment.html>
+
+From bugzilla at fiji.sc  Fri Feb 12 05:51:50 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Fri, 12 Feb 2016 11:51:50 +0000
+Subject: [ImageJ-bugs] [Bug 1225] AVI writer writen .avi (no compression or
+ JPEG compression) cant be opened in MS power point.
+In-Reply-To: <bug-1225-19@http.fiji.sc/bugzilla/>
+References: <bug-1225-19@http.fiji.sc/bugzilla/>
+Message-ID: <bug-1225-19-h3BjTvJ7wB@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1225
+
+--- Comment #4 from Dan White <dan at chalkie.org.uk> ---
+imageJ2 2.0.0-rc43 also wont open the bad .avi files, but will open the good
+ones.
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160212/5a167183/attachment.html>
+
+From bugzilla at fiji.sc  Fri Feb 12 07:17:23 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Fri, 12 Feb 2016 13:17:23 +0000
+Subject: [ImageJ-bugs] [Bug 1226] New: Java3D (3D viewer) crashes upon
+	opening
+Message-ID: <bug-1226-19@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1226
+
+            Bug ID: 1226
+           Summary: Java3D (3D viewer) crashes upon opening
+           Product: Fiji
+           Version: unspecified
+          Hardware: PC
+                OS: Windows
+            Status: NEW
+          Severity: normal
+          Priority: P4
+         Component: Plugins
+          Assignee: imagej-bugs at imagej.net
+          Reporter: dhruv.srinivasachar at gmail.com
+                CC: dhruv.srinivasachar at gmail.com
+
+The following error is produced upon opening the 3D viewer plugin or testing
+Java3D
+A fatal error has been detected by the Java Runtime Environment:
+#
+#  EXCEPTION_ACCESS_VIOLATION (0xc0000005) at pc=0x0000000000000000, pid=4872,
+tid=5940
+#
+# JRE version: Java(TM) SE Runtime Environment (8.0_66-b18) (build
+1.8.0_66-b18)
+# Java VM: Java HotSpot(TM) 64-Bit Server VM (25.66-b18 mixed mode
+windows-amd64 compressed oops)
+# Problematic frame:
+# C  0x0000000000000000
+#
+# Failed to write core dump. Minidumps are not enabled by default on client
+versions of Windows
+#
+# If you would like to submit a bug report, please visit:
+#   http://bugreport.java.com/bugreport/crash.jsp
+# The crash happened outside the Java Virtual Machine in native code.
+# See problematic frame for where to report the bug.
+#
+
+---------------  T H R E A D  ---------------
+
+Current thread (0x000000002932c800):  JavaThread "3D
+Viewer-SharedResourceRunner" daemon [_thread_in_native, id=5940,
+stack(0x0000000048e30000,0x0000000049030000)]
+
+siginfo: ExceptionCode=0xc0000005, ExceptionInformation=0x0000000000000008
+0x0000000000000000
+
+Registers:
+RAX=0x000000004902e054, RBX=0x000007fefdea0000, RCX=0x000000004902e050,
+RDX=0x0000000000000000
+RSP=0x000000004902e008, RBP=0x000000004902e110, RSI=0x000007feee4bfa00,
+RDI=0x000000004902e680
+R8 =0x0000000000000140, R9 =0x000000000000000a, R10=0x0000000000000000,
+R11=0x000000004902e054
+R12=0x000000004902e8f0, R13=0x000007fefad053cc, R14=0x0000000000000000,
+R15=0x000000002932c800
+RIP=0x0000000000000000, EFLAGS=0x0000000000010213
+
+Top of Stack: (sp=0x000000004902e008)
+0x000000004902e008:   000007fefad03f5d 0072007400730069
+0x000000004902e018:   0061004d005c0079 006e006900680063
+0x000000004902e028:   00790053005c0065 006d006500740073
+0x000000004902e038:   007200750043005c 0074006e00650072
+0x000000004902e048:   0074006e006f0043 0000000000000000
+0x000000004902e058:   0000000000000000 0000000000000000
+0x000000004902e068:   0000000000000000 0000000000000000
+0x000000004902e078:   0000000000000000 0000000000000000
+0x000000004902e088:   0000000000000000 0000000000000000
+0x000000004902e098:   0000000000000000 0000000000000000
+0x000000004902e0a8:   0000000000000000 0000000000000000
+0x000000004902e0b8:   0000000000000000 0000000000000000
+0x000000004902e0c8:   0000000000000000 0000000000000000
+0x000000004902e0d8:   0000000000000000 0000000000000000
+0x000000004902e0e8:   0000000000000000 0000000000000000
+0x000000004902e0f8:   0000000000000000 0000000000000000 
+
+Instructions: (pc=0x0000000000000000)
+0xffffffffffffffe0:   
+
+
+Register to memory mapping:
+
+RAX=0x000000004902e054 is pointing into the stack for thread:
+0x000000002932c800
+RBX=0x000007fefdea0000 is an unknown value
+RCX=0x000000004902e050 is pointing into the stack for thread:
+0x000000002932c800
+RDX=0x0000000000000000 is an unknown value
+RSP=0x000000004902e008 is pointing into the stack for thread:
+0x000000002932c800
+RBP=0x000000004902e110 is pointing into the stack for thread:
+0x000000002932c800
+RSI=0x000007feee4bfa00 is an unknown value
+RDI=0x000000004902e680 is pointing into the stack for thread:
+0x000000002932c800
+R8 =0x0000000000000140 is an unknown value
+R9 =0x000000000000000a is an unknown value
+R10=0x0000000000000000 is an unknown value
+R11=0x000000004902e054 is pointing into the stack for thread:
+0x000000002932c800
+R12=0x000000004902e8f0 is pointing into the stack for thread:
+0x000000002932c800
+R13=0x000007fefad053cc is an unknown value
+R14=0x0000000000000000 is an unknown value
+R15=0x000000002932c800 is a thread
+
+
+Stack: [0x0000000048e30000,0x0000000049030000],  sp=0x000000004902e008,  free
+space=2040k
+Native frames: (J=compiled Java code, j=interpreted, Vv=VM code, C=native code)
+
+Java frames: (J=compiled Java code, j=interpreted, Vv=VM code)
+j 
+jogamp.nativewindow.windows.GDI.DescribePixelFormat1(JIILjava/nio/ByteBuffer;)I+0
+j 
+jogamp.nativewindow.windows.GDI.DescribePixelFormat(JIILjogamp/nativewindow/windows/PIXELFORMATDESCRIPTOR;)I+17
+j 
+jogamp.opengl.windows.wgl.WGLUtil.DescribePixelFormat(JIILjogamp/nativewindow/windows/PIXELFORMATDESCRIPTOR;)I+20
+j 
+jogamp.opengl.windows.wgl.WindowsWGLGraphicsConfiguration.wglAllGDIPFIDs(J)[I+4
+j 
+jogamp.opengl.windows.wgl.WindowsWGLGraphicsConfigurationFactory.updateGraphicsConfigurationGDI(Ljogamp/opengl/windows/wgl/WindowsWGLGraphicsConfiguration;Lcom/jogamp/nativewindow/CapabilitiesChooser;JZ[I)Z+361
+j 
+jogamp.opengl.windows.wgl.WindowsWGLGraphicsConfigurationFactory.updateGraphicsConfiguration(Ljogamp/opengl/windows/wgl/WindowsWGLGraphicsConfiguration;Lcom/jogamp/nativewindow/CapabilitiesChooser;Lcom/jogamp/opengl/GLDrawableFactory;JZ[I)V+239
+j 
+jogamp.opengl.windows.wgl.WindowsWGLGraphicsConfigurationFactory.updateGraphicsConfiguration(Lcom/jogamp/nativewindow/CapabilitiesChooser;Lcom/jogamp/opengl/GLDrawableFactory;Lcom/jogamp/nativewindow/NativeSurface;[I)V+172
+j 
+jogamp.opengl.windows.wgl.WindowsWGLGraphicsConfiguration.updateGraphicsConfiguration(Lcom/jogamp/opengl/GLDrawableFactory;Lcom/jogamp/nativewindow/NativeSurface;[I)V+7
+j  jogamp.opengl.windows.wgl.WindowsWGLDrawable.setRealizedImpl()V+29
+j  jogamp.opengl.GLDrawableImpl.setRealized(Z)V+200
+j 
+jogamp.opengl.windows.wgl.WindowsWGLDrawableFactory$SharedResourceImplementation.createSharedResource(Lcom/jogamp/nativewindow/AbstractGraphicsDevice;)Ljogamp/opengl/SharedResourceRunner$Resource;+124
+j  jogamp.opengl.SharedResourceRunner.run()V+267
+j  java.lang.Thread.run()V+11
+v  ~StubRoutines::call_stub
+
+---------------  P R O C E S S  ---------------
+
+Java Threads: ( => current thread )
+=>0x000000002932c800 JavaThread "3D Viewer-SharedResourceRunner" daemon
+[_thread_in_native, id=5940, stack(0x0000000048e30000,0x0000000049030000)]
+  0x000000002dc61800 JavaThread "TimerQueue" daemon [_thread_blocked, id=5632,
+stack(0x000000002e750000,0x000000002e950000)]
+  0x0000000028da4000 JavaThread "3D Viewer" [_thread_blocked, id=11892,
+stack(0x000000002ca40000,0x000000002cc40000)]
+  0x000000002a168000 JavaThread "zSelector" [_thread_blocked, id=8984,
+stack(0x000000002ce80000,0x000000002d080000)]
+  0x0000000002387800 JavaThread "DestroyJavaVM" [_thread_blocked, id=5740,
+stack(0x0000000000030000,0x0000000000230000)]
+  0x000000002b24a000 JavaThread "AWT-EventQueue-0" [_thread_blocked, id=9756,
+stack(0x000000002e550000,0x000000002e750000)]
+  0x000000002a0c2000 JavaThread "AWT-Windows" daemon [_thread_in_native,
+id=8664, stack(0x000000002c3f0000,0x000000002c5f0000)]
+  0x000000002ae43000 JavaThread "AWT-Shutdown" [_thread_blocked, id=5268,
+stack(0x000000002c1f0000,0x000000002c3f0000)]
+  0x000000002ae42800 JavaThread "Java2D Disposer" daemon [_thread_blocked,
+id=11280, stack(0x000000002bff0000,0x000000002c1f0000)]
+  0x0000000027c88800 JavaThread "Service Thread" daemon [_thread_blocked,
+id=3204, stack(0x0000000028480000,0x0000000028680000)]
+  0x000000002621e800 JavaThread "C1 CompilerThread3" daemon [_thread_blocked,
+id=7332, stack(0x0000000027a80000,0x0000000027c80000)]
+  0x00000000261f5800 JavaThread "C2 CompilerThread2" daemon [_thread_blocked,
+id=12244, stack(0x0000000027880000,0x0000000027a80000)]
+  0x00000000261f3000 JavaThread "C2 CompilerThread1" daemon [_thread_blocked,
+id=10732, stack(0x0000000027680000,0x0000000027880000)]
+  0x00000000261ec800 JavaThread "C2 CompilerThread0" daemon [_thread_blocked,
+id=11132, stack(0x0000000027480000,0x0000000027680000)]
+  0x00000000261e5000 JavaThread "Attach Listener" daemon [_thread_blocked,
+id=12500, stack(0x0000000027280000,0x0000000027480000)]
+  0x00000000261e0000 JavaThread "Signal Dispatcher" daemon [_thread_blocked,
+id=9212, stack(0x0000000027080000,0x0000000027280000)]
+  0x00000000261db000 JavaThread "Surrogate Locker Thread (Concurrent GC)"
+daemon [_thread_blocked, id=12896,
+stack(0x0000000026e80000,0x0000000027080000)]
+  0x000000002617b000 JavaThread "Finalizer" daemon [_thread_blocked, id=12456,
+stack(0x0000000026c80000,0x0000000026e80000)]
+  0x0000000026174000 JavaThread "Reference Handler" daemon [_thread_blocked,
+id=10308, stack(0x0000000026a80000,0x0000000026c80000)]
+
+Other Threads:
+  0x000000002616f000 VMThread [stack: 0x00000000176a0000,0x00000000178a0000]
+[id=5308]
+  0x000000002627d000 WatcherThread [stack:
+0x0000000028680000,0x0000000028880000] [id=11728]
+
+VM state:not at safepoint (normal execution)
+
+VM Mutex/Monitor currently owned by a thread: None
+
+Heap:
+ par new generation   total 78656K, used 68528K [0x00000004c4800000,
+0x00000004c9d50000, 0x00000004ee190000)
+  eden space 69952K,  85% used [0x00000004c4800000, 0x00000004c826c0b8,
+0x00000004c8c50000)
+  from space 8704K, 100% used [0x00000004c94d0000, 0x00000004c9d50000,
+0x00000004c9d50000)
+  to   space 8704K,   0% used [0x00000004c8c50000, 0x00000004c8c50000,
+0x00000004c94d0000)
+ concurrent mark-sweep generation total 174784K, used 12928K
+[0x00000004ee190000, 0x00000004f8c40000, 0x00000007c0000000)
+ Metaspace       used 45311K, capacity 45548K, committed 46128K, reserved
+1089536K
+  class space    used 6007K, capacity 6075K, committed 6192K, reserved 1048576K
+
+Card table byte_map: [0x0000000013db0000,0x0000000015590000] byte_map_base:
+0x000000001178c000
+
+Marking Bits: (CMSBitMap*) 0x0000000013224b38
+ Bits: [0x00000000178a0000, 0x0000000022d19c00)
+
+Mod Union Table: (CMSBitMap*) 0x0000000013224bf8
+ Bits: [0x0000000022d20000, 0x0000000022ff1e70)
+
+Polling page: 0x0000000002360000
+
+CodeCache: size=245760Kb used=10571Kb max_used=11053Kb free=235188Kb
+ bounds [0x0000000002dc0000, 0x00000000038c0000, 0x0000000011dc0000]
+ total_blobs=3825 nmethods=2895 adapters=841
+ compilation: enabled
+
+Compilation events (10 events):
+Event: 687.455 Thread 0x000000002621e800 3345  s    3      
+java.io.BufferedOutputStream::write (67 bytes)
+Event: 687.455 Thread 0x000000002621e800 nmethod 3345 0x0000000003182690 code
+[0x0000000003182860, 0x00000000031830b8]
+Event: 687.455 Thread 0x000000002621e800 3346       3      
+java.util.regex.Matcher::find (69 bytes)
+Event: 687.455 Thread 0x000000002621e800 nmethod 3346 0x0000000003165f10 code
+[0x0000000003166080, 0x0000000003166428]
+Event: 687.459 Thread 0x000000002621e800 3347       1      
+com.jogamp.common.net.Uri$Encoded::get (5 bytes)
+Event: 687.460 Thread 0x000000002621e800 nmethod 3347 0x0000000003411310 code
+[0x0000000003411460, 0x0000000003411570]
+Event: 687.496 Thread 0x000000002621e800 3348       3      
+java.util.concurrent.locks.ReentrantLock$NonfairSync::lock (25 bytes)
+Event: 687.497 Thread 0x000000002621e800 nmethod 3348 0x00000000030c1b90 code
+[0x00000000030c1d60, 0x00000000030c25b8]
+Event: 687.729 Thread 0x000000002621e800 3349       3      
+java.util.regex.Pattern$Start::match (90 bytes)
+Event: 687.729 Thread 0x000000002621e800 nmethod 3349 0x0000000003446d90 code
+[0x0000000003446f20, 0x0000000003447328]
+
+GC Heap History (10 events):
+Event: 0.698 GC heap before
+{Heap before GC invocations=0 (full 0):
+ par new generation   total 78656K, used 69952K [0x00000004c4800000,
+0x00000004c9d50000, 0x00000004ee190000)
+  eden space 69952K, 100% used [0x00000004c4800000, 0x00000004c8c50000,
+0x00000004c8c50000)
+  from space 8704K,   0% used [0x00000004c8c50000, 0x00000004c8c50000,
+0x00000004c94d0000)
+  to   space 8704K,   0% used [0x00000004c94d0000, 0x00000004c94d0000,
+0x00000004c9d50000)
+ concurrent mark-sweep generation total 174784K, used 0K [0x00000004ee190000,
+0x00000004f8c40000, 0x00000007c0000000)
+ Metaspace       used 6640K, capacity 6692K, committed 6912K, reserved 1056768K
+  class space    used 912K, capacity 948K, committed 1024K, reserved 1048576K
+Event: 0.703 GC heap after
+Heap after GC invocations=1 (full 0):
+ par new generation   total 78656K, used 8123K [0x00000004c4800000,
+0x00000004c9d50000, 0x00000004ee190000)
+  eden space 69952K,   0% used [0x00000004c4800000, 0x00000004c4800000,
+0x00000004c8c50000)
+  from space 8704K,  93% used [0x00000004c94d0000, 0x00000004c9cbee08,
+0x00000004c9d50000)
+  to   space 8704K,   0% used [0x00000004c8c50000, 0x00000004c8c50000,
+0x00000004c94d0000)
+ concurrent mark-sweep generation total 174784K, used 0K [0x00000004ee190000,
+0x00000004f8c40000, 0x00000007c0000000)
+ Metaspace       used 6640K, capacity 6692K, committed 6912K, reserved 1056768K
+  class space    used 912K, capacity 948K, committed 1024K, reserved 1048576K
+}
+Event: 1.021 GC heap before
+{Heap before GC invocations=1 (full 0):
+ par new generation   total 78656K, used 78075K [0x00000004c4800000,
+0x00000004c9d50000, 0x00000004ee190000)
+  eden space 69952K, 100% used [0x00000004c4800000, 0x00000004c8c50000,
+0x00000004c8c50000)
+  from space 8704K,  93% used [0x00000004c94d0000, 0x00000004c9cbee08,
+0x00000004c9d50000)
+  to   space 8704K,   0% used [0x00000004c8c50000, 0x00000004c8c50000,
+0x00000004c94d0000)
+ concurrent mark-sweep generation total 174784K, used 0K [0x00000004ee190000,
+0x00000004f8c40000, 0x00000007c0000000)
+ Metaspace       used 10930K, capacity 11012K, committed 11136K, reserved
+1058816K
+  class space    used 1860K, capacity 1876K, committed 1920K, reserved 1048576K
+Event: 1.045 GC heap after
+Heap after GC invocations=2 (full 0):
+ par new generation   total 78656K, used 8703K [0x00000004c4800000,
+0x00000004c9d50000, 0x00000004ee190000)
+  eden space 69952K,   0% used [0x00000004c4800000, 0x00000004c4800000,
+0x00000004c8c50000)
+  from space 8704K,  99% used [0x00000004c8c50000, 0x00000004c94cffa0,
+0x00000004c94d0000)
+  to   space 8704K,   0% used [0x00000004c94d0000, 0x00000004c94d0000,
+0x00000004c9d50000)
+ concurrent mark-sweep generation total 174784K, used 5607K
+[0x00000004ee190000, 0x00000004f8c40000, 0x00000007c0000000)
+ Metaspace       used 10930K, capacity 11012K, committed 11136K, reserved
+1058816K
+  class space    used 1860K, capacity 1876K, committed 1920K, reserved 1048576K
+}
+Event: 1.744 GC heap before
+{Heap before GC invocations=2 (full 1):
+ par new generation   total 78656K, used 78655K [0x00000004c4800000,
+0x00000004c9d50000, 0x00000004ee190000)
+  eden space 69952K, 100% used [0x00000004c4800000, 0x00000004c8c50000,
+0x00000004c8c50000)
+  from space 8704K,  99% used [0x00000004c8c50000, 0x00000004c94cffa0,
+0x00000004c94d0000)
+  to   space 8704K,   0% used [0x00000004c94d0000, 0x00000004c94d0000,
+0x00000004c9d50000)
+ concurrent mark-sweep generation total 174784K, used 5607K
+[0x00000004ee190000, 0x00000004f8c40000, 0x00000007c0000000)
+ Metaspace       used 19485K, capacity 19712K, committed 20096K, reserved
+1067008K
+  class space    used 2761K, capacity 2833K, committed 2944K, reserved 1048576K
+Event: 1.749 GC heap after
+Heap after GC invocations=3 (full 1):
+ par new generation   total 78656K, used 7716K [0x00000004c4800000,
+0x00000004c9d50000, 0x00000004ee190000)
+  eden space 69952K,   0% used [0x00000004c4800000, 0x00000004c4800000,
+0x00000004c8c50000)
+  from space 8704K,  88% used [0x00000004c94d0000, 0x00000004c9c59368,
+0x00000004c9d50000)
+  to   space 8704K,   0% used [0x00000004c8c50000, 0x00000004c8c50000,
+0x00000004c94d0000)
+ concurrent mark-sweep generation total 174784K, used 5607K
+[0x00000004ee190000, 0x00000004f8c40000, 0x00000007c0000000)
+ Metaspace       used 19485K, capacity 19712K, committed 20096K, reserved
+1067008K
+  class space    used 2761K, capacity 2833K, committed 2944K, reserved 1048576K
+}
+Event: 2.097 GC heap before
+{Heap before GC invocations=3 (full 1):
+ par new generation   total 78656K, used 77668K [0x00000004c4800000,
+0x00000004c9d50000, 0x00000004ee190000)
+  eden space 69952K, 100% used [0x00000004c4800000, 0x00000004c8c50000,
+0x00000004c8c50000)
+  from space 8704K,  88% used [0x00000004c94d0000, 0x00000004c9c59368,
+0x00000004c9d50000)
+  to   space 8704K,   0% used [0x00000004c8c50000, 0x00000004c8c50000,
+0x00000004c94d0000)
+ concurrent mark-sweep generation total 174784K, used 5607K
+[0x00000004ee190000, 0x00000004f8c40000, 0x00000007c0000000)
+ Metaspace       used 25494K, capacity 25722K, committed 25944K, reserved
+1071104K
+  class space    used 3630K, capacity 3701K, committed 3736K, reserved 1048576K
+Event: 2.104 GC heap after
+Heap after GC invocations=4 (full 1):
+ par new generation   total 78656K, used 7059K [0x00000004c4800000,
+0x00000004c9d50000, 0x00000004ee190000)
+  eden space 69952K,   0% used [0x00000004c4800000, 0x00000004c4800000,
+0x00000004c8c50000)
+  from space 8704K,  81% used [0x00000004c8c50000, 0x00000004c9334d70,
+0x00000004c94d0000)
+  to   space 8704K,   0% used [0x00000004c94d0000, 0x00000004c94d0000,
+0x00000004c9d50000)
+ concurrent mark-sweep generation total 174784K, used 8946K
+[0x00000004ee190000, 0x00000004f8c40000, 0x00000007c0000000)
+ Metaspace       used 25494K, capacity 25722K, committed 25944K, reserved
+1071104K
+  class space    used 3630K, capacity 3701K, committed 3736K, reserved 1048576K
+}
+Event: 2.832 GC heap before
+{Heap before GC invocations=4 (full 1):
+ par new generation   total 78656K, used 77011K [0x00000004c4800000,
+0x00000004c9d50000, 0x00000004ee190000)
+  eden space 69952K, 100% used [0x00000004c4800000, 0x00000004c8c50000,
+0x00000004c8c50000)
+  from space 8704K,  81% used [0x00000004c8c50000, 0x00000004c9334d70,
+0x00000004c94d0000)
+  to   space 8704K,   0% used [0x00000004c94d0000, 0x00000004c94d0000,
+0x00000004c9d50000)
+ concurrent mark-sweep generation total 174784K, used 8944K
+[0x00000004ee190000, 0x00000004f8c40000, 0x00000007c0000000)
+ Metaspace       used 36008K, capacity 36236K, committed 36528K, reserved
+1081344K
+  class space    used 5166K, capacity 5240K, committed 5296K, reserved 1048576K
+Event: 2.840 GC heap after
+Heap after GC invocations=5 (full 1):
+ par new generation   total 78656K, used 8704K [0x00000004c4800000,
+0x00000004c9d50000, 0x00000004ee190000)
+  eden space 69952K,   0% used [0x00000004c4800000, 0x00000004c4800000,
+0x00000004c8c50000)
+  from space 8704K, 100% used [0x00000004c94d0000, 0x00000004c9d50000,
+0x00000004c9d50000)
+  to   space 8704K,   0% used [0x00000004c8c50000, 0x00000004c8c50000,
+0x00000004c94d0000)
+ concurrent mark-sweep generation total 174784K, used 12928K
+[0x00000004ee190000, 0x00000004f8c40000, 0x00000007c0000000)
+ Metaspace       used 36008K, capacity 36236K, committed 36528K, reserved
+1081344K
+  class space    used 5166K, capacity 5240K, committed 5296K, reserved 1048576K
+}
+
+Deoptimization events (10 events):
+Event: 2.841 Thread 0x000000002ae42800 Uncommon trap: reason=class_check
+action=maybe_recompile pc=0x00000000035181b4
+method=java.lang.ref.ReferenceQueue.reallyPoll()Ljava/lang/ref/Reference; @ 52
+Event: 2.841 Thread 0x000000002ae42800 Uncommon trap: reason=class_check
+action=maybe_recompile pc=0x00000000035196d8
+method=java.lang.ref.ReferenceQueue.reallyPoll()Ljava/lang/ref/Reference; @ 52
+Event: 3.018 Thread 0x000000002ad73000 Uncommon trap: reason=unstable_if
+action=reinterpret pc=0x00000000036eea8c
+method=java.util.IdentityHashMap.get(Ljava/lang/Object;)Ljava/lang/Object; @ 43
+Event: 674.051 Thread 0x000000002dc61800 Uncommon trap: reason=unstable_if
+action=reinterpret pc=0x0000000003364104
+method=java.lang.String.lastIndexOf([CII[CIII)I @ 118
+Event: 674.066 Thread 0x000000002dc61800 Uncommon trap: reason=unstable_if
+action=reinterpret pc=0x0000000002f1fce4 method=java.net.URI.match(CJJ)Z @ 45
+Event: 674.066 Thread 0x000000002dc61800 Uncommon trap: reason=unstable_if
+action=reinterpret pc=0x0000000002eeb088 method=java.net.URI.match(CJJ)Z @ 19
+Event: 687.269 Thread 0x0000000028da4000 Uncommon trap: reason=unstable_if
+action=reinterpret pc=0x00000000036df0b8
+method=java.lang.StringCoding.decode(Ljava/lang/String;[BII)[C @ 38
+Event: 687.288 Thread 0x0000000028da4000 Uncommon trap: reason=unstable_if
+action=reinterpret pc=0x000000000377d180 method=java.lang.Package.isSealed()Z @
+4
+Event: 687.316 Thread 0x0000000028da4000 Uncommon trap: reason=unstable_if
+action=reinterpret pc=0x00000000037bf900
+method=java.net.URL.<init>(Ljava/net/URL;Ljava/lang/String;Ljava/net/URLStreamHandler;)V
+@ 347
+Event: 687.407 Thread 0x0000000028da4000 Uncommon trap: reason=unstable_if
+action=reinterpret pc=0x00000000032df0d4
+method=sun.net.www.ParseUtil.decode(Ljava/lang/String;)Ljava/lang/String; @ 15
+
+Internal exceptions (10 events):
+Event: 2.969 Thread 0x000000002b24a000 Exception <a
+'java/security/PrivilegedActionException'> (0x00000004c5518d40) thrown at
+[C:\re\workspace\8-2-build-windows-amd64-cygwin\jdk8u66\5298\hotspot\src\share\vm\prims\jvm.cpp,
+line 1386]
+Event: 2.969 Thread 0x000000002b24a000 Exception <a
+'java/security/PrivilegedActionException'> (0x00000004c5519320) thrown at
+[C:\re\workspace\8-2-build-windows-amd64-cygwin\jdk8u66\5298\hotspot\src\share\vm\prims\jvm.cpp,
+line 1386]
+Event: 2.970 Thread 0x000000002b24a000 Exception <a
+'java/security/PrivilegedActionException'> (0x00000004c551a9d0) thrown at
+[C:\re\workspace\8-2-build-windows-amd64-cygwin\jdk8u66\5298\hotspot\src\share\vm\prims\jvm.cpp,
+line 1386]
+Event: 2.970 Thread 0x000000002b24a000 Exception <a
+'java/security/PrivilegedActionException'> (0x00000004c551afb0) thrown at
+[C:\re\workspace\8-2-build-windows-amd64-cygwin\jdk8u66\5298\hotspot\src\share\vm\prims\jvm.cpp,
+line 1386]
+Event: 674.237 Thread 0x000000002dc61800 Exception <a
+'java/lang/ClassCastException': java.awt.MenuItem cannot be cast to
+java.awt.CheckboxMenuItem> (0x00000004c5f75628) thrown at
+[C:\re\workspace\8-2-build-windows-amd64-cygwin\jdk8u66\5298\hotspot\src\share\vm\interpreter\interpreterRuntime.cpp,U?(z?@
+Event: 687.262 Thread 0x0000000028da4000 Exception <a 'java/io/IOException'>
+(0x00000004c687a510) thrown at
+[C:\re\workspace\8-2-build-windows-amd64-cygwin\jdk8u66\5298\hotspot\src\share\vm\prims\jni.cpp,
+line 709]
+Event: 687.263 Thread 0x0000000028da4000 Exception <a 'java/io/IOException'>
+(0x00000004c6898e08) thrown at
+[C:\re\workspace\8-2-build-windows-amd64-cygwin\jdk8u66\5298\hotspot\src\share\vm\prims\jni.cpp,
+line 709]
+Event: 687.263 Thread 0x0000000028da4000 Exception <a 'java/io/IOException'>
+(0x00000004c6899cd0) thrown at
+[C:\re\workspace\8-2-build-windows-amd64-cygwin\jdk8u66\5298\hotspot\src\share\vm\prims\jni.cpp,
+line 709]
+Event: 687.408 Thread 0x0000000028da4000 Exception <a
+'java/io/FileNotFoundException'> (0x00000004c71cb8e0) thrown at
+[C:\re\workspace\8-2-build-windows-amd64-cygwin\jdk8u66\5298\hotspot\src\share\vm\prims\jni.cpp,
+line 709]
+Event: 687.447 Thread 0x0000000028da4000 Exception <a
+'java/io/FileNotFoundException'> (0x00000004c7403228) thrown at
+[C:\re\workspace\8-2-build-windows-amd64-cygwin\jdk8u66\5298\hotspot\src\share\vm\prims\jni.cpp,
+line 709]
+
+Events (10 events):
+Event: 687.776 loading class
+com/jogamp/nativewindow/UpstreamSurfaceHookMutableSize
+Event: 687.776 loading class
+com/jogamp/nativewindow/UpstreamSurfaceHookMutableSize done
+Event: 687.776 loading class
+com/jogamp/nativewindow/UpstreamSurfaceHook$MutableSize
+Event: 687.776 loading class
+com/jogamp/nativewindow/UpstreamSurfaceHook$MutableSize done
+Event: 687.776 loading class jogamp/nativewindow/SurfaceUpdatedHelper
+Event: 687.776 loading class jogamp/nativewindow/SurfaceUpdatedHelper done
+Event: 687.777 loading class jogamp/nativewindow/windows/RegisteredClass
+Event: 687.777 loading class jogamp/nativewindow/windows/RegisteredClass done
+Event: 687.778 loading class jogamp/opengl/windows/wgl/WGLUtil
+Event: 687.778 loading class jogamp/opengl/windows/wgl/WGLUtil done
+
+
+Dynamic libraries:
+0x0000000000400000 - 0x0000000000462000    
+C:\Users\dsrini9000\Fiji.app\ImageJ-win64.exe
+0x0000000077bb0000 - 0x0000000077d5a000     C:\Windows\SYSTEM32\ntdll.dll
+0x0000000077990000 - 0x0000000077aaf000     C:\Windows\system32\kernel32.dll
+0x000007fefdc80000 - 0x000007fefdceb000     C:\Windows\system32\KERNELBASE.dll
+0x0000000075640000 - 0x00000000756c8000     C:\Windows\System32\SYSFER.DLL
+0x000007fefdcf0000 - 0x000007fefddcb000     C:\Windows\system32\ADVAPI32.dll
+0x000007fefe870000 - 0x000007fefe90f000     C:\Windows\system32\msvcrt.dll
+0x000007feffcf0000 - 0x000007feffd0f000     C:\Windows\SYSTEM32\sechost.dll
+0x000007fefe6a0000 - 0x000007fefe7cd000     C:\Windows\system32\RPCRT4.dll
+0x0000000077ab0000 - 0x0000000077baa000     C:\Windows\system32\USER32.dll
+0x000007fefdea0000 - 0x000007fefdf07000     C:\Windows\system32\GDI32.dll
+0x000007fefe0a0000 - 0x000007fefe0ae000     C:\Windows\system32\LPK.dll
+0x000007fefddd0000 - 0x000007fefde9a000     C:\Windows\system32\USP10.dll
+0x000007fefe670000 - 0x000007fefe69e000     C:\Windows\system32\IMM32.DLL
+0x000007feffdb0000 - 0x000007feffeb9000     C:\Windows\system32\MSCTF.dll
+0x000000005e980000 - 0x000000005e9b9000    
+C:\Users\DSRINI~1\Fiji.app\java\win64\jdk1.8.0_66\jre\bin\splashscreen.dll
+0x0000000074780000 - 0x0000000074852000     C:\Windows\system32\MSVCR100.dll
+0x000007fefb980000 - 0x000007fefb9d6000     C:\Windows\system32\uxtheme.dll
+0x000000006f5e0000 - 0x000000006fe69000    
+C:\Users\DSRINI~1\Fiji.app\java\win64\jdk1.8.0_66\jre\bin\server\jvm.dll
+0x000007fef7190000 - 0x000007fef7199000     C:\Windows\system32\WSOCK32.dll
+0x000007fefe110000 - 0x000007fefe15d000     C:\Windows\system32\WS2_32.dll
+0x000007fefe370000 - 0x000007fefe378000     C:\Windows\system32\NSI.dll
+0x000007fefc790000 - 0x000007fefc7cb000     C:\Windows\system32\WINMM.dll
+0x000007fefcd80000 - 0x000007fefcd8c000     C:\Windows\system32\VERSION.dll
+0x0000000077d70000 - 0x0000000077d77000     C:\Windows\system32\PSAPI.DLL
+0x000000006b500000 - 0x000000006b50f000    
+C:\Users\DSRINI~1\Fiji.app\java\win64\jdk1.8.0_66\jre\bin\verify.dll
+0x0000000065770000 - 0x0000000065799000    
+C:\Users\DSRINI~1\Fiji.app\java\win64\jdk1.8.0_66\jre\bin\java.dll
+0x000007fedc5d0000 - 0x000007fedc6aa000     C:\Program Files\Dell\Dell Data
+Protection\Authentication\Bin\DpoFeedb.dll
+0x000007feffb90000 - 0x000007feffc67000     C:\Windows\system32\OLEAUT32.dll
+0x000007fefe160000 - 0x000007fefe363000     C:\Windows\system32\ole32.dll
+0x000007fefda60000 - 0x000007fefda7e000     C:\Windows\system32\USERENV.dll
+0x000007fefd930000 - 0x000007fefd93f000     C:\Windows\system32\profapi.dll
+0x0000000062440000 - 0x0000000062456000    
+C:\Users\DSRINI~1\Fiji.app\java\win64\jdk1.8.0_66\jre\bin\zip.dll
+0x000007fefd7d0000 - 0x000007fefd7df000     C:\Windows\system32\CRYPTBASE.dll
+0x000007feffd10000 - 0x000007feffda9000     C:\Windows\system32\CLBCatQ.DLL
+0x000007fedc030000 - 0x000007fedc08a000     C:\Program Files\Dell\Dell Data
+Protection\Authentication\Bin\DpoSet.dll
+0x000007fefe990000 - 0x000007feff71a000     C:\Windows\system32\SHELL32.dll
+0x000007feffc70000 - 0x000007feffce1000     C:\Windows\system32\SHLWAPI.dll
+0x000007fefdb00000 - 0x000007fefdc6d000     C:\Windows\system32\CRYPT32.dll
+0x000007fefd940000 - 0x000007fefd94f000     C:\Windows\system32\MSASN1.dll
+0x000007fefc580000 - 0x000007fefc5cc000     C:\Windows\system32\DPCLBACK.dll
+0x000007fefc910000 - 0x000007fefc926000     C:\Windows\system32\NETAPI32.dll
+0x000007fefc900000 - 0x000007fefc90c000     C:\Windows\system32\netutils.dll
+0x000007fefd380000 - 0x000007fefd3a3000     C:\Windows\system32\srvcli.dll
+0x000007fefc8e0000 - 0x000007fefc8f5000     C:\Windows\system32\wkscli.dll
+0x000007fefc5d0000 - 0x000007fefc5fd000     C:\Windows\system32\ntmarta.dll
+0x000007fefe0b0000 - 0x000007fefe102000     C:\Windows\system32\WLDAP32.dll
+0x000007fefd170000 - 0x000007fefd188000     C:\Windows\system32\CRYPTSP.dll
+0x000007fefce70000 - 0x000007fefceb7000     C:\Windows\system32\rsaenh.dll
+0x000000006c890000 - 0x000000006ca28000    
+C:\Users\dsrini9000\Fiji.app\java\win64\jdk1.8.0_66\jre\bin\awt.dll
+0x000007fefc850000 - 0x000007fefc868000     C:\Windows\system32\DWMAPI.DLL
+0x000007fef4fc0000 - 0x000007fef5060000    
+C:\Windows\WinSxS\amd64_microsoft.windows.common-controls_6595b64144ccf1df_5.82.7601.18837_none_a4d981ff711297b6\COMCTL32.dll
+0x0000000062920000 - 0x000000006293a000    
+C:\Users\dsrini9000\Fiji.app\java\win64\jdk1.8.0_66\jre\bin\net.dll
+0x000007fefd110000 - 0x000007fefd165000     C:\Windows\system32\mswsock.dll
+0x000007fefd100000 - 0x000007fefd107000     C:\Windows\System32\wship6.dll
+0x000007fefa890000 - 0x000007fefa8a5000     C:\Windows\system32\NLAapi.dll
+0x000007fef4600000 - 0x000007fef4615000     C:\Windows\system32\napinsp.dll
+0x000007fef4160000 - 0x000007fef4179000     C:\Windows\system32\pnrpnsp.dll
+0x000007fefcf90000 - 0x000007fefcfeb000     C:\Windows\system32\DNSAPI.dll
+0x000007fef4840000 - 0x000007fef484b000     C:\Windows\System32\winrnr.dll
+0x000007fef49c0000 - 0x000007fef49d0000     C:\Windows\system32\wshbth.dll
+0x000007fefc9f0000 - 0x000007fefc9f7000     C:\Windows\System32\wshtcpip.dll
+0x000007fef9f60000 - 0x000007fef9f87000     C:\Windows\system32\IPHLPAPI.DLL
+0x000007fef9f50000 - 0x000007fef9f5b000     C:\Windows\system32\WINNSI.DLL
+0x000007fef55c0000 - 0x000007fef55c8000     C:\Windows\system32\rasadhlp.dll
+0x000007fef95e0000 - 0x000007fef9633000     C:\Windows\System32\fwpuclnt.dll
+0x000000005e930000 - 0x000000005e977000    
+C:\Users\dsrini9000\Fiji.app\java\win64\jdk1.8.0_66\jre\bin\fontmanager.dll
+0x0000000061b20000 - 0x0000000061b31000    
+C:\Users\dsrini9000\Fiji.app\java\win64\jdk1.8.0_66\jre\bin\nio.dll
+0x000007fef9560000 - 0x000007fef9578000     C:\Windows\system32\dhcpcsvc.DLL
+0x000007fef9540000 - 0x000007fef9551000     C:\Windows\system32\dhcpcsvc6.DLL
+0x000000005e2f0000 - 0x000000005e332000    
+C:\Users\dsrini9000\Fiji.app\java\win64\jdk1.8.0_66\jre\bin\t2k.dll
+0x000007fefc290000 - 0x000007fefc484000    
+C:\Windows\WinSxS\amd64_microsoft.windows.common-controls_6595b64144ccf1df_6.0.7601.18837_none_fa3b1e3d17594757\comctl32.dll
+0x000007fefb420000 - 0x000007fefb581000    
+C:\Windows\system32\WindowsCodecs.dll
+0x000007fefd770000 - 0x000007fefd7c7000     C:\Windows\system32\apphelp.dll
+0x000007fefb3b0000 - 0x000007fefb41f000     C:\Windows\system32\mscoree.dll
+0x000007fef4900000 - 0x000007fef4998000    
+C:\Windows\Microsoft.NET\Framework64\v4.0.30319\mscoreei.dll
+0x000007fefd7e0000 - 0x000007fefd871000     C:\Windows\system32\sxs.dll
+0x000007fef3640000 - 0x000007fef3f9c000    
+C:\Windows\Microsoft.NET\Framework64\v4.0.30319\clr.dll
+0x000007fef4700000 - 0x000007fef47f7000    
+C:\Windows\system32\MSVCR120_CLR0400.dll
+0x000007feef940000 - 0x000007fef0dd8000    
+C:\Windows\assembly\NativeImages_v4.0.30319_64\mscorlib\fa8eef6f6cb67c660d71e15c5cad71b5\mscorlib.ni.dll
+0x000007fefd880000 - 0x000007fefd894000     C:\Windows\system32\RpcRtRemote.dll
+0x000007fef16a0000 - 0x000007fef2271000    
+C:\Windows\assembly\NativeImages_v4.0.30319_64\System\856f93ee8a11010c62340ec9fbba8cd0\System.ni.dll
+0x000007fef2dd0000 - 0x000007fef2fbb000    
+C:\Windows\assembly\NativeImages_v4.0.30319_64\System.Drawing\cfb726e159aacbe9e4f6a231201832e1\System.Drawing.ni.dll
+0x000007fef4a30000 - 0x000007fef4a33000    
+C:\Windows\system32\api-ms-win-core-xstate-l2-1-0.dll
+0x000007fef44e0000 - 0x000007fef45e5000    
+C:\Windows\Microsoft.NET\Framework64\v4.0.30319\clrjit.dll
+0x000007feeefb0000 - 0x000007feef93b000    
+C:\Windows\assembly\NativeImages_v4.0.30319_64\System.Core\92568f42a2b92e3314f7ae9e2e5eea4a\System.Core.ni.dll
+0x000007feec0d0000 - 0x000007feed838000    
+C:\Windows\assembly\NativeImages_v4.0.30319_64\System.ServiceModel\b7b893ea3237c3c3e874a6a331dc8da1\System.ServiceModel.ni.dll
+0x000007fef2fc0000 - 0x000007fef32f1000    
+C:\Windows\assembly\NativeImages_v4.0.30319_64\System.Runteb92aa12#\43d9b9a3b683fbf240d413a7a88f70ba\System.Runtime.Serialization.ni.dll
+0x000007fef49f0000 - 0x000007fef4a06000    
+C:\Windows\Microsoft.NET\Framework64\v4.0.30319\nlssorting.dll
+0x000007fef3fc0000 - 0x000007fef40e1000    
+C:\Windows\assembly\NativeImages_v4.0.30319_64\System.Configuration\5317331a5322c699e930e10f5374765f\System.Configuration.ni.dll
+0x000007feee710000 - 0x000007feeefa2000    
+C:\Windows\assembly\NativeImages_v4.0.30319_64\System.Xml\a06640dcd0fdb525a12f0e438f5be839\System.Xml.ni.dll
+0x000007fee00e0000 - 0x000007fee01fc000    
+C:\Users\dsrini9000\AppData\Local\Temp\SlideBook6Reader4632219558713838562.dll
+0x000000005dff0000 - 0x000000005e088000     C:\Windows\system32\MSVCP100.dll
+0x0000000078cd0000 - 0x000000007922d000     C:\Windows\system32\mfc100.dll
+0x000007fef9850000 - 0x000007fef9857000     C:\Windows\system32\MSIMG32.dll
+0x000000005f0a0000 - 0x000000005f0ad000     C:\Windows\system32\MFC100ENU.DLL
+0x000007feebf50000 - 0x000007feec010000     C:\Program Files
+(x86)\Google\Drive\googledrivesync64.dll
+0x000000005f120000 - 0x000000005f1f3000    
+C:\Windows\WinSxS\amd64_microsoft.vc90.crt_1fc8b3b9a1e18e3b_9.0.30729.6161_none_08e61857a83bc251\MSVCP90.dll
+0x0000000074a30000 - 0x0000000074ad3000    
+C:\Windows\WinSxS\amd64_microsoft.vc90.crt_1fc8b3b9a1e18e3b_9.0.30729.6161_none_08e61857a83bc251\MSVCR90.dll
+0x000007fef41a0000 - 0x000007fef41d5000     C:\Windows\system32\EhStorShell.dll
+0x000007feff720000 - 0x000007feff8f7000     C:\Windows\system32\SETUPAPI.dll
+0x000007fefd9f0000 - 0x000007fefda26000     C:\Windows\system32\CFGMGR32.dll
+0x000007fefdad0000 - 0x000007fefdaea000     C:\Windows\system32\DEVOBJ.dll
+0x000007fefbcd0000 - 0x000007fefbdfc000     C:\Windows\system32\PROPSYS.dll
+0x000007fee25e0000 - 0x000007fee2c4f000    
+C:\PROGRA~1\MICROS~1\Office14\GROOVEEX.DLL
+0x0000000067680000 - 0x00000000676af000    
+C:\Windows\WinSxS\amd64_microsoft.vc90.atl_1fc8b3b9a1e18e3b_9.0.30729.6161_none_0a1fd3a3a768b895\ATL90.DLL
+0x000007fee2d50000 - 0x000007fee316a000    
+C:\PROGRA~1\COMMON~1\MICROS~1\OFFICE14\Cultures\office.odf
+0x000007fee0df0000 - 0x000007fee1655000    
+C:\PROGRA~1\MICROS~1\Office14\1033\GrooveIntlResource.dll
+0x000000005e2c0000 - 0x000000005e2ea000    
+C:\Users\dsrini9000\Fiji.app\java\win64\jdk1.8.0_66\jre\bin\dcpr.dll
+0x00000000637c0000 - 0x00000000637cd000    
+C:\Users\dsrini9000\AppData\Local\Temp\jogamp_0000\file_cache\jln4112681005228159935\jln3818572031515916168\natives\windows-amd64\gluegen-rt.dll
+0x0000000062910000 - 0x0000000062917000    
+C:\Users\dsrini9000\Fiji.app\java\win64\jdk1.8.0_66\jre\bin\jawt.dll
+0x000000006a440000 - 0x000000006a44d000    
+C:\Users\dsrini9000\AppData\Local\Temp\jogamp_0000\file_cache\jln4112681005228159935\jln3818572031515916168\natives\windows-amd64\nativewindow_awt.dll
+0x000000006c100000 - 0x000000006c10f000    
+C:\Users\dsrini9000\AppData\Local\Temp\jogamp_0000\file_cache\jln4112681005228159935\jln3818572031515916168\natives\windows-amd64\nativewindow_win32.dll
+0x000007feee3d0000 - 0x000007feee4ed000     C:\Windows\system32\OpenGL32.dll
+0x000007fef4670000 - 0x000007fef469d000     C:\Windows\system32\GLU32.dll
+0x000007feed870000 - 0x000007feed961000     C:\Windows\system32\DDRAW.dll
+0x000007fef9eb0000 - 0x000007fef9eb8000     C:\Windows\system32\DCIMAN32.dll
+0x0000000064500000 - 0x00000000645b1000    
+C:\Users\dsrini9000\AppData\Local\Temp\jogamp_0000\file_cache\jln4112681005228159935\jln3818572031515916168\natives\windows-amd64\jogl_desktop.dll
+0x0000000064340000 - 0x00000000643a2000    
+C:\Users\dsrini9000\AppData\Local\Temp\jogamp_0000\file_cache\jln4112681005228159935\jln3818572031515916168\natives\windows-amd64\jogl_mobile.dll
+0x000007fefad00000 - 0x000007fefad18000     C:\Windows\system32\atig6pxx.dll
+0x000007fefa570000 - 0x000007fefa695000     C:\Windows\system32\dbghelp.dll
+
+VM Arguments:
+jvm_args: -Dpython.cachedir.skip=true -Dplugins.dir=C:\Users\DSRINI~1\Fiji.app
+-Xmx12216m -Xincgc -XX:PermSize=128m 
+java_command: <unknown>
+java_class_path (initial):
+C:\Users\DSRINI~1\Fiji.app/jars/imagej-launcher-4.0.3.jar
+Launcher Type: generic
+
+Environment Variables:
+JAVA_HOME=C:\Users\DSRINI~1\Fiji.app/java/win64/jdk1.8.0_66//jre
+PATH=C:\ProgramData\Oracle\Java\javapath;C:\Program Files (x86)\Intel\iCLS
+Client\;C:\Program Files\Intel\iCLS
+Client\;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;c:\Program
+Files (x86)\ATI Technologies\ATI.ACE\Core-Static;C:\Program
+Files\Intel\Intel(R) Management Engine Components\DAL;C:\Program Files
+(x86)\Intel\Intel(R) Management Engine Components\DAL;C:\Program
+Files\Intel\Intel(R) Management Engine Components\IPT;C:\Program Files
+(x86)\Intel\Intel(R) Management Engine Components\IPT;C:\Program
+Files\Dell\Dell Data Protection\Drivers\TSS\bin\;C:\Program
+Files\MATLAB\R2015a\runtime\win64;C:\Program Files\MATLAB\R2015a\bin;C:\Program
+Files\Intel\WiFi\bin\;C:\Program Files\Common
+Files\Intel\WirelessCommon\;C:\Program Files
+(x86)\AMD\ATI.ACE\Core-Static;C:\Program Files (x86)\Skype\Phone\;C:\Program
+Files\Intel\WiFi\bin\;C:\Program Files\Common
+Files\Intel\WirelessCommon\;C:\Users\DSRINI~1\Fiji.app/lib/win64;C:\Users\DSRINI~1\Fiji.app/mm/win64;C:\Users\DSRINI~1\Fiji.app/java/win64/jdk1.8.0_66//jre/bin
+USERNAME=dsrini9000
+OS=Windows_NT
+PROCESSOR_IDENTIFIER=Intel64 Family 6 Model 60 Stepping 3, GenuineIntel
+
+Information about your version of Java:
+
+  os.arch => amd64
+  os.name => Windows 7
+  os.version => 6.1
+  java.version => 1.8.0_66
+  java.vendor => Oracle Corporation
+  java.runtime.name => Java(TM) SE Runtime Environment
+  java.runtime.version => 1.8.0_66-b18
+  java.vm.name => Java HotSpot(TM) 64-Bit Server VM
+  java.vm.version => 25.66-b18
+  java.vm.vendor => Oracle Corporation
+  java.vm.info => mixed mode
+  java.awt.graphicsenv => sun.awt.Win32GraphicsEnvironment
+  java.specification.name => Java Platform API Specification
+  java.specification.version => 1.8
+  sun.cpu.endian => little
+  sun.desktop => windows
+  file.separator => \
+
+The up-to-date check says: REMIND_LATER
+
+Information relevant to JAVA_HOME related problems:
+
+  JAVA_HOME is set to: C:\Users\DSRINI~1\Fiji.app/java/win64/jdk1.8.0_66//jre
+  imagej.dir => C:\Users\DSRINI~1\Fiji.app
+
+Information about the version of each plugin:
+
+Activated update sites:
+ImageJ: http://update.imagej.net/ (last check:20160121055533)
+Fiji: http://update.fiji.sc/ (last check:20160114142236)
+Java-8: http://sites.imagej.net/Java-8/ (last check:20160121051645)
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160212/018b04e8/attachment-0001.html>
+
+From bugzilla at fiji.sc  Fri Feb 12 07:26:00 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Fri, 12 Feb 2016 13:26:00 +0000
+Subject: [ImageJ-bugs] [Bug 1226] Java3D (3D viewer) crashes upon opening
+In-Reply-To: <bug-1226-19@http.fiji.sc/bugzilla/>
+References: <bug-1226-19@http.fiji.sc/bugzilla/>
+Message-ID: <bug-1226-19-hZlTjEPSVg@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1226
+
+--- Comment #1 from Dhruv Srinivasachar <dhruv.srinivasachar at gmail.com> ---
+Please forgive the verbosity as this is the first bug I have encountered using
+FIJI.
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160212/ddb82e07/attachment.html>
+
+From bugzilla at fiji.sc  Fri Feb 12 11:45:16 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Fri, 12 Feb 2016 17:45:16 +0000
+Subject: [ImageJ-bugs] [Bug 1225] AVI writer writen .avi (no compression or
+ JPEG compression) cant be opened in MS power point.
+In-Reply-To: <bug-1225-19@http.fiji.sc/bugzilla/>
+References: <bug-1225-19@http.fiji.sc/bugzilla/>
+Message-ID: <bug-1225-19-Hus8Vjrb1J@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1225
+
+Curtis Rueden <ctrueden at wisc.edu> changed:
+
+           What    |Removed                     |Added
+----------------------------------------------------------------------------
+                 CC|                            |ctrueden at wisc.edu
+
+--- Comment #5 from Curtis Rueden <ctrueden at wisc.edu> ---
+Does the SCIFIO exporter also produce a bad file?
+
+   File > Export > Image...
+
+Or only the ImageJ 1.x command?
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160212/41313399/attachment.html>
+
+From bugzilla at fiji.sc  Fri Feb 12 16:56:41 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Fri, 12 Feb 2016 22:56:41 +0000
+Subject: [ImageJ-bugs] [Bug 1224] B&C tool doesnt show all whole number is
+ more than 6 digits, in 32 bit numbers can be larger
+In-Reply-To: <bug-1224-19@http.fiji.sc/bugzilla/>
+References: <bug-1224-19@http.fiji.sc/bugzilla/>
+Message-ID: <bug-1224-19-OMJm1zqhHC@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1224
+
+Wayne Rasband <wsr at nih.gov> changed:
+
+           What    |Removed                     |Added
+----------------------------------------------------------------------------
+             Status|NEW                         |RESOLVED
+                 CC|                            |wsr at nih.gov
+         Resolution|---                         |FIXED
+
+--- Comment #1 from Wayne Rasband <wsr at nih.gov> ---
+This bug is fixed in the latest ImageJ daily build (1.50g38).
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160212/180e970e/attachment.html>
+
+From bugzilla at fiji.sc  Fri Feb 12 22:23:14 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Sat, 13 Feb 2016 04:23:14 +0000
+Subject: [ImageJ-bugs] [Bug 1225] AVI writer writen .avi (no compression or
+ JPEG compression) cant be opened in MS power point.
+In-Reply-To: <bug-1225-19@http.fiji.sc/bugzilla/>
+References: <bug-1225-19@http.fiji.sc/bugzilla/>
+Message-ID: <bug-1225-19-txheIM36MO@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1225
+
+Wayne Rasband <wsr at nih.gov> changed:
+
+           What    |Removed                     |Added
+----------------------------------------------------------------------------
+             Status|NEW                         |RESOLVED
+                 CC|                            |wsr at nih.gov
+         Resolution|---                         |FIXED
+
+--- Comment #6 from Wayne Rasband <wsr at nih.gov> ---
+Thanks to Michael Schmid, this v1.50d regression is fixed in the latest ImageJ
+daily build (1.50g39).
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160213/070c569b/attachment.html>
+
+From bugzilla at fiji.sc  Sat Feb 13 08:04:05 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Sat, 13 Feb 2016 14:04:05 +0000
+Subject: [ImageJ-bugs] [Bug 1224] B&C tool doesnt show all whole number is
+ more than 6 digits, in 32 bit numbers can be larger
+In-Reply-To: <bug-1224-19@http.fiji.sc/bugzilla/>
+References: <bug-1224-19@http.fiji.sc/bugzilla/>
+Message-ID: <bug-1224-19-RyeyxCtG88@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1224
+
+--- Comment #2 from Dan White <dan at chalkie.org.uk> ---
+Many thanks Wayne, for this quick fix!!!
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160213/73b2d317/attachment.html>
+
+From bugzilla at fiji.sc  Sat Feb 13 08:05:26 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Sat, 13 Feb 2016 14:05:26 +0000
+Subject: [ImageJ-bugs] [Bug 1225] AVI writer writen .avi (no compression or
+ JPEG compression) cant be opened in MS power point.
+In-Reply-To: <bug-1225-19@http.fiji.sc/bugzilla/>
+References: <bug-1225-19@http.fiji.sc/bugzilla/>
+Message-ID: <bug-1225-19-dR9xdojEeA@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1225
+
+--- Comment #7 from Dan White <dan at chalkie.org.uk> ---
+Thanks,Wayne, for the,super fast fix!
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160213/09bb1415/attachment.html>
+
+From bugzilla at fiji.sc  Sat Feb 13 10:13:30 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Sat, 13 Feb 2016 16:13:30 +0000
+Subject: [ImageJ-bugs] [Bug 1227] New: It seems that the "average color"
+ option doesn't work when the number of selected pixels are relatively high.
+Message-ID: <bug-1227-19@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1227
+
+            Bug ID: 1227
+           Summary: It seems that the "average color" option doesn't work
+                    when the number of selected pixels are relatively
+                    high.
+           Product: Fiji
+           Version: unspecified
+          Hardware: PC
+                OS: Windows
+            Status: NEW
+          Severity: normal
+          Priority: P5
+         Component: Other
+          Assignee: imagej-bugs at imagej.net
+          Reporter: bashoo77 at yahoo.com
+
+Hi,
+I tried to calculate the average RGB (R, G, and B values) for a ROI which was
+selected by color threshold tools. The path I follow is: (Image>color>average
+color). It seems that when there are many ROIs, the average color option
+doesn't work. Please help me to solve the problem.(I deselect the ROI split
+option). 
+Thank you.
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160213/7da28f56/attachment.html>
+
+From bugzilla at fiji.sc  Mon Feb 15 15:16:41 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Mon, 15 Feb 2016 21:16:41 +0000
+Subject: [ImageJ-bugs] [Bug 1228] New: 3D viewer not working
+Message-ID: <bug-1228-19@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1228
+
+            Bug ID: 1228
+           Summary: 3D viewer not working
+           Product: Fiji
+           Version: unspecified
+          Hardware: Macintosh
+                OS: Mac OS
+            Status: NEW
+          Severity: normal
+          Priority: P4
+         Component: Plugins
+          Assignee: imagej-bugs at imagej.net
+          Reporter: jwillia3 at iupui.edu
+                CC: jwillia3 at iupui.edu
+
+version = 1.5
+Exception in thread "J3D-Renderer-1" java.lang.NoClassDefFoundError:
+apple/awt/ComponentModel
+    at com.sun.opengl.impl.JAWT_DrawingSurface.GetDrawingSurfaceInfo0(Native
+Method)
+    at
+com.sun.opengl.impl.JAWT_DrawingSurface.GetDrawingSurfaceInfo(JAWT_DrawingSurface.java:56)
+    at
+com.sun.opengl.impl.macosx.MacOSXOnscreenGLDrawable$1.run(MacOSXOnscreenGLDrawable.java:165)
+    at java.security.AccessController.doPrivileged(Native Method)
+    at
+com.sun.opengl.impl.macosx.MacOSXOnscreenGLDrawable.lockSurface(MacOSXOnscreenGLDrawable.java:163)
+    at
+com.sun.opengl.impl.macosx.MacOSXOnscreenGLContext.makeCurrentImpl(MacOSXOnscreenGLContext.java:57)
+    at com.sun.opengl.impl.GLContextImpl.makeCurrent(GLContextImpl.java:134)
+    at javax.media.j3d.JoglPipeline$QueryCanvas.doQuery(JoglPipeline.java:9030)
+    at
+javax.media.j3d.JoglPipeline.getBestConfiguration(JoglPipeline.java:8778)
+    at javax.media.j3d.Renderer.doWork(Renderer.java:495)
+    at javax.media.j3d.J3dThread.run(J3dThread.java:256)
+Caused by: java.lang.ClassNotFoundException: apple.awt.ComponentModel
+    at java.net.URLClassLoader.findClass(URLClassLoader.java:381)
+    at java.lang.ClassLoader.loadClass(ClassLoader.java:424)
+    at java.lang.ClassLoader.loadClass(ClassLoader.java:357)
+    ... 11 more
+................................................................................
+................................................................................
+................................................................................
+................................................................................
+................................................................................
+................................................................................
+..............................................................................
+Done: Checksummer
+
+Information about your version of Java:
+
+  os.arch => x86_64
+  os.name => Mac OS X
+  os.version => 10.11.3
+  java.version => 1.8.0_65
+  java.vendor => Oracle Corporation
+  java.runtime.name => Java(TM) SE Runtime Environment
+  java.runtime.version => 1.8.0_65-b17
+  java.vm.name => Java HotSpot(TM) 64-Bit Server VM
+  java.vm.version => 25.65-b01
+  java.vm.vendor => Oracle Corporation
+  java.vm.info => mixed mode
+  java.awt.graphicsenv => sun.awt.CGraphicsEnvironment
+  java.specification.name => Java Platform API Specification
+  java.specification.version => 1.8
+  sun.cpu.endian => little
+  sun.desktop => null
+  file.separator => /
+
+The up-to-date check says: REMIND_LATER
+
+Information relevant to JAVA_HOME related problems:
+
+  JAVA_HOME is set to:
+/Library/Java/JavaVirtualMachines/jdk1.8.0_65.jdk/Contents/Home/jre/
+  imagej.dir => /Applications/Fiji.app
+
+Information about the version of each plugin:
+
+Activated update sites:
+ImageJ: http://update.imagej.net/ (last check:20160211105454)
+Fiji: http://update.fiji.sc/ (last check:20160215051618)
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160215/8d9ee602/attachment.html>
+
+From bugzilla at fiji.sc  Mon Feb 15 21:59:57 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Tue, 16 Feb 2016 03:59:57 +0000
+Subject: [ImageJ-bugs] [Bug 1228] 3D viewer not working
+In-Reply-To: <bug-1228-19@http.fiji.sc/bugzilla/>
+References: <bug-1228-19@http.fiji.sc/bugzilla/>
+Message-ID: <bug-1228-19-7hWpEFaHVZ@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1228
+
+Curtis Rueden <ctrueden at wisc.edu> changed:
+
+           What    |Removed                     |Added
+----------------------------------------------------------------------------
+             Status|NEW                         |NEEDSINFO
+                 CC|                            |ctrueden at wisc.edu
+
+--- Comment #1 from Curtis Rueden <ctrueden at wisc.edu> ---
+Please enable the 'Java-8' update site.
+
+Or you can download a fresh bundle of Fiji from http://imagej.net/Downloads,
+which comes with it pre-enabled.
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160216/f3004c5e/attachment.html>
+
+From bugzilla at fiji.sc  Tue Feb 16 09:04:10 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Tue, 16 Feb 2016 15:04:10 +0000
+Subject: [ImageJ-bugs] [Bug 1228] 3D viewer not working
+In-Reply-To: <bug-1228-19@http.fiji.sc/bugzilla/>
+References: <bug-1228-19@http.fiji.sc/bugzilla/>
+Message-ID: <bug-1228-19-VHAhskPgKT@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1228
+
+--- Comment #2 from jwillia3 at iupui.edu ---
+Thanks! I downloaded a new package, and to works.
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160216/8f40f038/attachment.html>
+
+From bugzilla at fiji.sc  Tue Feb 16 09:29:32 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Tue, 16 Feb 2016 15:29:32 +0000
+Subject: [ImageJ-bugs] [Bug 1228] 3D viewer not working
+In-Reply-To: <bug-1228-19@http.fiji.sc/bugzilla/>
+References: <bug-1228-19@http.fiji.sc/bugzilla/>
+Message-ID: <bug-1228-19-rpF6Jk9kJr@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1228
+
+Curtis Rueden <ctrueden at wisc.edu> changed:
+
+           What    |Removed                     |Added
+----------------------------------------------------------------------------
+             Status|NEEDSINFO                   |RESOLVED
+         Resolution|---                         |FIXED
+
+--- Comment #3 from Curtis Rueden <ctrueden at wisc.edu> ---
+Great! Glad to hear.
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160216/033dde06/attachment.html>
+
+From bugzilla at fiji.sc  Thu Feb 18 15:49:52 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Thu, 18 Feb 2016 21:49:52 +0000
+Subject: [ImageJ-bugs] [Bug 1211] Stack Rendering Slow
+In-Reply-To: <bug-1211-19@http.fiji.sc/bugzilla/>
+References: <bug-1211-19@http.fiji.sc/bugzilla/>
+Message-ID: <bug-1211-19-4j5AAlzgU6@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1211
+
+Curtis Rueden <ctrueden at wisc.edu> changed:
+
+           What    |Removed                     |Added
+----------------------------------------------------------------------------
+             Status|FIXPENDING                  |RESOLVED
+                 CC|                            |ctrueden at wisc.edu
+         Resolution|---                         |FIXED
+
+--- Comment #8 from Curtis Rueden <ctrueden at wisc.edu> ---
+The new launcher was uploaded and released awhile back.
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160218/dfd54bae/attachment.html>
+
+From bugzilla at fiji.sc  Fri Feb 19 10:30:36 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Fri, 19 Feb 2016 16:30:36 +0000
+Subject: [ImageJ-bugs] [Bug 1229] New: Multi measure function in ROI manager
+	has changed.
+Message-ID: <bug-1229-19@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1229
+
+            Bug ID: 1229
+           Summary: Multi measure function in ROI manager has changed.
+           Product: Fiji
+           Version: unspecified
+          Hardware: PC
+                OS: Windows
+            Status: NEW
+          Severity: normal
+          Priority: P5
+         Component: Other
+          Assignee: imagej-bugs at imagej.net
+          Reporter: s.rothery at imperial.ac.uk
+
+It no longer measures all channels when the measure all slices box is ticked.
+This was very useful. Is this a bug or a permanent change
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160219/aee337c5/attachment.html>
+
+From bugzilla at fiji.sc  Fri Feb 19 10:44:06 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Fri, 19 Feb 2016 16:44:06 +0000
+Subject: [ImageJ-bugs] [Bug 1229] Multi measure function in ROI manager has
+	changed.
+In-Reply-To: <bug-1229-19@http.fiji.sc/bugzilla/>
+References: <bug-1229-19@http.fiji.sc/bugzilla/>
+Message-ID: <bug-1229-19-6WC2OqHDAJ@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1229
+
+--- Comment #1 from s.rothery at imperial.ac.uk ---
+It also used to work on frames as well
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160219/69edbc36/attachment.html>
+
+From bugzilla at fiji.sc  Fri Feb 19 13:59:25 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Fri, 19 Feb 2016 19:59:25 +0000
+Subject: [ImageJ-bugs] [Bug 1229] Multi measure function in ROI manager has
+	changed.
+In-Reply-To: <bug-1229-19@http.fiji.sc/bugzilla/>
+References: <bug-1229-19@http.fiji.sc/bugzilla/>
+Message-ID: <bug-1229-19-yZbdTLioIA@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1229
+
+Wayne Rasband <wsr at nih.gov> changed:
+
+           What    |Removed                     |Added
+----------------------------------------------------------------------------
+             Status|NEW                         |RESOLVED
+                 CC|                            |wsr at nih.gov
+         Resolution|---                         |FIXED
+
+--- Comment #2 from Wayne Rasband <wsr at nih.gov> ---
+This v1.50f regression is fixed in the latest ImageJ daily build (1.50h3).
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160219/727acb24/attachment.html>
+
+From bugzilla at fiji.sc  Fri Feb 19 15:47:01 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Fri, 19 Feb 2016 21:47:01 +0000
+Subject: [ImageJ-bugs] [Bug 1230] New: ImageJ macro showMessage works for
+ html, but not HTML
+Message-ID: <bug-1230-19@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1230
+
+            Bug ID: 1230
+           Summary: ImageJ macro showMessage works for html, but not HTML
+           Product: Fiji
+           Version: unspecified
+          Hardware: PC
+                OS: Windows
+            Status: NEW
+          Severity: normal
+          Priority: P4
+         Component: Plugins
+          Assignee: imagej-bugs at imagej.net
+          Reporter: jch at lilly.com
+                CC: jch at lilly.com
+
+When toying with ImageJ macro's messagebox, based on a hint from Herbie...  I
+noticed that the HTML tag only works if it's lower case.
+Here's an ImageJ macro showing the difference:
+
+msgTitle = "My Title";
+msgHTML = "<HTML><BODY>This is <B>my message<\B>.<\BODY><\HTML>";
+showMessage(msgTitle, msgHTML);
+msgHTML = replace(msgHTML, "HTML","html");
+showMessage(msgTitle, msgHTML);
+
+Information about your version of Java:
+
+  os.arch => amd64
+  os.name => Windows 7
+  os.version => 6.1
+  java.version => 1.6.0_24
+  java.vendor => Sun Microsystems Inc.
+  java.runtime.name => Java(TM) SE Runtime Environment
+  java.runtime.version => 1.6.0_24-b07
+  java.vm.name => Java HotSpot(TM) 64-Bit Server VM
+  java.vm.version => 19.1-b02
+  java.vm.vendor => Sun Microsystems Inc.
+  java.vm.info => mixed mode
+  java.awt.graphicsenv => sun.awt.Win32GraphicsEnvironment
+  java.specification.name => Java Platform API Specification
+  java.specification.version => 1.6
+  sun.cpu.endian => little
+  sun.desktop => windows
+  file.separator => \
+
+The up-to-date check says: CHECK_TURNED_OFF
+
+Information relevant to JAVA_HOME related problems:
+
+  JAVA_HOME is set to: D:\Stuff\FIJI\Fiji.app/java/win64/jdk1.6.0_24//jre
+  imagej.dir => D:\Stuff\FIJI\Fiji.app
+
+Information about the version of each plugin:
+
+Activated update sites:
+ImageJ: http://update.imagej.net/ (last check:20160121065533)
+Fiji: http://update.fiji.sc/ (last check:20160114152236)
+3D ImageJ Suite: http://sites.imagej.net/Tboudier/ (last check:20151214014914)
+BioVoxxel: http://sites.imagej.net/BioVoxxel/ (last check:20151207164930)
+LOCI: http://dev.loci.wisc.edu/fiji/ (last check:20150428175912)
+Bio-Formats 5: http://sites.imagej.net/Bio-Formats-5/ (last
+check:20160120212638)
+
+Files not up-to-date:
+  5cf0711e (LOCAL_ONLY) 20131118120955 jars/akutan-1.0.jar
+  0449e3ec (LOCAL_ONLY) 20131118120959 jars/colt-1.2.0.jar
+  6cd7cd7d (LOCAL_ONLY) 20131118121001 jars/concurrent-1.3.4.jar
+  6227c67b (LOCAL_ONLY) 20131118121015
+jars/curve-fitter-1.0.0-SNAPSHOT-with-libs.jar
+  1ad3be0d (LOCAL_ONLY) 20130131121733 jars/jpedalSTD.jar
+  c480d491 (LOCAL_ONLY) 20131118120952 jars/jxlayer.jar
+  8523861f (LOCAL_ONLY) 20131118121014 jars/lma-1.3.jar
+  04f8e59b (LOCAL_ONLY) 20131118121010
+jars/native-library-util-2.0-SNAPSHOT.jar
+  156550ab (LOCAL_ONLY) 20130716110100 jars/ome-io.jar
+  f2b7e781 (LOCAL_ONLY) 20131118120930 luts/lifetime.lut
+  c225ff29 (LOCAL_ONLY) 20131126160613 macros/BatchMacro.ijm
+  cbbaeedb (LOCAL_ONLY) 20140801145641 macros/Example Expression
+things/presets.txt
+  8d61199e (LOCAL_ONLY) 20140801145641 macros/Example Expression
+things/presetsNT.txt
+  7deab978 (LOCAL_ONLY) 20150105140036 macros/FixedLengthSegmentedLine.ijm
+  482d03bb (LOCAL_ONLY) 20150423172739 macros/LineProfileTracking.ijm
+  d4aa9389 (LOCAL_ONLY) 20150311124831 macros/Listproperties.ijm
+  837ea66c (LOCAL_ONLY) 20140815093434 macros/MeasureandLable.ijm
+  8877656d (LOCAL_ONLY) 20140829145025 macros/copy flip clipboard close.ijm
+  5521ab0e (LOCAL_ONLY) 20140910140314 macros/doxor.ijm
+  95cbbb51 (LOCAL_ONLY) 20140808101521 macros/test.ijm
+  d31fb446 (LOCAL_ONLY) 20141120094515 macros/test2.ijm
+  50de7be2 (LOCAL_ONLY) 20130222094604 plugins/Analyze/GLCM_Texture.class
+  545b3a6f (LOCAL_ONLY) 20130207164938 plugins/Analyze/ImageFlow_.jar
+  7b0a1c23 (LOCAL_ONLY) 20130221164409 plugins/Analyze/Mexican_Hat_Filter.class
+  3f7f7524 (LOCAL_ONLY) 20130207154549 plugins/Analyze/doc/license.txt
+  7552d052 (LOCAL_ONLY) 20130207154549 plugins/Analyze/doc/readme.txt
+  2642ca93 (LOCAL_ONLY) 20130212115537 plugins/Grouped_ZProjector.class
+  46f30e9f (LOCAL_ONLY) 20150904164640
+plugins/StackReg/StackReg_-1.0.0-SNAPSHOT.jar
+  d195145f (LOCAL_ONLY) 20141017150730 plugins/Stack_Deflicker.class
+  427909a6 (LOCAL_ONLY) 20150114173941 plugins/Utilities/FolderUnfiler.class
+  9a280aec (LOCAL_ONLY) 20130726095043 plugins/absnake_.jar
+  c0ce6ed1 (LOCAL_ONLY) 20100908204634 plugins/ij-plugins_toolkit.jar
+  d7b76a70 (LOCAL_ONLY) 20150825095419 plugins/jars/BeanShell.jar
+  fc868626 (LOCAL_ONLY) 20150825095207 plugins/jars/Jython.jar
+  97cf0ca7 (LOCAL_ONLY) 20130212114857
+plugins/poorman3dreg/PoorMan3DRegCredits$1.class
+  dfdfdd31 (LOCAL_ONLY) 20130212114857
+plugins/poorman3dreg/PoorMan3DRegCredits.class
+  62c15493 (LOCAL_ONLY) 20130212114857 plugins/poorman3dreg/PoorMan3DReg_.class
+  c119c70d (LOCAL_ONLY) 20130212114857
+plugins/poorman3dreg/SaveToVolumes_.class
+  41cae167 (LOCAL_ONLY) 20131118121017 plugins/slim_plugin-1.0.0-SNAPSHOT.jar
+  21ebed20 (LOCAL_ONLY) 20141017150730 plugins/wrMTrck_$particle.class
+  5aef7088 (LOCAL_ONLY) 20141017150730 plugins/wrMTrck_.class
+  7f56f37f (LOCAL_ONLY) 20141017150730 plugins/wrMTrck_Batch.txt
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160219/36d92f6e/attachment.html>
+
+From bugzilla at fiji.sc  Fri Feb 19 15:51:56 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Fri, 19 Feb 2016 21:51:56 +0000
+Subject: [ImageJ-bugs] [Bug 1230] ImageJ macro showMessage works for html,
+	but not HTML
+In-Reply-To: <bug-1230-19@http.fiji.sc/bugzilla/>
+References: <bug-1230-19@http.fiji.sc/bugzilla/>
+Message-ID: <bug-1230-19-iZ5ygABFqn@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1230
+
+Jeff Hanson <jch at lilly.com> changed:
+
+           What    |Removed                     |Added
+----------------------------------------------------------------------------
+                 CC|                            |imagej-bugs at imagej.net
+          Component|Plugins                     |Scripting
+           Assignee|imagej-bugs at imagej.net      |ctrueden at wisc.edu
+            Product|Fiji                        |ImageJ
+
+--- Comment #1 from Jeff Hanson <jch at lilly.com> ---
+Of course... now I see that this bug reporting is to the FIJI team... This
+probably belongs in Wayne's hands, instead...  Does he watch this list?  If I
+switch the "product" from FIJI to ImageJ... will it go to the right place?
+I'll give it a whirl...
+
+-- 
+You are receiving this mail because:
+You are on the CC list for the bug.
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160219/533bf2a4/attachment.html>
+
+From bugzilla at fiji.sc  Sat Feb 20 00:57:51 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Sat, 20 Feb 2016 06:57:51 +0000
+Subject: [ImageJ-bugs] [Bug 1230] ImageJ macro showMessage works for html,
+	but not HTML
+In-Reply-To: <bug-1230-19@http.fiji.sc/bugzilla/>
+References: <bug-1230-19@http.fiji.sc/bugzilla/>
+Message-ID: <bug-1230-19-qov8hg8xUj@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1230
+
+Wayne Rasband <wsr at nih.gov> changed:
+
+           What    |Removed                     |Added
+----------------------------------------------------------------------------
+             Status|NEW                         |RESOLVED
+                 CC|                            |wsr at nih.gov
+         Resolution|---                         |FIXED
+
+--- Comment #2 from Wayne Rasband <wsr at nih.gov> ---
+This bug is fixed in the latest ImageJ daily build (1.50h4).
+
+-- 
+You are receiving this mail because:
+You are on the CC list for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160220/95e1ceeb/attachment.html>
+
+From bugzilla at fiji.sc  Mon Feb 22 13:41:58 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Mon, 22 Feb 2016 19:41:58 +0000
+Subject: [ImageJ-bugs] [Bug 874] Headless ImageJ2 takes about a minute extra
+ to exit after finishing script or macro
+In-Reply-To: <bug-874-19@http.fiji.sc/bugzilla/>
+References: <bug-874-19@http.fiji.sc/bugzilla/>
+Message-ID: <bug-874-19-lSh4kKISDN@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=874
+
+Mark Hiner <hinerm at gmail.com> changed:
+
+           What    |Removed                     |Added
+----------------------------------------------------------------------------
+             Status|ASSIGNED                    |FIXPENDING
+                 CC|                            |hinerm at gmail.com
+
+--- Comment #7 from Mark Hiner <hinerm at gmail.com> ---
+Typically when there is a "ImageJ won't quit" issue it is due to a Context not
+being disposed.
+
+There was also a bug due to the single-instance listener for ImageJ not being
+disconnected on shutdown.
+
+I can reproduce this behavior on linux; both of these issues will be fixed in
+the next IJ2 release, resolving the problem with headless shutdown locally.
+
+See
+https://github.com/imagej/imagej-legacy/commit/397d182bf0d181924ee014041e9fb2694b012fe4
+
+and
+
+https://github.com/imagej/imagej/commit/bef060e49f0f191708f4ff39a7aa9d3690a331c4
+
+for the fixes to these issues.
+
+-- 
+You are receiving this mail because:
+You are on the CC list for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160222/01d3498a/attachment.html>
+
+From bugzilla at fiji.sc  Tue Feb 23 08:13:48 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Tue, 23 Feb 2016 14:13:48 +0000
+Subject: [ImageJ-bugs] [Bug 1231] New: Local Thickness fails to produce
+	final output
+Message-ID: <bug-1231-19@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1231
+
+            Bug ID: 1231
+           Summary: Local Thickness fails to produce final output
+           Product: Fiji
+           Version: unspecified
+          Hardware: PC
+                OS: Windows
+            Status: NEW
+          Severity: normal
+          Priority: P4
+         Component: Plugins
+          Assignee: imagej-bugs at imagej.net
+          Reporter: kaleda at hot.ee
+                CC: kaleda at hot.ee
+
+This macro will produce final output only once:
+
+for (y=0;y<8;y++)
+{
+run("Leaf (36K)");
+run("Duplicate...", " ");
+selectWindow("leaf-1.jpg");
+run("8-bit");
+run("Local Thickness (complete process)", "threshold=100 inverse");
+close();
+close();
+close();
+}
+
+Second time (sometimes on the first try already after Fiji restart) it will
+throw an error:
+"Local Thickness to Cleaned-Up Local Thickness" requires an image of type:
+32-bit (float) grayscale"
+
+If Local Thickness to Cleaned-Up Local Thickness selected manually from menu
+and applied to leaf-1_EDT_DR_LT image, it will work (but not always).
+
+Information about your version of Java:
+
+  os.arch => amd64
+  os.name => Windows 7
+  os.version => 6.1
+  java.version => 1.8.0_66
+  java.vendor => Oracle Corporation
+  java.runtime.name => Java(TM) SE Runtime Environment
+  java.runtime.version => 1.8.0_66-b18
+  java.vm.name => Java HotSpot(TM) 64-Bit Server VM
+  java.vm.version => 25.66-b18
+  java.vm.vendor => Oracle Corporation
+  java.vm.info => mixed mode
+  java.awt.graphicsenv => sun.awt.Win32GraphicsEnvironment
+  java.specification.name => Java Platform API Specification
+  java.specification.version => 1.8
+  sun.cpu.endian => little
+  sun.desktop => windows
+  file.separator => \
+
+The up-to-date check says: REMIND_LATER
+
+Information relevant to JAVA_HOME related problems:
+
+  JAVA_HOME is set to:
+C:\Users\bras-lab\DOCUME~1\Victor\Fiji.app/java/win64/jdk1.8.0_66//jre
+  imagej.dir => C:\Users\bras-lab\DOCUME~1\Victor\Fiji.app
+
+Information about the version of each plugin:
+
+Activated update sites:
+ImageJ: http://update.imagej.net/ (last check:20160217170804)
+Fiji: http://update.fiji.sc/ (last check:20160218155537)
+Java-8: http://sites.imagej.net/Java-8/ (last check:20160127225850)
+Biomedgroup: http://sites.imagej.net/Biomedgroup/ (last check:20160222171815)
+BioVoxxel: http://sites.imagej.net/BioVoxxel/ (last check:20160131192112)
+MOSAIC ToolSuite:
+http://mosaic.mpi-cbg.de/Downloads/update/Fiji/MosaicToolsuite/ (last
+check:20160105155554)
+
+Files not up-to-date:
+  9277151f (LOCAL_ONLY) 20160214093038 plugins/Watch_Dir.jar
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160223/9dede5a0/attachment.html>
+
+From bugzilla at fiji.sc  Wed Feb 24 05:32:54 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Wed, 24 Feb 2016 11:32:54 +0000
+Subject: [ImageJ-bugs] [Bug 1231] Local Thickness fails to produce final
+	output
+In-Reply-To: <bug-1231-19@http.fiji.sc/bugzilla/>
+References: <bug-1231-19@http.fiji.sc/bugzilla/>
+Message-ID: <bug-1231-19-yev9fiOTR1@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1231
+
+Jan Eglinger <jan.eglinger at gmail.com> changed:
+
+           What    |Removed                     |Added
+----------------------------------------------------------------------------
+                 CC|                            |jan.eglinger at gmail.com
+
+--- Comment #1 from Jan Eglinger <jan.eglinger at gmail.com> ---
+This appears to be a race condition, caused by the LocalThickness plugin
+calling WindowManager.getCurrentImage() (instead of handing over a proper
+reference to the result image) several times in the source code:
+
+https://github.com/fiji/LocalThickness/blob/master/src/main/java/sc/fiji/localThickness/Local_Thickness_Driver.java#L90-L101
+
+To work around this, you can run the plugin in batch mode. The following macro
+worked for me:
+
+for (y=0;y<8;y++)
+{
+    run("Leaf (36K)");
+    run("Duplicate...", " ");
+    selectWindow("leaf-1.jpg");
+    run("8-bit");
+    setBatchMode(true);
+    run("Local Thickness (complete process)", "threshold=100 inverse");
+    setBatchMode(false);
+    wait(100);
+    close();
+    close();
+    close();
+}
+
+This is just for illustration purpose. Obviously, depending on what you
+actually want to do, you should run the whole loop in batch mode instead of
+switching on and off in every iteration.
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160224/b24f2a0e/attachment.html>
+
+From bugzilla at fiji.sc  Wed Feb 24 06:26:55 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Wed, 24 Feb 2016 12:26:55 +0000
+Subject: [ImageJ-bugs] [Bug 1232] New: Scale bar does not transfer to montage
+Message-ID: <bug-1232-19@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1232
+
+            Bug ID: 1232
+           Summary: Scale bar does not transfer to montage
+           Product: Fiji
+           Version: unspecified
+          Hardware: PC
+                OS: Windows
+            Status: NEW
+          Severity: normal
+          Priority: P4
+         Component: Plugins
+          Assignee: imagej-bugs at imagej.net
+          Reporter: ragsnoei at hotmail.com
+                CC: ragsnoei at hotmail.com
+
+When a scale bar is inserted into an image that is then used as the last image
+in a stack and converted to a montage using Image>Stacks>Make Montage... the
+scale bar is lost from the resulting montage. However, when the image with a
+scale bar is first saved as png (it does not work when the image is saved as
+tif), then closed and reopened before making the montage, the scale bar is
+maintained in the montage.
+
+Minimal macro that reproduces the issue:
+newImage("1", "8-bit black", 1392, 1040, 1);
+newImage("2", "8-bit black", 1392, 1040, 1);
+run("Scale Bar...", "width=100 height=10 font=60 color=White background=None
+location=[Lower Right] bold overlay");
+run("Images to Stack", "name=Stack title=[]");
+run("Make Montage...", "columns=2 rows=1 scale=0.25 border=4");
+
+Minimal macro with a workaround for the issue:
+dir=getDirectory("Choose Source Directory");
+newImage("1", "8-bit black", 1392, 1040, 1);
+newImage("2", "8-bit black", 1392, 1040, 1);
+run("Scale Bar...", "width=100 height=10 font=60 color=White background=None
+location=[Lower Right] bold overlay");
+saveAs("png", dir+"2.png");
+close();
+open(dir+"2.png");
+run("Images to Stack", "name=Stack title=[]");
+run("Make Montage...", "columns=2 rows=1 scale=0.25 border=4");
+
+Information about your version of Java:
+
+  os.arch => amd64
+  os.name => Windows 7
+  os.version => 6.1
+  java.version => 1.6.0_24
+  java.vendor => Sun Microsystems Inc.
+  java.runtime.name => Java(TM) SE Runtime Environment
+  java.runtime.version => 1.6.0_24-b07
+  java.vm.name => Java HotSpot(TM) 64-Bit Server VM
+  java.vm.version => 19.1-b02
+  java.vm.vendor => Sun Microsystems Inc.
+  java.vm.info => mixed mode
+  java.awt.graphicsenv => sun.awt.Win32GraphicsEnvironment
+  java.specification.name => Java Platform API Specification
+  java.specification.version => 1.6
+  sun.cpu.endian => little
+  sun.desktop => windows
+  file.separator => \
+
+The up-to-date check says: UP_TO_DATE
+
+Information relevant to JAVA_HOME related problems:
+
+  JAVA_HOME is set to:
+D:\Programs\FIJI-W~1\Fiji.app/java/win64/jdk1.6.0_24//jre
+  imagej.dir => D:\Programs\FIJI-W~1\Fiji.app
+
+Information about the version of each plugin:
+
+Activated update sites:
+ImageJ: http://update.imagej.net/ (last check:20160217160804)
+Fiji: http://update.fiji.sc/ (last check:20160218145537)
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160224/68782da2/attachment.html>
+
+From bugzilla at fiji.sc  Wed Feb 24 21:26:13 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Thu, 25 Feb 2016 03:26:13 +0000
+Subject: [ImageJ-bugs] [Bug 1232] Scale bar does not transfer to montage
+In-Reply-To: <bug-1232-19@http.fiji.sc/bugzilla/>
+References: <bug-1232-19@http.fiji.sc/bugzilla/>
+Message-ID: <bug-1232-19-r8ewFpF3y4@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1232
+
+Wayne Rasband <wsr at nih.gov> changed:
+
+           What    |Removed                     |Added
+----------------------------------------------------------------------------
+             Status|NEW                         |RESOLVED
+                 CC|                            |wsr at nih.gov
+         Resolution|---                         |WONTFIX
+
+--- Comment #1 from Wayne Rasband <wsr at nih.gov> ---
+Scale bars will behave as expected if you do not use the "Overlay" option. In
+macros, remove 'overlay' from the options string of run("Scale
+Bar...",options).
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160225/6d4bb49b/attachment.html>
+
+From bugzilla at fiji.sc  Thu Feb 25 05:43:05 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Thu, 25 Feb 2016 11:43:05 +0000
+Subject: [ImageJ-bugs] [Bug 1231] Local Thickness fails to produce final
+	output
+In-Reply-To: <bug-1231-19@http.fiji.sc/bugzilla/>
+References: <bug-1231-19@http.fiji.sc/bugzilla/>
+Message-ID: <bug-1231-19-p4B8qDwOGg@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1231
+
+--- Comment #2 from Jan Eglinger <jan.eglinger at gmail.com> ---
+The robust way to use Local Thickness from a macro is actually using:
+
+    run("Local Thickness (masked, calibrated, silent)");
+
+Thanks to Richard Domander who added this in Nov 2015, see:
+
+https://github.com/fiji/LocalThickness/commit/10794b9cce408ae99c398896d93379c2d829c10a
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160225/ebb43bad/attachment.html>
+
+From bugzilla at fiji.sc  Fri Feb 26 13:12:00 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Fri, 26 Feb 2016 19:12:00 +0000
+Subject: [ImageJ-bugs] [Bug 1233] New: 3D viewer doesn't work
+Message-ID: <bug-1233-19@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=1233
+
+            Bug ID: 1233
+           Summary: 3D viewer doesn't work
+           Product: Fiji
+           Version: unspecified
+          Hardware: PC
+                OS: Windows
+            Status: NEW
+          Severity: enhancement
+          Priority: P5
+         Component: 3D Viewer
+          Assignee: bene.schmid at gmail.com
+          Reporter: sachs at buffalo.edu
+                CC: imagej-bugs at imagej.net
+
+It fails on many different machines brought up to data with java. The consol
+window shows:
+
+3D [dev] 1.6.0-scijava-2-pre11-daily-experimental daily
+
+org.scijava.java3d.IllegalRenderingStateException: Java 3D ERROR : OpenGL 1.2
+or better is required (GL_VERSION=1.1)
+    at
+org.scijava.java3d.JoglPipeline.setupCanvasProperties(JoglPipeline.java:8083)
+    at org.scijava.java3d.JoglPipeline.createNewContext(JoglPipeline.java:6440)
+    at org.scijava.java3d.Canvas3D.createNewContext(Canvas3D.java:4602)
+    at org.scijava.java3d.Canvas3D.createNewContext(Canvas3D.java:2376)
+    at org.scijava.java3d.Renderer.doWork(Renderer.java:881)
+    at org.scijava.java3d.J3dThread.run(J3dThread.java:271)
+Exception occurred in RenderingErrorListener:
+java.lang.RuntimeException
+    at ij3d.ImageWindow3D$ErrorListener.errorOccurred(ImageWindow3D.java:330)
+    at
+org.scijava.java3d.VirtualUniverse.notifyRenderingErrorListeners(VirtualUniverse.java:1198)
+    at
+org.scijava.java3d.NotificationThread.processNotifications(NotificationThread.java:86)
+    at org.scijava.java3d.NotificationThread.run(NotificationThread.java:104)
+nFrames = 1
+................................................................................
+................................................................................
+................................................................................
+................................................................................
+................................................................................
+................................................................................
+................................................................................
+................................................................................
+.......................
+Done: Checksummer
+
+-- 
+You are receiving this mail because:
+You are on the CC list for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160226/52bd3e16/attachment.html>
+
+From bugzilla at fiji.sc  Fri Feb 26 14:35:34 2016
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Fri, 26 Feb 2016 20:35:34 +0000
+Subject: [ImageJ-bugs] [Bug 874] Headless ImageJ2 takes about a minute extra
+ to exit after finishing script or macro
+In-Reply-To: <bug-874-19@http.fiji.sc/bugzilla/>
+References: <bug-874-19@http.fiji.sc/bugzilla/>
+Message-ID: <bug-874-19-TZJEOvGkR8@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=874
+
+Mark Hiner <hinerm at gmail.com> changed:
+
+           What    |Removed                     |Added
+----------------------------------------------------------------------------
+             Status|FIXPENDING                  |RESOLVED
+         Resolution|---                         |FIXED
+
+--- Comment #8 from Mark Hiner <hinerm at gmail.com> ---
+This should now be fixed (requires the Java 8 update site).
+
+Please re-open if you are still getting "won't quit/slow to quit" problems.
+
+-- 
+You are receiving this mail because:
+You are on the CC list for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-bugs/attachments/20160226/22d9b20a/attachment.html>
+

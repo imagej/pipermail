@@ -1,0 +1,180 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-bugs] [Bug 990] Mac OS out of memory
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%20990%5D%20Mac%20OS%20out%20of%20memory&In-Reply-To=%3Cbug-990-19-YbSUhkJi3n%40http.fiji.sc/bugzilla/%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000691.html">
+   <LINK REL="Next"  HREF="000696.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-bugs] [Bug 990] Mac OS out of memory</H1>
+    <B>bugzilla at fiji.sc</B> 
+    <A HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%20990%5D%20Mac%20OS%20out%20of%20memory&In-Reply-To=%3Cbug-990-19-YbSUhkJi3n%40http.fiji.sc/bugzilla/%3E"
+       TITLE="[ImageJ-bugs] [Bug 990] Mac OS out of memory">bugzilla at fiji.sc
+       </A><BR>
+    <I>Fri Feb  6 12:21:07 CST 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000691.html">[ImageJ-bugs] [Bug 906] java################### left in /tmp (Suse	Linux 13.1)
+</A></li>
+        <LI>Next message: <A HREF="000696.html">[ImageJ-bugs] [Bug 1002] New: Gaussian Blur Filter in headless mode	broken
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#694">[ date ]</a>
+              <a href="thread.html#694">[ thread ]</a>
+              <a href="subject.html#694">[ subject ]</a>
+              <a href="author.html#694">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE><A HREF="http://fiji.sc/bugzilla/show_bug.cgi?id=990">http://fiji.sc/bugzilla/show_bug.cgi?id=990</A>
+
+--- Comment #2 from Glen MacDonald &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">glenmac at uw.edu</A>&gt; ---
+Hi Wayne,
+First time replying on BugZilla, so hoping this is correct.
+Here are macros that [1] generates 4 stacks then [2] opens files, creates a
+montage and also prints out memory usage at each step.  I&#8217;ve tried with various
+stack sizes. Behavior is not entirely consistent on any computer, sometimes all
+memory is released when the macro finishes with small stacks. But never with
+large stacks.  
+When the finished montage does release memory,I was surprised that the memory
+for each component stack is not released when that stack is closed, only when
+the macro exits.  This means the maximum size of a montage is 1/2 the available
+memory.   I ran the debugger bug but saw nothing intelligible to me.  
+
+
+macro &quot;make stacks [1]&quot;{
+    target=getDirectory(&quot;Source&quot;);
+    for (s=0;s&lt;4;s++){
+        newImage(&quot;HyperStack&quot;, &quot;16-bit ramp&quot;, 1024, 1024, 3,100,1);
+        saveAs(&quot;Tiff&quot;,target+&quot;Stack000&quot;+s);
+    }
+}
+
+ macro &quot;make montages [2]&quot;{
+     dir=getDirectory(&quot;Source&quot;);
+     dirList=getFileList(dir);
+     fList=newArray(0);
+     print(&quot;Start Macro- Free memory:&quot;,IJ.freeMemory(), &quot;Currently in
+use:&quot;,IJ.currentMemory());
+    newImage(&quot;Hyperstack&quot;, &quot;16-bit composite-mode&quot;, 2048,2048,3,100,1);    
+    print(&quot;Create Stack- Free memory:&quot;,IJ.freeMemory(), &quot;Currently in
+use:&quot;,IJ.currentMemory());
+    xx=0;
+    yy=0;
+    strname=&quot;montage&quot;;
+    grayopt=&quot;color_mode=Grayscale view=Hyperstack stack_order=XYCZT&quot;;
+    for(i=0;i&lt;dirList.length;i++){
+        if(endsWith(dirList[i],&quot;.tif&quot;)||(endsWith(dirList[i],&quot;.tiff&quot;)))
+            fList=Array.concat(fList,dirList[i]);
+    }    
+        for(f=0;f&lt;fList.length;f++){
+            fpath=dir+fList[f];
+        //showStatus(&quot;Opening stack&quot;);
+        run(&quot;Bio-Formats Windowless Importer&quot;, &quot;open=[fpath] [grayopt]&quot;);
+        rename(&quot;Source&quot;);
+        run(&quot;Insert...&quot;, &quot;source=Source destination=Hyperstack x=xx y=yy&quot;);
+        run(&quot;Close&quot;);
+            print(&quot;Add Stack &quot;+f+&quot;:&quot;,IJ.freeMemory(), &quot;Currently in
+use:&quot;,IJ.currentMemory());
+        xx+=1024;
+          if (xx==2048) {
+             xx = 0;
+              yy += 1024;
+       }
+    }
+    run(&quot;Close&quot;);
+    //print(&quot;Free memory:&quot;,IJ.freeMemory(), &quot;Currently in
+use:&quot;,IJ.currentMemory());
+}
+
+
+
+regards
+
+Glen MacDonald
+    Core for Communication Research
+Virginia Merrill Bloedel Hearing Research Center
+    Cellular Morphology Core
+Center on Human Development and Disability
+Box 357923
+University of Washington
+Seattle, WA 98195-7923  USA
+(206) 616-4156
+<A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">glenmac at uw.edu</A>
+
+
+
+
+
+
+
+On Jan 21, 2015, at 6:54 PM, <A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">bugzilla at fiji.sc</A> wrote:
+
+Wayne Rasband changed bug 990 
+What    Removed    Added
+CC          <A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">wsr at nih.gov</A>
+
+Comment # 1 on bug 990 from Wayne Rasband
+Could you provide a small test macro that we can use to reproduce this problem?
+The following macro works as expected. The memory used by the four 512x512x100
+temporary stacks it opens (25MB each) is reclaimed.
+
+ newImage(&quot;Montage&quot;, &quot;8-bit ramp&quot;, 1024, 1024, 100);
+ x=0; y=0
+ for (i=0; i&lt;4; i++) {
+   newImage(&quot;Stack&quot;, &quot;8-bit ramp&quot;, 512, 512, 100);
+   run(&quot;Insert...&quot;, &quot;source=Stack destination=Montage x=&amp;x y=&amp;y&quot;);
+   close();
+   x += 512;
+   if (x==1024) {
+      x = 0;
+      y += 512;
+   }
+ }
+ setBatchMode(false);
+
+
+You are receiving this mail because:
+    &#8226; You are on the CC list for the bug.
+    &#8226; You reported the bug.
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-bugs/attachments/20150206/c1721135/attachment.html">http://imagej.net/pipermail/imagej-bugs/attachments/20150206/c1721135/attachment.html</A>&gt;
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000691.html">[ImageJ-bugs] [Bug 906] java################### left in /tmp (Suse	Linux 13.1)
+</A></li>
+	<LI>Next message: <A HREF="000696.html">[ImageJ-bugs] [Bug 1002] New: Gaussian Blur Filter in headless mode	broken
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#694">[ date ]</a>
+              <a href="thread.html#694">[ thread ]</a>
+              <a href="subject.html#694">[ subject ]</a>
+              <a href="author.html#694">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-bugs">More information about the Imagej-bugs
+mailing list</a><br>
+</body></html>

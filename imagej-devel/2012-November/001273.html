@@ -1,0 +1,150 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Problems prting plugIn to ImageJ2
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Problems%20prting%20plugIn%20to%20ImageJ2&In-Reply-To=%3C03CDCE96-71A1-434C-BEBA-3FB5787B040C%40dsuk.biz%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001272.html">
+   <LINK REL="Next"  HREF="001274.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Problems prting plugIn to ImageJ2</H1>
+    <B>Michael Ellis</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Problems%20prting%20plugIn%20to%20ImageJ2&In-Reply-To=%3C03CDCE96-71A1-434C-BEBA-3FB5787B040C%40dsuk.biz%3E"
+       TITLE="[ImageJ-devel] Problems prting plugIn to ImageJ2">michael.ellis at dsuk.biz
+       </A><BR>
+    <I>Wed Nov  7 16:57:49 CST 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001272.html">[ImageJ-devel] Fwd: [visad-developer] Moving VisAD repository to	github
+</A></li>
+        <LI>Next message: <A HREF="001274.html">[ImageJ-devel] Problems prting plugIn to ImageJ2
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1273">[ date ]</a>
+              <a href="thread.html#1273">[ thread ]</a>
+              <a href="subject.html#1273">[ subject ]</a>
+              <a href="author.html#1273">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I've just started looking into to porting my existing ImageJ plugins to ImageJ2. I have hit a problem in that calls to functions like setDisplayRange seem not to take effect until my plugin returns.		
+
+The following plugin lets me interactively adjust the image display range when run with ImageJ1 but with ImageJ2 there is no effect to the image until I close the plugIn dialog.
+
+I also note that the ImageJ2 Adjust-&gt;Brightness/Contrast (appears new) can update the image interactively, whereas the Adjust-&gt;WindowLevel (looks like existing ImageJ1 UI) does not work.
+
+Any help greatly appreciated!
+
+Example code below
+
+//===========================================================================
+
+
+package SmartCapture;
+
+import java.awt.AWTEvent;
+import ij.IJ;
+import ij.ImagePlus;
+import ij.gui.DialogListener;
+import ij.gui.GenericDialog;
+import ij.plugin.filter.ExtendedPlugInFilter;
+import ij.plugin.filter.PlugInFilterRunner;
+import ij.process.ImageProcessor;
+
+public class Test_IJ2 implements ExtendedPlugInFilter, DialogListener {
+
+	private final static String PLUGIN_NAME = Test_IJ2.class.getSimpleName();
+
+	private static int FLAGS = // bitwise or of the following flags:
+	DOES_8G | KEEP_PREVIEW; // When using preview, the preview image can be kept as a result
+
+	ImagePlus imp;
+	private double low;
+	private double high;
+
+	public int setup(String arg, ImagePlus imp) {
+
+		if (imp == null) {
+			IJ.error(PLUGIN_NAME, &quot;No image.\nOpen or create an image first then run &quot;
+					+ PLUGIN_NAME);
+			return DONE;
+		}
+
+		this.imp = imp;
+
+		return FLAGS;
+	}
+
+	public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
+
+		assert (imp != null);
+		if (imp == null)
+			return DONE;
+
+		GenericDialog gd = new GenericDialog(PLUGIN_NAME + &quot;...&quot;);
+		gd.addMessage(imp.getTitle());
+		gd.addSlider(&quot;low&quot;, 0, 255, 0);
+		gd.addSlider(&quot;high&quot;, 0, 255, 255);
+		gd.addPreviewCheckbox(pfr, &quot; Preview&quot;);
+		gd.addDialogListener(this);
+		gd.showDialog(); // user input (or reading from macro) happens here
+		if (gd.wasCanceled()) // dialog cancelled?
+			return DONE;
+		return IJ.setupDialog(imp, FLAGS);
+	}
+
+	public boolean dialogItemChanged(GenericDialog gd, AWTEvent e) {
+
+		low = gd.getNextNumber();
+		high = gd.getNextNumber();
+		IJ.log(String.format(&quot;low=%g high=%g\n&quot;, low, high));
+
+		return true;
+	}
+
+	public void run(ImageProcessor ip) {
+		IJ.log(&quot;run called\n&quot;);
+		imp.setDisplayRange(low, high);
+	}
+
+	public void setNPasses(int nPasses) {
+		IJ.log(String.format(&quot;setNPasses(%d)\n&quot;, nPasses));
+	}
+
+}
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20121107/9275374d/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20121107/9275374d/attachment.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001272.html">[ImageJ-devel] Fwd: [visad-developer] Moving VisAD repository to	github
+</A></li>
+	<LI>Next message: <A HREF="001274.html">[ImageJ-devel] Problems prting plugIn to ImageJ2
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1273">[ date ]</a>
+              <a href="thread.html#1273">[ thread ]</a>
+              <a href="subject.html#1273">[ subject ]</a>
+              <a href="author.html#1273">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

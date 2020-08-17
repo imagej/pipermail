@@ -1,0 +1,261 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] @parameter choice update in component callback
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%40parameter%20choice%20update%20in%20component%20callback&In-Reply-To=%3C5BEB299B-17B9-44E4-A451-788FF37E9B4A%40unifr.ch%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002667.html">
+   <LINK REL="Next"  HREF="002674.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] @parameter choice update in component callback</H1>
+    <B>MEYENHOFER Felix</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%40parameter%20choice%20update%20in%20component%20callback&In-Reply-To=%3C5BEB299B-17B9-44E4-A451-788FF37E9B4A%40unifr.ch%3E"
+       TITLE="[ImageJ-devel] @parameter choice update in component callback">felix.meyenhofer at unifr.ch
+       </A><BR>
+    <I>Mon Aug 24 04:41:53 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002667.html">[ImageJ-devel] @parameter choice update in component callback
+</A></li>
+        <LI>Next message: <A HREF="002674.html">[ImageJ-devel] @parameter choice update in component callback
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2673">[ date ]</a>
+              <a href="thread.html#2673">[ thread ]</a>
+              <a href="subject.html#2673">[ subject ]</a>
+              <a href="author.html#2673">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Adrian, Jan and Curtis
+
+I went through the tutorials and found about the initialisation method. Curtis was absolutely right about what I wanted to do. Thanks for the detailed explanations. In fact I was aiming for the use case 4) update parameter attributes several times during callbacks. Since the file chooser could have its input changed several times (typically a click accident, mistake of choice or such), It would be odd for the user if the UI get&#8217;s updated only once.
+
+The alternative of course is to use an OpenDialog previous to the configuration dialog. Or to program the the dialog from scratch (but this certainly does not improve reusability neither).
+
+The proposal <A HREF="https://github.com/scijava/scijava-common/issues/181">https://github.com/scijava/scijava-common/issues/181</A> sounds like a promising idea to me.
+
+Felix
+
+On 22 Aug 2015, at 6:10 , Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&lt;mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt;&gt; wrote:
+
+Hi Adrian,
+
+&gt;<i> Doesn't that allow doing what Felix would like to do, by populating
+</I>&gt;<i> the combobox through such an initialiser ?
+</I>
+I think what Felix wants is to set a parameter's &quot;choices&quot; attribute -- i.e., the values that will appear in the input harvester UI's dropdown list box.
+
+It can be done with a DynamicCommand, but right now it only works from an initializer, not from a callback. So if you want to populate the choice once from, say, the active Dataset, it works. But if you want to update the choices e.g. every time the user moves a numerical slider, it will not work because the UI will not update.
+
+See also:
+* <A HREF="https://github.com/scijava/scijava-common/issues/180">https://github.com/scijava/scijava-common/issues/180</A>
+* <A HREF="https://github.com/scijava/scijava-common/issues/181">https://github.com/scijava/scijava-common/issues/181</A>
+
+&gt;<i> Are the parameters populated/initialised in the order they appear? In
+</I>&gt;<i> particular, is the initialisation done serially or can there be
+</I>&gt;<i> parallel execution of initialisers ?
+</I>
+Initialization is currently implemented serially [1].
+
+&gt;<i> I have parameters a, b, c whose initialisation depend on a common
+</I>&gt;<i> calculation (depending on the image gotten through a previous
+</I>&gt;<i> @Parameter ImagePlus imp): can I do this calculation in the
+</I>&gt;<i> initialiser for the first parameter a, and then in the initialisers of
+</I>&gt;<i> b and c rely on the fact that the calculation was already done ?
+</I>
+Perhaps simplest at the moment would be to give your command a global initializer -- i.e., set the initializer method in the @Plugin annotation itself, rather than on specific parameters. The ImagePlus will be populated by a preprocessor _before_ the initialize method is called, so when your global initializer gets called you will already have access to the ImagePlus.
+
+But again, scijava/scijava-common#181 is very relevant here.
+
+Regards,
+Curtis
+
+[1] <A HREF="https://github.com/scijava/scijava-common/blob/scijava-common-2.42.2/src/main/java/org/scijava/module/AbstractModule.java#L75-L88">https://github.com/scijava/scijava-common/blob/scijava-common-2.42.2/src/main/java/org/scijava/module/AbstractModule.java#L75-L88</A>
+
+On Fri, Aug 21, 2015 at 6:18 AM, Adrian Daerr &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">adrian.daerr at univ-paris-diderot.fr</A>&lt;mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">adrian.daerr at univ-paris-diderot.fr</A>&gt;&gt; wrote:
+Hi Curtis, Felix, Jan, and others,
+
+In the CommandWithPreview tutorial example[*] that Curtis sent to
+the list a few weeks back, there is a @Parameter which is
+initialised to a value depending on the initialisation of another
+parameter:
+
+@Parameter private ImagePlus imp;
+
+@Parameter(persist = false, initializer = &quot;initTitle&quot;) private String title;
+
+/** Initializes the {@link #title} parameter. */
+protected void initTitle() {
+        title = initialTitle = imp.getTitle();
+}
+
+[*]
+<A HREF="https://github.com/imagej/imagej-tutorials/blob/master/commands-with-preview/src/main/java/CommandWithPreview.java">https://github.com/imagej/imagej-tutorials/blob/master/commands-with-preview/src/main/java/CommandWithPreview.java</A>
+
+Doesn't that allow doing what Felix would like to do, by
+populating the combobox through such an initialiser ?
+
+Are the parameters populated/initialised in the order they
+appear? In particular, is the initialisation done serially or can
+there be parallel execution of initialisers ? I ask because I
+have parameters a, b, c whose initialisation depend on a common
+calculation (depending on the image gotten through a previous
+@Parameter ImagePlus imp): can I do this calculation in the
+initialiser for the first parameter a, and then in the
+initialisers of b and c rely on the fact that the calculation was
+already done ?
+
+cheers,
+Adrian
+
+
+
+
+On Thu, 20 Aug 2015 17:13:11 -0500
+ Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&lt;mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt;&gt; wrote:
+Hi Felix, Jan and everyone,
+
+I couldn&#8217;t find any hint that it is possible to update the choices of
+a parameter (declared with the annotator) in a callback that for
+another parameter.
+
+It is possible to dynamically adjust parameters from Java code [1]. You can
+also dynamically add and remove parameters. Such commands extend the
+DynamicCommand class.
+
+There are many examples currently in the imagej-plugins-commands project;
+e.g.:
+<A HREF="https://github.com/imagej/imagej-plugins-commands/blob/imagej-plugins-commands-0.5.1/src/main/java/net/imagej/plugins/commands/restructure/AddAxis.java">https://github.com/imagej/imagej-plugins-commands/blob/imagej-plugins-commands-0.5.1/src/main/java/net/imagej/plugins/commands/restructure/AddAxis.java</A>
+
+However, a couple of notes:
+
+- This pattern makes the command less reusable from other contexts, because
+some contexts require a priori knowledge about the number and types of
+input and output parameters.
+
+- The user interface currently does not properly refresh the input
+harvester dialog if changes are made to parameters from a callback. So
+while you can technically do things like change the choices array of a
+multiple-choice input, the user will not actually see it.
+
+- What does work currently is to determine the multiple-choice values at
+initialization time, based on the values of parameters which have already
+been populated earlier, such as an active dataset. This is what many of the
+DynamicCommand implementations in imagej-plugins-commands do.
+
+Really, there are _five_ different classes of commands here:
+
+1) Totally fixed, with inputs and outputs known in advance.
+2) Updates parameter attributes (such as choices&#8212;but not # or type of
+inputs/outputs) once during initialization.
+3) Updates parameter number and type (i.e., adding/removing inputs/outputs)
+once during initialization.
+4) Updates parameter attributes repeatedly e.g. during callbacks.
+5) Updates parameter number and type repeatedly e.g. during callbacks.
+
+Of these, type #1 is most desirable for a variety of reasons. Failing that,
+types #2 and #3 can be done right now using DynamicCommand and it works
+properly from the ImageJ UI&#8212;but not from other contexts like CellProfiler,
+KNIME, etc. Types #4 and #5 can also be coded but will not work properly
+from the UI in ImageJ because the input harvester is not rebuilt on
+callbacks.
+
+See also:
+* <A HREF="https://github.com/scijava/scijava-common/issues/42">https://github.com/scijava/scijava-common/issues/42</A>
+* <A HREF="https://github.com/scijava/scijava-common/issues/43">https://github.com/scijava/scijava-common/issues/43</A>
+* <A HREF="https://github.com/CellProfiler/CellProfiler/issues/647">https://github.com/CellProfiler/CellProfiler/issues/647</A>
+
+Regards,
+Curtis
+
+[1] Dynamically updating parameters from scripts would be a different
+story. No plans to do that any time soon...
+
+On Thu, Aug 20, 2015 at 6:50 AM, Jan Eglinger &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">jan.eglinger at gmail.com</A>&lt;mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">jan.eglinger at gmail.com</A>&gt;&gt;
+wrote:
+
+Hi Felix and all,
+
+On 20.08.2015 10:06, MEYENHOFER Felix wrote:
+
+I couldn&#8217;t find any hint that it is possible to update the choices of a
+parameter (declared with the annotator) in a callback that for another
+parameter. For example; I have a file chooser and once a file hase been
+chosen, I want to read some file metadata and then update the choices of
+the combobox that allows to select the images series.
+Since I could not figure a way to do it, I wanted to ask here if it is
+possible at all?
+
+
+I think dynamic adjustment of parameters isn't possible currently, but I
+agree that it would be a great thing to have.
+
+I know quite some use cases where either a DialogListener or a series of
+subsequent dialogs are used in ImageJ 1.x plugins to adjust parameter
+choice to previously harvested input.
+
+Furthermore, is it possible to get a directory chooser instead of a file
+chooser in the configuration dialog of a command using the @Parameter
+annotation?
+
+
+Yes, by using the
+    style = &quot;directory&quot;
+attribute. See *Templates &gt; Python &gt; Process Folder* in the script editor,
+and this related discussion:
+  <A HREF="https://github.com/imagej/imagej-legacy/pull/114">https://github.com/imagej/imagej-legacy/pull/114</A>
+
+Best,
+Jan
+
+
+_______________________________________________
+ImageJ-devel mailing list
+<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>&lt;mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>&gt;
+<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+
+
+--
+<A HREF="http://www.msc.univ-paris-diderot.fr/~daerr/">http://www.msc.univ-paris-diderot.fr/~daerr/</A>
+
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20150824/a94ba250/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20150824/a94ba250/attachment-0001.html</A>&gt;
+</PRE>
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002667.html">[ImageJ-devel] @parameter choice update in component callback
+</A></li>
+	<LI>Next message: <A HREF="002674.html">[ImageJ-devel] @parameter choice update in component callback
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2673">[ date ]</a>
+              <a href="thread.html#2673">[ thread ]</a>
+              <a href="subject.html#2673">[ subject ]</a>
+              <a href="author.html#2673">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

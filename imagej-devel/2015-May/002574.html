@@ -1,0 +1,144 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] ROI, Overlay and UI Implementation
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ROI%2C%20Overlay%20and%20UI%20Implementation&In-Reply-To=%3CCADN69ynfsF_GVguVe6Ji4%2B%3Dtd_qoXvx4G4Lq_V4wkB9pCr7r0g%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002571.html">
+   <LINK REL="Next"  HREF="002572.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] ROI, Overlay and UI Implementation</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ROI%2C%20Overlay%20and%20UI%20Implementation&In-Reply-To=%3CCADN69ynfsF_GVguVe6Ji4%2B%3Dtd_qoXvx4G4Lq_V4wkB9pCr7r0g%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] ROI, Overlay and UI Implementation">ctrueden at wisc.edu
+       </A><BR>
+    <I>Thu May 28 16:48:56 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002571.html">[ImageJ-devel] ROI, Overlay and UI Implementation
+</A></li>
+        <LI>Next message: <A HREF="002572.html">[ImageJ-devel] Problems running Versatile Wand in batch mode
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2574">[ date ]</a>
+              <a href="thread.html#2574">[ thread ]</a>
+              <a href="subject.html#2574">[ subject ]</a>
+              <a href="author.html#2574">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Cyril,
+
+That is fantastic progress. Is your code available on GitHub yet?
+
+&gt;<i> I'm on the part where I start dealing with ROI, Overlay and all.
+</I>&gt;<i> However, I don't know to which extent the Overlay/ROI data model goes.
+</I>
+I probably told you this before, but just to reiterate: you are into some
+highly bleeding edge stuff, with unfinished and
+still-subject-to-major-change APIs. With that caveat, here goes:
+
+A net.imagej.overlay.Overlay is essentially a wrapper around a
+net.imglib2.roi.RegionOfInterest. That latter interface is now deprecated
+as the way ImgLib2 supports ROIs has been reworked as of January 2015. I
+personally have not yet had time to dig into the new API that Tobias
+designed, so ImageJ2 has not yet been updated.
+
+It is furthermore confusing because ImageJ2 chose the term &quot;overlay&quot; to
+mean something similar to what ImageJ1 means by &quot;ROI&quot;, whereas ImageJ1 has
+its own &quot;overlay&quot; that means something else. We are planning at least one
+more iteration of the ImageJ Common data model, during which time we can
+potentially select better names for these things to avoid future confusion.
+
+ImageJ2 lets you have any number of Overlays in the same Display as one or
+more Dataset (i.e., images). Conversely, in ImageJ1 there is only a single
+selection (i.e., ROI) that gets replaced every time you draw -- although
+you can A) add the selection to ImageJ1's ROI Manager, and/or B) add an IJ1
+overlay that lets you group multiple ROIs together on the image.
+
+Back on the IJ2 side, to make matters even more complex, IJ2's Swing user
+interface &quot;cheats&quot; a lot by rendering its overlays using the JHotDraw
+library -- via plugins of type JHotDrawAdapter, responsible for translating
+between JHotDraw and ImageJ2 Overlay-based data structures. It is likely
+though that your JavaFX interface will need to work differently.
+
+In the meantime, we are happy to answer further specific questions you have
+about how these classes interact.
+
+Regards,
+Curtis
+
+On Wed, May 27, 2015 at 1:08 PM, Mongis Cyril &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">cyril.mongis at googlemail.com</A>&gt;
+wrote:
+
+&gt;<i> Dear all !
+</I>&gt;<i>
+</I>&gt;<i> I have been working on this new interface for ImageJ which is part of my
+</I>&gt;<i> PhD Thesis.
+</I>&gt;<i> Here is a little video showing the status of the project.
+</I>&gt;<i> <A HREF="http://cyrilmongis.net/imagejfx/imagejfx.webm">http://cyrilmongis.net/imagejfx/imagejfx.webm</A>
+</I>&gt;<i>
+</I>&gt;<i> I'm on the part where I start dealing with ROI, Overlay and all. However,
+</I>&gt;<i> I don't know to which extent the Overlay/ROI data model goes. Could you
+</I>&gt;<i> point me to the main classes to check when implementing a UI for
+</I>&gt;<i> Overlay/ROI? I also have trouble understanding the concept of Overlay. If I
+</I>&gt;<i> understand clearly, Overlay are just set of pixel data put on top of the
+</I>&gt;<i> image. But also overlays can be defined by mathematic formula or just be a
+</I>&gt;<i> set of pixels. At the end, they just cover the image. The Overlay tool just
+</I>&gt;<i> generate set of pixels that represent an Overlay over the image. But in
+</I>&gt;<i> ImageJ, the selection tools that we use don't really produce Overlay, they
+</I>&gt;<i> produce selection I guess. Are those selection ROI ? I also don't see the
+</I>&gt;<i> ROI in the imagej-common repository ? Are they simply in the scijava
+</I>&gt;<i> repository ?
+</I>&gt;<i>
+</I>&gt;<i> So in the end, could someone help by explaning or pointing ressources
+</I>&gt;<i> explaning how the classes involved in ROIs and Overlays interact between
+</I>&gt;<i> each other ?
+</I>&gt;<i>
+</I>&gt;<i> I have already check the OverlayService, but I couldn't find any
+</I>&gt;<i> RoiService :-(
+</I>&gt;<i>
+</I>&gt;<i> Cheers,
+</I>&gt;<i>
+</I>&gt;<i> Cyril
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20150528/ab37ff21/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20150528/ab37ff21/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002571.html">[ImageJ-devel] ROI, Overlay and UI Implementation
+</A></li>
+	<LI>Next message: <A HREF="002572.html">[ImageJ-devel] Problems running Versatile Wand in batch mode
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2574">[ date ]</a>
+              <a href="thread.html#2574">[ thread ]</a>
+              <a href="subject.html#2574">[ subject ]</a>
+              <a href="author.html#2574">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

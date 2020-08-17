@@ -1,0 +1,108 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [imglib2] converters slow and incorrect?
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bimglib2%5D%20converters%20slow%20and%20incorrect%3F&In-Reply-To=%3C56268A82-32F3-4A78-97FA-986C4E939D46%40mpi-cbg.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001585.html">
+   <LINK REL="Next"  HREF="001576.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [imglib2] converters slow and incorrect?</H1>
+    <B>Tobias Pietzsch</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bimglib2%5D%20converters%20slow%20and%20incorrect%3F&In-Reply-To=%3C56268A82-32F3-4A78-97FA-986C4E939D46%40mpi-cbg.de%3E"
+       TITLE="[ImageJ-devel] [imglib2] converters slow and incorrect?">pietzsch at mpi-cbg.de
+       </A><BR>
+    <I>Mon Jun 24 07:00:09 CDT 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001585.html">[ImageJ-devel] Developing ImageJ in Netbeans errors
+</A></li>
+        <LI>Next message: <A HREF="001576.html">[ImageJ-devel] [fiji-devel] [imglib2] converters slow and	incorrect?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1575">[ date ]</a>
+              <a href="thread.html#1575">[ thread ]</a>
+              <a href="subject.html#1575">[ subject ]</a>
+              <a href="author.html#1575">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+ok, sorry for the lurid subject line - it's not that bad, but I think the &quot;incorrect&quot; part is kind of important.
+
+
+First regarding the slow (feel free to skip to this paragraph...). I played with unsigned short to ARGB conversion and noticed that it divides by scale factor for every pixel.
+I thought that maybe we could speed it up a little by replacing that with a multiplication. Amazingly even in a language as Java that is seemingly far removed from the CPU this actually matters.
+I have pushed a RealARGBConverterBenchmark which uses cursors and a converter to convert a UnsignedByteType image to ARGBType, <A HREF="https://github.com/imagej/imglib/commit/fbdf633a8b6d1c2894f9ef08eb3a642c010ca44e">https://github.com/imagej/imglib/commit/fbdf633a8b6d1c2894f9ef08eb3a642c010ca44e</A>
+Replacing the division to multiplication (and some minor tweaks) made the benchmark go from 28ms to 12ms, <A HREF="https://github.com/imagej/imglib/commit/5c6f40f0492bee2159eebe1ffb1e5b5f1bcc6a8d.">https://github.com/imagej/imglib/commit/5c6f40f0492bee2159eebe1ffb1e5b5f1bcc6a8d.</A> Amazing.
+Then I wanted to do that for all of the converters, got side-tracked, and as usual the 10-minute thing turned into 2 hours obsessing with details: is the converter math actually correct?
+
+
+I think the linear range conversion in the Real*Converters is wrong.
+Mathematically, it is obviously simple. We have to intervals [minA, maxA] and [minB, maxB] and want to convert (linearly) xA to xB:
+xB = minA + (xA - minA) / (maxA-minA) * (maxB-minB)
+Thats exactly whats implemented in, for example, RealUnsignedByteConverter.
+Where it gets tricky is quantisation.
+
+In RealUnsignedByteConverter:
+output.set( Math.min( 255, roundPositive( Math.max( 0, ( ( a - min ) / scale * 255.0 ) ) ) ) );
+Stripping the bounds check:
+output.set( roundPositive( ( a - min ) / scale * 255.0 ) );
+where roundPositive is just normal rounding, and scale = (maxA-minA) as above and 255.0 = (maxB-minB).
+I think, the roundPositive is supposed to take care of quantisation.
+
+Now let's look a simplified example where we want to convert a 4-bit value into a 2-bit value.
+Intuitively I would expect the converter to perform a uniform re-binning. There are 16 4-bit values that need to be distributed into 4 2-bit bins.
+What should happen is that we keep the upper 2 bits of the 4-bit value, that is:
+0000-0011 map to 00
+&#8230;
+1100-1111 map to 11
+At least that is what my intuition tells me.
+Now if you go through the motions with the current converter logic you'll find that 1100 actually is mapped to 10. Likewise, 0011 is mapped to 01. There are 2 bins with 3 values each and 2 bins with 5. Not uniform.
+
+I think this is wrong and I would fix it, but first I wanted to ask whether I'm missing something here?
+Especially, Stephan, maybe you can comment because you implemented current logic.
+
+
+best regards,
+Tobias
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20130624/8733679b/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20130624/8733679b/attachment.html</A>&gt;
+</PRE>
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001585.html">[ImageJ-devel] Developing ImageJ in Netbeans errors
+</A></li>
+	<LI>Next message: <A HREF="001576.html">[ImageJ-devel] [fiji-devel] [imglib2] converters slow and	incorrect?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1575">[ date ]</a>
+              <a href="thread.html#1575">[ thread ]</a>
+              <a href="subject.html#1575">[ subject ]</a>
+              <a href="author.html#1575">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,100 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] ImageJ 1 legacy harmonization and rois
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImageJ%201%20legacy%20harmonization%20and%20rois&In-Reply-To=%3C4df775db.4f76e50a.09c9.ffffe972%40mx.google.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000448.html">
+   <LINK REL="Next"  HREF="000441.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] ImageJ 1 legacy harmonization and rois</H1>
+    <B>Lee Kamentsky</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImageJ%201%20legacy%20harmonization%20and%20rois&In-Reply-To=%3C4df775db.4f76e50a.09c9.ffffe972%40mx.google.com%3E"
+       TITLE="[ImageJ-devel] ImageJ 1 legacy harmonization and rois">leek at broadinstitute.org
+       </A><BR>
+    <I>Tue Jun 14 09:53:13 CDT 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000448.html">[ImageJ-devel] net.imglib2.algorithm.kdtree and rectangles
+</A></li>
+        <LI>Next message: <A HREF="000441.html">[ImageJ-devel] Overriding min, max and choices at runtime
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#440">[ date ]</a>
+              <a href="thread.html#440">[ thread ]</a>
+              <a href="subject.html#440">[ subject ]</a>
+              <a href="author.html#440">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi all,
+I'm looking for ideas on how to harmonize the ImageJ 1.0 rois with the 
+ImageJ 2.0 overlays. At present, if you run an ImageJ 1.0 plugin, the 
+harmonization code will duplicate the overlays because it has no 
+mechanism to check whether a roi was intentionally duplicated or just 
+happens to be there. Also, in ImageJ 1.0, each ImagePlus has a single 
+ROI which can be a composite of other ROIs but the compositing is done 
+by AWT. The pieces of the ROI composite produced by AWT will not have a 
+direct one-to-one correspondence with the overlays that produced them 
+and this makes matching and back-translation to ImageJ a non-trivial 
+task. Presently, the code correctly produces one overlay that represents 
+the one ImageJ ROI in the ImagePlus and it adds, not replaces, the 
+current set of overlays.
+
+I'd really like some guidance on how to proceed and what would be an 
+acceptable solution. I'm sure I can figure out how to implement any 
+reasonable idea but I feel completely unqualified to choose that 
+solution. Some possibilities:
+
+    * Only back-translate an ImagePlus's ROI if the area it masks is
+      different on output from what it was on input. Slow, but possibly
+      as close to correct as possible.
+          o Replace all overlays with a single composite on output.
+          o Replace all overlays with individual overlays as represented
+            by the paths in the ImagePlus's ROI. Requires analysis of
+            paths to determine which are disjoint (donut ROI is large
+            circle XORed with smaller inner circle and translates into a
+            composite ROI in this case whereas two circles that do not
+            overlap become two separate ROIs).
+    * Have a &quot;HarmonizeOverlays&quot; plugin that lets a user control what
+      happens via macros. Advantages: user can construct a macro
+      composed of several ImageJ 1.0 plugins and those will not suffer
+      from a mis-harmonization during the course of the macro. User will
+      have some degree of control over how the harmonization takes
+      place, choosing whether to replace overlays in the display, add to
+      them and whether to translate to a composite or individual
+      overlays. Disadvantages: not automatic and possibly confusing.
+
+But again, I don't want to decide what's right and I am most definitely 
+open to suggestion.
+
+--Lee
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20110614/5b15eee1/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20110614/5b15eee1/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000448.html">[ImageJ-devel] net.imglib2.algorithm.kdtree and rectangles
+</A></li>
+	<LI>Next message: <A HREF="000441.html">[ImageJ-devel] Overriding min, max and choices at runtime
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#440">[ date ]</a>
+              <a href="thread.html#440">[ thread ]</a>
+              <a href="subject.html#440">[ subject ]</a>
+              <a href="author.html#440">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

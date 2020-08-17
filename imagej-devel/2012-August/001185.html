@@ -1,0 +1,236 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] IJ2 work/Histogram
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20IJ2%20work/Histogram&In-Reply-To=%3C5025870B.7070900%40wisc.edu%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001184.html">
+   <LINK REL="Next"  HREF="001187.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] IJ2 work/Histogram</H1>
+    <B>Aivar Grislis</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20IJ2%20work/Histogram&In-Reply-To=%3C5025870B.7070900%40wisc.edu%3E"
+       TITLE="[ImageJ-devel] IJ2 work/Histogram">grislis at wisc.edu
+       </A><BR>
+    <I>Fri Aug 10 17:11:23 CDT 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001184.html">[ImageJ-devel] IJ2 work/Histogram
+</A></li>
+        <LI>Next message: <A HREF="001187.html">[ImageJ-devel] IJ2 work/Histogram
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1185">[ date ]</a>
+              <a href="thread.html#1185">[ thread ]</a>
+              <a href="subject.html#1185">[ subject ]</a>
+              <a href="author.html#1185">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Here is a discussion of changes I propose for dealing with histograms in 
+IJ2.  Sorry it's so length, let me know if something is unclear and 
+please comment if you have an interest in histograms; I do have some 
+specific questions for the group (*/in bold italics/*):
+
+
+1)  First of all I would create some helper methods like the following 
+(could just be static methods somewhere)...
+
+// maps a value to a bin index, given the range min...max and the number 
+of bins
+int valueToBin(int bins, double min, double max, double value);
+
+// returns array of edge values
+double[] getEdgeValues(int bins, double min, double max);
+
+// returns array of center values
+double[] getCenterValues(int bins, double min, double max);
+
+...and equivalent set for integer values.
+
+Note that these methods would be used for both computing histograms and 
+assigning colors from a LUT.  It's nice to use exactly the same code for 
+both.  You can characterize a histogram bin or LUT color by the starting 
+or edge value or by the center value, I've seen it both ways so I 
+included both flavors.
+
+Having these common methods would also avoid bugs:
+
+i) One bug I saw in several places is to compute (value - min) / (max - 
+min) and get a value from 0.0 to 1.0, but multiply that by 255.  The 
+problem with that is the only way you get bin 255 is if value == min.  
+Ideally each bin should represent a range of values; if the data set is 
+uniformly distributed the size of the range of values per bin would be 
+about the same.
+
+ii) Another bug was to compute width = max - min + 1.  That's certainly 
+the way you do it for integer arithmetic but it doesn't work in floating 
+point!
+
+I'd rather fix these bugs by refactoring to call the common helper methods.
+
+
+2)  Regarding the &quot;ImageStatistics&quot; class idea that Curtis mentioned:
+
+For example it might include methods:
+
+// request certain things ahead of time
+doMinMax();
+doHistogram(int bins);
+doHistogram(int bins, double min, double max);
+doMean();
+
+// do minimal number of passes through the image
+process();
+
+// get accumulated results
+double[] getMinMax();
+long[] getHistogram();
+double getMean;
+
+Here if you don't specify a min/max for doHistogram the code has to take 
+an initial pass to get min/max then another to build the histogram using 
+that min/max.
+
+
+3) Discussion of  net.imglib2.script.analysis.Histogram:
+
+Both of these ImgLib2 histogram methods combine a single pass through 
+the image with generating histogram statistics.
+
+This code exhibits bug (i).
+
+I'm not sure that this handles integral values as well as floating point.
+
+The mapping of values to histogram bins counts values that are less than 
+the min in the first bin and values that are greater than the max in the 
+last bin. */Is this really desirable behavior?/ * In my usage of 
+histograms I specifically don't want to count under- and over-range 
+values.  Similarly when using a LUT I like under- and over-range values 
+to appear black. Of course if we need it work both ways we can provide a 
+switch.
+
+The output of this code is actually a JFreeChart image, there's no way 
+to get the raw histogram count array.
+
+FYI, uses TreeMap&lt;Double, Long&gt; as an internal representation of the 
+histogram count array.  Note that this combines what I am calling the 
+edge values with the histogram counts.
+
+
+4) Discussion of net.imglib2.algorithm.stats.Histogram:
+
+This has a HistogramBinMapper base class with RealBinMapper and 
+IntBinMapper so it's meant to handle real and integral values. The 
+mapper is passed in as a parameter; I think it could be inferred from 
+the cursor type T.
+
+Here the RealBinMapper class exhibits bug (ii) when calculating binWidth 
+in the constructor.
+
+IntBinMapper doesn't let you specify a bin count, but assumes numBins = 
+max - min + 1.  In other words, each bin will track a given integer 
+value.  I haven't actually worked with any histograms of integral valued 
+images but I thought they should work the same way as floating point, 
+that is you could count a range of values in a single histogram bin. 
+/*Is there any reason bins and values should always be 1:1 for integral 
+valued images?*/  This is so in IJ1 for 8-bit and RGB images.
+
+You pass in the minimum and maximum values when you create a 
+HistogramBinMapper, but these are described as bin center values. My 
+concept of the minimum and maximum values has been the minimum is the 
+lowest value that maps to the first histogram bin and the maximum is the 
+highest value that maps to the last histogram bin. If we specify min/max 
+as centers some values slightly below minimum and slightly above maximum 
+will map to the first and last histogram bins respectively. /*Do we need 
+to specify min/max as bin center values?*/
+
+
+Thanks!
+Aivar
+
+
+On 8/10/12 2:44 PM, Curtis Rueden wrote:
+&gt;<i> Hi all,
+</I>&gt;<i>
+</I>&gt;<i> Aivar &amp; I also discussed histograms, and our plan for those is a bit 
+</I>&gt;<i> more nebulous. Aivar is going to investigate improving Larry's 
+</I>&gt;<i> histogram API in net.imglib2.algorithms.stats.
+</I>&gt;<i>
+</I>&gt;<i> The general idea is that computing min/max, computing histograms, and 
+</I>&gt;<i> computing other statistics are intrinsically related, and for 
+</I>&gt;<i> performance reasons it is nice to minimize the number of passes 
+</I>&gt;<i> through the image when computing these. So we would like to create a 
+</I>&gt;<i> unified ImageStatistics class (sound familiar? ;-) that can compute 
+</I>&gt;<i> one or more of these in an intelligent way, then return the results on 
+</I>&gt;<i> demand.
+</I>&gt;<i>
+</I>&gt;<i> None of this is reconciled with the net.imglib2.script.analysis 
+</I>&gt;<i> package (Histogram, ImgMax, ImgMean, etc.), but perhaps in the future 
+</I>&gt;<i> the net.imglib2.script stuff can take more direct advantage of it.
+</I>&gt;<i>
+</I>&gt;<i> Regards,
+</I>&gt;<i> Curtis
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On Tue, Aug 7, 2012 at 4:45 PM, Aivar Grislis &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">grislis at wisc.edu</A> 
+</I>&gt;<i> &lt;mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">grislis at wisc.edu</A>&gt;&gt; wrote:
+</I>&gt;<i>
+</I>&gt;<i>     I'd also be interested in working on the histogram code.  Mostly
+</I>&gt;<i>     the code that generates histogram data, also their display,
+</I>&gt;<i>     perhaps the histogram tool itself.
+</I>&gt;<i>
+</I>&gt;<i>     SLIM Plugin uses histograms in a very dynamic way, as they are
+</I>&gt;<i>     updated periodically during the fit process.  You can change the
+</I>&gt;<i>     minimum and maximum values interactively.  So I might be an
+</I>&gt;<i>     interested consumer of any common histogram code.
+</I>&gt;<i>
+</I>&gt;<i>     (I looked at the histogram code in the AutoContrast plugin,
+</I>&gt;<i>     net.imglib2.algorithm.stats.Histogram, and
+</I>&gt;<i>     net.imglib2.script.analysis.Histogram and found bugs in all of
+</I>&gt;<i>     them when binning up the histogram values.)
+</I>&gt;<i>
+</I>&gt;<i>     Aivar
+</I>&gt;<i>
+</I>&gt;<i>
+</I>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20120810/4405a0a5/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20120810/4405a0a5/attachment-0001.html</A>&gt;
+</PRE>
+
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001184.html">[ImageJ-devel] IJ2 work/Histogram
+</A></li>
+	<LI>Next message: <A HREF="001187.html">[ImageJ-devel] IJ2 work/Histogram
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1185">[ date ]</a>
+              <a href="thread.html#1185">[ thread ]</a>
+              <a href="subject.html#1185">[ subject ]</a>
+              <a href="author.html#1185">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

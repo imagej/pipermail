@@ -1,0 +1,278 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] ImageJ maven again
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImageJ%20maven%20again&In-Reply-To=%3C134149E3-4BF4-4A2E-84E5-C7438B98D129%40mpi-cbg.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002148.html">
+   <LINK REL="Next"  HREF="002150.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] ImageJ maven again</H1>
+    <B>Tobias Pietzsch</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImageJ%20maven%20again&In-Reply-To=%3C134149E3-4BF4-4A2E-84E5-C7438B98D129%40mpi-cbg.de%3E"
+       TITLE="[ImageJ-devel] ImageJ maven again">pietzsch at mpi-cbg.de
+       </A><BR>
+    <I>Thu Jul  3 15:21:06 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002148.html">[ImageJ-devel] Fwd: Re: ImageJ maven again
+</A></li>
+        <LI>Next message: <A HREF="002150.html">[ImageJ-devel] ImageJ maven again
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2149">[ date ]</a>
+              <a href="thread.html#2149">[ thread ]</a>
+              <a href="subject.html#2149">[ subject ]</a>
+              <a href="author.html#2149">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Dscho,
+
+thanks for looking into this!
+
+
+Actually, my ~/.m2/settings.xml did contain a section for 
+&gt;<i> 		&lt;server&gt;
+</I>&gt;<i> 			&lt;id&gt;imagej.releases&lt;/id&gt;
+</I>&gt;<i> 			&lt;username&gt;pietzsch&lt;/username&gt;
+</I>&gt;<i> 			&lt;password&gt;{0123456789abcdefghijklmnopqrstuvwxyzABCDEFG=}&lt;/password&gt;
+</I>&gt;<i> 		&lt;/server&gt;
+</I>with the password (passed through mvn -ep) I set at the Nexus webinterface (and which works for logging in there).
+
+I did try to push to imagej.releases before, because that is where the previous version of jhdf5 was
+<A HREF="http://maven.imagej.net/content/repositories/releases/cisd/jhdf5/">http://maven.imagej.net/content/repositories/releases/cisd/jhdf5/</A>
+
+
+Now, following your suggestions, what I tried is the following:
+
+1.) I added a section for 
+&gt;<i> 		&lt;server&gt;
+</I>&gt;<i> 			&lt;id&gt;imagej.thirdparty&lt;/id&gt;
+</I>&gt;<i> 			&lt;username&gt;pietzsch&lt;/username&gt;
+</I>&gt;<i> 			&lt;password&gt;{0123456789abcdefghijklmnopqrstuvwxyzABCDEFG=}&lt;/password&gt;
+</I>&gt;<i> 		&lt;/server&gt;
+</I>to my settings.xml
+
+2.) I cloned a fresh scijava-common from github. This currently has the parent pom-scijava 2.22.
+
+3.) From that directory I ran the command you suggested. Here is the full output:
+<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pietzsch at tomancak-mac-17</A>:~/workspace/scijava-common (master)$ mvn -Pdeploy-to-imagej deploy:deploy-file -Dfile=/Users/pietzsch/Desktop/jhdf5-13.06.2.jar -DgroupId=cisd -DartifactId=jhdf5 -Dpackaging=jar -Dversion=13.06.2 -DrepositoryId=imagej.thirdparty
+[INFO] Scanning for projects...
+[INFO]
+[INFO] ------------------------------------------------------------------------
+[INFO] Building SciJava Common 2.25.1-SNAPSHOT
+[INFO] ------------------------------------------------------------------------
+[INFO]
+[INFO] --- maven-deploy-plugin:2.8.1:deploy-file (default-cli) @ scijava-common ---
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time: 1.042s
+[INFO] Finished at: Thu Jul 03 22:12:30 CEST 2014
+[INFO] Final Memory: 9M/310M
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-deploy-plugin:2.8.1:deploy-file (default-cli) on project scijava-common: Execution default-cli of goal org.apache.maven.plugins:maven-deploy-plugin:2.8.1:deploy-file failed. NullPointerException -&gt; [Help 1]
+[ERROR]
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR]
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] <A HREF="http://cwiki.apache.org/confluence/display/MAVEN/PluginExecutionException">http://cwiki.apache.org/confluence/display/MAVEN/PluginExecutionException</A>
+
+
+I did look into the pom-scijava 2.22 and I couldn't find any mention of the &quot;imagej.thirdparty&quot; repository.
+Maybe that is the problem?
+I didn't try again with the &quot;imagej.releases&quot; repository because I don't want to mess anything up and I wouldn't know how to undo a successful deployment there.
+
+
+What would you suggest? One thing I think I could try is to mimic the pom-scijava and put this into the pom.xml of my scijava-common clone:
+		&lt;!-- This profile enables deployment to the ImageJ Maven repository. --&gt;
+		&lt;profile&gt;
+			&lt;id&gt;deploy-to-imagej&lt;/id&gt;
+			&lt;distributionManagement&gt;
+				&lt;repository&gt;
+					&lt;id&gt;imagej.releases&lt;/id&gt;
+					&lt;name&gt;ImageJ Releases Repository&lt;/name&gt;
+					&lt;url&gt;dav:<A HREF="http://maven.imagej.net/content/repositories/releases&lt;/url">http://maven.imagej.net/content/repositories/releases&lt;/url</A>&gt;
+				&lt;/repository&gt;
+				&lt;repository&gt;
+					&lt;id&gt;imagej.thirdparty&lt;/id&gt;
+					&lt;name&gt;ImageJ Thirdparty Repository&lt;/name&gt;
+					&lt;url&gt;dav:<A HREF="http://maven.imagej.net/content/repositories/thirdparty&lt;/url">http://maven.imagej.net/content/repositories/thirdparty&lt;/url</A>&gt;
+				&lt;/repository&gt;
+				&lt;snapshotRepository&gt;
+					&lt;id&gt;imagej.snapshots&lt;/id&gt;
+					&lt;name&gt;ImageJ Snapshots Repository&lt;/name&gt;
+					&lt;url&gt;dav:<A HREF="http://maven.imagej.net/content/repositories/snapshots&lt;/url">http://maven.imagej.net/content/repositories/snapshots&lt;/url</A>&gt;
+				&lt;/snapshotRepository&gt;
+			&lt;/distributionManagement&gt;
+		&lt;/profile&gt;
+Do you think that might work? Should I try it?
+
+
+Thanks,
+Tobias
+
+
+On Jul 3, 2014, at 8:20 PM, Johannes Schindelin &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">schindelin at wisc.edu</A>&gt; wrote:
+
+&gt;<i> Hi,
+</I>&gt;<i> 
+</I>&gt;<i> let's stay open about this project so that nobody can claim to be cut out
+</I>&gt;<i> from the development, at least not without posing a major fire hazard to
+</I>&gt;<i> their leg wear.
+</I>&gt;<i> 
+</I>&gt;<i> On Thu, 3 Jul 2014, Curtis Rueden wrote:
+</I>&gt;<i> 
+</I>&gt;&gt;<i> Tobias needs more permissions on our Nexus but I didn't have time to figure
+</I>&gt;&gt;<i> it out yesterday.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> On Jul 3, 2014 10:52 AM, &quot;Tobias Pietzsch&quot; &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pietzsch at mpi-cbg.de</A>&gt; wrote:
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> I now tried to deploy a (3rd party) jar to imagej.releases using this:
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pietzsch at tomancak-mac-17</A>:~$ mvn deploy:deploy-file -Durl=
+</I>&gt;&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/">http://maven.imagej.net/content/repositories/releases/</A>
+</I>&gt;&gt;&gt;<i> -Dfile=/Users/pietzsch/Desktop/jhdf5-13.06.2.jar -DgroupId=cisd
+</I>&gt;&gt;&gt;<i> -DartifactId=jhdf5 -Dpackaging=jar -Dversion=13.06.2
+</I>&gt;&gt;&gt;<i> -DrepositoryId=imagej.releases
+</I>&gt;&gt;&gt;<i> [INFO] Scanning for projects...
+</I>&gt;&gt;&gt;<i> ...
+</I>&gt;&gt;&gt;<i> [ERROR] Failed to execute goal
+</I>&gt;&gt;&gt;<i> org.apache.maven.plugins:maven-deploy-plugin:2.5:deploy-file (default-cli)
+</I>&gt;&gt;&gt;<i> on project standalone-pom: Failed to deploy artifacts: Could not transfer
+</I>&gt;&gt;&gt;<i> artifact cisd:jhdf5:jar:13.06.2 from/to imagej.releases (
+</I>&gt;&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/">http://maven.imagej.net/content/repositories/releases/</A>): Access denied
+</I>&gt;&gt;&gt;<i> to:
+</I>&gt;&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/cisd/jhdf5/13.06.2/jhdf5-13.06.2.jar">http://maven.imagej.net/content/repositories/releases/cisd/jhdf5/13.06.2/jhdf5-13.06.2.jar</A>
+</I>&gt;<i> 
+</I>&gt;<i> From the logs, it appears that someone from the public IP of the MPI-CBG
+</I>&gt;<i> tried to put a new jhdf5-13.06.2 at 03/Jul/2014:10:26:04 -0500 which
+</I>&gt;<i> translates to roughly half past five in the afternoon Dresden time.
+</I>&gt;<i> 
+</I>&gt;<i> The logs also reveal that this PUT request elicited a response code 401
+</I>&gt;<i> (Access denied). From other, more successful PUT requests it looks as if
+</I>&gt;<i> that is expected, but needs to be followed up by another request that
+</I>&gt;<i> succeeds with a 201 (Created) [*1*].
+</I>&gt;<i> 
+</I>&gt;<i> It looks to me as if Maven does not find the proper credentials and
+</I>&gt;<i> therefore does not even try to upload with authentication.
+</I>&gt;<i> 
+</I>&gt;<i> Please also note that jhdf5 should be in the imagej.thirdparty repository,
+</I>&gt;<i> not the imagej.releases one (we do not maintain this project, unlike
+</I>&gt;<i> pretty much everything put into the imagej.releases repository).
+</I>&gt;<i> 
+</I>&gt;&gt;&gt;<i> I have set up my ~/.m2/settings-security.xml and ~/.m2/settings.xml
+</I>&gt;&gt;&gt;<i> correctly I think.
+</I>&gt;<i> 
+</I>&gt;<i> Could it be that your $HOME/.m2/settings.xml looks like this:
+</I>&gt;<i> 
+</I>&gt;<i> -- snip --
+</I>&gt;<i> &lt;settings&gt;
+</I>&gt;<i> 	&lt;servers&gt;
+</I>&gt;<i> 		&lt;server&gt;
+</I>&gt;<i> 			&lt;id&gt;imagej.snapshots&lt;/id&gt;
+</I>&gt;<i> 			&lt;username&gt;pietzsch&lt;/username&gt;
+</I>&gt;<i> 			&lt;password&gt;{0123456789abcdefghijklmnopqrstuvwxyzABCDEFG=}&lt;/password&gt;
+</I>&gt;<i> 		&lt;/server&gt;
+</I>&gt;<i> 	&lt;/servers&gt;
+</I>&gt;<i> &lt;/settings&gt;
+</I>&gt;<i> -- snap --
+</I>&gt;<i> 
+</I>&gt;<i> but should look like this:
+</I>&gt;<i> 
+</I>&gt;<i> -- snip --
+</I>&gt;<i> &lt;settings&gt;
+</I>&gt;<i> 	&lt;servers&gt;
+</I>&gt;<i> 		&lt;server&gt;
+</I>&gt;<i> 			&lt;id&gt;imagej.releases&lt;/id&gt;
+</I>&gt;<i> 			&lt;username&gt;pietzsch&lt;/username&gt;
+</I>&gt;<i> 			&lt;password&gt;{0123456789abcdefghijklmnopqrstuvwxyzABCDEFG=}&lt;/password&gt;
+</I>&gt;<i> 		&lt;/server&gt;
+</I>&gt;<i> 		&lt;server&gt;
+</I>&gt;<i> 			&lt;id&gt;imagej.snapshots&lt;/id&gt;
+</I>&gt;<i> 			&lt;username&gt;pietzsch&lt;/username&gt;
+</I>&gt;<i> 			&lt;password&gt;{0123456789abcdefghijklmnopqrstuvwxyzABCDEFG=}&lt;/password&gt;
+</I>&gt;<i> 		&lt;/server&gt;
+</I>&gt;<i> 		&lt;server&gt;
+</I>&gt;<i> 			&lt;id&gt;imagej.thirdparty&lt;/id&gt;
+</I>&gt;<i> 			&lt;username&gt;pietzsch&lt;/username&gt;
+</I>&gt;<i> 			&lt;password&gt;{0123456789abcdefghijklmnopqrstuvwxyzABCDEFG=}&lt;/password&gt;
+</I>&gt;<i> 		&lt;/server&gt;
+</I>&gt;<i> 	&lt;/servers&gt;
+</I>&gt;<i> &lt;/settings&gt;
+</I>&gt;<i> -- snap --
+</I>&gt;<i> 
+</I>&gt;<i> On the other hand, the problem might be a different one altogether: after
+</I>&gt;<i> staring at the quoted command-line, I cannot fail to note that this
+</I>&gt;<i> command is launched from your home directory, letting me suspect that
+</I>&gt;<i> there is no pom.xml file at all.
+</I>&gt;<i> 
+</I>&gt;<i> Please note that Maven needs quite a bit of information for deploying: it
+</I>&gt;<i> is not enough to say &quot;imagej.releases&quot;, it needs a URL and very
+</I>&gt;<i> specifically a transport helper for uploading (comparable to the uploader
+</I>&gt;<i> plugins for the ImageJ updater, or the ssh protocol for Git pushing). For
+</I>&gt;<i> the ImageJ Maven repositories, we use WebDAV to upload, in the form of the
+</I>&gt;<i> wagon-webdav-jackrabbit extension. In your particular case, I expect none
+</I>&gt;<i> of this information to be available to Maven.
+</I>&gt;<i> 
+</I>&gt;<i> I would suggest to try almost the same command-line you tried, but from
+</I>&gt;<i> a directory containing *any* SciJava project. As long as it depends on
+</I>&gt;<i> pom-scijava &gt;= 1.135, it will have a profile that adds the deploy
+</I>&gt;<i> information for the ImageJ Maven repositories specifically. So if you run
+</I>&gt;<i> the following command-line from, say, the imglib2 checkout:
+</I>&gt;<i> 
+</I>&gt;<i> 	mvn -Pdeploy-to-imagej deploy:deploy-file \
+</I>&gt;<i> 		-Dfile=/Users/pietzsch/Desktop/jhdf5-13.06.2.jar \
+</I>&gt;<i> 		-DgroupId=cisd -DartifactId=jhdf5 -Dpackaging=jar \
+</I>&gt;<i> 		-Dversion=13.06.2 \
+</I>&gt;<i> 		-DrepositoryId=imagej.thirdparty
+</I>&gt;<i> 
+</I>&gt;<i> it might do what you want it to do.
+</I>&gt;<i> 
+</I>&gt;<i> Ciao,
+</I>&gt;<i> Dscho
+</I>&gt;<i> 
+</I>&gt;<i> Footnote *1*:
+</I>&gt;<i> <A HREF="http://en.wikipedia.org/wiki/List_of_HTTP_status_codes#2xx_Success">http://en.wikipedia.org/wiki/List_of_HTTP_status_codes#2xx_Success</A>
+</I>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140703/b94ab20f/attachment.pgp">http://imagej.net/pipermail/imagej-devel/attachments/20140703/b94ab20f/attachment.pgp</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002148.html">[ImageJ-devel] Fwd: Re: ImageJ maven again
+</A></li>
+	<LI>Next message: <A HREF="002150.html">[ImageJ-devel] ImageJ maven again
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2149">[ date ]</a>
+              <a href="thread.html#2149">[ thread ]</a>
+              <a href="subject.html#2149">[ subject ]</a>
+              <a href="author.html#2149">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

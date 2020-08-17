@@ -1,0 +1,333 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [ome-devel] Writing ImageJ2 plugins
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bome-devel%5D%20Writing%20ImageJ2%20plugins&In-Reply-To=%3CCADN69yn18QUcTANgJYvhYwAMbbiiNHTky92WAVgE6PFnQkAaUw%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001813.html">
+   <LINK REL="Next"  HREF="001815.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [ome-devel] Writing ImageJ2 plugins</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bome-devel%5D%20Writing%20ImageJ2%20plugins&In-Reply-To=%3CCADN69yn18QUcTANgJYvhYwAMbbiiNHTky92WAVgE6PFnQkAaUw%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] [ome-devel] Writing ImageJ2 plugins">ctrueden at wisc.edu
+       </A><BR>
+    <I>Wed Oct 23 17:00:59 CDT 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001813.html">[ImageJ-devel] [ome-devel] Writing ImageJ2 plugins
+</A></li>
+        <LI>Next message: <A HREF="001815.html">[ImageJ-devel] [ImgLib2] The img-metadata branch
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1814">[ date ]</a>
+              <a href="thread.html#1814">[ thread ]</a>
+              <a href="subject.html#1814">[ subject ]</a>
+              <a href="author.html#1814">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Graeme,
+
+Based on the list that you &amp; Ilan sent me a while back, I started a
+spreadsheet detailing priority targets for support within OMERO:
+
+<A HREF="https://docs.google.com/spreadsheet/ccc?key=0Ancmne1B9NOwdGxQOEpKSVVGbk1TQ1ZSMHEzWHFwbmc&amp;usp=sharing">https://docs.google.com/spreadsheet/ccc?key=0Ancmne1B9NOwdGxQOEpKSVVGbk1TQ1ZSMHEzWHFwbmc&amp;usp=sharing</A>
+
+Anyone is free to check it out and comment if desired. Some of the items on
+your list were quite general, and/or not totally clear to me, so edit away
+as needed.
+
+&gt;<i> my questions were motivated by the desire to write plugins for IJ1
+</I>&gt;<i> that will not be obsolete in IJ2, and preferably be able to be run
+</I>&gt;<i> headlessly, e.g. from OMERO.
+</I>
+OK, thanks for clarifying.
+
+&gt;<i> It seems that ImageJ2 also uses a run method as the entry point for
+</I>&gt;<i> running a command? (correct me if I am wrong) In that case, at least
+</I>&gt;<i> the run method would have to be replaced.
+</I>
+ImageJ2's commands use Runnable's run(). ImageJ1 plugins use a custom
+PlugIn interface's run(String). So they are technically compatible, though
+I wouldn't necessarily recommend creating a hybrid. ;-)
+
+&gt;<i> I was not so worried about ImageJ1's dialogs (which I expected would
+</I>&gt;<i> *not* be OK in a headless plugin)
+</I>
+Actually, confusingly, you *can* use GenericDialog when running headless in
+a macro because of the javassist hacks I mentioned. When running from a
+macro, the dialog is never actually shown, but instead parameters are
+harvested from the macro options string.
+
+&gt;<i> It sounds as though converting IJ1 plugins to use the IJ2 API is
+</I>&gt;<i> likely be more productive than trying to use the legacy IJ1 API from
+</I>&gt;<i> an IJ2 plugin (headless), but is the latter already known to be
+</I>&gt;<i> hopeless? If not, I might be tempted to try a little.
+</I>
+I wouldn't say hopeless. In many cases, you *can* run IJ1 plugins headless,
+as explained on the Fiji wiki Headless page I linked before (
+<A HREF="http://fiji.sc/Headless">http://fiji.sc/Headless</A>). My next step for the OMERO integration will be
+create an ImageJ2 command &quot;Run Script&quot; which executes a given script or IJ1
+macro. Then I can start testing calling IJ1 macro code headless from OMERO
+and see how well it works in practice.
+
+That said, I stand by my suggestion that *new* code would be better written
+as an ImageJ2 command because otherwise it won't be easily accessible from
+the growing number of contexts I mentioned such as CellProfiler and KNIME.
+
+&gt;<i> Until now I have chosen to write for IJ1 since the IJ2 API is still a
+</I>&gt;<i> moving target and has a smaller user base, but I guess IJ2 / ImgLib2
+</I>&gt;<i> already makes a lot of  sense for headless processing tasks. Would you
+</I>&gt;<i> say that once imagej2-b9-rois is out, the IJ2 API will be fairly
+</I>&gt;<i> stable going forward?
+</I>
+My promise is that when ImageJ 2.0.0 final is released, *then* the API will
+be stable, with old API being properly deprecated for long periods of time,
+etc. Before that, I do not want to make any promises. The API is growing
+more and more stable with each release, but it is tough to say what &quot;fairly
+stable&quot; really means here.
+
+One idea I had recently is to start bringing some components of ImageJ2 out
+of beta in phases. The scijava-common component is already out of beta.
+Some IJ2 components such as ij-core are already extremely stable. The
+scifio library will probably be out of beta (and hence stable) within a
+year. But the hard stuff remains: the ij-data component, how it ties in to
+ImgLib2 (which also needs to come out of beta at some point), and the IJ2
+display model. Those may need to bake a little longer.
+
+Regards,
+Curtis
+
+
+On Wed, Oct 23, 2013 at 4:02 PM, Graeme Ball &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">graemeball at googlemail.com</A>&gt;wrote:
+
+&gt;<i> Hi Curtis,
+</I>&gt;<i>
+</I>&gt;<i> thank you for your reply - that certainly clears up some of my questions.
+</I>&gt;<i> Yes, my questions were motivated by the desire to write plugins for IJ1
+</I>&gt;<i> that will not be obsolete in IJ2, and preferably be able to be run
+</I>&gt;<i> headlessly, e.g. from OMERO.
+</I>&gt;<i>
+</I>&gt;<i> If possible, when I write (ImageJ1) plugins I try to confine any GUI calls
+</I>&gt;<i> to the run method, and all of the real work to an exec method that does not
+</I>&gt;<i> require interactive input. It seems that ImageJ2 also uses a run method as
+</I>&gt;<i> the entry point for running a command? (correct me if I am wrong) In that
+</I>&gt;<i> case, at least the run method would have to be replaced.
+</I>&gt;<i>
+</I>&gt;<i> I was not so worried about ImageJ1's dialogs (which I expected would *not*
+</I>&gt;<i> be OK in a headless plugin), but was more concerned about ImagePlus, Roi
+</I>&gt;<i> etc. which make heavy use of awt classes. If these also cannot be used
+</I>&gt;<i> headlessly, then I guess a legacy mode with virtual UI, or re-writing to
+</I>&gt;<i> use the IJ2 API are the only real options.
+</I>&gt;<i>
+</I>&gt;<i> It sounds as though converting IJ1 plugins to use the IJ2 API is likely be
+</I>&gt;<i> more productive than trying to use the legacy IJ1 API from an IJ2 plugin
+</I>&gt;<i> (headless), but is the latter already known to be hopeless? If not, I might
+</I>&gt;<i> be tempted to try a little.
+</I>&gt;<i>
+</I>&gt;<i> Until now I have chosen to write for IJ1 since the IJ2 API is still a
+</I>&gt;<i> moving target and has a smaller user base, but I guess IJ2 / ImgLib2
+</I>&gt;<i> already makes a lot of  sense for headless processing tasks. Would you say
+</I>&gt;<i> that once imagej2-b9-rois is out, the IJ2 API will be fairly stable going
+</I>&gt;<i> forward?
+</I>&gt;<i>
+</I>&gt;<i> Thanks &amp; Best Regards,
+</I>&gt;<i>
+</I>&gt;<i> Graeme
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On Wed, Oct 23, 2013 at 6:45 PM, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt; wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i>  Hi Graeme,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>  Sorry for the delay in reply. Writing to a public mailing list is
+</I>&gt;&gt;<i> better. I am CCing imagej-devel and ome-devel since your questions are very
+</I>&gt;&gt;<i> technical, and related to those two projects.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>  &gt; I thought I would Email you directly because the ImageJ-devel
+</I>&gt;&gt;<i> &gt; mailing list seems to be intended for core project development.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>  From <A HREF="http://developer.imagej.net/mailing-lists:">http://developer.imagej.net/mailing-lists:</A>
+</I>&gt;&gt;<i>  &gt; ImageJ: For general user and developer discussion about ImageJ. This
+</I>&gt;&gt;<i> &gt; list is the best place to go for help with your specific use case.
+</I>&gt;&gt;<i> &gt;
+</I>&gt;&gt;<i> &gt; ImageJ-devel: For technical and developer discussion of the ImageJ2
+</I>&gt;&gt;<i> &gt; project. This list is for programmers contributing code to ImageJ2, or
+</I>&gt;&gt;<i> &gt; interested in technical discussions surrounding such development.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>  Both are public mailing lists intended for use by the community, not
+</I>&gt;&gt;<i> just for core project development. The wording of ImageJ-devel is phrased
+</I>&gt;&gt;<i> that way because ImageJ2 is still in beta and if you are using it for your
+</I>&gt;&gt;<i> projects, you are an early adopter who is almost certainly &quot;interested in
+</I>&gt;&gt;<i> technical discussions&quot; surrounding core development.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>  &gt; 1. I was looking for example plugins (&amp; example minimal plugin
+</I>&gt;&gt;<i> &gt; project), but get 404's when I try to look at the HelloWorld and
+</I>&gt;&gt;<i> &gt; GradientImage examples here:-
+</I>&gt;&gt;<i> &gt; <A HREF="http://developer.imagej.net/writing-imagej2-plugins">http://developer.imagej.net/writing-imagej2-plugins</A>
+</I>&gt;&gt;<i> &gt; (I found the github repo &amp; Fiji wiki ImgLib2 examples)
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>  All links on that page should be working again.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>  &gt; 2. I see an example of calling IJ2 from a legacy plugin, but am also
+</I>&gt;&gt;<i> &gt; interested in doing the reverse, and unsure what the limitations are.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>  The limitations are evolving. Legacy support is very challenging to get
+</I>&gt;&gt;<i> right. That said, it should work to call ImageJ1 data structures from an
+</I>&gt;&gt;<i> ImageJ2 style command. There is a LegacyService for converting between IJ1
+</I>&gt;&gt;<i> and IJ2 data structures, although the API still needs work.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>  Note that at the moment, ImageJ2 commands are only discovered and
+</I>&gt;&gt;<i> exposed in the modern ImageJ2 UI. We are exploring ways of blending things
+</I>&gt;&gt;<i> in additional ways, such as allowing the ImageJ1/Fiji legacy UI to discover
+</I>&gt;&gt;<i> and allow execution of IJ2 commands.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>  What is your goal? You want to write a plugin that is available from
+</I>&gt;&gt;<i> both IJ1 and IJ2? If so, structuring it as a legacy IJ1 plugin (which may
+</I>&gt;&gt;<i> or may not leverage certain IJ2 API internally as demonstrated in
+</I>&gt;&gt;<i> calling-modern-from-legacy) is the way to go for now.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>  &gt; 3. What are the constraints / requirements for running plugins
+</I>&gt;&gt;<i> &gt; (including legacy wrapped in IJ2?) headless, with a view to running
+</I>&gt;&gt;<i> &gt; from OMERO in future?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>  In IJ2 terms, the ImgLib2 library is fully usable headless. If your IJ2
+</I>&gt;&gt;<i> command does not depend on ij-ui you probably will be able to run it
+</I>&gt;&gt;<i> headlessly. The requirements, in general, are the same as running any Java
+</I>&gt;&gt;<i> code headless: do not use AWT or Swing or other UI, especially
+</I>&gt;&gt;<i> Windows/Frames/Dialogs.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>  Unfortunately, you cannot just take a legacy IJ1 plugin and &quot;wrap in
+</I>&gt;&gt;<i> IJ2.&quot; The problem is that fundamentally, IJ1 is filled with java.awt
+</I>&gt;&gt;<i> references including some core classes extending java.awt.Dialog and
+</I>&gt;&gt;<i> java.awt.Frame, which are illegal to even instantiate headlessly.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>  We have some crazy hacks in Fiji to allow limited execution of IJ2 code
+</I>&gt;&gt;<i> headless even when it would normally use those AWT window classes. It works
+</I>&gt;&gt;<i> by using bytecode manipulation (javassist library) to rewrite parts of IJ1
+</I>&gt;&gt;<i> at runtime to avoid references to those classes. However, in some cases
+</I>&gt;&gt;<i> things will still blow up. It should go without saying that any time an IJ1
+</I>&gt;&gt;<i> plugin asks the user for input (e.g., the WaitForUserInput dialog), it will
+</I>&gt;&gt;<i> fail when trying to run headless.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>  All of that said, we may be able to support calling many IJ1 plugins
+</I>&gt;&gt;<i> headlessly from OMERO in the same way we support it headlessly in general:
+</I>&gt;&gt;<i> using by install Xvfb on the server side. This gets around the limitations
+</I>&gt;&gt;<i> of java.awt.headless=true, in favor of actually giving Java a
+</I>&gt;&gt;<i> virtual/offscreen UI. See: <A HREF="http://fiji.sc/Headless">http://fiji.sc/Headless</A>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>  As of this writing, I have not yet tried to get legacy IJ1 plugins
+</I>&gt;&gt;<i> working from OMERO. The reason is that I know it will be a lot of effort,
+</I>&gt;&gt;<i> for something that would only be transitional. We are writing IJ2 precisely
+</I>&gt;&gt;<i> to avoid the sorts of problems incurred by IJ1's heavy use of AWT in core
+</I>&gt;&gt;<i> classes. IJ2 maintains a strict separation of concerns, and its commands
+</I>&gt;&gt;<i> have typed inputs and outputs, which are a natural match to other paradigms
+</I>&gt;&gt;<i> such as OMERO scripts, CellProfiler modules, and KNIME nodes. Mapping IJ1
+</I>&gt;&gt;<i> plugins to those paradigms is difficult not only due to headless issues but
+</I>&gt;&gt;<i> also because in general there is no easy way to know the actual inputs and
+</I>&gt;&gt;<i> outputs of the plugin, since IJ1 plugins do not declare that metadata.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>  So in conclusion, while I sympathize with the desire to execute ImageJ1
+</I>&gt;&gt;<i> plugins from OMERO, ultimately a better direction is to rewrite plugins of
+</I>&gt;&gt;<i> interest as ImageJ2 commands so we truly get a &quot;write once, run anywhere&quot;
+</I>&gt;&gt;<i> effect with the whole software ecosystem interoperating with ImageJ2.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>  &gt; Apologies if I missed some documentation, or a more appropriate
+</I>&gt;&gt;<i> &gt; community forum to ask these questions, and me know if I am jumping
+</I>&gt;&gt;<i> &gt; the gun and would be better waiting a few months.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>  Not at all; these are good questions and not well explained online. I
+</I>&gt;&gt;<i> added a couple of short entries to the online FAQ:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>  <A HREF="http://developer.imagej.net/can-i-call-imagej2-api-imagej1-plugin">http://developer.imagej.net/can-i-call-imagej2-api-imagej1-plugin</A>
+</I>&gt;&gt;<i>  <A HREF="http://developer.imagej.net/can-i-call-imagej1-api-imagej2-command">http://developer.imagej.net/can-i-call-imagej1-api-imagej2-command</A>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>  Please let me know if there are other topics you would like to see
+</I>&gt;&gt;<i> covered on the website.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>  Regards,
+</I>&gt;&gt;<i> Curtis
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> On Thu, Sep 26, 2013 at 6:39 PM, Graeme Ball &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">graemeball at googlemail.com</A>&gt;wrote:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>  Hi Curtis,
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>  I have a few questions about writing plugins for ImageJ2,
+</I>&gt;&gt;&gt;<i> and I thought I would Email you directly because the
+</I>&gt;&gt;&gt;<i> ImageJ-devel mailing list seems to be intended for core
+</I>&gt;&gt;&gt;<i> project development.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>  1. I was looking for example plugins (&amp; example minimal
+</I>&gt;&gt;&gt;<i>    plugin project), but get 404's when I try to look at
+</I>&gt;&gt;&gt;<i>    the HelloWorld and GradientImage examples here:-
+</I>&gt;&gt;&gt;<i>      <A HREF="http://developer.imagej.net/writing-imagej2-plugins">http://developer.imagej.net/writing-imagej2-plugins</A>
+</I>&gt;&gt;&gt;<i>    (I found the github repo &amp; Fiji wiki ImgLib2 examples)
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>  2. I see an example of calling IJ2 from a legacy plugin,
+</I>&gt;&gt;&gt;<i>    but am also interested in doing the reverse, and
+</I>&gt;&gt;&gt;<i>    unsure what the limitations are.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>  3. What are the constraints / requirements for running
+</I>&gt;&gt;&gt;<i>    plugins (including legacy wrapped in IJ2?) headless,
+</I>&gt;&gt;&gt;<i>    with a view to running from OMERO in future?
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>  Apologies if I missed some documentation, or a more
+</I>&gt;&gt;&gt;<i> appropriate community forum to ask these questions, and
+</I>&gt;&gt;&gt;<i> let me know if I am jumping the gun and would be better
+</I>&gt;&gt;&gt;<i> off waiting a few months.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>  Thanks &amp; Best Regards,
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>  Graeme
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>  --
+</I>&gt;&gt;&gt;<i> ---------------------------
+</I>&gt;&gt;&gt;<i> Dr. Graeme Ball
+</I>&gt;&gt;&gt;<i> Department of Biochemistry
+</I>&gt;&gt;&gt;<i> University of Oxford
+</I>&gt;&gt;&gt;<i> South Parks Road
+</I>&gt;&gt;&gt;<i> Oxford OX1 3QU
+</I>&gt;&gt;&gt;<i> Phone +44-1865-613-359
+</I>&gt;&gt;&gt;<i> ---------------------------
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20131023/a045860a/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20131023/a045860a/attachment-0001.html</A>&gt;
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001813.html">[ImageJ-devel] [ome-devel] Writing ImageJ2 plugins
+</A></li>
+	<LI>Next message: <A HREF="001815.html">[ImageJ-devel] [ImgLib2] The img-metadata branch
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1814">[ date ]</a>
+              <a href="thread.html#1814">[ thread ]</a>
+              <a href="subject.html#1814">[ subject ]</a>
+              <a href="author.html#1814">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

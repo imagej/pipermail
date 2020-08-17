@@ -1,0 +1,126 @@
+<tt>
+&lt;div&nbsp;dir=&quot;ltr&quot;&gt;&lt;div&gt;Hi&nbsp;Tobias,&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&gt;&nbsp;I&nbsp;had&nbsp;a&nbsp;quick&nbsp;look&nbsp;and&nbsp;saw&nbsp;that&nbsp;scijava-common&nbsp;is&nbsp;itself&nbsp;not&nbsp;without&lt;/div&gt;&lt;div&gt;&gt;&nbsp;dependencies.&nbsp;I&nbsp;found&nbsp;it&nbsp;depends&nbsp;on&nbsp;org.bushe.eventbus.&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;<br>
+<br>
+<br>
+Yes.&nbsp;SciJava&nbsp;Common&nbsp;also&nbsp;depends&nbsp;on&nbsp;SezPoz.&nbsp;However,&nbsp;both&nbsp;of&nbsp;these&nbsp;dependencies&nbsp;are&nbsp;encapsulated,&nbsp;meaning&nbsp;that&nbsp;no&nbsp;downstream&nbsp;code&nbsp;is&nbsp;&quot;infected&quot;&nbsp;with&nbsp;any&nbsp;direct&nbsp;references&nbsp;to&nbsp;classes&nbsp;from&nbsp;either&nbsp;SezPoz&nbsp;or&nbsp;EventBus.&nbsp;All&nbsp;event&nbsp;logic&nbsp;goes&nbsp;through&nbsp;the&nbsp;SciJava&nbsp;Common&nbsp;EventService.&nbsp;And&nbsp;all&nbsp;SezPoz&nbsp;logic&nbsp;is&nbsp;transparent&nbsp;to&nbsp;the&nbsp;developer,&nbsp;via&nbsp;APT.&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&gt;&nbsp;On&nbsp;the&nbsp;eventbus&nbsp;website&nbsp;I&nbsp;found&nbsp;the&nbsp;notice:&lt;/div&gt;&lt;div&gt;&gt;&nbsp;Update&nbsp;3/2013:&nbsp;The&nbsp;EventBus&nbsp;has&nbsp;gone&nbsp;stale&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Thanks&nbsp;for&nbsp;the&nbsp;info;&nbsp;I&nbsp;hadn&#39;t&nbsp;seen&nbsp;that.&nbsp;Fortunately,&nbsp;the&nbsp;version&nbsp;of&nbsp;EventBus&nbsp;we&nbsp;use&nbsp;does&nbsp;everything&nbsp;we&nbsp;need.&nbsp;We&nbsp;are&nbsp;unlikely&nbsp;to&nbsp;need&nbsp;upstream&nbsp;support&nbsp;or&nbsp;new&nbsp;versions.&nbsp;At&nbsp;worst,&nbsp;we&nbsp;can&nbsp;fork&nbsp;the&nbsp;project&nbsp;and&nbsp;cut&nbsp;our&nbsp;own&nbsp;new&nbsp;release&nbsp;(and/or&nbsp;integrate&nbsp;the&nbsp;EventBus&nbsp;code&nbsp;into&nbsp;SciJava&nbsp;Common&nbsp;itself)&nbsp;in&nbsp;case&nbsp;a&nbsp;future&nbsp;critical&nbsp;bug&nbsp;is&nbsp;discovered.&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&gt;&nbsp;I&nbsp;would&nbsp;favour&nbsp;a&nbsp;way&nbsp;where&nbsp;we&nbsp;could&nbsp;keep&nbsp;the&nbsp;imglib2&nbsp;code&nbsp;focused&nbsp;on&lt;/div&gt;&lt;div&gt;&gt;&nbsp;processing&nbsp;pixels,&nbsp;not&nbsp;caring&nbsp;about&nbsp;framework&nbsp;issues.&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;What&nbsp;about&nbsp;Mark&#39;s&nbsp;option&nbsp;(A):&nbsp;&quot;&lt;span&nbsp;style=&quot;font-family:arial,sans-serif;font-size:13px&quot;&gt;imglib2&nbsp;needs&nbsp;its&nbsp;own&nbsp;status&nbsp;reporting&nbsp;mechanism&nbsp;(Listeners&nbsp;and&nbsp;Events&nbsp;etc.)&quot;?&lt;/span&gt;&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&lt;span&nbsp;style=&quot;font-family:arial,sans-serif;font-size:13px&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span&nbsp;style=&quot;font-family:arial,sans-serif;font-size:13px&quot;&gt;&lt;div&gt;&gt;&nbsp;I&nbsp;think&nbsp;the&nbsp;overhead&nbsp;will&nbsp;be&nbsp;quite&nbsp;high&nbsp;in&nbsp;some&nbsp;cases.&nbsp;For&nbsp;instance&nbsp;in&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&gt;&nbsp;your&nbsp;forked&nbsp;ComputeMinMax&nbsp;algorithm&nbsp;you&nbsp;do&nbsp;some&nbsp;work&nbsp;on&nbsp;updating&lt;/div&gt;&lt;div&gt;&gt;&nbsp;status&nbsp;for&nbsp;every&nbsp;single&nbsp;pixel,&nbsp;which&nbsp;I&nbsp;think&nbsp;is&nbsp;definitely&nbsp;overdoing&lt;/div&gt;&lt;div&gt;&gt;&nbsp;it.&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Yes,&nbsp;there&nbsp;is&nbsp;always&nbsp;a&nbsp;tradeoff,&nbsp;and&nbsp;a&nbsp;balance,&nbsp;for&nbsp;this&nbsp;problem.&nbsp;I&nbsp;agree&nbsp;that&nbsp;status-per-pixel&nbsp;is&nbsp;overkill.&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;What&nbsp;about&nbsp;polling?&nbsp;Another&nbsp;option&nbsp;might&nbsp;be&nbsp;for&nbsp;ImgLib2&nbsp;algorithms&nbsp;to&nbsp;update&nbsp;some&nbsp;(standardized)&nbsp;internal&nbsp;state,&nbsp;but&nbsp;not&nbsp;inform&nbsp;anyone&nbsp;about&nbsp;such&nbsp;changes.&nbsp;Then&nbsp;downstream&nbsp;code&nbsp;could&nbsp;poll&nbsp;that&nbsp;state&nbsp;every&nbsp;X&nbsp;milliseconds.&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Regards,&lt;/div&gt;&lt;div&gt;Curtis&lt;/div&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&nbsp;class=&quot;gmail_extra&quot;&gt;&lt;br&gt;&lt;br&gt;&lt;div&nbsp;class=&quot;gmail_quote&quot;&gt;On&nbsp;Mon,&nbsp;Aug&nbsp;5,&nbsp;2013&nbsp;at&nbsp;11:01&nbsp;AM,&nbsp;Tobias&nbsp;Pietzsch&nbsp;&lt;span&nbsp;dir=&quot;ltr&quot;&gt;&lt;&lt;a&nbsp;href=&quot;mailto:pietzsch@mpi-cbg.de&quot;&nbsp;target=&quot;_blank&quot;&gt;pietzsch@mpi-cbg.de&lt;/a&gt;&gt;&lt;/span&gt;&nbsp;wrote:&lt;br&gt;<br>
+<br>
+<br>
+&lt;blockquote&nbsp;class=&quot;gmail_quote&quot;&nbsp;style=&quot;margin:0&nbsp;0&nbsp;0&nbsp;.8ex;border-left:1px&nbsp;#ccc&nbsp;solid;padding-left:1ex&quot;&gt;&lt;div&nbsp;style=&quot;word-wrap:break-word&quot;&gt;&lt;div&gt;Hi&nbsp;all,&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;First&nbsp;of&nbsp;all,&nbsp;I&nbsp;am&nbsp;very&nbsp;reluctant&nbsp;to&nbsp;add&nbsp;any&nbsp;dependency&nbsp;to &lt;span&nbsp;style=&quot;font-family:Monaco;font-size:11px&quot;&gt;imglib2-algorithms&lt;/span&gt; core.&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;I&nbsp;admit&nbsp;that&nbsp;I&nbsp;did&nbsp;not&nbsp;really&nbsp;look&nbsp;into&nbsp;scijava-common&nbsp;so&nbsp;far,&nbsp;so&nbsp;I&nbsp;cannot&nbsp;really&nbsp;comment&nbsp;on&nbsp;how&nbsp;severe&nbsp;I&nbsp;think&nbsp;this&nbsp;would&nbsp;be.&lt;/div&gt;&lt;div&gt;I&nbsp;had&nbsp;a&nbsp;quick&nbsp;look&nbsp;and&nbsp;saw&nbsp;that&nbsp;scijava-common&nbsp;is&nbsp;itself&nbsp;not&nbsp;without&nbsp;dependencies. I&nbsp;found&nbsp;it&nbsp;depends&nbsp;on&nbsp;org.bushe.eventbus.&nbsp;On&nbsp;the&nbsp;eventbus&nbsp;website&nbsp;I&nbsp;found&nbsp;the&nbsp;notice:&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&lt;span&nbsp;style=&quot;font-size:small;font-family:Verdana,Helvetica,Arial,sans-serif&quot;&gt;Update&nbsp;3/2013:&nbsp;The&nbsp;EventBus&nbsp;has&nbsp;gone&nbsp;stale&nbsp;and&nbsp;is&nbsp;unlikely&nbsp;to&nbsp;be&nbsp;extended&nbsp;to&nbsp;other&nbsp;platforms.&nbsp;Suitable,&nbsp;though&nbsp;more&nbsp;primitive,&nbsp;replacements&nbsp;can&nbsp;be&nbsp;found&nbsp;for&nbsp;GWT&nbsp;(&lt;/span&gt;&lt;a&nbsp;href=&quot;http://google-web-toolkit.googlecode.com/svn/javadoc/2.1/com/google/gwt/event/shared/EventBus.html&quot;&nbsp;style=&quot;color:rgb(0,29,126);font-size:small;font-family:Verdana,Helvetica,Arial,sans-serif&quot;&nbsp;target=&quot;_blank&quot;&gt;GWT&nbsp;EventBus&lt;/a&gt;&lt;span&nbsp;style=&quot;font-size:small;font-family:Verdana,Helvetica,Arial,sans-serif&quot;&gt;),&nbsp;Javascript&nbsp;(&lt;/span&gt;&lt;a&nbsp;href=&quot;http://developer.tibco.com/pagebus/default.jsp&quot;&nbsp;style=&quot;color:rgb(0,29,126);font-size:small;font-family:Verdana,Helvetica,Arial,sans-serif&quot;&nbsp;target=&quot;_blank&quot;&gt;TIBCO&nbsp;PageBus&nbsp;-&nbsp;an&nbsp;OpenAjax&nbsp;Hub&nbsp;implementation&lt;/a&gt;&lt;span&nbsp;style=&quot;font-size:small;font-family:Verdana,Helvetica,Arial,sans-serif&quot;&gt;)&nbsp;and&nbsp;Flex&nbsp;(&lt;/span&gt;&lt;a&nbsp;href=&quot;http://www.spicefactory.org/parsley/docs/3.0/manual/&quot;&nbsp;style=&quot;color:rgb(0,29,126);font-size:small;font-family:Verdana,Helvetica,Arial,sans-serif&quot;&nbsp;target=&quot;_blank&quot;&gt;Parsley&#39;s&nbsp;Messaging&lt;/a&gt;&lt;span&nbsp;style=&quot;font-size:small;font-family:Verdana,Helvetica,Arial,sans-serif&quot;&gt;)&lt;/span&gt;&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;So&nbsp;would&nbsp;that&nbsp;mean&nbsp;dragging&nbsp;in&nbsp;a&nbsp;dead&nbsp;project&nbsp;as&nbsp;a&nbsp;transitive&nbsp;dependency?&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;As&nbsp;far&nbsp;as&nbsp;I&nbsp;can&nbsp;tell,&nbsp;the&nbsp;net.imglib2.multithreading&nbsp;stuff&nbsp;is&nbsp;a&nbsp;leftover&nbsp;from&nbsp;imglib1&nbsp;times&nbsp;and&nbsp;I&nbsp;think&nbsp;I&nbsp;have&nbsp;mentioned&nbsp;several&nbsp;times&nbsp;that&nbsp;I&nbsp;would&nbsp;like&nbsp;to&nbsp;get&nbsp;rid&nbsp;of&nbsp;it…&nbsp;:-)&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;I&nbsp;guess&nbsp;that&nbsp;scijava-common&nbsp;ThreadService&nbsp;is&nbsp;more&nbsp;thought-through&nbsp;than&nbsp;the&nbsp;SimpleMultiThreading&nbsp;class.&nbsp;So&nbsp;replacing&nbsp;that&nbsp;I&nbsp;would&nbsp;see&nbsp;as&nbsp;an&nbsp;advantage.&lt;/div&gt;&lt;div&gt;In&nbsp;general,&nbsp;I&nbsp;think&nbsp;ExecutorServices&nbsp;are&nbsp;a&nbsp;good&nbsp;fit&nbsp;for&nbsp;multithreading&nbsp;pixel&nbsp;processing&nbsp;algorithms,&nbsp;along&nbsp;the&nbsp;lines&nbsp;of&nbsp;submitting&nbsp;a&nbsp;runnable&nbsp;for&nbsp;every&nbsp;line/plane/.&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;I&nbsp;see&nbsp;that&nbsp;you&nbsp;have&nbsp;a&nbsp;need&nbsp;for&nbsp;status&nbsp;reporting&nbsp;in&nbsp;ImageJ2&nbsp;but&nbsp;I&#39;m&nbsp;not&nbsp;sure&nbsp;that&nbsp;it&nbsp;should&nbsp;be&nbsp;in&nbsp;imglib-algorithms.&lt;/div&gt;&lt;div&gt;I&nbsp;would&nbsp;favour&nbsp;a&nbsp;way&nbsp;where&nbsp;we&nbsp;could&nbsp;keep&nbsp;the&nbsp;imglib2&nbsp;code&nbsp;focused&nbsp;on&nbsp;processing&nbsp;pixels,&nbsp;not&nbsp;caring&nbsp;about&nbsp;framework&nbsp;issues.&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;In&nbsp;principle,&nbsp;status&nbsp;reporting&nbsp;can&nbsp;be&nbsp;performed&nbsp;before&nbsp;entering&nbsp;and&nbsp;after&nbsp;leaving&nbsp;a&nbsp;imglib2&nbsp;&quot;work-unit&quot;.&lt;/div&gt;&lt;div&gt;If&nbsp;fine&nbsp;grained&nbsp;reporting&nbsp;is&nbsp;required,&nbsp;then&nbsp;this&nbsp;would&nbsp;mean&nbsp;splitting&nbsp;up&nbsp;the&nbsp;work&nbsp;into&nbsp;smaller&nbsp;units&nbsp;and&nbsp;reporting&nbsp;in&nbsp;between.&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;In&nbsp;any&nbsp;case,&nbsp;even&nbsp;if&nbsp;we&nbsp;add&nbsp;scijava-common&nbsp;as&nbsp;a&nbsp;dependency,&nbsp;I&nbsp;strongly&nbsp;suggest&nbsp;to&nbsp;also&nbsp;keep&nbsp;non-reporting&nbsp;versions&nbsp;of&nbsp;the&nbsp;algorithms.&lt;/div&gt;&lt;div&gt;If&nbsp;noone&nbsp;is&nbsp;listening&nbsp;to&nbsp;the&nbsp;status&nbsp;reports&nbsp;thats&nbsp;just&nbsp;wasted&nbsp;computation&nbsp;time. I&nbsp;think&nbsp;the&nbsp;overhead&nbsp;will&nbsp;be&nbsp;quite&nbsp;high&nbsp;in&nbsp;some&nbsp;cases.&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;For&nbsp;instance&nbsp;in&nbsp;your&nbsp;forked&nbsp;ComputeMinMax&nbsp;algorithm&nbsp;you&nbsp;do&nbsp;some&nbsp;work&nbsp;on&nbsp;updating&nbsp;status&nbsp;for&nbsp;every&nbsp;single&nbsp;pixel,&nbsp;which&nbsp;I&nbsp;think&nbsp;is&nbsp;definitely&nbsp;overdoing&nbsp;it.&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;As&nbsp;a&nbsp;compromise&nbsp;I&nbsp;could&nbsp;image&nbsp;putting&nbsp;an&nbsp;empty&nbsp;protected&nbsp;method&nbsp;report()&nbsp;that&nbsp;is&nbsp;called&nbsp;periodically&nbsp;by&nbsp;the&nbsp;core&nbsp;algorithm&nbsp;implementation.&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;The&nbsp;JIT&nbsp;would&nbsp;hopefully&nbsp;just&nbsp;optimize&nbsp;that&nbsp;away&nbsp;if&nbsp;you&nbsp;use&nbsp;the&nbsp;core&nbsp;algorithm.&nbsp;Then&nbsp;for&nbsp;the&nbsp;reporting&nbsp;version&nbsp;you&nbsp;would&nbsp;have&nbsp;to&nbsp;extend&nbsp;the&nbsp;core&nbsp;algorithm&nbsp;and&nbsp;override&nbsp;report().&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;best&nbsp;regards,&lt;/div&gt;<br>
+<br>
+<br>
+&lt;div&gt;Tobias&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;div&gt;&lt;div&gt;On&nbsp;Jul&nbsp;26,&nbsp;2013,&nbsp;at&nbsp;5:09&nbsp;PM,&nbsp;Mark&nbsp;Hiner&nbsp;&lt;&lt;a&nbsp;href=&quot;mailto:hinerm@gmail.com&quot;&nbsp;target=&quot;_blank&quot;&gt;hinerm@gmail.com&lt;/a&gt;&gt;&nbsp;wrote:&lt;/div&gt;<br>
+<br>
+<br>
+&lt;br&gt;&lt;blockquote&nbsp;type=&quot;cite&quot;&gt;&lt;div&nbsp;dir=&quot;ltr&quot;&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;&lt;div&gt;Hi&nbsp;all&nbsp;(especially&nbsp;ImgLib2&nbsp;developers)&lt;br&gt;&lt;br&gt;&lt;/div&gt; &nbsp;Up&nbsp;until&nbsp;now,&nbsp;when&nbsp;running&nbsp;ImgLib2&nbsp;algorithms&nbsp;on&nbsp;large&nbsp;datasets&nbsp;in&nbsp;ImageJ2,&nbsp;the&nbsp;UI&nbsp;was&nbsp;basically&nbsp;frozen&nbsp;for&nbsp;the&nbsp;complete&nbsp;compute&nbsp;time&nbsp;(e.g.&nbsp;when&nbsp;computing&nbsp;Min/Max&nbsp;values&nbsp;in&nbsp;the&nbsp;Brightness/Contrast&nbsp;plugin).&lt;br&gt;<br>
+<br>
+<br>
+<br>
+<br>
+&lt;br&gt;&lt;/div&gt; &nbsp;As&nbsp;of&nbsp;&lt;a&nbsp;href=&quot;https://github.com/imagej/imagej/commit/dde5c3529e4b5daf78eb899a781635d4730ecb85&quot;&nbsp;target=&quot;_blank&quot;&gt;this&nbsp;commit&lt;/a&gt;&nbsp;UI-based&nbsp;refreshing&nbsp;and&nbsp;event&nbsp;callback&nbsp;methods&nbsp;are&nbsp;now&nbsp;handled&nbsp;on&nbsp;a&nbsp;separate&nbsp;thread,&nbsp;allowing&nbsp;them&nbsp;to&nbsp;send&nbsp;UI&nbsp;updates&nbsp;(e.g.&nbsp;via&nbsp;the&nbsp;StatusService).&lt;br&gt;<br>
+<br>
+<br>
+<br>
+<br>
+&lt;br&gt;&lt;/div&gt; &nbsp;For&nbsp;the&nbsp;moment,&nbsp;to&nbsp;avoid&nbsp;adding&nbsp;a&nbsp;Scijava-common&nbsp;dependency&nbsp;to&nbsp;ImgLib2&nbsp;algorithms,&nbsp;I&nbsp;&lt;a&nbsp;href=&quot;https://github.com/imagej/imagej/blob/ffb3d651811089e582c0698701a1a1ea19151db9/core/data/src/main/java/imagej/data/minmax/DefaultMinMaxMethod.java&quot;&nbsp;target=&quot;_blank&quot;&gt;forked&nbsp;the&nbsp;ComputeMinMax&nbsp;algorithm&lt;/a&gt;&nbsp;in&nbsp;IJ2&nbsp;to&nbsp;use&nbsp;the&nbsp;StatusService&nbsp;to&nbsp;report&nbsp;computation&nbsp;progress.&lt;br&gt;<br>
+<br>
+<br>
+<br>
+<br>
+&lt;br&gt;&lt;/div&gt; &nbsp;Going&nbsp;forward&nbsp;though,&nbsp;we&nbsp;should&nbsp;agree&nbsp;on&nbsp;a&nbsp;long&nbsp;term&nbsp;solution:&lt;br&gt;&lt;div&gt;&lt;div&gt;&lt;br&gt; &nbsp;A)&nbsp;imglib2&nbsp;needs&nbsp;its&nbsp;own&nbsp;status&nbsp;reporting&nbsp;mechanism&nbsp;(Listeners&nbsp;and&nbsp;Events&nbsp;etc.)&lt;br&gt; &nbsp;B)&nbsp;it&nbsp;needs&nbsp;a&nbsp;SciJava&nbsp;context&nbsp;to&nbsp;use&nbsp;the&nbsp;StatusService&nbsp;&lt;br&gt;<br>
+<br>
+<br>
+<br>
+<br>
+ &nbsp;C)&nbsp;we&nbsp;have&nbsp;to&nbsp;fork&nbsp;every&nbsp;core&nbsp;algorithm&nbsp;in&nbsp;ImgLib2&nbsp;to&nbsp;add&nbsp;StatusService&lt;br&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt; &nbsp;If&nbsp;possible&nbsp;I&nbsp;would&nbsp;like&nbsp;to&nbsp;avoid&nbsp;C,&nbsp;but&nbsp;if&nbsp;it&nbsp;becomes&nbsp;a&nbsp;necessity&nbsp;it&nbsp;would&nbsp;be&nbsp;helpful&nbsp;if&nbsp;the&nbsp;algorithms&nbsp;were&nbsp;refactored&nbsp;for&nbsp;extensibility&nbsp;(having&nbsp;protected&nbsp;field&nbsp;accessors,&nbsp;for&nbsp;example).&lt;br&gt;<br>
+<br>
+<br>
+<br>
+<br>
+&lt;br&gt;&lt;/div&gt;&lt;div&gt; &nbsp;I&nbsp;personally&nbsp;am&nbsp;in&nbsp;favor&nbsp;of&nbsp;B&nbsp;because&nbsp;it&nbsp;would&nbsp;limit&nbsp;code&nbsp;repetition&nbsp;and&nbsp;pave&nbsp;the&nbsp;way&nbsp;for&nbsp;further&nbsp;unification&nbsp;(Part&nbsp;of&nbsp;why&nbsp;I&nbsp;completely&nbsp;forked&nbsp;ComputeMinMax&nbsp;was&nbsp;to&nbsp;use&nbsp;the&nbsp;Scijava-common&nbsp;ThreadService,&nbsp;which&nbsp;has&nbsp;some&nbsp;-&nbsp;I&nbsp;think&nbsp;unnecessary&nbsp;-&nbsp;overlap&nbsp;with&nbsp;the&nbsp;SimpleMultiThreading&nbsp;utility&nbsp;class).&lt;br&gt;<br>
+<br>
+<br>
+<br>
+<br>
+&lt;br&gt;&lt;/div&gt;&lt;div&gt; &nbsp;But&nbsp;I&nbsp;understand&nbsp;that&nbsp;adding&nbsp;this&nbsp;dependency&nbsp;is&nbsp;not&nbsp;a&nbsp;minor&nbsp;request,&nbsp;and&nbsp;care&nbsp;would&nbsp;have&nbsp;to&nbsp;be&nbsp;taken&nbsp;to&nbsp;limit&nbsp;the&nbsp;impact&nbsp;on&nbsp;performance.&lt;br&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt; &nbsp;So&nbsp;what&nbsp;do&nbsp;other&nbsp;people&nbsp;think?&lt;br&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;<br>
+<br>
+<br>
+<br>
+<br>
+Thanks,&lt;br&gt;&lt;/div&gt;&lt;div&gt;-&nbsp;Mark&lt;br&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;<br>
+<br>
+--&nbsp;&lt;br&gt;<br>
+--&nbsp;&lt;br&gt;<br>
+Please&nbsp;avoid&nbsp;top-posting,&nbsp;and&nbsp;please&nbsp;make&nbsp;sure&nbsp;to&nbsp;reply-to-all!&lt;br&gt;<br>
+ &lt;br&gt;<br>
+Mailing&nbsp;list&nbsp;web&nbsp;interface:&nbsp;&lt;a&nbsp;href=&quot;http://groups.google.com/group/fiji-devel&quot;&nbsp;target=&quot;_blank&quot;&gt;http://groups.google.com/group/fiji-devel&lt;/a&gt;&lt;br&gt;<br>
+ &lt;br&gt;<br>
+---&nbsp;&lt;br&gt;<br>
+You&nbsp;received&nbsp;this&nbsp;message&nbsp;because&nbsp;you&nbsp;are&nbsp;subscribed&nbsp;to&nbsp;the&nbsp;Google&nbsp;Groups&nbsp;&quot;Fiji-devel&quot;&nbsp;group.&lt;br&gt;<br>
+To&nbsp;unsubscribe&nbsp;from&nbsp;this&nbsp;group&nbsp;and&nbsp;stop&nbsp;receiving&nbsp;emails&nbsp;from&nbsp;it,&nbsp;send&nbsp;an&nbsp;email&nbsp;to&nbsp;&lt;a&nbsp;href=&quot;mailto:fiji-devel+unsubscribe@googlegroups.com&quot;&nbsp;target=&quot;_blank&quot;&gt;fiji-devel+unsubscribe@googlegroups.com&lt;/a&gt;.&lt;br&gt;<br>
+For&nbsp;more&nbsp;options,&nbsp;visit&nbsp;&lt;a&nbsp;href=&quot;https://groups.google.com/groups/opt_out&quot;&nbsp;target=&quot;_blank&quot;&gt;https://groups.google.com/groups/opt_out&lt;/a&gt;.&lt;br&gt;<br>
+ &lt;br&gt;<br>
+ &lt;br&gt;<br>
+&lt;/blockquote&gt;&lt;/div&gt;&lt;br&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;<br>
+<br>
+&lt;p&gt;&lt;/p&gt;<br>
+<br>
+--&nbsp;&lt;br&gt;<br>
+--&nbsp;&lt;br&gt;<br>
+Please&nbsp;avoid&nbsp;top-posting,&nbsp;and&nbsp;please&nbsp;make&nbsp;sure&nbsp;to&nbsp;reply-to-all!&lt;br&gt;<br>
+ &lt;br&gt;<br>
+Mailing&nbsp;list&nbsp;web&nbsp;interface:&nbsp;&lt;a&nbsp;href=&quot;http://groups.google.com/group/fiji-devel&quot;&nbsp;target=&quot;_blank&quot;&gt;http://groups.google.com/group/fiji-devel&lt;/a&gt;&lt;br&gt;<br>
+ &lt;br&gt;<br>
+---&nbsp;&lt;br&gt;<br>
+You&nbsp;received&nbsp;this&nbsp;message&nbsp;because&nbsp;you&nbsp;are&nbsp;subscribed&nbsp;to&nbsp;the&nbsp;Google&nbsp;Groups&nbsp;&quot;Fiji-devel&quot;&nbsp;group.&lt;br&gt;<br>
+To&nbsp;unsubscribe&nbsp;from&nbsp;this&nbsp;group&nbsp;and&nbsp;stop&nbsp;receiving&nbsp;emails&nbsp;from&nbsp;it,&nbsp;send&nbsp;an&nbsp;email&nbsp;to&nbsp;&lt;a&nbsp;href=&quot;mailto:fiji-devel%2Bunsubscribe@googlegroups.com&quot;&nbsp;target=&quot;_blank&quot;&gt;fiji-devel+unsubscribe@googlegroups.com&lt;/a&gt;.&lt;br&gt;<br>
+For&nbsp;more&nbsp;options,&nbsp;visit&nbsp;&lt;a&nbsp;href=&quot;https://groups.google.com/groups/opt_out&quot;&nbsp;target=&quot;_blank&quot;&gt;https://groups.google.com/groups/opt_out&lt;/a&gt;.&lt;br&gt;<br>
+ &lt;br&gt;<br>
+ &lt;br&gt;<br>
+&lt;/div&gt;&lt;/div&gt;&lt;/blockquote&gt;&lt;/div&gt;&lt;br&gt;&lt;/div&gt;&lt;/div&gt;<br>
+
+</tt>

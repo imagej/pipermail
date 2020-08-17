@@ -1,0 +1,4195 @@
+From bugzilla-daemon at pacific.mpi-cbg.de  Tue Jan  1 05:21:29 2013
+From: bugzilla-daemon at pacific.mpi-cbg.de (bugzilla-daemon at pacific.mpi-cbg.de)
+Date: Tue, 01 Jan 2013 11:21:29 +0000
+Subject: [ImageJ-devel] [Bug 541] As soon a I click to open fiji it crashes
+	immediately
+In-Reply-To: <bug-541-194@http.fiji.sc/bugzilla/>
+References: <bug-541-194@http.fiji.sc/bugzilla/>
+Message-ID: <bug-541-194-HoxlRfEP95@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=541
+
+Johannes Schindelin <johannes.schindelin at gmx.de> changed:
+
+           What    |Removed                     |Added
+----------------------------------------------------------------------------
+                 CC|                            |johannes.schindelin at gmx.de
+
+--- Comment #1 from Johannes Schindelin <johannes.schindelin at gmx.de> ---
+Could you try the tips at http://fiji.sc/Debugging#Command_line_debugging?
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130101/c4f08434/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Tue Jan  1 05:32:11 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Tue, 1 Jan 2013 12:32:11 +0100 (CET)
+Subject: [ImageJ-devel] ImageJ netbeans plugin development...
+In-Reply-To: <1DA0CE11-20B2-482C-8F8B-AD58B70A167D@gaiag.net>
+References: <1DA0CE11-20B2-482C-8F8B-AD58B70A167D@gaiag.net>
+Message-ID: <alpine.DEB.1.00.1301011229430.32206@s15462909.onlinehome-server.info>
+
+Hi Chris,
+
+On Fri, 21 Dec 2012, Chris wrote:
+
+> I have set up Netbeans for ImageJ plugin development, but I am getting
+> some errors that seem to imply that the version of ImageJ in the
+> repository is not the latest.   For example,  the line 
+> 
+> IJ.setThreshold(imj, 1.0, 255.0);
+> 
+> gives the error:
+> 
+> no suitable method found for setThreshold(ImagePlus,double,double)
+
+In the SciJava POM, the required ImageJ 1.x version is actually given as a
+range:
+
+	...
+	<properties>
+		...
+		<imagej1.version>[1.45s,)</imagej1.version>
+		...
+	</properties>
+	...
+
+Since your project requires a newer version, you need to override that
+setting by putting your own <properties> section in your pom.xml and
+substituting the "1.45s" version number by the appropriate minimum version
+of ImageJ 1.x you require for your project.
+
+Ciao,
+Johannes
+
+
+From Johannes.Schindelin at gmx.de  Wed Jan  2 00:11:18 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Wed, 2 Jan 2013 07:11:18 +0100 (CET)
+Subject: [ImageJ-devel] ImageJ netbeans plugin development...
+In-Reply-To: <BDED3890-6B58-413B-94F1-43A9AF1BAD7A@gaiag.net>
+References: <1DA0CE11-20B2-482C-8F8B-AD58B70A167D@gaiag.net>
+	<alpine.DEB.1.00.1301011229430.32206@s15462909.onlinehome-server.info>
+	<BDED3890-6B58-413B-94F1-43A9AF1BAD7A@gaiag.net>
+Message-ID: <alpine.DEB.1.00.1301020704100.9562@bonsai2>
+
+Hi Chris,
+
+On Tue, 1 Jan 2013, Chris wrote:
+
+> The only pom.xml file in my Netbeans project does not contain any imagej
+> version.  This is the properties section of that pom.xml file:
+> 
+> 
+> 	<properties>
+> 		<project.rootdir>${basedir}</project.rootdir>
+> 	</properties>
+> 
+> I added the line
+> 
+> <imagej1.version>1.47h</imagej1.version>
+> 
+> and that seems to have solved the error.
+
+That is exactly what I suggested. Since you specified the SciJava POM as
+parent of your pom.xml, the settings in the former are inherited by the
+latter. What you now did was simply to override that inherited setting.
+
+> However, I cannot discover how to make my plugin appear in the Plugins
+> menu when I generate an instance of ImageJ using NetBeans Debug Project.
+> When I created my project in Netbeans, I got MyProject and MyProject -
+> Source Packages under the Files.  I put my java files in the plugins
+> folder of the MyProject - Source Packages, and the .class files show up
+> in the MyProject/build/classes/plugins folder.  I tried copying the
+> .class file to the plugins folder in the MyProject - Source Packages,
+> but still nothing shows up in the Plugins menu of the ImageJ instance --
+> and, yes, there is an underscore in the name.  How do I get the plugin
+> to show up in the ImageJ Plugins menu?
+
+You need a plugins.config file in the generated .jar file. This is how it
+is done in the minimal example:
+
+https://github.com/imagej/minimal-ij1-plugin/blob/master/src/main/resources/plugins.config
+
+In general, it is not a good idea to put plain .class (or even .java)
+files into the plugins/ folder of ImageJ.app/.
+
+In the Fiji project, we added a few convenience functions to have an
+easier time to debug things from IDEs:
+
+http://fiji.sc/Debugging#Debugging_plugins_in_an_IDE_.28Netbeans.2C_IntelliJ.2C_Eclipse.2C_etc.29
+
+Ciao,
+Johannes
+
+
+From oliver.tills at plymouth.ac.uk  Wed Jan  2 04:53:37 2013
+From: oliver.tills at plymouth.ac.uk (Oliver Tills)
+Date: Wed, 2 Jan 2013 10:53:37 +0000
+Subject: [ImageJ-devel] Advice for GUI Plugin development
+Message-ID: <CD09C231.5B0B%oliver.tills@plymouth.ac.uk>
+
+Hi All,
+
+This is my first post to this list and I am very new to writing code etc so I apologise if I have overlooked something obvious. I've been learning Java and am starting to get comfortable with creating functional swing interfaces, however I'm encountering some issues when I try and get these functioning within ImageJ (in NetBeans). I have read and been using the Writing Image J Plugins Tutorial and this has been a real help.
+
+I am using Image J to develop an educational resource whereby students will be presented with a GUI which allows them to choose a treatment, this will then call up appropriate images sequences which they then perform measurements (size/count) using. These measurements will be entered into a table and a plot facility will allow them to visualise the results of their experiment. My plan is to achieve this by creating Image J plugins, however I have several questions -
+
+Firstly,  is what I describe (very briefly) achievable using Image J plugins (Image J seems to largely be made up of plugins so I couldn't find a reason why this shouldn't be feasible)?
+
+I've been using Swing to create GUI's as I found this creates a nicer looking interface (this may well just be my inexperience using AWT), however I see that PlugInFrame is AWT based and if I try to bring the Swing designed windows into a PlugInFrame this does not work (perhaps not surprisingly). Therefore should I be switching to AWT for this project or can I continue using Swing and get Image J functions working with this?
+
+I would also ideally like to embed the Image J image windows within a window to provide some control over the layout of  various components (i.e. a control bar for play/pause/measure options positioned next to the window ? I was going to hide the main Image J window to provide control over the features available).  Is this possible and if so what is the best way of achieving it?
+
+Many thanks for reading and I would appreciate any advice you can provide.
+
+Cheers,
+Oli
+
+Oliver Tills
+http://vimeo.com/channels/embryonicdevelopment
+Videos of developing aquatic embryos produced in our lab
+
+
+From Johannes.Schindelin at gmx.de  Wed Jan  2 13:02:10 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Wed, 2 Jan 2013 20:02:10 +0100 (CET)
+Subject: [ImageJ-devel] ImageJ netbeans plugin development...
+In-Reply-To: <23AA8FAE-F3C4-4285-AD31-3B37B6B19435@gaiag.net>
+References: <1DA0CE11-20B2-482C-8F8B-AD58B70A167D@gaiag.net>
+	<alpine.DEB.1.00.1301011229430.32206@s15462909.onlinehome-server.info>
+	<BDED3890-6B58-413B-94F1-43A9AF1BAD7A@gaiag.net>
+	<alpine.DEB.1.00.1301020704100.9562@bonsai2>
+	<23AA8FAE-F3C4-4285-AD31-3B37B6B19435@gaiag.net>
+Message-ID: <alpine.DEB.1.00.1301021956350.32206@s15462909.onlinehome-server.info>
+
+Hi Chris,
+
+On Wed, 2 Jan 2013, Chris wrote:
+
+> > You need a plugins.config file in the generated .jar file. This is how it
+> > is done in the minimal example:
+> > 
+> > https://github.com/imagej/minimal-ij1-plugin/blob/master/src/main/resources/plugins.config
+> 
+> I never thought of that.  I use plugins.config files when I create my
+> jar files for running my plugins in ImageJ, but never in NetBeans.
+> Where does the plugins.config file go in the Netbeans files?  There is
+> no src folder.  This is the structure of my NetBeans project:
+> 
+> MyProject
+> build
+> classes
+> empty
+> generated-sources
+> built-jar.properties
+> dist
+> lib
+> MyProject.jar
+> nbproject
+> build.xml
+> manifest.mf
+> 
+> within MyProject.jar are the ImageJ classes
+
+As I pointed out earlier, I would strongly recommend changing this to
+a Maven project instead. Not only does it make you less dependent on a
+particular IDE, not only does it allow for easy collaboration with others
+(and you will find that this is the fun part of Open Source, being
+contacted by strangers who made your plugin better), but Maven also
+encourages more general projects (as you can see by the difficulty to
+do something as simple as including a plugins.config file in Netbeans).
+
+Ciao,
+Johannes
+
+
+From Johannes.Schindelin at gmx.de  Thu Jan  3 06:21:28 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Thu, 3 Jan 2013 06:21:28 -0600 (CST)
+Subject: [ImageJ-devel] ImageJ netbeans plugin development...
+In-Reply-To: <BC2890D7-76EA-46F8-8E7D-521EBC6F9DA9@gaiag.net>
+References: <1DA0CE11-20B2-482C-8F8B-AD58B70A167D@gaiag.net>
+	<alpine.DEB.1.00.1301011229430.32206@s15462909.onlinehome-server.info>
+	<BDED3890-6B58-413B-94F1-43A9AF1BAD7A@gaiag.net>
+	<alpine.DEB.1.00.1301020704100.9562@bonsai2>
+	<23AA8FAE-F3C4-4285-AD31-3B37B6B19435@gaiag.net>
+	<alpine.DEB.1.00.1301021956350.32206@s15462909.onlinehome-server.info>
+	<BC2890D7-76EA-46F8-8E7D-521EBC6F9DA9@gaiag.net>
+Message-ID: <alpine.DEB.1.00.1301030620130.9562@bonsai2>
+
+Hi Chris,
+
+On Wed, 2 Jan 2013, Chris wrote:
+
+> I did look at your minimal plugin and it ran just fine, but I still
+> don't understand how to use Mavin to develop my project.  The website
+> you pointed me to shows how to open the Maven project minimal-ij1-plugin
+> and I was able to open it in NetBeans, but I do not understand how to
+> develop my project in Maven.  Is there an instruction page for beginners
+> like me?  :-)
+
+I tried to explain very concisely what makes a Maven project here:
+
+	http://fiji.sc/Maven
+
+Basically, it is the directory structure and a pom.xml file.
+
+Ciao,
+Johannes
+
+
+From Johannes.Schindelin at gmx.de  Fri Jan  4 08:10:22 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Fri, 4 Jan 2013 08:10:22 -0600 (CST)
+Subject: [ImageJ-devel] ImageJ netbeans plugin development...
+In-Reply-To: <A04898B8-B97E-429D-A933-296EA146AB47@gaiag.net>
+References: <1DA0CE11-20B2-482C-8F8B-AD58B70A167D@gaiag.net>
+	<alpine.DEB.1.00.1301011229430.32206@s15462909.onlinehome-server.info>
+	<BDED3890-6B58-413B-94F1-43A9AF1BAD7A@gaiag.net>
+	<alpine.DEB.1.00.1301020704100.9562@bonsai2>
+	<23AA8FAE-F3C4-4285-AD31-3B37B6B19435@gaiag.net>
+	<alpine.DEB.1.00.1301021956350.32206@s15462909.onlinehome-server.info>
+	<BC2890D7-76EA-46F8-8E7D-521EBC6F9DA9@gaiag.net>
+	<alpine.DEB.1.00.1301030620130.9562@bonsai2>
+	<A04898B8-B97E-429D-A933-296EA146AB47@gaiag.net>
+Message-ID: <alpine.DEB.1.00.1301040808500.9562@bonsai2>
+
+Hi Chris,
+
+On Thu, 3 Jan 2013, Chris wrote:
+
+> I have an existing NetBeans project which I would like to change to a
+> Maven project.  I must be missing something, but your webpage does a
+> good job of explaining what a Maven project is, but not how to begin
+> creating one.  I notice in NetBeans that your example project has the
+> project name
+> 
+> plugins/Process_Pixels.jar
+> 
+> which of course is not a valid name for a NetBeans project, but the
+> project icon includes a small "m" presumably for a Maven project.  So
+> how do I begin to create such a project?  Thanks, and sorry for the
+> complete ignorance.  
+
+The easiest way to start a new Maven project is to copy and modify
+minimal-ij1-project. The license encourages this explicitly.
+
+Ciao,
+Johannes
+
+
+From Johannes.Schindelin at gmx.de  Fri Jan  4 10:34:35 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Fri, 4 Jan 2013 10:34:35 -0600 (CST)
+Subject: [ImageJ-devel] ImageJ netbeans plugin development...
+In-Reply-To: <717E9D81-82BB-4046-9421-7355B3C7E352@gaiag.net>
+References: <1DA0CE11-20B2-482C-8F8B-AD58B70A167D@gaiag.net>
+	<alpine.DEB.1.00.1301011229430.32206@s15462909.onlinehome-server.info>
+	<BDED3890-6B58-413B-94F1-43A9AF1BAD7A@gaiag.net>
+	<alpine.DEB.1.00.1301020704100.9562@bonsai2>
+	<23AA8FAE-F3C4-4285-AD31-3B37B6B19435@gaiag.net>
+	<alpine.DEB.1.00.1301021956350.32206@s15462909.onlinehome-server.info>
+	<BC2890D7-76EA-46F8-8E7D-521EBC6F9DA9@gaiag.net>
+	<alpine.DEB.1.00.1301030620130.9562@bonsai2>
+	<A04898B8-B97E-429D-A933-296EA146AB47@gaiag.net>
+	<alpine.DEB.1.00.1301040808500.9562@bonsai2>
+	<717E9D81-82BB-4046-9421-7355B3C7E352@gaiag.net>
+Message-ID: <alpine.DEB.1.00.1301041033000.9562@bonsai2>
+
+Hi Chris,
+
+On Fri, 4 Jan 2013, Chris wrote:
+
+> > On Thu, 3 Jan 2013, Chris wrote:
+> > 
+> >> I have an existing NetBeans project which I would like to change to a
+> >> Maven project.  I must be missing something, but your webpage does a
+> >> good job of explaining what a Maven project is, but not how to begin
+> >> creating one.  I notice in NetBeans that your example project has the
+> >> project name
+> >> 
+> >> plugins/Process_Pixels.jar
+> >> 
+> >> which of course is not a valid name for a NetBeans project, but the
+> >> project icon includes a small "m" presumably for a Maven project.  So
+> >> how do I begin to create such a project?  Thanks, and sorry for the
+> >> complete ignorance.  
+> > 
+> > The easiest way to start a new Maven project is to copy and modify
+> > minimal-ij1-project. The license encourages this explicitly.
+> 
+> OK.  I think I can figure most of that out, but how do I change the
+> project name?  Your project name is 
+> 
+> plugins/Process_Pixels.jar
+> 
+> and I would like to name it something else, say, My_Project.  Shouldn't
+> it be 
+> 
+> plugins/My_Project.jar
+> 
+> to match your configuration?  How do I do that?
+
+You need to edit the pom.xml file directly. There you will find quite
+intuitive tag names (if you ever have written HTML manually, it is even
+more intuitive) and the verbatim string "plugins/Process_Pixels.jar". In
+general, all the metadata about the project is stored in the pom.xml.
+
+Ciao,
+Johannes
+
+
+From Johannes.Schindelin at gmx.de  Fri Jan  4 11:12:32 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Fri, 4 Jan 2013 11:12:32 -0600 (CST)
+Subject: [ImageJ-devel] ImageJ netbeans plugin development...
+In-Reply-To: <2E04F0A0-813E-41CE-AB6A-9D405AD0F570@gaiag.net>
+References: <1DA0CE11-20B2-482C-8F8B-AD58B70A167D@gaiag.net>
+	<alpine.DEB.1.00.1301011229430.32206@s15462909.onlinehome-server.info>
+	<BDED3890-6B58-413B-94F1-43A9AF1BAD7A@gaiag.net>
+	<alpine.DEB.1.00.1301020704100.9562@bonsai2>
+	<23AA8FAE-F3C4-4285-AD31-3B37B6B19435@gaiag.net>
+	<alpine.DEB.1.00.1301021956350.32206@s15462909.onlinehome-server.info>
+	<BC2890D7-76EA-46F8-8E7D-521EBC6F9DA9@gaiag.net>
+	<alpine.DEB.1.00.1301030620130.9562@bonsai2>
+	<A04898B8-B97E-429D-A933-296EA146AB47@gaiag.net>
+	<alpine.DEB.1.00.1301040808500.9562@bonsai2>
+	<717E9D81-82BB-4046-9421-7355B3C7E352@gaiag.net>
+	<alpine.DEB.1.00.1301041033000.9562@bonsai2>
+	<2E04F0A0-813E-41CE-AB6A-9D405AD0F570@gaiag.net>
+Message-ID: <alpine.DEB.1.00.1301041112150.9562@bonsai2>
+
+Hi Chris,
+
+On Fri, 4 Jan 2013, Chris wrote:
+
+> > On Fri, 4 Jan 2013, Chris wrote:
+> > 
+> >>> On Thu, 3 Jan 2013, Chris wrote:
+> >>> 
+> >>>> I have an existing NetBeans project which I would like to change to a
+> >>>> Maven project.  I must be missing something, but your webpage does a
+> >>>> good job of explaining what a Maven project is, but not how to begin
+> >>>> creating one.  I notice in NetBeans that your example project has the
+> >>>> project name
+> >>>> 
+> >>>> plugins/Process_Pixels.jar
+> >>>> 
+> >>>> which of course is not a valid name for a NetBeans project, but the
+> >>>> project icon includes a small "m" presumably for a Maven project.  So
+> >>>> how do I begin to create such a project?  Thanks, and sorry for the
+> >>>> complete ignorance.  
+> >>> 
+> >>> The easiest way to start a new Maven project is to copy and modify
+> >>> minimal-ij1-project. The license encourages this explicitly.
+> >> 
+> >> OK.  I think I can figure most of that out, but how do I change the
+> >> project name?  Your project name is 
+> >> 
+> >> plugins/Process_Pixels.jar
+> >> 
+> >> and I would like to name it something else, say, My_Project.  Shouldn't
+> >> it be 
+> >> 
+> >> plugins/My_Project.jar
+> >> 
+> >> to match your configuration?  How do I do that?
+> > 
+> > You need to edit the pom.xml file directly. There you will find quite
+> > intuitive tag names (if you ever have written HTML manually, it is even
+> > more intuitive) and the verbatim string "plugins/Process_Pixels.jar". In
+> > general, all the metadata about the project is stored in the pom.xml.
+> 
+> OK, great!  Thanks, that works!  :-)  I've done some HTML scripting and XML does seem more intuitive.  
+
+Good luck!
+Johannes
+
+
+From Johannes.Schindelin at gmx.de  Fri Jan  4 14:45:32 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Fri, 4 Jan 2013 21:45:32 +0100 (CET)
+Subject: [ImageJ-devel] ImageJ netbeans plugin development...
+In-Reply-To: <55D5120D-A3FC-478E-B103-7CFC4B232B8B@gaiag.net>
+References: <1DA0CE11-20B2-482C-8F8B-AD58B70A167D@gaiag.net>
+	<alpine.DEB.1.00.1301011229430.32206@s15462909.onlinehome-server.info>
+	<BDED3890-6B58-413B-94F1-43A9AF1BAD7A@gaiag.net>
+	<alpine.DEB.1.00.1301020704100.9562@bonsai2>
+	<23AA8FAE-F3C4-4285-AD31-3B37B6B19435@gaiag.net>
+	<alpine.DEB.1.00.1301021956350.32206@s15462909.onlinehome-server.info>
+	<BC2890D7-76EA-46F8-8E7D-521EBC6F9DA9@gaiag.net>
+	<alpine.DEB.1.00.1301030620130.9562@bonsai2>
+	<A04898B8-B97E-429D-A933-296EA146AB47@gaiag.net>
+	<alpine.DEB.1.00.1301040808500.9562@bonsai2>
+	<717E9D81-82BB-4046-9421-7355B3C7E352@gaiag.net>
+	<alpine.DEB.1.00.1301041033000.9562@bonsai2>
+	<2E04F0A0-813E-41CE-AB6A-9D405AD0F570@gaiag.net>
+	<alpine.DEB.1.00.1301041112150.9562@bonsai2>
+	<55D5120D-A3FC-478E-B103-7CFC4B232B8B@gaiag.net>
+Message-ID: <alpine.DEB.1.00.1301042144140.32206@s15462909.onlinehome-server.info>
+
+Hi Christ,
+
+On Fri, 4 Jan 2013, Chris wrote:
+
+> I changed the project name and transferred my java files to the Source
+> Packages/<default package>, but attempting to clean and build the
+> project results in the dialog
+> 
+> These are some of my project's classes, but none of the choices contains
+> a main method since they depend on ImageJ's main method.  I have set the
+> project up by simply renaming your project in the pom.xml file and
+> replacing your java file with my files in the Source Packages/<default
+> package>.
+> 
+> This is the error in Netbeans output:
+> 
+> Failed to execute goal on project Auto_Postcard: Could not resolve dependencies for project sc.fiji:Auto_Postcard:jar:1.0.0: Failed to collect dependencies for [net.imagej:ij:jar:[1.45s,) (compile), imagej:ij:jar:2.0-SNAPSHOT (compile), org.swinglabs:swing-layout:jar:1.0.3 (compile)]: Failed to read artifact descriptor for mpicbg:imglib:jar:2.0-SNAPSHOT: Failure to find net.imglib2:pom-imglib:pom:2.0-SNAPSHOT in http://maven.imagej.net/content/repositories/releases was cached in the local repository, resolution will not be reattempted until the update interval of imagej.releases has elapsed or updates are forced -> [Help 1]
+> 
+> I am missing something simple I think...
+
+I think that you want to go for version 2.0.0-SNAPSHOT. Besides, you
+should consider switching to ImgLib2. Even if it is not quite obvious from
+the repository, ImgLib1 is deprecated.
+
+Ciao,
+Johannes
+
+
+From Johannes.Schindelin at gmx.de  Fri Jan  4 16:30:43 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Fri, 4 Jan 2013 23:30:43 +0100 (CET)
+Subject: [ImageJ-devel] ImageJ netbeans plugin development...
+In-Reply-To: <F339015D-519F-412D-A78F-9284CD344C00@gaiag.net>
+References: <1DA0CE11-20B2-482C-8F8B-AD58B70A167D@gaiag.net>
+	<alpine.DEB.1.00.1301011229430.32206@s15462909.onlinehome-server.info>
+	<BDED3890-6B58-413B-94F1-43A9AF1BAD7A@gaiag.net>
+	<alpine.DEB.1.00.1301020704100.9562@bonsai2>
+	<23AA8FAE-F3C4-4285-AD31-3B37B6B19435@gaiag.net>
+	<alpine.DEB.1.00.1301021956350.32206@s15462909.onlinehome-server.info>
+	<BC2890D7-76EA-46F8-8E7D-521EBC6F9DA9@gaiag.net>
+	<alpine.DEB.1.00.1301030620130.9562@bonsai2>
+	<A04898B8-B97E-429D-A933-296EA146AB47@gaiag.net>
+	<alpine.DEB.1.00.1301040808500.9562@bonsai2>
+	<717E9D81-82BB-4046-9421-7355B3C7E352@gaiag.net>
+	<alpine.DEB.1.00.1301041033000.9562@bonsai2>
+	<2E04F0A0-813E-41CE-AB6A-9D405AD0F570@gaiag.net>
+	<alpine.DEB.1.00.1301041112150.9562@bonsai2>
+	<F339015D-519F-412D-A78F-9284CD344C00@gaiag.net>
+Message-ID: <alpine.DEB.1.00.1301042329380.32206@s15462909.onlinehome-server.info>
+
+Hi Chris,
+
+On Fri, 4 Jan 2013, Chris wrote:
+
+> I managed to get my project running, but I cannot change the name
+> Process_Pixels to my project's name, say, A_PC.  I get the error in
+> NetBeans:
+> 
+> debug:
+> Have no file for /System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Classes/jsfd.jar
+> Have no file for /System/Library/Frameworks/JavaVM.framework/Frameworks/JavaRuntimeSupport.framework/Resources/Java/JavaRuntimeSupport.jar
+> Have no file for /System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Classes/laf.jar
+> Have no file for /System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Classes/sunrsasign.jar
+> Exception in thread "main" java.lang.NoClassDefFoundError: Process_Pixels
+> Caused by: java.lang.ClassNotFoundException: Process_Pixels
+> 	
+> at java.net.URLClassLoader$1.run(URLClassLoader.java:202)
+> 	
+> at java.security.AccessController.doPrivileged(Native Method)
+> 	
+> at java.net.URLClassLoader.findClass(URLClassLoader.java:190)
+> 	
+> at java.lang.ClassLoader.loadClass(ClassLoader.java:306)
+> 	
+> at sun.misc.Launcher$AppClassLoader.loadClass(Launcher.java:301)
+> 	
+> at java.lang.ClassLoader.loadClass(ClassLoader.java:247)
+> Java Result: 1
+> BUILD SUCCESSFUL (total time: 0 seconds)
+> 
+> but I cannot find where the Process_Pixels name is specified in the
+> Project.  Is it possible to change this name, or is the name part of the
+> Maven setup?
+
+This suggests to me that you have to convince Netbeans to re-read the
+configuration after you edited the pom.xml outside of Netbeans.
+
+Ciao,
+Johannes
+
+
+From Johannes.Schindelin at gmx.de  Fri Jan  4 18:42:08 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Sat, 5 Jan 2013 01:42:08 +0100 (CET)
+Subject: [ImageJ-devel] Maven ImageJ instance...
+In-Reply-To: <4F481A88-1D1C-4AB7-97A3-0F8C4B746A69@gaiag.net>
+References: <4F481A88-1D1C-4AB7-97A3-0F8C4B746A69@gaiag.net>
+Message-ID: <alpine.DEB.1.00.1301050140080.32206@s15462909.onlinehome-server.info>
+
+Hi Chris,
+
+On Fri, 4 Jan 2013, Chris wrote:
+
+> I am beginning to run my plugin in Maven, but I realize there is no
+> ImageJ tool bar in the NetBeans generated instance of ImageJ, and so all
+> calls in my plugins for toolbar changes such as 
+> 
+> IJ.setTool("freehand");
+> 
+> give a null pointer exception.  Also, some of the IJ.run functions give
+> a null pointer exception, such as
+> 
+> IJ.run("Colors...", "foreground=white background=black selection=red");
+> 
+> Is there a list somewhere of how to resolve these exceptions in the
+> Maven instance of ImageJ?
+
+I cannot reproduce. However, I did not use Netbeans to try to reproduce
+but plain Maven and Eclipse's Maven integration. Both generate artifacts
+that work just fine here.
+
+One of my colleagues here in the ImageJ development team uses Netbeans,
+too, but he did not report problems either.
+
+I will install Netbeans next week and build ImageJ 1.x there. If I can
+reproduce the issues you described, I will fix them then.
+
+Ciao,
+Johannes
+
+
+From Johannes.Schindelin at gmx.de  Sat Jan  5 09:42:16 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Sat, 5 Jan 2013 09:42:16 -0600 (CST)
+Subject: [ImageJ-devel] Java in 2013
+Message-ID: <alpine.DEB.1.00.1301050940350.9562@bonsai2>
+
+Hi all,
+
+this post lists a couple of things to expect of Java this year:
+
+http://jaxenter.com/5-reasons-to-be-excited-about-java-in-2013-45938.html
+
+Most interesting for me: lambda operators, GPU support and a better
+Javascript engine in Java 8.
+
+Ciao,
+Johannes
+
+
+From sapristi at gmail.com  Sat Jan  5 10:48:37 2013
+From: sapristi at gmail.com (Albert Cardona)
+Date: Sat, 5 Jan 2013 11:48:37 -0500
+Subject: [ImageJ-devel] [fiji-devel] Java in 2013
+In-Reply-To: <alpine.DEB.1.00.1301050940350.9562@bonsai2>
+References: <alpine.DEB.1.00.1301050940350.9562@bonsai2>
+Message-ID: <AA58098E-762E-4EA1-9847-5C6BDD9C51C6@gmail.com>
+
+On Jan 5, 2013, at 10:42 AM, Johannes Schindelin <Johannes.Schindelin at gmx.de> wrote:
+
+> Hi all,
+> 
+> this post lists a couple of things to expect of Java this year:
+> 
+> http://jaxenter.com/5-reasons-to-be-excited-about-java-in-2013-45938.html
+> 
+> Most interesting for me: lambda operators, GPU support and a better
+> Javascript engine in Java 8.
+> 
+> Ciao,
+> Johannes
+
+
+Rather, by 2015, when will all be using java 7, finally java 8 will be released in a usable state...
+
+Albert
+
+
+> 
+> -- 
+> Please avoid top-posting, and please make sure to reply-to-all!
+> 
+> Mailing list web interface: http://groups.google.com/group/fiji-devel
+
+
+From Johannes.Schindelin at gmx.de  Sat Jan  5 12:38:13 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Sat, 5 Jan 2013 12:38:13 -0600 (CST)
+Subject: [ImageJ-devel] [fiji-devel] Java in 2013
+In-Reply-To: <AA58098E-762E-4EA1-9847-5C6BDD9C51C6@gmail.com>
+References: <alpine.DEB.1.00.1301050940350.9562@bonsai2>
+	<AA58098E-762E-4EA1-9847-5C6BDD9C51C6@gmail.com>
+Message-ID: <alpine.DEB.1.00.1301051237120.9562@bonsai2>
+
+Hi Albert,
+
+On Sat, 5 Jan 2013, Albert Cardona wrote:
+
+> On Jan 5, 2013, at 10:42 AM, Johannes Schindelin <Johannes.Schindelin at gmx.de> wrote:
+> 
+> > this post lists a couple of things to expect of Java this year:
+> > 
+> > http://jaxenter.com/5-reasons-to-be-excited-about-java-in-2013-45938.html
+> > 
+> > Most interesting for me: lambda operators, GPU support and a better
+> > Javascript engine in Java 8.
+> 
+> Rather, by 2015, when will all be using java 7, finally java 8 will be
+> released in a usable state...
+
+I agree that we probably won't be able to use these things in Fiji in
+general by the end of the year. But we can use them for our personal
+projects.
+
+Ciao,
+Dscho
+
+
+From ctrueden at wisc.edu  Mon Jan  7 15:48:00 2013
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Mon, 7 Jan 2013 15:48:00 -0600
+Subject: [ImageJ-devel] How to get a user account
+In-Reply-To: <7A7FEDC7-CBD3-45AA-859A-4CC290836B41@gaiag.net>
+References: <7A7FEDC7-CBD3-45AA-859A-4CC290836B41@gaiag.net>
+Message-ID: <CADN69y=k1FBHFWxe1YeaRSQKfRp++iAg7fM7J0M8f2tQVheWVg@mail.gmail.com>
+
+Hi Christopher,
+
+> I have searched the developer.imagej.net website but cannot find out
+> how to get a user account.
+
+The developer.imagej.net website is not a wiki, but rather a CMS-driven web
+site. It is not currently set up as a community-driven site.
+
+However, there is an ImageJ2 wiki (wiki.imagej.net), where anyone can
+create an account and contribute content. At some point in the future we
+may do what the Fiji project has done, and eliminate the "non-wiki"
+developer website completely in favor of everything being wiki content, but
+we aren't there yet.
+
+Out of curiosity: what sort of contributions did you have in mind?
+
+HTH,
+Curtis
+
+
+On Fri, Dec 28, 2012 at 1:42 PM, Chris <chris at gaiag.net> wrote:
+
+> I have searched the developer.imagej.net website but cannot find out how
+> to get a user account.  How do I do this?  Thank you in advance,
+>
+> Christopher Coulon
+> The GAIA Group
+> gaiag.net
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130107/e702f86a/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Mon Jan  7 17:34:56 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Tue, 8 Jan 2013 00:34:56 +0100 (CET)
+Subject: [ImageJ-devel] ImageJ netbeans plugin development...
+In-Reply-To: <D714E930-1FF8-4097-A367-ED39ADF16280@gaiag.net>
+References: <1DA0CE11-20B2-482C-8F8B-AD58B70A167D@gaiag.net>
+	<alpine.DEB.1.00.1301011229430.32206@s15462909.onlinehome-server.info>
+	<BDED3890-6B58-413B-94F1-43A9AF1BAD7A@gaiag.net>
+	<alpine.DEB.1.00.1301020704100.9562@bonsai2>
+	<23AA8FAE-F3C4-4285-AD31-3B37B6B19435@gaiag.net>
+	<alpine.DEB.1.00.1301021956350.32206@s15462909.onlinehome-server.info>
+	<BC2890D7-76EA-46F8-8E7D-521EBC6F9DA9@gaiag.net>
+	<alpine.DEB.1.00.1301030620130.9562@bonsai2>
+	<A04898B8-B97E-429D-A933-296EA146AB47@gaiag.net>
+	<alpine.DEB.1.00.1301040808500.9562@bonsai2>
+	<717E9D81-82BB-4046-9421-7355B3C7E352@gaiag.net>
+	<alpine.DEB.1.00.1301041033000.9562@bonsai2>
+	<2E04F0A0-813E-41CE-AB6A-9D405AD0F570@gaiag.net>
+	<alpine.DEB.1.00.1301041112150.9562@bonsai2>
+	<55D5120D-A3FC-478E-B103-7CFC4B232B8B@gaiag.net>
+	<alpine.DEB.1.00.1301042144140.32206@s15462909.onlinehome-server.info>
+	<D714E930-1FF8-4097-A367-ED39ADF16280@gaiag.net>
+Message-ID: <alpine.DEB.1.00.1301072307450.32206@s15462909.onlinehome-server.info>
+
+Hi Chris,
+
+On Fri, 4 Jan 2013, Chris wrote:
+
+> >> I changed the project name and transferred my java files to the Source
+> >> Packages/<default package>, but attempting to clean and build the
+> >> project results in the dialog
+> >> 
+> >> These are some of my project's classes, but none of the choices contains
+> >> a main method since they depend on ImageJ's main method.  I have set the
+> >> project up by simply renaming your project in the pom.xml file and
+> >> replacing your java file with my files in the Source Packages/<default
+> >> package>.
+> >> 
+> >> This is the error in Netbeans output:
+> >> 
+> >> Failed to execute goal on project Auto_Postcard: Could not resolve dependencies for project sc.fiji:Auto_Postcard:jar:1.0.0: Failed to collect dependencies for [net.imagej:ij:jar:[1.45s,) (compile), imagej:ij:jar:2.0-SNAPSHOT (compile), org.swinglabs:swing-layout:jar:1.0.3 (compile)]: Failed to read artifact descriptor for mpicbg:imglib:jar:2.0-SNAPSHOT: Failure to find net.imglib2:pom-imglib:pom:2.0-SNAPSHOT in http://maven.imagej.net/content/repositories/releases was cached in the local repository, resolution will not be reattempted until the update interval of imagej.releases has elapsed or updates are forced -> [Help 1]
+> >> 
+> >> I am missing something simple I think...
+> > 
+> > I think that you want to go for version 2.0.0-SNAPSHOT. Besides, you
+> > should consider switching to ImgLib2. Even if it is not quite obvious from
+> > the repository, ImgLib1 is deprecated.
+> 
+> 
+> OK, where do I set the parameters for SNAPSHOT and imgLib2?  In the pom.xml file?  I used your pom.xml file, changing only the <artifactid> and the <name> to my names.  
+
+In the <dependencies> section, you can define exactly what dependencies
+your program has. In this particular case, I think that both the groupId
+and the version of imagej:ij:jar:2.0-SNAPSHOT are wrong ;-)
+
+Ciao,
+Johannes
+
+
+From ctrueden at wisc.edu  Tue Jan  8 08:47:48 2013
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Tue, 8 Jan 2013 08:47:48 -0600
+Subject: [ImageJ-devel] How to get a user account
+In-Reply-To: <A9DCFA35-7FA7-4C8A-860F-2DC93AFA7613@gaiag.net>
+References: <7A7FEDC7-CBD3-45AA-859A-4CC290836B41@gaiag.net>
+	<CADN69y=k1FBHFWxe1YeaRSQKfRp++iAg7fM7J0M8f2tQVheWVg@mail.gmail.com>
+	<A9DCFA35-7FA7-4C8A-860F-2DC93AFA7613@gaiag.net>
+Message-ID: <CADN69y=p1m-GoQGnQtqYuev38pTQj7tb4qU21Xg652uu7Qzxpg@mail.gmail.com>
+
+Hi Chris,
+
+> I was hoping this list would be a give and take where I could
+> sometimes get help with an intractable (for me) problem as well as
+> help others with things I have mastered.
+
+The ImageJ and imagej-devel mailing lists are great places to get help, as
+well as contribute your knowledge. Another option is to ask and/or answer
+ImageJ questions on Stack Overflow [1].
+
+If you want to write online documentation, tutorials, etc., then consider
+the wikis for ImageJ [2] and/or Fiji [3].
+
+If you want to write code, you can use GitHub to submit changes upstream,
+such as to the imagej-tutorials project [4].
+
+Regards,
+Curtis
+
+[1] http://stackoverflow.com/
+[2] http://wiki.imagej.net/
+[3] http://fiji.sc/
+[4] https://github.com/imagej/imagej-tutorials
+
+
+On Mon, Jan 7, 2013 at 8:45 PM, Chris <chris at gaiag.net> wrote:
+
+> Hi Curtis,
+>
+> I have been helping researchers who ask questions of the ImageJ, and
+> before that, the NIH-image, list.  I almost always contribute off-list to
+> avoid clutter, but occasionally I come up with a new approach to an image
+> analysis problem.  I was hoping this list would be a give and take where I
+> could sometimes get help with an intractable (for me) problem as well as
+> help others with things I have mastered.
+>
+> Chris
+>
+> On Jan 7, 2013, at 1:48 PM, Curtis Rueden wrote:
+>
+> Hi Christopher,
+>
+> > I have searched the developer.imagej.net website but cannot find out
+> > how to get a user account.
+>
+> The developer.imagej.net website is not a wiki, but rather a CMS-driven
+> web site. It is not currently set up as a community-driven site.
+>
+> However, there is an ImageJ2 wiki (wiki.imagej.net), where anyone can
+> create an account and contribute content. At some point in the future we
+> may do what the Fiji project has done, and eliminate the "non-wiki"
+> developer website completely in favor of everything being wiki content, but
+> we aren't there yet.
+>
+> Out of curiosity: what sort of contributions did you have in mind?
+>
+> HTH,
+> Curtis
+>
+>
+> On Fri, Dec 28, 2012 at 1:42 PM, Chris <chris at gaiag.net> wrote:
+>
+>> I have searched the developer.imagej.net website but cannot find out how
+>> to get a user account.  How do I do this?  Thank you in advance,
+>>
+>> Christopher Coulon
+>> The GAIA Group
+>> gaiag.net
+>> _______________________________________________
+>> ImageJ-devel mailing list
+>> ImageJ-devel at imagej.net
+>> http://imagej.net/mailman/listinfo/imagej-devel
+>>
+>
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130108/012fb697/attachment.html>
+
+From ctrueden at wisc.edu  Wed Jan  9 12:22:10 2013
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Wed, 9 Jan 2013 12:22:10 -0600
+Subject: [ImageJ-devel] Advice for GUI Plugin development
+In-Reply-To: <CD09C231.5B0B%oliver.tills@plymouth.ac.uk>
+References: <CD09C231.5B0B%oliver.tills@plymouth.ac.uk>
+Message-ID: <CADN69ynBNgMq4nkBbErOZQt=ytZBP4Orv4pr1ccR6YXEv906qg@mail.gmail.com>
+
+Hi everyone,
+
+For completeness in the list archives: Oliver also sent this message to the
+ImageJ user list, and it was responded to there rather than here. See this
+link for details:
+
+https://list.nih.gov/cgi-bin/wa.exe?A2=IMAGEJ;16d2c507.1301
+
+Regards,
+Curtis
+
+
+On Wed, Jan 2, 2013 at 4:53 AM, Oliver Tills <oliver.tills at plymouth.ac.uk>wrote:
+
+> Hi All,
+>
+> This is my first post to this list and I am very new to writing code etc
+> so I apologise if I have overlooked something obvious. I've been learning
+> Java and am starting to get comfortable with creating functional swing
+> interfaces, however I'm encountering some issues when I try and get these
+> functioning within ImageJ (in NetBeans). I have read and been using the
+> Writing Image J Plugins Tutorial and this has been a real help.
+>
+> I am using Image J to develop an educational resource whereby students
+> will be presented with a GUI which allows them to choose a treatment, this
+> will then call up appropriate images sequences which they then perform
+> measurements (size/count) using. These measurements will be entered into a
+> table and a plot facility will allow them to visualise the results of their
+> experiment. My plan is to achieve this by creating Image J plugins, however
+> I have several questions -
+>
+> Firstly,  is what I describe (very briefly) achievable using Image J
+> plugins (Image J seems to largely be made up of plugins so I couldn't find
+> a reason why this shouldn't be feasible)?
+>
+> I've been using Swing to create GUI's as I found this creates a nicer
+> looking interface (this may well just be my inexperience using AWT),
+> however I see that PlugInFrame is AWT based and if I try to bring the Swing
+> designed windows into a PlugInFrame this does not work (perhaps not
+> surprisingly). Therefore should I be switching to AWT for this project or
+> can I continue using Swing and get Image J functions working with this?
+>
+> I would also ideally like to embed the Image J image windows within a
+> window to provide some control over the layout of  various components (i.e.
+> a control bar for play/pause/measure options positioned next to the window
+> ? I was going to hide the main Image J window to provide control over the
+> features available).  Is this possible and if so what is the best way of
+> achieving it?
+>
+> Many thanks for reading and I would appreciate any advice you can provide.
+>
+> Cheers,
+> Oli
+>
+> Oliver Tills
+> http://vimeo.com/channels/embryonicdevelopment
+> Videos of developing aquatic embryos produced in our lab
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130109/33963989/attachment.html>
+
+From ctrueden at wisc.edu  Wed Jan  9 12:31:24 2013
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Wed, 9 Jan 2013 12:31:24 -0600
+Subject: [ImageJ-devel] A vary late follow-up on "Nice to get
+ connected!" - and add. info re BioFormats GitHub issue
+In-Reply-To: <OF6A57E5EB.8BB62885-ONC1257AB6.002CB153-C1257AD9.0053372C@LocalDomain>
+References: <OF190B3EC0.8C10227F-ONC1257AA3.002DDA3C-C1257AA3.00305A32@LocalDomain>
+	<CADN69y=pg4o2cKL9qADrkRNpov9cL5tor2f-dRy_AR0HX4woAg@mail.gmail.com>
+	<OF6A57E5EB.8BB62885-ONC1257AB6.002CB153-C1257AD9.0053372C@LocalDomain>
+Message-ID: <CADN69yk0RvDS7+u1vU2SUOMNNMYJJ7EUEQ8Tao1z2QciJzVFtg@mail.gmail.com>
+
+Hi Vito,
+
+> The ZEN Plugin for ImageJ is now out with ZEN 1.1A 2012 release
+
+Great news, glad to hear it.
+
+> I have opened an issue on GitHub, connected with "CZI files with
+> bitdepths 12/14/36/42 can not be loaded",
+> (https://github.com/openmicroscopy/bioformats/issues/309)
+
+Looks like this issue is now taken care of. Please let us know of any
+further problems.
+
+> My apologies in case I am adressing you on a subject that may not be
+> your turf. Feel free to redirect me resp. pass this on, where it is
+> needed.
+
+No worries. It's just that writing me a private mail is dangerous because I
+might be too busy, or about to go on vacation for two weeks (which is what
+happened this time; sorry for that). As you discovered, filing a GitHub
+issue, or writing to a mailing list (ome-devel, imagej-devel, etc.) will
+net you faster results because there are more involved developers who can
+pounce on it.
+
+> Regards and wish you a Merry Xmas and a successfull 2013
+
+A belated happy new year to you as well!
+
+Regards,
+Curtis
+
+
+On Wed, Dec 19, 2012 at 9:08 AM, Vito Smolej <vito.smolej at zeiss.com> wrote:
+
+> Hi Curtis:
+>
+>
+> The ZEN Plugin for ImageJ is now out with ZEN 1.1A 2012 release and I have
+> opened an issue on GitHub, connected with "*CZI files with bitdepths
+> 12/14/36/42 can not be loaded"*, (*
+> https://github.com/openmicroscopy/bioformats/issues/309*<https://github.com/openmicroscopy/bioformats/issues/309>)
+> something that would be great to see fixed in the next step.
+>
+> As I could not load the two CZI files discussed there into the issue
+> tracker, I am enclosing them in this post.
+>
+>
+>
+> My apologies in case I am adressing you on a subject that may not be your
+> turf. Feel free to redirect me resp. pass this on, where it is needed.
+>
+> Regards and wish you a Merry Xmas and a successfull 2013
+>
+> Vito
+>
+> PS: as regards are past contacts - On Nov 13th I started to write  the
+> following feedback mail
+> *"*
+> *Hi Curtis:*
+> *I instantly cc-d your mail to my colleagues who are involved with the
+> ZEN plugin. Much obliged! See my comments below...*
+> "
+> ... and then stopped after a day or two. I will spare you details, because
+> they were basically a string of Yesses and Thought so's. See it as a hint
+> that now and again you and your help were on our minds.
+>
+> _________________________________________
+> Carl Zeiss Microscopy GmbH
+> Gesch?ftsbereich BioSciences / BioSciences Division
+> Imaging Software M?nchen
+> Vorentwicklung / Advanced Development
+>
+> P r o f . D r . V i t o S m o l e j
+>
+> Kistlerhofstrasse 75, 81379 M?nchen
+> Telefon/ Phone: +49 89 90 9000-306
+> Fax: +49 89 90 9000-555
+> *mailto:smolej at zeiss.de* <smolej at zeiss.de>
+> *www.zeiss.com/microscopy* <http://www.zeiss.com/microscopy>
+>
+> _________________________________________________
+>
+> Carl Zeiss Microscopy GmbH
+> Vorsitzender des Aufsichtsrates: Dr. Michael Kaschke
+> Gesch?ftsf?hrung: Dr. Ulrich Simon, Wilhelm N?rthemann, Dr. Bernhard
+> Ohnesorge, Dr. Frank Stietz
+> Sitz der Gesellschaft: 07740 Jena, Deutschland
+> Amtsgericht Jena, HRB 210.536, USt-IdNr: DE 814 503 774
+>
+>
+>
+> *Curtis Rueden <ctrueden at wisc.edu>*
+> Gesendet von: ctrueden.wisc at gmail.com
+>
+> 13.11.2012 23:54
+> An
+> Vito Smolej <vito.smolej at zeiss.com>
+> Kopie
+> ImageJ Developers <imagej-devel at imagej.net>
+> Thema
+> Re: Nice to get connected! Hi Vito,
+>
+> Good seeing you at the ImageJ conference, and my sincere apologies for
+> taking so long to reply to your questions. To give you an idea of how busy
+> things have been, I have had a total of 10 minutes coding time on ImageJ2
+> since returning from the conference!
+>
+> > The idea is to copycat the ImageJ (or fiji or any ImageJexecutable as
+> > we call it) folder in the analysis tab in ZEN
+>
+> Great, I think this integration will be very nice for ZEN users.
+> It should allow a much easier and direct access to plugins people are
+> using. A short summary:
+>
+>    - send current image from ZEN to ImageJ (button)
+>    - Receive current image from IMageJ to ZEN (button)
+>    - Apply <something>, which is actually an ImageJ primitive, bracketed
+>    by the functions above
+>
+>
+>
+> > Question 1: while the majority of executable functions are macros
+> > (*.txt, *.ijm etc), I have included also jar and class files. I guess,
+> > however, it is much safer to allow only macros, i.e. request the users
+> > package the desired functions into macros. A jar may be missing a run
+> > entry of something similar, so who needs jars anyhow in this list. Can
+> > you comment on that?
+>
+> Since Fiji has a "--run" flag for launching a particular plugin, why not
+> use that? I think it makes sense to allow any ImageJ code to be run, as
+> long as supporting it is not overly burdensome.
+>
+> If you have any users asking for this functionality, perhaps you could ask
+> them directly what they need?
+>
+> > Question 2: we scan the "usual suspects" in the system (program files,
+> > desktop etc) for possible ImageJexecutables. I would not mind at all
+> > to limit it to ImageJ20 . but I guess this would be too assuming and
+> > aggressive. What do you suggest?
+>
+> IMO it is too early to limit support to only ImageJ2. I think it makes
+> sense to support at least Fiji with ImageJ1 (the Fiji launcher has more
+> features than the vanilla ImageJ one), if not also vanilla ImageJ
+> installations.
+>
+> As for scanning the system, that is fine, but you could also require the
+> user to configure the desired path in an options dialog somewhere. Most
+> users will be very happy to do this once, if it means a working ImageJ
+> integration as a reward. It gives the user more control over which ImageJ
+> gets used, and makes your job easier since there is less harm done if your
+> detection algorithm fails.
+>
+>  The scan is done first-ever-time-only  and theres a [...] entry, for
+> adding entries later
+>
+> > Question 3: in ImageJ (1.46r) we check explicitely if LOCI has been
+> > installed - because without it , multidimensional image shuttling is
+> > not possible. Do we need to check in ImageJ2.0 (and, if you can answer
+> > this question) and in Fiji. If we need to check, any descrete way to
+> > do it? Fiji keeps track of versions... May looking for *LOCI*.jar?
+>
+> Fiji ships with Bio-Formats. ImageJ2 currently ships with only SCIFIO (the
+> core of Bio-Formats) for licensing reasons. Zeiss file formats (LSM, ZVI,
+> etc.) are not supported in SCIFIO core, only in Bio-Formats.
+>
+> For the time being, one easy way to check is to look for
+> plugins/loci_tools.jar or plugins/loci_plugins.jar in the installation. You
+> can tell which version by looking in the JAR manifest, if that matters to
+> you.
+> LOCI is of no more concern. And we are strictly on 1.47<something> and the
+> latest snapshot of Fiji. The idea is, even if we warn against it, the users
+> will update anyhow. We may require a given stable version later on, but
+> right now it is a fall-back case and not yet requested.
+>
+>
+> > Question 4: how to assure syncronicity of commands? The macros that do
+> > something useful, have a form send image from ZEN to ImageJ process it
+> > send the resulting image from ImageJ to ZEN
+>
+> My initial thought would be to instruct ImageJ to run not just the
+> requested macro, but an appended version of it that invokes some sort of
+> callback mechanism upon conclusion. I haven't experimented in detail, but
+> perhaps emitting something to stdout when the macro/script/plugin concludes
+> would be sufficient. Then ZEN could block until it receives that callback.
+> At worst, you could poll a temporary file (or use the OS's notification
+> API), though there is likely a cleaner option.
+> This is where the bug I placed in dev bugzille kicks in. The problem is
+> the receive side: if SaveAs decides to save somewhere else as prescribed,
+> the code can watch for the expected image file until the hell freezes over.
+>
+>
+>
+> > Question 5: I would very much appreciate your help. i.e. hints, as
+> > regards getting the communication run the other direction as well i.e.
+> > from ImageJ to ZEN), I remember the original TCP/IP layer - the code
+> > looked so simple and elegant. ZEN can communicate on TCP/IP and
+> > letting macros both side of the river communicate with each other via
+> > socket comm layer would be the simplest for the user. I understand it
+> > was security concerns that caused the abrupt change. I would like to
+> > hear about them (after all, my PayPal account runs on TCPIP as well)
+>
+> I am likely to blame for this debacle, since I believe Wayne got the idea
+> of the socket listener from me and my VisBio application (which suffers
+> from the same security problems). The issue is not with TCP/IP itself of
+> course, but rather how it was being used.
+>
+> When ImageJ opened its socket listener, there was no security to limit
+> incoming connections to only other instances of ImageJ, or only processes
+> of the same user, or even only processes from localhost! So someone (even
+> remotely) could control another user's already-running ImageJ instance by
+> launching macros & scripts which would then run with the permissions of
+> that user.
+>
+> Conversely, the RMI-based OtherInstance intentionally only allows
+> connections from another ImageJ running as the same user.
+>
+> For further details, see Johannes's original commit [1].
+>
+> Regarding how to get two-way communication working, I think pipes and
+> files are simple and proven ways to go. To use pipes, you might need to
+> initially launch ImageJ from ZEN (not sure how to get a handle on its
+> stdout if the user launched it externally). But to use files there is no
+> such restriction. Just make sure every piece of code (macro, plugin,
+> whatever) you ask ImageJ to execute ends by appending some information to a
+> temporary file, which ZEN either polls or receives notifications about (via
+> e.g. the FindFirstChangeNotification function [2]).
+>
+> Perhaps ImageJ could be improved in the future to make this sort of
+> two-way communication easier. If you have any suggestions along those
+> lines, feel free to suggest on the ImageJ mailing list [3].
+>
+> HTH,
+> Curtis
+>
+> [1] *
+> https://github.com/fiji/ImageJA/commit/06848874d990aeea2a0ad1df75311e9ca51b00dc
+> *<https://github.com/fiji/ImageJA/commit/06848874d990aeea2a0ad1df75311e9ca51b00dc>
+> [2] *
+> http://msdn.microsoft.com/en-us/library/windows/desktop/aa364417(v=vs.85).aspx
+> *<http://msdn.microsoft.com/en-us/library/windows/desktop/aa364417(v=vs.85).aspx>
+>
+> [3] *http://imagej.nih.gov/ij/list.html*<http://imagej.nih.gov/ij/list.html>
+>
+>
+> On Fri, Oct 26, 2012 at 3:50 AM, Vito Smolej <*vito.smolej at zeiss.com*<vito.smolej at zeiss.com>>
+> wrote:
+>
+> Hi Curtis:
+>
+>  Thank you first for your cooperative attitude! Much appreciated.
+>
+> So right away I'll bombard you with a few simple questions, regarding the
+> ImageJ plugin for ZEN. The idea is to copycat the ImageJ (or fiji or any
+> ImageJexecutable as we call it) folder in the analysis tab in ZEN like this
+>
+>
+>
+> the leave nodes are always something that gets executed in ImageJ,
+> possibly requiring activeImage input and/or producing activeImage output
+> (input and output properties of the local function nodes tree).
+>
+> *Question 1: *while the majority of executable functions are macros
+> (*.txt, *.ijm etc), I have included also jar and class files. I guess,
+> however, it is much safer to allow only macros, i.e. request the users
+> package the desired functions into macros. A jar may be missing a run entry
+> of something similar, so who needs jars anyhow in this list. Can you
+> comment on that?
+>
+> *Question 2: *we scan the "usual suspects" in the system (program files,
+> desktop etc) for possible ImageJexecutables. I would not mind at all to
+> limit it to ImageJ20 . but I guess this would be too assuming and
+> aggressive. What do you suggest?
+>
+> *Question 3: *in ImageJ (1.46r) we check explicitely if LOCI has been
+> installed - because without it , multidimensional image shuttling is not
+> possible. Do we need to check in ImageJ2.0 (and, if you can answer this
+> question) and in Fiji. If we need to check, any descrete way to do it? Fiji
+> keeps track of versions... May looking for *LOCI*.jar?
+>
+> *Question 4:* how to assure syncronicity of commands? The macros that do
+> something useful, have a form
+>
+>    - send image from ZEN to ImageJ
+>    - process it
+>    - send the resulting image from ImageJ to ZEN
+>
+>
+>
+> We got again and again  tons of "save as" dialogs before realizing that
+> saveAs in the third line may occur before the "process it" in the second
+> creates its output. he Identical problem with "unique instance" listener -
+> if the exe file has not yet started all the threads, the new call  for
+> ImageJexecutable will just spawn another instance into the system.
+>
+> *Question 5: *I would very much appreciate your help. i.e. hints, as
+> regards getting the communication run the other direction as well i.e. from
+> ImageJ to ZEN), I remember the original TCP/IP layer - the code  looked so
+> simple and elegant. ZEN can communicate on TCP/IP and letting macros both
+> side of the river communicate with each other via socket comm layer would
+> be the simplest for the user. I understand it was security concerns that
+> caused the abrupt change. I would like to hear about them (after all, my
+> PayPal account runs on TCPIP as well)
+>
+> Now, maybe you yourself would have a question or two (g). Please feel free
+> to ask. And thank you in advance.
+>
+> Regards
+>
+> Vito.
+>
+>
+> _________________________________________________
+> Carl Zeiss Microscopy GmbH
+> Gesch?ftsbereich BioSciences / BioSciences Division
+> Imaging Software M?nchen
+> Vorentwicklung / Advanced Development
+>
+> P r o f . D r . V i t o S m o l e j
+>
+> Kistlerhofstrasse 75, 81379 M?nchen
+> Telefon/ Phone: *+49 89 90 9000-306* <%2B49%2089%2090%209000-306>
+> Fax: *+49 89 90 9000-555* <%2B49%2089%2090%209000-555>
+> mailto:*smolej at zeiss.de* <smolej at zeiss.de>
+> *www.zeiss.com/microscopy* <http://www.zeiss.com/microscopy>
+>
+> _________________________________________________
+>
+> Carl Zeiss Microscopy GmbH
+> Vorsitzender des Aufsichtsrates: Dr. Michael Kaschke
+> Gesch?ftsf?hrung: Dr. Ulrich Simon, Wilhelm N?rthemann, Dr. Bernhard
+> Ohnesorge, Dr. Frank Stietz
+> Sitz der Gesellschaft: 07740 Jena, Deutschland
+> Amtsgericht Jena, HRB 210.536, USt-IdNr: DE 814 503 774
+>
+> ----------------------------------------
+> This message is intended for a particular addressee only and may contain
+> business or company secrets. If you have received this email in error,
+> please contact the sender and delete the message immediately. Any use of
+> this email, including saving, publishing, copying, replication or
+> forwarding of the message or the contents is not permitted.
+>
+>
+> *(See attached file: 36bits issue.zip)*
+>
+> ----------------------------------------
+> This message is intended for a particular addressee only and may contain
+> business or company secrets. If you have received this email in error,
+> please contact the sender and delete the message immediately. Any use of
+> this email, including saving, publishing, copying, replication or
+> forwarding of the message or the contents is not permitted.
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130109/6a6b21f1/attachment-0001.html>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: ecblank.gif
+Type: image/gif
+Size: 45 bytes
+Desc: not available
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130109/6a6b21f1/attachment-0001.gif>
+
+From grislis at wisc.edu  Thu Jan 10 15:26:06 2013
+From: grislis at wisc.edu (Aivar Grislis)
+Date: Thu, 10 Jan 2013 15:26:06 -0600
+Subject: [ImageJ-devel] ImgLib2 dimensionality
+Message-ID: <50EF31EE.3000707@wisc.edu>
+
+I was looking at the dimensional code in net.imglib2.meta.Axes. This is 
+an enum of known, named AxisTypes such as X, Y, Z..., has the capacity 
+for CustomAxisTypes, and some sort of characterization of these 
+dimensions with 'isXY()' and 'isSpatial()'.  (Perhaps we could replace 
+these latter with some kind of EnumSet of DimensionTypes, such as XY, 
+SPATIAL, etc. for the discussion that follows.)
+
+It might be useful to have a concept of a COINCIDENTAL type.  This sort 
+of dimension represents different aspects of the same 
+pixel/voxel/doxel.  It's as if you look at it with red glasses, blue 
+glasses, etc.  Effectively this is the same as non-spatial/-temporal 
+since all of the default AxisTypes besides XYZT would be coincidental.  
+But with this you can specify if a new CustomAxisType should be 
+coincidental or not.  For example, if you wrote a plugin that works on 
+an image in 5D that is a series of 4D (XYZT) images, the dimension that 
+represents the series of images is not coincidental (and not spatial or 
+temporal either).
+
+Another useful concept would be whether a dimension is DISCRETE (or 
+NON_INTERPOLABLE?).   This sort of image would be analogous to a table 
+of height/weight/shoe size per individual (pixel).  This works only 
+because it happens you can express all three measurements as floating 
+point.  Anyway, the point is these measurements are totally independent, 
+the order is arbitrary, and it never would make any sense to combine 
+them somehow or interpolate between them.  I've been working on a FLIM 
+fitting plugin and using such images as my output, where the 
+measurements are a set of fitted lifetime parameters, for example A1, 
+T1, A2, T2, Z, all doubles.  It's the equivalent of five separate images 
+in one and could just be refactored as such. [*]
+
+My motivating concern was that if were to introduce such a DISCRETE 
+DimensionType most existing plugins or algorithms will not do anything 
+useful (other than simple things like copying, etc.).  In fact they will 
+most likely clobber my discrete dimension.
+
+What if an algorithm could somehow declare via annotation what sorts of 
+dimensions it was interested in?  Without such an annotation the default 
+would be to get all of the non-discrete dimensions, and the caller 
+splits the image into sub images across discrete dimensions and 
+processes them successively.  Then existing algorithms could do useful 
+work on my discrete image.  Other algorithms that understand the meaning 
+of this discrete dimension information could declare an interest in it 
+and get the whole thing.
+
+This could be a very useful mechanism in other instances.  In general 
+lets say an algorithm could specify dimension types or specific 
+dimensions of interest and the caller splits the image into sub images 
+across the remaining dimensions.  Then the algorithm gets a cursor that 
+iterates only on the dimensions of interest.  They could set the cursor 
+position within these dimensions or just iterate through the whole thing.
+
+Another use case might be to split up arbitrary images into XY slices 
+for 2D-processing algorithms. On the input side, my FLIM fitting 
+algorithm could declare an interest in the LIFETIME AxisType only and 
+get called pixel by pixel with a lifetime dimension cursor to process a 
+whole image that has unknown dimensions.
+
+For another example, the early ImgLib1 sample Floyd-Steinberg dithering 
+algorithm could process only non-COINCIDENTAL dimensions. This would 
+avoid distributing errors from the red channel to the blue channel, for 
+instance; they would be dithered one by one.
+
+Hope this makes sense!  There's a lot of hand-waving here at present, 
+particularly how this dimensional interest would be specified.
+
+Thanks for reading,
+
+Aivar Grislis
+
+([*] Another alternative would be my creating a custom 
+FittedLifetimeType or some kind of generic TupleType)
+
+
+
+From WMohler at NEURON.UCHC.EDU  Fri Jan 11 14:15:24 2013
+From: WMohler at NEURON.UCHC.EDU (Mohler,William)
+Date: Fri, 11 Jan 2013 15:15:24 -0500
+Subject: [ImageJ-devel] What about this huge Java security issue?? How do we
+ keep ImageJ users both safe and satisfied with a Java platform?
+Message-ID: <gd6hif2xeww42gu3u2res29l.1357935324169@email.android.com>
+
+
+Sent from my Verizon Wireless 4G LTE DROID
+
+From Johannes.Schindelin at gmx.de  Fri Jan 11 14:29:07 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Fri, 11 Jan 2013 21:29:07 +0100 (CET)
+Subject: [ImageJ-devel] What about this huge Java security issue?? How
+ do we keep ImageJ users both safe and satisfied with a Java platform?
+In-Reply-To: <gd6hif2xeww42gu3u2res29l.1357935324169@email.android.com>
+References: <gd6hif2xeww42gu3u2res29l.1357935324169@email.android.com>
+Message-ID: <alpine.DEB.1.00.1301112128360.32206@s15462909.onlinehome-server.info>
+
+Hi Bill,
+
+On Fri, 11 Jan 2013, Mohler,William wrote:
+
+> 
+> Sent from my Verizon Wireless 4G LTE DROID
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+
+If this is referring to the security issues of the Java applet: we do not
+run ImageJ in the browser.
+
+Ciao,
+Johannes
+
+
+From ctrueden at wisc.edu  Fri Jan 11 14:29:08 2013
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Fri, 11 Jan 2013 14:29:08 -0600
+Subject: [ImageJ-devel] What about this huge Java security issue?? How
+ do we keep ImageJ users both safe and satisfied with a Java platform?
+In-Reply-To: <gd6hif2xeww42gu3u2res29l.1357935324169@email.android.com>
+References: <gd6hif2xeww42gu3u2res29l.1357935324169@email.android.com>
+Message-ID: <CADN69ynNSa3YYpaKY8kE=154pLRhuSAmpB=zsObxOOuZDGKong@mail.gmail.com>
+
+Hi Bill,
+
+> What about this huge Java security issue?
+
+Please send a link, so we know which one you're talking about.
+
+If you are talking about the series of highly publicized applet
+vulnerabilities that have been reported since last fall [1], they only
+apply to applets. Running ImageJ as a desktop application, which is what
+most of us do, already grants permission for ImageJ to act on your behalf.
+In other words, desktop applications typically run with all permissions of
+the user (though that is no longer true on mobile platforms, which have
+more granular permissions systems).
+
+Note that the exploits being reported work by attackers crafting a special
+applet that escapes the Java sandbox to install malware. Running ImageJ as
+an applet from a trusted web site poses no issue. You can use a tool such
+as NoScript [2] to allow only specific trusted sites such as
+imagej.nih.govto run Java applets.
+
+Regards,
+Curtis
+
+[1]
+http://www.reuters.com/article/2013/01/11/us-java-security-idUSBRE90A0S320130111
+[2] http://noscript.net/
+
+
+On Fri, Jan 11, 2013 at 2:15 PM, Mohler,William <WMohler at neuron.uchc.edu>wrote:
+
+>
+> Sent from my Verizon Wireless 4G LTE DROID
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130111/790f7305/attachment.html>
+
+From WMohler at NEURON.UCHC.EDU  Fri Jan 11 14:41:16 2013
+From: WMohler at NEURON.UCHC.EDU (Mohler,William)
+Date: Fri, 11 Jan 2013 15:41:16 -0500
+Subject: [ImageJ-devel] What about this huge Java security issue?? How
+ do we keep ImageJ users both safe and satisfied with a Java platform?
+Message-ID: <kcbv8en6jdrxc2o7hbjwkc3b.1357936874910@email.android.com>
+
+I'm hoping just what you're thinking.  But the press here is telling people to "uninstall java" as the only certain way to avoid having their systems hacked.  This is now backed by an announcement by US Dept of Homeland Security that there is no other recourse...  Not easy stuff to deal with, right or wrong.
+
+
+
+Jason Swedlow <j.r.swedlow at dundee.ac.uk> wrote:
+
+Bill-
+
+Still trying to verify this, but this is about browser plug-ins, which you can turn off.
+
+http://developers.slashdot.org/story/13/01/10/1540202/java-zero-day-vulnerability-rolled-into-exploit-packs
+
+Cheers,
+
+Jason
+
+--------------------
+Centre for Gene Regulation & Expression | Open Microscopy Environment | University of Dundee
+
+Phone:  +44 (0) 1382 385819
+email: j.swedlow at dundee.ac.uk<mailto:j.swedlow at dundee.ac.uk>
+
+Web: http://www.lifesci.dundee.ac.uk/gre/staff/jason-swedlow
+Open Microscopy Environment: http://openmicroscopy.org<http://openmicroscopy.org/>
+
+
+From: <Mohler>, William <WMohler at NEURON.UCHC.EDU<mailto:WMohler at NEURON.UCHC.EDU>>
+Date: Friday, 11 January 2013 20:15
+To: "imagej-devel at imagej.net<mailto:imagej-devel at imagej.net>" <imagej-devel at imagej.net<mailto:imagej-devel at imagej.net>>
+Subject: [ImageJ-devel] What about this huge Java security issue?? How do we keep ImageJ users both safe and satisfied with a Java platform?
+
+
+Sent from my Verizon Wireless 4G LTE DROID
+_______________________________________________
+ImageJ-devel mailing list
+ImageJ-devel at imagej.net<mailto:ImageJ-devel at imagej.net>
+http://imagej.net/mailman/listinfo/imagej-devel
+
+
+
+The University of Dundee is a registered Scottish Charity, No: SC015096
+
+
+From j.r.swedlow at dundee.ac.uk  Fri Jan 11 14:46:09 2013
+From: j.r.swedlow at dundee.ac.uk (Jason Swedlow)
+Date: Fri, 11 Jan 2013 20:46:09 +0000
+Subject: [ImageJ-devel] What about this huge Java security issue?? How
+ do we keep ImageJ users both safe and satisfied with a Java platform?
+In-Reply-To: <kcbv8en6jdrxc2o7hbjwkc3b.1357936874910@email.android.com>
+Message-ID: <979862224DEA7F419DBB1F5AA32266741B72FB16@AMSPRD0411MB438.eurprd04.prod.outlook.com>
+
+Hi Bill-
+
+Curtis and Johannes suggested very sensible approaches.
+
+I believe this is what you are referring to, and this clearly says to disable Java in your web browser:
+
+http://www.kb.cert.org/vuls/id/625617
+
+Cheers,
+
+Jason
+
+--------------------
+Centre for Gene Regulation & Expression | Open Microscopy Environment | University of Dundee
+
+Phone:  +44 (0) 1382 385819
+email: j.swedlow at dundee.ac.uk<mailto:j.swedlow at dundee.ac.uk>
+
+Web: http://www.lifesci.dundee.ac.uk/gre/staff/jason-swedlow
+Open Microscopy Environment: http://openmicroscopy.org<http://openmicroscopy.org/>
+
+
+From: <Mohler>, William <WMohler at NEURON.UCHC.EDU<mailto:WMohler at NEURON.UCHC.EDU>>
+Date: Friday, 11 January 2013 20:41
+To: Jason Swedlow <j.r.swedlow at dundee.ac.uk<mailto:j.r.swedlow at dundee.ac.uk>>, "imagej-devel at imagej.net<mailto:imagej-devel at imagej.net>" <imagej-devel at imagej.net<mailto:imagej-devel at imagej.net>>
+Subject: Re: [ImageJ-devel] What about this huge Java security issue?? How do we keep ImageJ users both safe and satisfied with a Java platform?
+
+I'm hoping just what you're thinking.  But the press here is telling people to "uninstall java" as the only certain way to avoid having their systems hacked.  This is now backed by an announcement by US Dept of Homeland Security that there is no other recourse...  Not easy stuff to deal with, right or wrong.
+
+
+
+Jason Swedlow <j.r.swedlow at dundee.ac.uk<mailto:j.r.swedlow at dundee.ac.uk>> wrote:
+
+Bill-
+
+Still trying to verify this, but this is about browser plug-ins, which you can turn off.
+
+http://developers.slashdot.org/story/13/01/10/1540202/java-zero-day-vulnerability-rolled-into-exploit-packs
+
+Cheers,
+
+Jason
+
+--------------------
+Centre for Gene Regulation & Expression | Open Microscopy Environment | University of Dundee
+
+Phone:  +44 (0) 1382 385819
+email: j.swedlow at dundee.ac.uk<mailto:j.swedlow at dundee.ac.uk><mailto:j.swedlow at dundee.ac.uk>
+
+Web: http://www.lifesci.dundee.ac.uk/gre/staff/jason-swedlow
+Open Microscopy Environment: http://openmicroscopy.org<http://openmicroscopy.org/>
+
+
+From: <Mohler>, William <WMohler at NEURON.UCHC.EDU<mailto:WMohler at NEURON.UCHC.EDU><mailto:WMohler at NEURON.UCHC.EDU>>
+Date: Friday, 11 January 2013 20:15
+To: "imagej-devel at imagej.net<mailto:imagej-devel at imagej.net><mailto:imagej-devel at imagej.net>" <imagej-devel at imagej.net<mailto:imagej-devel at imagej.net><mailto:imagej-devel at imagej.net>>
+Subject: [ImageJ-devel] What about this huge Java security issue?? How do we keep ImageJ users both safe and satisfied with a Java platform?
+
+
+Sent from my Verizon Wireless 4G LTE DROID
+_______________________________________________
+ImageJ-devel mailing list
+ImageJ-devel at imagej.net<mailto:ImageJ-devel at imagej.net><mailto:ImageJ-devel at imagej.net>
+http://imagej.net/mailman/listinfo/imagej-devel
+
+
+
+The University of Dundee is a registered Scottish Charity, No: SC015096
+
+
+
+The University of Dundee is a registered Scottish Charity, No: SC015096
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130111/821261b3/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Fri Jan 11 14:48:34 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Fri, 11 Jan 2013 21:48:34 +0100 (CET)
+Subject: [ImageJ-devel] What about this huge Java security issue?? How
+ do we keep ImageJ users both safe and satisfied with a Java platform?
+In-Reply-To: <kcbv8en6jdrxc2o7hbjwkc3b.1357936874910@email.android.com>
+References: <kcbv8en6jdrxc2o7hbjwkc3b.1357936874910@email.android.com>
+Message-ID: <alpine.DEB.1.00.1301112147180.32206@s15462909.onlinehome-server.info>
+
+Hi Bill,
+
+On Fri, 11 Jan 2013, Mohler,William wrote:
+
+> I'm hoping just what you're thinking.  But the press here is telling
+> people to "uninstall java" as the only certain way to avoid having their
+> systems hacked.  This is now backed by an announcement by US Dept of
+> Homeland Security that there is no other recourse...  Not easy stuff to
+> deal with, right or wrong.
+
+Where are the links, anyway? In every news article I read in the past two
+days about the vulnerability, it was made quite obvious that this is about
+applets, some even including instructions how to disable Java applets in
+Firefox, Safari, Chrome.
+
+Without anything more specific, I am afraid I cannot help you.
+
+Hth,
+Johannes
+
+
+From ctrueden at wisc.edu  Fri Jan 11 14:56:25 2013
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Fri, 11 Jan 2013 14:56:25 -0600
+Subject: [ImageJ-devel] What about this huge Java security issue?? How
+ do we keep ImageJ users both safe and satisfied with a Java platform?
+In-Reply-To: <kcbv8en6jdrxc2o7hbjwkc3b.1357936874910@email.android.com>
+References: <kcbv8en6jdrxc2o7hbjwkc3b.1357936874910@email.android.com>
+Message-ID: <CADN69y=F3MrrrBL_oqhUeWHdLbCzFDzeDfQZ5KCLfQT7JehrHw@mail.gmail.com>
+
+Hi Bill,
+
+> But the press here is telling people to "uninstall java"
+
+Fortunately, it is legal to bundle a copy of the Java runtime when
+distributing a Java-based app. So even if non-technical users uninstall
+Java, they can still run the app without worry.
+
+-Curtis
+
+
+On Fri, Jan 11, 2013 at 2:41 PM, Mohler,William <WMohler at neuron.uchc.edu>wrote:
+
+> I'm hoping just what you're thinking.  But the press here is telling
+> people to "uninstall java" as the only certain way to avoid having their
+> systems hacked.  This is now backed by an announcement by US Dept of
+> Homeland Security that there is no other recourse...  Not easy stuff to
+> deal with, right or wrong.
+>
+>
+>
+> Jason Swedlow <j.r.swedlow at dundee.ac.uk> wrote:
+>
+> Bill-
+>
+> Still trying to verify this, but this is about browser plug-ins, which you
+> can turn off.
+>
+>
+> http://developers.slashdot.org/story/13/01/10/1540202/java-zero-day-vulnerability-rolled-into-exploit-packs
+>
+> Cheers,
+>
+> Jason
+>
+> --------------------
+> Centre for Gene Regulation & Expression | Open Microscopy Environment |
+> University of Dundee
+>
+> Phone:  +44 (0) 1382 385819
+> email: j.swedlow at dundee.ac.uk<mailto:j.swedlow at dundee.ac.uk>
+>
+> Web: http://www.lifesci.dundee.ac.uk/gre/staff/jason-swedlow
+> Open Microscopy Environment: http://openmicroscopy.org<
+> http://openmicroscopy.org/>
+>
+>
+> From: <Mohler>, William <WMohler at NEURON.UCHC.EDU<mailto:
+> WMohler at NEURON.UCHC.EDU>>
+> Date: Friday, 11 January 2013 20:15
+> To: "imagej-devel at imagej.net<mailto:imagej-devel at imagej.net>" <
+> imagej-devel at imagej.net<mailto:imagej-devel at imagej.net>>
+> Subject: [ImageJ-devel] What about this huge Java security issue?? How do
+> we keep ImageJ users both safe and satisfied with a Java platform?
+>
+>
+> Sent from my Verizon Wireless 4G LTE DROID
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net<mailto:ImageJ-devel at imagej.net>
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+>
+> The University of Dundee is a registered Scottish Charity, No: SC015096
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130111/23b12636/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Fri Jan 11 15:31:54 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Fri, 11 Jan 2013 22:31:54 +0100 (CET)
+Subject: [ImageJ-devel] What about this huge Java security issue?? How
+ do we keep ImageJ users both safe and satisfied with a Java platform?
+In-Reply-To: <50F083A4.8010201@gmail.com>
+References: <kcbv8en6jdrxc2o7hbjwkc3b.1357936874910@email.android.com>
+	<alpine.DEB.1.00.1301112147180.32206@s15462909.onlinehome-server.info>
+	<50F083A4.8010201@gmail.com>
+Message-ID: <alpine.DEB.1.00.1301112230530.32206@s15462909.onlinehome-server.info>
+
+Dear Bill,
+
+On Fri, 11 Jan 2013, Bill Mohler wrote:
+
+> No links necessary. Just listen to the radio and watch the evening
+> news...
+
+Please note that it is very easy to write what you did, and that it is
+utterly hard to address.
+
+If you have any concrete concern, I will be happy to address that.
+
+Ciao,
+Johannes
+
+
+From mohler.william at gmail.com  Fri Jan 11 15:24:38 2013
+From: mohler.william at gmail.com (Bill Mohler)
+Date: Fri, 11 Jan 2013 16:24:38 -0500
+Subject: [ImageJ-devel] What about this huge Java security issue?? How
+ do we keep ImageJ users both safe and satisfied with a Java platform?
+In-Reply-To: <CADN69y=F3MrrrBL_oqhUeWHdLbCzFDzeDfQZ5KCLfQT7JehrHw@mail.gmail.com>
+References: <kcbv8en6jdrxc2o7hbjwkc3b.1357936874910@email.android.com>
+	<CADN69y=F3MrrrBL_oqhUeWHdLbCzFDzeDfQZ5KCLfQT7JehrHw@mail.gmail.com>
+Message-ID: <50F08316.1020708@gmail.com>
+
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130111/cd128e1c/attachment-0001.html>
+
+From mohler.william at gmail.com  Fri Jan 11 15:27:00 2013
+From: mohler.william at gmail.com (Bill Mohler)
+Date: Fri, 11 Jan 2013 16:27:00 -0500
+Subject: [ImageJ-devel] What about this huge Java security issue?? How
+ do we keep ImageJ users both safe and satisfied with a Java platform?
+In-Reply-To: <alpine.DEB.1.00.1301112147180.32206@s15462909.onlinehome-server.info>
+References: <kcbv8en6jdrxc2o7hbjwkc3b.1357936874910@email.android.com>
+	<alpine.DEB.1.00.1301112147180.32206@s15462909.onlinehome-server.info>
+Message-ID: <50F083A4.8010201@gmail.com>
+
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130111/bb74534e/attachment-0001.html>
+
+From WMohler at NEURON.UCHC.EDU  Sat Jan 12 07:35:15 2013
+From: WMohler at NEURON.UCHC.EDU (Mohler,William)
+Date: Sat, 12 Jan 2013 08:35:15 -0500
+Subject: [ImageJ-devel] What about this huge Java security issue?? How
+ do we keep ImageJ users both safe and satisfied with a Java platform?
+Message-ID: <xcc8soepgmxcbcq3rwoh9cl0.1357997428976@email.android.com>
+
+Yes, thanks.  What I'm worried about is society's tendencies to be blind to sensible approaches.  Eg, what is the likelihood that oracle does something drastic with Java as a result of the scare?  Maybe this situation is more run-of-the-mill than my gut is feeling right now.
+
+Bill
+
+
+
+
+Jason Swedlow <j.r.swedlow at dundee.ac.uk> wrote:
+
+Hi Bill-
+
+Curtis and Johannes suggested very sensible approaches.
+
+I believe this is what you are referring to, and this clearly says to disable Java in your web browser:
+
+http://www.kb.cert.org/vuls/id/625617
+
+Cheers,
+
+Jason
+
+--------------------
+Centre for Gene Regulation & Expression | Open Microscopy Environment | University of Dundee
+
+Phone:  +44 (0) 1382 385819
+email: j.swedlow at dundee.ac.uk<mailto:j.swedlow at dundee.ac.uk>
+
+Web: http://www.lifesci.dundee.ac.uk/gre/staff/jason-swedlow
+Open Microscopy Environment: http://openmicroscopy.org<http://openmicroscopy.org/>
+
+
+From: <Mohler>, William <WMohler at NEURON.UCHC.EDU<mailto:WMohler at NEURON.UCHC.EDU>>
+Date: Friday, 11 January 2013 20:41
+To: Jason Swedlow <j.r.swedlow at dundee.ac.uk<mailto:j.r.swedlow at dundee.ac.uk>>, "imagej-devel at imagej.net<mailto:imagej-devel at imagej.net>" <imagej-devel at imagej.net<mailto:imagej-devel at imagej.net>>
+Subject: Re: [ImageJ-devel] What about this huge Java security issue?? How do we keep ImageJ users both safe and satisfied with a Java platform?
+
+I'm hoping just what you're thinking.  But the press here is telling people to "uninstall java" as the only certain way to avoid having their systems hacked.  This is now backed by an announcement by US Dept of Homeland Security that there is no other recourse...  Not easy stuff to deal with, right or wrong.
+
+
+
+Jason Swedlow <j.r.swedlow at dundee.ac.uk<mailto:j.r.swedlow at dundee.ac.uk>> wrote:
+
+Bill-
+
+Still trying to verify this, but this is about browser plug-ins, which you can turn off.
+
+http://developers.slashdot.org/story/13/01/10/1540202/java-zero-day-vulnerability-rolled-into-exploit-packs
+
+Cheers,
+
+Jason
+
+--------------------
+Centre for Gene Regulation & Expression | Open Microscopy Environment | University of Dundee
+
+Phone:  +44 (0) 1382 385819
+email: j.swedlow at dundee.ac.uk<mailto:j.swedlow at dundee.ac.uk><mailto:j.swedlow at dundee.ac.uk>
+
+Web: http://www.lifesci.dundee.ac.uk/gre/staff/jason-swedlow
+Open Microscopy Environment: http://openmicroscopy.org<http://openmicroscopy.org/>
+
+
+From: <Mohler>, William <WMohler at NEURON.UCHC.EDU<mailto:WMohler at NEURON.UCHC.EDU><mailto:WMohler at NEURON.UCHC.EDU>>
+Date: Friday, 11 January 2013 20:15
+To: "imagej-devel at imagej.net<mailto:imagej-devel at imagej.net><mailto:imagej-devel at imagej.net>" <imagej-devel at imagej.net<mailto:imagej-devel at imagej.net><mailto:imagej-devel at imagej.net>>
+Subject: [ImageJ-devel] What about this huge Java security issue?? How do we keep ImageJ users both safe and satisfied with a Java platform?
+
+
+Sent from my Verizon Wireless 4G LTE DROID
+_______________________________________________
+ImageJ-devel mailing list
+ImageJ-devel at imagej.net<mailto:ImageJ-devel at imagej.net><mailto:ImageJ-devel at imagej.net>
+http://imagej.net/mailman/listinfo/imagej-devel
+
+
+
+The University of Dundee is a registered Scottish Charity, No: SC015096
+
+
+
+The University of Dundee is a registered Scottish Charity, No: SC015096
+
+
+From gerrit.polder at wur.nl  Mon Jan 14 14:21:38 2013
+From: gerrit.polder at wur.nl (Polder, Gerrit)
+Date: Mon, 14 Jan 2013 20:21:38 +0000
+Subject: [ImageJ-devel] Netbeans and Maven
+Message-ID: <3C7514B7E7E76C499962737F8BE1358A0130700E@SCOMP0936.wurnet.nl>
+
+sorry for crosspost, asked this already on the ImageJ list, but Wayne directed me to here.
+
+I am using netbeans with ant as the building system quite some time now (on Mac OS X).
+During the last developer conference there was a strong emphasis on maven as build/dependency tool, so I decided to give it a try.
+I started with the process_pixels example which compiles and runs nice, but I have some questions.
+Sorry if these are dumb questions, but I scanned through the documentation and didn't find answers quickly.
+
+1- what does the pom version mean, and which version should I use, I found different numbers in the examples.
+2- how is the imagej version determined (<version>${imagej1.version}</version>) ?
+3- During build I see the following message: Property 'imagej.app.directory' unset; Skipping copy-jars
+So it must be possible to place the jar into my own imagej installation, how?
+4- During run an imagej jar from ~/.m2.... is started, is this only for test/debug? how to use my own imagej?
+5- The process_pixels application does not quit properly, I have to stop it from netbeans.
+6- My software is dependent from other plugins, such as particle8 from Gabriel Landini's Morphology, can/is this incorporated in the imagej maven repository?
+7- In my ant script I'm using a call to svnversion, in order to place the latest build number and date in the about box. Can this be done in maven?
+
+thanks a lot,
+Gerrit.
+
+
+
+
+
+
+From Johannes.Schindelin at gmx.de  Mon Jan 14 18:12:18 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Tue, 15 Jan 2013 01:12:18 +0100 (CET)
+Subject: [ImageJ-devel] Netbeans and Maven
+In-Reply-To: <3C7514B7E7E76C499962737F8BE1358A0130700E@SCOMP0936.wurnet.nl>
+References: <3C7514B7E7E76C499962737F8BE1358A0130700E@SCOMP0936.wurnet.nl>
+Message-ID: <alpine.DEB.1.00.1301150053580.32206@s15462909.onlinehome-server.info>
+
+Hi Gerrit,
+
+On Mon, 14 Jan 2013, Polder, Gerrit wrote:
+
+> I am using netbeans with ant as the building system quite some time now
+> (on Mac OS X).  During the last developer conference there was a strong
+> emphasis on maven as build/dependency tool, so I decided to give it a
+> try.  I started with the process_pixels example which compiles and runs
+> nice, but I have some questions.  Sorry if these are dumb questions, but
+> I scanned through the documentation and didn't find answers quickly.
+
+The ImageJ and ImageJ-devel lists are pleasant lists, no need to apologize
+for asking questions that were not answered well enough at the conference.
+
+> 1- what does the pom version mean, and which version should I use, I
+> found different numbers in the examples.
+
+If I understand correctly, you are referring to the version number here:
+
+https://github.com/imagej/minimal-ij1-plugin/blob/master/pom.xml#L16
+
+The idea of Maven is that every project comes in a specific version. For
+example, you might want to release your plugin as version 0.1.0 or 1.0.0.
+Leading up to that version, you would probably label it as 0.1.0-SNAPSHOT
+or 1.0.0-SNAPSHOT to indicate that this is an intermediate revision
+leading up to said version.
+
+So it is your choice what version number to use ;-)
+
+> 2- how is the imagej version determined
+> (<version>${imagej1.version}</version>) ?
+
+It is defined in the SciJava POM, as a version range:
+
+https://github.com/scijava/scijava-common/blob/master/pom-scijava/pom.xml#L21
+
+Basically, it says: every version from 1.45s on is good enough for us.
+
+If it is actually not good enough for your project, e.g. because you
+require a feature Wayne introduced in, say, 1.47b, you need to override
+that setting in your pom.xml in the properties section:
+
+	<properties>
+		<imagej1.version>1.47b</imagej1.version>
+	</properties>
+
+You could also decide that a version range [1.47b,) is preferable, of
+course.
+
+> 3- During build I see the following message: Property
+> 'imagej.app.directory' unset; Skipping copy-jars
+> So it must be possible to place the jar into my own imagej installation,
+> how?
+
+You can set the property either in the <properties> section of your
+pom.xml as described for imagej1.version above, or via the command-line.
+Probably Netbeans lets you define that, too, but since I am not using
+Netbeans myself, I cannot tell you how, sorry!
+
+> 4- During run an imagej jar from ~/.m2.... is started, is this only for
+> test/debug? how to use my own imagej?
+
+This is only used to compile your .jar file. If you set the
+imagej.app.directory property properly, it will actually be copied into
+the jars/ subdirectory of the location you pointed the property to.
+
+> 5- The process_pixels application does not quit properly, I have to stop
+> it from netbeans.
+
+Sorry, do you have more information about that? I do not understand the
+issue.
+
+> 6- My software is dependent from other plugins, such as particle8 from
+> Gabriel Landini's Morphology, can/is this incorporated in the imagej
+> maven repository?
+
+The easiest way to do that would probably to install it locally for the
+moment. Please see Maven's console log for details how to do that after
+specifying a dependency, e.g.
+
+		<dependency>
+			<groupId>uk.ac.bham.dentistry</groupId>
+			<artifactId>Particles8_</artifactId>
+			<version>1.6</version>
+		</dependency>
+
+(I took the version number from the web site, and constructed the groupId
+from the web site, too. Note that you will need to wrap the .class files
+in a .jar file before installing it locally.)
+
+> 7- In my ant script I'm using a call to svnversion, in order to place
+> the latest build number and date in the about box. Can this be done in
+> maven?
+
+The way this is done in Maven is by using the buildnumber plugin. This
+will put the current revision into the MANIFEST.MF under the tag
+'Implementation-Build'.
+
+You probably want to depend on ij-core (groupId net.imagej, version
+2.0.0-SNAPSHOT for now) to retrieve that:
+
+http://jenkins.imagej.net/job/ImageJ-daily/javadoc/imagej/util/Manifest.html#getManifest(java.lang.Class)
+
+and
+
+http://jenkins.imagej.net/job/ImageJ-daily/javadoc/imagej/util/Manifest.html#getImplementationBuild()
+
+Ciao,
+Johannes
+
+
+From gerrit.polder at wur.nl  Tue Jan 15 09:31:25 2013
+From: gerrit.polder at wur.nl (Polder, Gerrit)
+Date: Tue, 15 Jan 2013 15:31:25 +0000
+Subject: [ImageJ-devel] Netbeans and Maven
+In-Reply-To: <alpine.DEB.1.00.1301150053580.32206@s15462909.onlinehome-server.info>
+References: <3C7514B7E7E76C499962737F8BE1358A0130700E@SCOMP0936.wurnet.nl>
+	<alpine.DEB.1.00.1301150053580.32206@s15462909.onlinehome-server.info>
+Message-ID: <3C7514B7E7E76C499962737F8BE1358A0130DB63@SCOMP0936.wurnet.nl>
+
+Johannes,
+
+thanks a lot, I'm getting progress.
+
+On 15 Jan 2013, at 01:12, Johannes Schindelin <Johannes.Schindelin at gmx.de> wrote:
+
+>> 1- what does the pom version mean, and which version should I use, I
+>> found different numbers in the examples.
+> 
+> If I understand correctly, you are referring to the version number here:
+> 
+I'm referring to the scijave version number, which is 1.25 in my downloaded example project.
+https://github.com/imagej/minimal-ij1-plugin/blob/master/pom.xml#L11
+
+>> 2- how is the imagej version determined
+>> (<version>${imagej1.version}</version>) ?
+> 
+> It is defined in the SciJava POM, as a version range:
+> 
+> https://github.com/scijava/scijava-common/blob/master/pom-scijava/pom.xml#L21
+> 
+> Basically, it says: every version from 1.45s on is good enough for us.
+> 
+> If it is actually not good enough for your project, e.g. because you
+> require a feature Wayne introduced in, say, 1.47b, you need to override
+> that setting in your pom.xml in the properties section:
+> 
+> 	<properties>
+> 		<imagej1.version>1.47b</imagej1.version>
+> 	</properties>
+> 
+> You could also decide that a version range [1.47b,) is preferable, of
+> course.
+> 
+ok, thanks, this makes it clear.
+
+>> 3- During build I see the following message: Property
+>> 'imagej.app.directory' unset; Skipping copy-jars
+>> So it must be possible to place the jar into my own imagej installation,
+>> how?
+> 
+> You can set the property either in the <properties> section of your
+> pom.xml as described for imagej1.version above, or via the command-line.
+> Probably Netbeans lets you define that, too, but since I am not using
+> Netbeans myself, I cannot tell you how, sorry!
+> 
+I added it to the pom file and it works ok, that is to say, for Fiji.
+I have both Fiji and ImageJ installed.
+For Fiji the generated jars are copied to /Application/Fiji.app/jars which is ok.
+For ImageJ thay are copied to /Application/ImageJ/jars, but that folder is not used by the ImageJ application.
+There the ij.jar is buried somewhere in the package contents.
+In my previous ant build.xml I pointed to this files in order to run and debug  IJ from netbeans.
+
+My users does not have Fiji, they need a very simple approach, so they have standard ImageJ installed and the only thing they need to do is to copy the jar file I send them to the plugins folder.
+The plugin is also started from the startup macros.txt and the imagej menu is hidden.
+
+So I have to think about a new approach to deploy my software to my users.
+
+> 
+>> 5- The process_pixels application does not quit properly, I have to stop
+>> it from netbeans.
+> 
+> Sorry, do you have more information about that? I do not understand the
+> issue.
+
+after quitting the application from the file menu or command-Q it froze  and I had to force quit it from netbeans.
+But for some unknown reason it works now, maybe the 'imagej.app.directory' setting?
+don't bother!
+
+> 
+>> 6- My software is dependent from other plugins, such as particle8 from
+>> Gabriel Landini's Morphology, can/is this incorporated in the imagej
+>> maven repository?
+> 
+> The easiest way to do that would probably to install it locally for the
+> moment. Please see Maven's console log for details how to do that after
+> specifying a dependency, e.g.
+> 
+> 		<dependency>
+> 			<groupId>uk.ac.bham.dentistry</groupId>
+> 			<artifactId>Particles8_</artifactId>
+> 			<version>1.6</version>
+> 		</dependency>
+> 
+> (I took the version number from the web site, and constructed the groupId
+> from the web site, too. Note that you will need to wrap the .class files
+> in a .jar file before installing it locally.)
+
+will have a look at this, does Gabriel have no plans to include Morphology and his other stuff in Fiji?
+
+> 
+>> 7- In my ant script I'm using a call to svnversion, in order to place
+>> the latest build number and date in the about box. Can this be done in
+>> maven?
+> 
+> The way this is done in Maven is by using the buildnumber plugin. This
+> will put the current revision into the MANIFEST.MF under the tag
+> 'Implementation-Build'.
+> 
+> You probably want to depend on ij-core (groupId net.imagej, version
+> 2.0.0-SNAPSHOT for now) to retrieve that:
+> 
+> http://jenkins.imagej.net/job/ImageJ-daily/javadoc/imagej/util/Manifest.html#getManifest(java.lang.Class)
+> 
+> and
+> 
+> http://jenkins.imagej.net/job/ImageJ-daily/javadoc/imagej/util/Manifest.html#getImplementationBuild()
+> 
+
+can you send me an example, how can I get the context of the jar file? , I have the following
+
+import imagej.util.Manifest;
+????..
+        //context = ?????????
+        Manifest mf = context.getManifest();
+        String vn = mf.getImplementationBuild();
+
+thanks for your help,
+Gerrit.
+
+
+
+
+
+
+
+
+From ctrueden at wisc.edu  Tue Jan 15 09:43:01 2013
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Tue, 15 Jan 2013 09:43:01 -0600
+Subject: [ImageJ-devel] Netbeans and Maven
+In-Reply-To: <3C7514B7E7E76C499962737F8BE1358A0130700E@SCOMP0936.wurnet.nl>
+References: <3C7514B7E7E76C499962737F8BE1358A0130700E@SCOMP0936.wurnet.nl>
+Message-ID: <CADN69ykwKDguKNjjbsK+92X2qH_x03KgrJTKSkcEHASK02OsvA@mail.gmail.com>
+
+Hi Gerrit,
+
+I was mostly done (except for "..." sections) with a reply to you
+yesterday, before needing to leave work for the day. Since then, Johannes
+has replied, so my response is now rather redundant. But I am sending it
+now anyway to supplement Johannes's reply.
+
+
+> 1- what does the pom version mean, and which version should I use, I
+> found different numbers in the examples.
+
+The pom.xml of minimal-ij1-plugin inherits from a parent called
+pom-scijava. This parent POM defines and configures many things so that the
+POMs of individual plugin projects are shorter (i.e., so they don't have to
+repeat things).
+
+The version of pom-scijava (1.27 as of this writing) indicates the version
+of that parent POM. We occasionally improve the parent POM, adding and
+tweaking it. When we do so, its version increases. I suggest leaving the
+version that same as what's in minimal-ij1-plugin, since that refers to the
+latest version. Future 1.x versions will be backwards compatible, so if you
+later notice that we have updated minimal-ij1-plugin to e.g. 1.43, you can
+(optionally) update your plugin to that version as well.
+
+The version of minimal-ij1-plugin itself (1.0.0 as of this writing) is the
+version of your plugin. This string is appended to the JAR file name (e.g.,
+minimal-ij1-plugin-1.0.0.jar), so that you can differentiate between
+multiple versions of your plugin. Use whatever versioning scheme you want.
+
+However, once you become more comfortable with Maven, I suggest using a
+SNAPSHOT version during development [1], and a release (i.e., non-SNAPSHOT)
+version when distributing your plugin. The reason is to avoid two different
+JAR files both called "my-plugin-1.2.3" but with different contents. (This
+is part of what Maven calls *build reproducibility*.)
+
+
+> 2- how is the imagej version determined
+> (<version>${imagej1.version}</version>) ?
+
+The string "${imagej1.version}" is a property that gets replaced with the
+actual value. This value is defined in the pom-scijava parent
+configuration. Currently the value is "[1.45s,)" which means "the latest
+release version you can find equal to or greater than 1.45s."
+
+Browse the latest pom-scijava at:
+
+https://github.com/scijava/scijava-common/blob/master/pom-scijava/pom.xml
+
+Browse the available versions of ImageJ 1.x at:
+    http://maven.imagej.net/content/repositories/releases/net/imagej/ij/
+
+As of this writing, 1.47h is the latest available version, so that's the
+one Maven will use with your plugin.
+
+
+> 3- During build I see the following message: Property
+> 'imagej.app.directory' unset; Skipping copy-jars
+> So it must be possible to place the jar into my own imagej installation,
+how?
+
+This is part of the new imagej-maven-plugin (enabled for you by
+pom-scijava). As you suspected, it copies your plugin's JAR file to your
+ImageJ plugins folder. But you have to specify where:
+
+    mvn -Dimagej.app.directory=/Applications/ImageJ.app
+
+One way to do that in NetBeans is to right-click your project, select
+Custom > Goals... which brings up the Run Maven dialog box. Then specify
+"install" for the Goals and
+"-Dimagej.app.directory=/Applications/ImageJ.app" for the Properties.
+
+I haven't tested this though; the imagej-maven-plugin is very new and we
+are still finalizing how it will work. So please proceed with that in mind.
+
+
+> 4- During run an imagej jar from ~/.m2.... is started, is this only
+> for test/debug? how to use my own imagej?
+
+...
+
+
+> 5- The process_pixels application does not quit properly, I have to
+> stop it from netbeans.
+
+...
+
+
+> 6- My software is dependent from other plugins, such as particle8 from
+> Gabriel Landini's Morphology, can/is this incorporated in the imagej
+> maven repository?
+
+...
+
+
+> 7- In my ant script I'm using a call to svnversion, in order to place
+> the latest build number and date in the about box. Can this be done in
+> maven?
+
+In general, you can call any needed Ant functionality using the
+maven-antrun-plugin [2]. However, for your requirement here, you won't need
+it.
+
+The pom-scijava parent uses the buildnumber-maven-plugin to embed the SCM
+revision and date in the JAR manifest. You can enable this behavior by
+adding the following lines to your POM:
+
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>buildnumber-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+
+Then, your About dialog box can access the information from the JAR
+manifest using the java.util.jar.Manifest class.
+
+You can see how we use it in ImageJ2 here:
+
+https://github.com/imagej/imagej/blob/7ffe00ef/core/core/src/main/java/imagej/util/Manifest.java
+
+Or you can use that ImageJ2 Manifest class directly if you are willing to
+add a dependency to ij-core to your POM:
+
+    <dependencies>
+      <dependency>
+        <groupId>${imagej.groupId}</groupId>
+        <artifactId>ij-core</artifactId>
+        <version>${imagej.version}</version>
+      </dependency>
+    </dependencies>
+
+For more information about Maven, see:
+    http://developer.imagej.net/learning-maven
+    http://maven.apache.org/guides/getting-started/index.html
+
+Regards,
+Curtis
+
+[1]
+http://stackoverflow.com/questions/5901378/what-exactly-is-a-maven-snapshot-and-why-do-we-need-it
+[2] http://maven.apache.org/plugins/maven-antrun-plugin/
+
+
+On Mon, Jan 14, 2013 at 2:21 PM, Polder, Gerrit <gerrit.polder at wur.nl>wrote:
+
+> sorry for crosspost, asked this already on the ImageJ list, but Wayne
+> directed me to here.
+>
+> I am using netbeans with ant as the building system quite some time now
+> (on Mac OS X).
+> During the last developer conference there was a strong emphasis on maven
+> as build/dependency tool, so I decided to give it a try.
+> I started with the process_pixels example which compiles and runs nice,
+> but I have some questions.
+> Sorry if these are dumb questions, but I scanned through the documentation
+> and didn't find answers quickly.
+>
+> 1- what does the pom version mean, and which version should I use, I found
+> different numbers in the examples.
+> 2- how is the imagej version determined
+> (<version>${imagej1.version}</version>) ?
+> 3- During build I see the following message: Property
+> 'imagej.app.directory' unset; Skipping copy-jars
+> So it must be possible to place the jar into my own imagej installation,
+> how?
+> 4- During run an imagej jar from ~/.m2.... is started, is this only for
+> test/debug? how to use my own imagej?
+> 5- The process_pixels application does not quit properly, I have to stop
+> it from netbeans.
+> 6- My software is dependent from other plugins, such as particle8 from
+> Gabriel Landini's Morphology, can/is this incorporated in the imagej maven
+> repository?
+> 7- In my ant script I'm using a call to svnversion, in order to place the
+> latest build number and date in the about box. Can this be done in maven?
+>
+> thanks a lot,
+> Gerrit.
+>
+>
+>
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130115/6d31a4e6/attachment-0001.html>
+
+From ctrueden at wisc.edu  Tue Jan 15 10:01:43 2013
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Tue, 15 Jan 2013 10:01:43 -0600
+Subject: [ImageJ-devel] Netbeans and Maven
+In-Reply-To: <3C7514B7E7E76C499962737F8BE1358A0130DB63@SCOMP0936.wurnet.nl>
+References: <3C7514B7E7E76C499962737F8BE1358A0130700E@SCOMP0936.wurnet.nl>
+	<alpine.DEB.1.00.1301150053580.32206@s15462909.onlinehome-server.info>
+	<3C7514B7E7E76C499962737F8BE1358A0130DB63@SCOMP0936.wurnet.nl>
+Message-ID: <CADN69ymHLoJ18dBPxXHx-L2PshFgDqq7b7hFWjAWe545oXLSDw@mail.gmail.com>
+
+Hi Gerrit,
+
+
+> My users does not have Fiji, they need a very simple approach, so they
+> have standard ImageJ installed and the only thing they need to do is
+> to copy the jar file I send them to the plugins folder.
+>
+> So I have to think about a new approach to deploy my software to my
+> users.
+
+I would suggest setting up an update site:
+    http://fiji.sc/How_to_set_up_and_populate_an_update_site
+
+>From a developer perspective, this makes your dependency management safer,
+because you will not be tempted to bundle potentially incompatible versions
+of your dependencies within a single "uber-JAR."
+
+>From a user perspective, your users can add it to their Fiji installation:
+    http://fiji.sc/How_to_follow_a_3rd_party_update_site
+
+And they will no longer need to update your JAR file(s) manually. Whenever
+you release a new version, Fiji will inform them, and they simply click a
+button to update.
+
+Alternately, if you really want to keep supporting ImageJ1 sans Fiji, you
+can use the maven-assembly-plugin to create an uber-JAR that bundles all
+your dependencies and code into a single JAR. (E.g., for the Bio-Formats
+project, we have "loci_tools.jar".) But as mentioned above, you may have
+dependency version conflicts if you bundle version A of a dependency, and a
+different uber-JAR bundles version B.
+
+
+>         //context = ?????????
+
+    context = new ImageJ(true); // create an empty context
+
+The "empty" context (i.e., with no services) should suffice for your use
+case. Or if you want to lean on any ImageJ2 services, you can do:
+
+    context = new ImageJ(); // create a full-featured context
+
+Or to avoid the ij-core dependency, you can just copy the Manifest parsing
+code from ImageJ2's Manifest.getManifest method:
+
+
+https://github.com/imagej/imagej/blob/7ffe00ef/core/core/src/main/java/imagej/util/Manifest.java#L133
+
+HTH,
+Curtis
+
+
+On Tue, Jan 15, 2013 at 9:31 AM, Polder, Gerrit <gerrit.polder at wur.nl>wrote:
+
+> Johannes,
+>
+> thanks a lot, I'm getting progress.
+>
+> On 15 Jan 2013, at 01:12, Johannes Schindelin <Johannes.Schindelin at gmx.de>
+> wrote:
+>
+> >> 1- what does the pom version mean, and which version should I use, I
+> >> found different numbers in the examples.
+> >
+> > If I understand correctly, you are referring to the version number here:
+> >
+> I'm referring to the scijave version number, which is 1.25 in my
+> downloaded example project.
+> https://github.com/imagej/minimal-ij1-plugin/blob/master/pom.xml#L11
+>
+> >> 2- how is the imagej version determined
+> >> (<version>${imagej1.version}</version>) ?
+> >
+> > It is defined in the SciJava POM, as a version range:
+> >
+> >
+> https://github.com/scijava/scijava-common/blob/master/pom-scijava/pom.xml#L21
+> >
+> > Basically, it says: every version from 1.45s on is good enough for us.
+> >
+> > If it is actually not good enough for your project, e.g. because you
+> > require a feature Wayne introduced in, say, 1.47b, you need to override
+> > that setting in your pom.xml in the properties section:
+> >
+> >       <properties>
+> >               <imagej1.version>1.47b</imagej1.version>
+> >       </properties>
+> >
+> > You could also decide that a version range [1.47b,) is preferable, of
+> > course.
+> >
+> ok, thanks, this makes it clear.
+>
+> >> 3- During build I see the following message: Property
+> >> 'imagej.app.directory' unset; Skipping copy-jars
+> >> So it must be possible to place the jar into my own imagej installation,
+> >> how?
+> >
+> > You can set the property either in the <properties> section of your
+> > pom.xml as described for imagej1.version above, or via the command-line.
+> > Probably Netbeans lets you define that, too, but since I am not using
+> > Netbeans myself, I cannot tell you how, sorry!
+> >
+> I added it to the pom file and it works ok, that is to say, for Fiji.
+> I have both Fiji and ImageJ installed.
+> For Fiji the generated jars are copied to /Application/Fiji.app/jars which
+> is ok.
+> For ImageJ thay are copied to /Application/ImageJ/jars, but that folder is
+> not used by the ImageJ application.
+> There the ij.jar is buried somewhere in the package contents.
+> In my previous ant build.xml I pointed to this files in order to run and
+> debug  IJ from netbeans.
+>
+> My users does not have Fiji, they need a very simple approach, so they
+> have standard ImageJ installed and the only thing they need to do is to
+> copy the jar file I send them to the plugins folder.
+> The plugin is also started from the startup macros.txt and the imagej menu
+> is hidden.
+>
+> So I have to think about a new approach to deploy my software to my users.
+>
+> >
+> >> 5- The process_pixels application does not quit properly, I have to stop
+> >> it from netbeans.
+> >
+> > Sorry, do you have more information about that? I do not understand the
+> > issue.
+>
+> after quitting the application from the file menu or command-Q it froze
+>  and I had to force quit it from netbeans.
+> But for some unknown reason it works now, maybe the 'imagej.app.directory'
+> setting?
+> don't bother!
+>
+> >
+> >> 6- My software is dependent from other plugins, such as particle8 from
+> >> Gabriel Landini's Morphology, can/is this incorporated in the imagej
+> >> maven repository?
+> >
+> > The easiest way to do that would probably to install it locally for the
+> > moment. Please see Maven's console log for details how to do that after
+> > specifying a dependency, e.g.
+> >
+> >               <dependency>
+> >                       <groupId>uk.ac.bham.dentistry</groupId>
+> >                       <artifactId>Particles8_</artifactId>
+> >                       <version>1.6</version>
+> >               </dependency>
+> >
+> > (I took the version number from the web site, and constructed the groupId
+> > from the web site, too. Note that you will need to wrap the .class files
+> > in a .jar file before installing it locally.)
+>
+> will have a look at this, does Gabriel have no plans to include Morphology
+> and his other stuff in Fiji?
+>
+> >
+> >> 7- In my ant script I'm using a call to svnversion, in order to place
+> >> the latest build number and date in the about box. Can this be done in
+> >> maven?
+> >
+> > The way this is done in Maven is by using the buildnumber plugin. This
+> > will put the current revision into the MANIFEST.MF under the tag
+> > 'Implementation-Build'.
+> >
+> > You probably want to depend on ij-core (groupId net.imagej, version
+> > 2.0.0-SNAPSHOT for now) to retrieve that:
+> >
+> >
+> http://jenkins.imagej.net/job/ImageJ-daily/javadoc/imagej/util/Manifest.html#getManifest(java.lang.Class)
+> >
+> > and
+> >
+> >
+> http://jenkins.imagej.net/job/ImageJ-daily/javadoc/imagej/util/Manifest.html#getImplementationBuild()
+> >
+>
+> can you send me an example, how can I get the context of the jar file? , I
+> have the following
+>
+> import imagej.util.Manifest;
+> ????..
+>         //context = ?????????
+>         Manifest mf = context.getManifest();
+>         String vn = mf.getImplementationBuild();
+>
+> thanks for your help,
+> Gerrit.
+>
+>
+>
+>
+>
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130115/328447b9/attachment.html>
+
+From ctrueden at wisc.edu  Tue Jan 15 12:04:11 2013
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Tue, 15 Jan 2013 12:04:11 -0600
+Subject: [ImageJ-devel] What about this huge Java security issue?? How
+ do we keep ImageJ users both safe and satisfied with a Java platform?
+In-Reply-To: <xcc8soepgmxcbcq3rwoh9cl0.1357997428976@email.android.com>
+References: <xcc8soepgmxcbcq3rwoh9cl0.1357997428976@email.android.com>
+Message-ID: <CADN69y=GD0tAxCntbSPbioYE_Z_MOVsaUOwtNz4cLDC_zhFfCA@mail.gmail.com>
+
+Hi Bill & everyone,
+
+> what is the likelihood that oracle does something drastic with Java as
+> a result of the scare?
+
+I am confident that Oracle will do their best to patch such
+vulnerabilities, and take steps to mitigate future ones. Two days ago
+Oracle released a patch for the current issue [1]. Unfortunately, security
+experts say the fix does not fully address the bug [2].
+
+Still, of particular note is that fact the default behavior now always
+prompts users to confirm execution of the applet:
+
+"The fixes in this Alert include a change to the default Java Security
+Level setting from 'Medium' to 'High'. With the 'High' setting, the user is
+always prompted before any unsigned Java applet or Java Web Start
+application is run."
+
+This means that while there may be more zero-day exploits discovered in
+Java in the future, they will have much less impact than before because
+attackers can no longer exploit them to silently install malware. It may
+still be possible to trick users into clicking OK to a malicious applet.
+But if you can trick a user into clicking OK to such a dialog box, you may
+as well sign your malicious applet (which presents a similar dialog box) to
+grant it full user privileges straight away, rather than relying on a Java
+bug.
+
+In other words, I expect zero-day Java exploits to be largely impotent from
+now on.
+
+> Maybe this situation is more run-of-the-mill than my gut is feeling
+> right now.
+
+Actually, I agree it is quite unusual for the local news to be widely
+reporting such things, and also rare for the U.S. government to recommend
+actually uninstalling the affected software. Adobe Flash (which I think has
+a larger install base than Java does) has chronically suffered from similar
+issues (e.g., [3]), but to my knowledge, it was not as widely covered nor
+recommended to uninstall it. Similarly, Internet Explorer itself has had
+similar remote code execution exploits, one of which was fixed just
+yesterday [4].
+
+The point is that software is buggy, browsing the net is inherently
+insecure, and people should make a strong effort to avoid malicious web
+sites. (In particular, don't click links in spam emails!) It is best to
+assume your system *always* has at least one remote code execution exploit
+which could be used against you if you browse the wrong web page.
+
+Regards,
+Curtis
+
+
+[1]
+http://www.oracle.com/technetwork/topics/security/alert-cve-2013-0422-1896849.html
+[2]
+http://www.independent.ie/business/technology/emergency-patch-for-java-fails-to-fix-cybercrime-holes-warn-experts-3351321.html
+[3] http://msisac.cisecurity.org/advisories/2012/2012-077.cfm
+[4] http://technet.microsoft.com/en-us/security/bulletin/ms13-008
+
+
+On Sat, Jan 12, 2013 at 7:35 AM, Mohler,William <WMohler at neuron.uchc.edu>wrote:
+
+> Yes, thanks.  What I'm worried about is society's tendencies to be blind
+> to sensible approaches.  Eg, what is the likelihood that oracle does
+> something drastic with Java as a result of the scare?  Maybe this situation
+> is more run-of-the-mill than my gut is feeling right now.
+>
+> Bill
+>
+>
+>
+>
+> Jason Swedlow <j.r.swedlow at dundee.ac.uk> wrote:
+>
+> Hi Bill-
+>
+> Curtis and Johannes suggested very sensible approaches.
+>
+> I believe this is what you are referring to, and this clearly says to
+> disable Java in your web browser:
+>
+> http://www.kb.cert.org/vuls/id/625617
+>
+> Cheers,
+>
+> Jason
+>
+> --------------------
+> Centre for Gene Regulation & Expression | Open Microscopy Environment |
+> University of Dundee
+>
+> Phone:  +44 (0) 1382 385819
+> email: j.swedlow at dundee.ac.uk<mailto:j.swedlow at dundee.ac.uk>
+>
+> Web: http://www.lifesci.dundee.ac.uk/gre/staff/jason-swedlow
+> Open Microscopy Environment: http://openmicroscopy.org<
+> http://openmicroscopy.org/>
+>
+>
+> From: <Mohler>, William <WMohler at NEURON.UCHC.EDU<mailto:
+> WMohler at NEURON.UCHC.EDU>>
+> Date: Friday, 11 January 2013 20:41
+> To: Jason Swedlow <j.r.swedlow at dundee.ac.uk<mailto:
+> j.r.swedlow at dundee.ac.uk>>, "imagej-devel at imagej.net<mailto:
+> imagej-devel at imagej.net>" <imagej-devel at imagej.net<mailto:
+> imagej-devel at imagej.net>>
+> Subject: Re: [ImageJ-devel] What about this huge Java security issue?? How
+> do we keep ImageJ users both safe and satisfied with a Java platform?
+>
+> I'm hoping just what you're thinking.  But the press here is telling
+> people to "uninstall java" as the only certain way to avoid having their
+> systems hacked.  This is now backed by an announcement by US Dept of
+> Homeland Security that there is no other recourse...  Not easy stuff to
+> deal with, right or wrong.
+>
+>
+>
+> Jason Swedlow <j.r.swedlow at dundee.ac.uk<mailto:j.r.swedlow at dundee.ac.uk>>
+> wrote:
+>
+> Bill-
+>
+> Still trying to verify this, but this is about browser plug-ins, which you
+> can turn off.
+>
+>
+> http://developers.slashdot.org/story/13/01/10/1540202/java-zero-day-vulnerability-rolled-into-exploit-packs
+>
+> Cheers,
+>
+> Jason
+>
+> --------------------
+> Centre for Gene Regulation & Expression | Open Microscopy Environment |
+> University of Dundee
+>
+> Phone:  +44 (0) 1382 385819
+> email: j.swedlow at dundee.ac.uk<mailto:j.swedlow at dundee.ac.uk><mailto:
+> j.swedlow at dundee.ac.uk>
+>
+> Web: http://www.lifesci.dundee.ac.uk/gre/staff/jason-swedlow
+> Open Microscopy Environment: http://openmicroscopy.org<
+> http://openmicroscopy.org/>
+>
+>
+> From: <Mohler>, William <WMohler at NEURON.UCHC.EDU<mailto:
+> WMohler at NEURON.UCHC.EDU><mailto:WMohler at NEURON.UCHC.EDU>>
+> Date: Friday, 11 January 2013 20:15
+> To: "imagej-devel at imagej.net<mailto:imagej-devel at imagej.net><mailto:
+> imagej-devel at imagej.net>" <imagej-devel at imagej.net<mailto:
+> imagej-devel at imagej.net><mailto:imagej-devel at imagej.net>>
+> Subject: [ImageJ-devel] What about this huge Java security issue?? How do
+> we keep ImageJ users both safe and satisfied with a Java platform?
+>
+>
+> Sent from my Verizon Wireless 4G LTE DROID
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net<mailto:ImageJ-devel at imagej.net><mailto:
+> ImageJ-devel at imagej.net>
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+>
+> The University of Dundee is a registered Scottish Charity, No: SC015096
+>
+>
+>
+> The University of Dundee is a registered Scottish Charity, No: SC015096
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130115/b560ec5a/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Tue Jan 15 16:49:03 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Tue, 15 Jan 2013 23:49:03 +0100 (CET)
+Subject: [ImageJ-devel] Netbeans and Maven
+In-Reply-To: <3C7514B7E7E76C499962737F8BE1358A0130DB63@SCOMP0936.wurnet.nl>
+References: <3C7514B7E7E76C499962737F8BE1358A0130700E@SCOMP0936.wurnet.nl>
+	<alpine.DEB.1.00.1301150053580.32206@s15462909.onlinehome-server.info>
+	<3C7514B7E7E76C499962737F8BE1358A0130DB63@SCOMP0936.wurnet.nl>
+Message-ID: <alpine.DEB.1.00.1301152339460.32206@s15462909.onlinehome-server.info>
+
+Hi Gerrit,
+
+following Curtis' mail, we decided it'd be a good idea to add a Wiki page
+about this:
+
+	http://fiji.sc/Maven_-_Frequently_Asked_Questions
+
+On Tue, 15 Jan 2013, Polder, Gerrit wrote:
+
+> On 15 Jan 2013, at 01:12, Johannes Schindelin <Johannes.Schindelin at gmx.de> wrote:
+> 
+> >> 3- During build I see the following message: Property
+> >> 'imagej.app.directory' unset; Skipping copy-jars So it must be
+> >> possible to place the jar into my own imagej installation, how?
+> > 
+> > You can set the property either in the <properties> section of your
+> > pom.xml as described for imagej1.version above, or via the
+> > command-line.  Probably Netbeans lets you define that, too, but since
+> > I am not using Netbeans myself, I cannot tell you how, sorry!
+> > 
+> I added it to the pom file and it works ok, that is to say, for Fiji.
+> I have both Fiji and ImageJ installed.
+
+The only purpose of Fiji is to make it easier to work on and with ImageJ.
+
+> My users does not have Fiji, they need a very simple approach, so they
+> have standard ImageJ installed and the only thing they need to do is to
+> copy the jar file I send them to the plugins folder.
+
+This is only true if you bundle things such as Particles8_.class. In
+general, this is not a good idea. We have plenty of evidence on the
+fiji-devel and imagej mailing lists that bundling 3rd-party classes in
+your .jar will lead to problems -- most likely on the users' side, which
+makes things doubly bad.
+
+As Curtis suggested, you probably should make an update site.
+
+If you do not want to provide an update site (for which you should
+definitely use Fiji, to avoid doing exactly the same thing as the Fiji
+updater again, unless, that is, you want to spend time reinventing the
+wheel ;-)), you can always use the Fiji Package Maker:
+
+	http://fiji.sc/Make_Fiji_Package
+
+I seriously do not know how to make things more convenient than that, but
+if you do, I would be very thankful for your insights.
+
+> >> 5- The process_pixels application does not quit properly, I have to stop
+> >> it from netbeans.
+> > 
+> > Sorry, do you have more information about that? I do not understand the
+> > issue.
+> 
+> after quitting the application from the file menu or command-Q it froze
+> and I had to force quit it from netbeans.
+
+Most likely you debugged things and the debugger was still at a break
+point. In such a case, Java cannot handle any input (since the event
+thread is also stopped) and you would experience such a symptom.
+
+> But for some unknown reason it works now, maybe the
+> 'imagej.app.directory' setting?
+
+Highly unlikely.
+
+> >> 6- My software is dependent from other plugins, such as particle8
+> >> from Gabriel Landini's Morphology, can/is this incorporated in the
+> >> imagej maven repository?
+> > 
+> > The easiest way to do that would probably to install it locally for
+> > the moment. Please see Maven's console log for details how to do that
+> > after specifying a dependency, e.g.
+> > 
+> > 		<dependency>
+> > 			<groupId>uk.ac.bham.dentistry</groupId>
+> > 			<artifactId>Particles8_</artifactId>
+> > 			<version>1.6</version>
+> > 		</dependency>
+> > 
+> > (I took the version number from the web site, and constructed the
+> > groupId from the web site, too. Note that you will need to wrap the
+> > .class files in a .jar file before installing it locally.)
+> 
+> will have a look at this, does Gabriel have no plans to include
+> Morphology and his other stuff in Fiji?
+
+I am sure that Gabriel would appreciate help Mavenizing the incredibly
+large plugin collection of his!
+
+> >> 7- In my ant script I'm using a call to svnversion, in order to place
+> >> the latest build number and date in the about box. Can this be done
+> >> in maven?
+> > 
+> > The way this is done in Maven is by using the buildnumber plugin. This
+> > will put the current revision into the MANIFEST.MF under the tag
+> > 'Implementation-Build'.
+> > 
+> > You probably want to depend on ij-core (groupId net.imagej, version
+> > 2.0.0-SNAPSHOT for now) to retrieve that:
+> > 
+> > http://jenkins.imagej.net/job/ImageJ-daily/javadoc/imagej/util/Manifest.html#getManifest(java.lang.Class)
+> > 
+> > and
+> > 
+> > http://jenkins.imagej.net/job/ImageJ-daily/javadoc/imagej/util/Manifest.html#getImplementationBuild()
+> > 
+> 
+> can you send me an example, how can I get the context of the jar file? , I have the following
+> 
+> import imagej.util.Manifest;
+> ????..
+>         //context = ?????????
+>         Manifest mf = context.getManifest();
+>         String vn = mf.getImplementationBuild();
+
+I provided my example here, for better visibility to the public at large:
+
+http://fiji.sc/Maven_-_Frequently_Asked_Questions#In_my_ant_script_I.27m_using_a_call_to_svnversion.2C_in_order_to_place_the_latest_build_number_and_date_in_the_about_box._Can_this_be_done_with_Maven.3F
+
+Ciao,
+Johannes
+
+From chris at gaiag.net  Tue Jan 15 23:50:37 2013
+From: chris at gaiag.net (Chris)
+Date: Tue, 15 Jan 2013 21:50:37 -0800
+Subject: [ImageJ-devel] opening a tif file from a resource
+Message-ID: <E12022CE-0F51-471D-924E-025A64CACE01@gaiag.net>
+
+I can open a jpeg file using 
+
+        java.net.URL url;
+        url = getClass().getResource(image.jpg);
+        java.awt.Image image = Toolkit.getDefaultToolkit().getImage(url);
+        imp = new ImagePlus("", image);
+        if (imp != null) {
+            imp.show();
+	}
+
+but this will not work for a tiff image.  My tiff image is a stack.  How can I open the tiff stack that is bundled in the resources folder of my jar file?
+
+Thanks for any help.
+
+Chris Coulon
+
+
+
+Christopher Coulon, Ph.D.
+The GAIA Group
+http://gaiag.net
+
+
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130115/558b3e8d/attachment-0001.html>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: PastedGraphic-2.tiff
+Type: image/tiff
+Size: 132622 bytes
+Desc: not available
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130115/558b3e8d/attachment-0001.tiff>
+
+From gerrit.polder at wur.nl  Wed Jan 16 10:07:38 2013
+From: gerrit.polder at wur.nl (Polder, Gerrit)
+Date: Wed, 16 Jan 2013 16:07:38 +0000
+Subject: [ImageJ-devel] Netbeans and Maven
+In-Reply-To: <alpine.DEB.1.00.1301152339460.32206@s15462909.onlinehome-server.info>
+References: <3C7514B7E7E76C499962737F8BE1358A0130700E@SCOMP0936.wurnet.nl>
+	<alpine.DEB.1.00.1301150053580.32206@s15462909.onlinehome-server.info>
+	<3C7514B7E7E76C499962737F8BE1358A0130DB63@SCOMP0936.wurnet.nl>
+	<alpine.DEB.1.00.1301152339460.32206@s15462909.onlinehome-server.info>
+Message-ID: <3C7514B7E7E76C499962737F8BE1358A0131064C@SCOMP0936.wurnet.nl>
+
+Johannes, Curtis,
+
+thanks a lot for your help.
+
+On 15 Jan 2013, at 23:49, Johannes Schindelin <Johannes.Schindelin at gmx.de<mailto:Johannes.Schindelin at gmx.de>> wrote:
+
+Hi Gerrit,
+
+following Curtis' mail, we decided it'd be a good idea to add a Wiki page
+about this:
+
+http://fiji.sc/Maven_-_Frequently_Asked_Questions
+
+I will suggest some changes:
+for the build number plugin, this needs to be placed in the <build> section,
+and I found setting <doUpdate> to true valuable.
+Furthermore you need a scm section in the pom.
+
+   <scm>
+        <connection>scm:svn:http://myhost/myrepository</connection>
+        <developerConnection>scm:svn:http://myhost/myrepository</developerConnection>
+    </scm>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>buildnumber-maven-plugin</artifactId>
+                <configuration>
+                    <doUpdate>true</doUpdate>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+Since maven is used for Fiji projects you better change :
+mvn -Dimagej.app.directory=/Applications/ImageJ.app
+to
+mvn -Dimagej.app.directory=/Applications/Fiji.app
+
+But I preferred to set it in the pom:
+    <properties>
+        <imagej.app.directory>/Applications/Fiji.app/</imagej.app.directory>
+    </properties>
+
+and for the code example I preferred to use:
+        Manifest mf = Manifest.getManifest(this.getClass());
+and you have to check for mf being null, which is the case when you run the class from the debugger, since in that case it isn't packaged in a jar file.
+
+
+As Curtis suggested, you probably should make an update site.
+
+Yes, thats the way I want to go!
+
+If you do not want to provide an update site (for which you should
+definitely use Fiji, to avoid doing exactly the same thing as the Fiji
+updater again, unless, that is, you want to spend time reinventing the
+wheel ;-)), you can always use the Fiji Package Maker:
+
+http://fiji.sc/Make_Fiji_Package
+
+Nice to have this available, some users in the lab are not connected to the internet.
+
+I seriously do not know how to make things more convenient than that, but
+if you do, I would be very thankful for your insights.
+This is very convenient, I was not very familiar with Fiji, so I'm learning a lot now ;)
+Hopefully this is also a good way for going into ImageJ2.
+
+I am sure that Gabriel would appreciate help Mavenizing the incredibly
+large plugin collection of his!
+
+Today I made a maven project for all Gabriels Morphology java functions (not the macros).
+Can I upload it to somewhere?
+
+kindly,
+Gerrit.
+
+
+--------------------------------------------------
+dr. ing. G (Gerrit) Polder
+Wageningen UR, Biometris
+P.O.Box 100, 6700 AC Wageningen, the Netherlands
+http://www.wageningenur.nl/en/Persons/dr.ing.-G-Gerrit-Polder.htm
+email: gerrit.polder at wur.nl<x-msg://3/gerrit.polder at wur.nl>
+phone: +31.317.480751
+
+
+
+
+
+
+
+
+
+From rasbandw at mail.nih.gov  Wed Jan 16 23:42:34 2013
+From: rasbandw at mail.nih.gov (Rasband, Wayne (NIH/NIMH) [E])
+Date: Thu, 17 Jan 2013 00:42:34 -0500
+Subject: [ImageJ-devel] opening a tif file from a resource
+In-Reply-To: <E12022CE-0F51-471D-924E-025A64CACE01@gaiag.net>
+References: <E12022CE-0F51-471D-924E-025A64CACE01@gaiag.net>
+Message-ID: <1ECB3A44-8856-46DC-8C74-E8B7F883144F@nih.gov>
+
+On Jan 16, 2013, at 12:50 AM, Chris wrote:
+
+> I can open a jpeg file using 
+> 
+>         java.net.URL url;
+>         url = getClass().getResource(image.jpg);
+>         java.awt.Image image = Toolkit.getDefaultToolkit().getImage(url);
+>         imp = new ImagePlus("", image);
+>         if (imp != null) {
+>             imp.show();
+> 	}
+> 
+> but this will not work for a tiff image.  My tiff image is a stack.  How can I open the tiff stack that is bundled in the resources folder of my jar file?
+
+Hi Chris,
+
+The "JAR Resources Demo" plugin at
+
+   http://rsbweb.nih.gov/ij/plugins/pcl-demo.html
+
+opens TIFFs using 
+
+   InputStream is = getClass().getResourceAsStream(path+"image.tif");
+   if (is!=null) {
+      Opener opener = new Opener();
+      ImagePlus imp = opener.openTiff(is, "San Francisco (TIFF)");
+      if (imp!=null)
+         imp.show();
+   }
+ 
+which should work with ImageJ TIFF stacks.
+
+-wayne
+
+
+
+
+
+
+From christian.dietz at uni-konstanz.de  Mon Jan 21 10:53:35 2013
+From: christian.dietz at uni-konstanz.de (Christian Dietz)
+Date: Mon, 21 Jan 2013 17:53:35 +0100
+Subject: [ImageJ-devel] ImgLib2 dimensionality
+Message-ID: <50FD728F.7010203@uni-konstanz.de>
+
+Hi Aivar,
+
+some months ago we had a similar discussion with Barry and Curtis (see 
+below). Sorry for not posting this on the mailing list.
+ From our (KNIME) point of view, an algorithm, which is implemented in 
+ImgLib2, shouldn't know about any Axes / Axes Names.
+The algorithm just knows on which number of dimensions (2-d, 3-d, ... 
+n-D)  it could run. ImgLib2 Views can be used to pre-process the 
+algorithm input (e.g. 2D Slices of an 3-D Img).
+For Example: You have a 4-dimensional Image and you want to process it 
+plane-wise (2D, also possible in 3-D ... n-D just in the example: 2D). 
+In KNIME we use a Component called "Dim Selection" in the GUI where a 
+user selects e.g. X and Y to define the planes of interest. All other 
+dimensions are used to iterate over the x-y-planes (e.g. if t=2, c=3 
+then we iterate over 6 x-y-planes). After we determined the indices of 
+the X-Y Axes of our incoming Image (using the Axes in ImgPlus) we 
+internally create several (nested) ImgLib2 Views using Views.interval, 
+Views.translate etc pp. The resulting views are passed to the algorithm 
+as a RandomAccessible, RandomAccessibleInterval or (if necessary) an 
+ImgView/ImgPlusView (wrapping a RandomAccessibleInterval).
+
+Using Views we don't restrict the algorithms such that they only work on 
+dedicated dimensions. In fact, any user-selection of dimensions can be 
+used to create a View (as long as the algorithms can handle the number 
+of dimensions of the resulting view). We suggested a general "Dimension 
+Selection" Service for ImageJ2, but unfortunately we didn't find the 
+time yet to implement it.
+
+Looking forward for replies ;)
+
+Martin, Michael Z. and Christian
+
+
+-------- Original Message --------
+Subject: 	Re: Processing sub-intervals in ImageJ-Plugins
+Date: 	Thu, 31 May 2012 09:06:30 +0200
+From: 	Martin Horn <Martin.Horn at uni-konstanz.de>
+To: 	bdezonia at gmail.com
+CC: 	Christian Dietz <christian.dietz at uni-konstanz.de>, 
+michael.zinsmaier at gmx.de, Curtis Rueden <ctrueden at wisc.edu>
+
+
+
+Hi Barry,
+
+maybe my last Mail was a bit hasty and we reordered our thoughts a bit
+;o) Sorry for that. So forget about the part of "processing very large
+image objects". But the comments on the Normalize plugin (or rather the
+Auto Contrast plugins) are still true. To be clear, let me explain
+again, what we wanted to address by means of the "AutoContrast"-plugin:
+
+The AutoContrast plugin first calculates a histogram and then applies a
+normalization function determined from the histogram to each pixel. Now,
+this histogram, e.g. can be determined on various pixel-(sub)sets of the
+image in a n-dimensional image object: one can calculate the histogram
+for all pixels, one do it for each XY-plane individually, one can to it
+for each XT-plane (if T existent), one can do it for each XYC-cube, if
+we consider a 5-dim image with XYCT, and so on (the same is true, e.g.
+for Thresholding, CCA, ... . Hence, there are various way how to handle
+n-dim data properly (depending on the algorithm itself, whether it can
+handle only 2D, 3D or nD data). Certainly, one can define that each
+plugin has to care about how to handle nD data in a appropriate way by
+itself. Thats fine, actually. But what would be desirable is maybe the
+existence of some convenience-tools to simplify the n-D data handling
+(e.g. think of a service which ask the user to select the dimensions to
+operate on and whose to iterate; or maybe a component in a dialog and
+some helper classes, ...). This would for example make the
+AutoContrast-implementation more general and hardcoded things like
+"axes.getLabel()=="Channel" (line207) (the user decides, what a channel
+is) or the question "how to handle RGB images" (line 156) would be
+lapsed. Currently the AutoContrast-plugin only processes a nD-image on
+the whole.
+
+Maybe we can give you an example how we handle it (which is certainly
+not perfect, but illustrates the idea somehow):
+
+Given: Image in 5D (XYCZT).
+Let's assume an algorithm is applicable only in 2D (Maybe find edges) or
+the results differ if we use 2D or 3D representation of an image
+(AutoContrast, Thresholding etc), as mentioned above.
+In any case the user may select what his process planes are by selecting
+the labels of this planes (e.g. XY, XT, XC, CT, etc., could also be a
+N-Dimensional selection, depending on the algorithm). The algorithm then
+is applied to any selected plane separately. This is possible as we use
+the Operation concept which we defined together with you guys in
+Dresden. For the given 5d input we create a proper output (e.g. a 5D
+BitType image in the case of Thresholding) and then we create several
+views depending on the dimension selection of the user on the input and
+the output. The algorithm is called as we provide it as well the input
+as the output container before hands. Remember we do not duplicate
+memory or something as we use Views on the input and output data (e.g.
+one plane).
+
+
+We hope, we could express ourself more clear.
+
+Thanks a lot!
+
+Best,
+
+Christian and Martin
+
+
+On 05/30/2012 05:07 PM, Barry DeZonia wrote:
+> Hi Martin,
+>
+> PointSets might help you with this problem. The net.imglib2.ops.pointset
+> package defines a set of PointSets that can be used to represent a
+> subset of an n-dimensional dataset. For instance you can define a point
+> set as a plane in 3d space (XYT). You iterate the PointSet to pull out
+> each coordinate within it and use that coordinate for your computations.
+> Then you can relocate the plane of interest via pointset.setAnchor() and
+> changing the time component of the plane origin. This would allow code
+> to iterate planes of a bigger space.
+>
+> PointSets are a general construct that allow arbitrarily defined regions
+> to be iterated and "slid" over a n-dimensional space. Views might work
+> in this instance too. I'm not sure. But in your example of a big image
+> the PointSet could be an arbitrarily small region within it that is
+> repeatedly slid between calculation steps. In OPS the sliding is done by
+> the various classes in net.imglib2.ops.input. For instance a
+> PointSetInputIterator.
+>
+> I may not be understanding your problem here though. I'm not sure how a
+> normalizer plugin or contrast adjuster plugin exceeds the problem you
+> mentioned of arbitrary subregion iteration. Can you be more specific?
+> What general operation or general plugin do you envision? Hopefully my
+> response here has not been off target. Let me know if there is more to
+> the problem that I am missing.
+>
+> Regards,
+>
+> Barry
+>
+> On Wed, May 30, 2012 at 8:03 AM, Martin Horn
+> <Martin.Horn at uni-konstanz.de  <mailto:Martin.Horn at uni-konstanz.de>> wrote:
+>
+>     Hi Curtis and Barry,
+>
+>     we, Christian, Michael and I, are currently discussing how to better
+>     realize something we call "dimension selection" especially in
+>     conjunction with the integration of ImageJ plugins. Imagine a video
+>     which you want to normalize. You can either do it for the whole
+>     image object or you can normalize for instance each plane
+>     individually (even without copying the planes). So far, in some of
+>     our KNIME nodes we introduced a special dialog component ("dimension
+>     selection") allowing the user to specify how to proceed in a
+>     particular case.
+>
+>     Do you already thought of this kind of things? How are you planing
+>     to handle this issue for instance in a "Normalizer/Contrast Enhancer
+>     plugin"?
+>
+>     This issue is probably also related to the problem of processing
+>     very large image objects, which don't fit into the memory. In those
+>     cases only sub-intervals of an image can be processed at once but
+>     the result should still be regarded as one image object.
+>
+>     Certainly, each plugin can take care of this by its own. But one may
+>     also think of a dedicated kind of ImageJPlugin which is e.g.
+>     similarly defined as a net.imglib2.ops.__UnaryOperation.
+>
+>     What are your ideas??
+>
+>     Thanks a lot!
+>
+>     Best,
+>
+>     Martin
+>
+>
+>
+>
+>     --
+>     Martin Horn
+>     Nycomed Chair for Bioinformatics
+>     and Information Mining
+>     University of Konstanz
+>
+>     fax: +49 (0)7531 88-5132 <tel:%2B49%20%280%297531%2088-5132>
+>     phone: +49 (0)7531 88-5017 <tel:%2B49%20%280%297531%2088-5017>
+>
+>
+>
+
+-- 
+Martin Horn
+Nycomed Chair for Bioinformatics
+and Information Mining
+University of Konstanz
+
+fax: +49 (0)7531 88-5132
+phone: +49 (0)7531 88-5017
+
+
+
+
+*From: *Aivar Grislis <grislis at wisc.edu <mailto:grislis at wisc.edu>>
+*Subject: **[ImageJ-devel] ImgLib2 dimensionality*
+*Date: *January 10, 2013 10:26:06 PM GMT+01:00
+*To: *imagej-devel at imagej.net <mailto:imagej-devel at imagej.net>
+
+I was looking at the dimensional code in net.imglib2.meta.Axes. This is 
+an enum of known, named AxisTypes such as X, Y, Z..., has the capacity 
+for CustomAxisTypes, and some sort of characterization of these 
+dimensions with 'isXY()' and 'isSpatial()'.  (Perhaps we could replace 
+these latter with some kind of EnumSet of DimensionTypes, such as XY, 
+SPATIAL, etc. for the discussion that follows.)
+
+It might be useful to have a concept of a COINCIDENTAL type.  This sort 
+of dimension represents different aspects of the same pixel/voxel/doxel. 
+  It's as if you look at it with red glasses, blue glasses, etc. 
+  Effectively this is the same as non-spatial/-temporal since all of the 
+default AxisTypes besides XYZT would be coincidental.  But with this you 
+can specify if a new CustomAxisType should be coincidental or not.  For 
+example, if you wrote a plugin that works on an image in 5D that is a 
+series of 4D (XYZT) images, the dimension that represents the series of 
+images is not coincidental (and not spatial or temporal either).
+
+Another useful concept would be whether a dimension is DISCRETE (or 
+NON_INTERPOLABLE?).   This sort of image would be analogous to a table 
+of height/weight/shoe size per individual (pixel).  This works only 
+because it happens you can express all three measurements as floating 
+point.  Anyway, the point is these measurements are totally independent, 
+the order is arbitrary, and it never would make any sense to combine 
+them somehow or interpolate between them.  I've been working on a FLIM 
+fitting plugin and using such images as my output, where the 
+measurements are a set of fitted lifetime parameters, for example A1, 
+T1, A2, T2, Z, all doubles.  It's the equivalent of five separate images 
+in one and could just be refactored as such. [*]
+
+My motivating concern was that if were to introduce such a DISCRETE 
+DimensionType most existing plugins or algorithms will not do anything 
+useful (other than simple things like copying, etc.).  In fact they will 
+most likely clobber my discrete dimension.
+
+What if an algorithm could somehow declare via annotation what sorts of 
+dimensions it was interested in?  Without such an annotation the default 
+would be to get all of the non-discrete dimensions, and the caller 
+splits the image into sub images across discrete dimensions and 
+processes them successively.  Then existing algorithms could do useful 
+work on my discrete image.  Other algorithms that understand the meaning 
+of this discrete dimension information could declare an interest in it 
+and get the whole thing.
+
+This could be a very useful mechanism in other instances.  In general 
+lets say an algorithm could specify dimension types or specific 
+dimensions of interest and the caller splits the image into sub images 
+across the remaining dimensions.  Then the algorithm gets a cursor that 
+iterates only on the dimensions of interest.  They could set the cursor 
+position within these dimensions or just iterate through the whole thing.
+
+Another use case might be to split up arbitrary images into XY slices 
+for 2D-processing algorithms. On the input side, my FLIM fitting 
+algorithm could declare an interest in the LIFETIME AxisType only and 
+get called pixel by pixel with a lifetime dimension cursor to process a 
+whole image that has unknown dimensions.
+
+For another example, the early ImgLib1 sample Floyd-Steinberg dithering 
+algorithm could process only non-COINCIDENTAL dimensions. This would 
+avoid distributing errors from the red channel to the blue channel, for 
+instance; they would be dithered one by one.
+
+Hope this makes sense!  There's a lot of hand-waving here at present, 
+particularly how this dimensional interest would be specified.
+
+Thanks for reading,
+
+Aivar Grislis
+
+([*] Another alternative would be my creating a custom 
+FittedLifetimeType or some kind of generic TupleType)
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130121/bbc226d8/attachment-0001.html>
+
+From gerrit.polder at wur.nl  Mon Jan 28 07:52:29 2013
+From: gerrit.polder at wur.nl (Polder, Gerrit)
+Date: Mon, 28 Jan 2013 13:52:29 +0000
+Subject: [ImageJ-devel] strange behaviour using calibration object.
+Message-ID: <3C7514B7E7E76C499962737F8BE1358A01321E01@SCOMP0936.wurnet.nl>
+
+Since today my calibration software doesn't work anymore.
+After a little bit of debugging it looks like setCalibration in ImagePlus doesn't set the calibration.
+
+this code:
+        ImagePlus overlay_im = new Duplicator().run(imp);
+        IJ.log("1-> "+cal.getCalibration() + " - " + cal.getCalibration().scaled());
+        overlay_im.setCalibration(cal.getCalibration());
+        IJ.log("2-> " + overlay_im.getCalibration()+ " - " + overlay_im.getCalibration().scaled());
+produces this output:
+1-> w=0.19120458891013384, h=0.19120458891013384, d=1.0, unit=mm, f=20, nc=null, table=null, vunit=Gray Value - true
+2-> w=1.0, h=1.0, d=1.0, unit=pixel, f=20, nc=null, table=null, vunit=Gray Value - false
+
+any help?
+
+Gerrit.
+
+
+
+
+
+
+
+
+From bdezonia at gmail.com  Mon Jan 28 13:05:02 2013
+From: bdezonia at gmail.com (Barry DeZonia)
+Date: Mon, 28 Jan 2013 13:05:02 -0600
+Subject: [ImageJ-devel] strange behaviour using calibration object.
+In-Reply-To: <3C7514B7E7E76C499962737F8BE1358A01321E01@SCOMP0936.wurnet.nl>
+References: <3C7514B7E7E76C499962737F8BE1358A01321E01@SCOMP0936.wurnet.nl>
+Message-ID: <CAKcvfuTiyD=XBhrQ4Vp-_oBCwyJbHWmZ2bD5rJwkhp2tXJ7VaQ@mail.gmail.com>
+
+Hi Gerrit,
+
+This email list is for discussing issues relevant to the development of
+ImageJ2. I think you want to post your question to the ImageJ mailing list.
+You can learn more about the list here: http://rsbweb.nih.gov/ij/list.html
+
+
+On Mon, Jan 28, 2013 at 7:52 AM, Polder, Gerrit <gerrit.polder at wur.nl>wrote:
+
+> Since today my calibration software doesn't work anymore.
+> After a little bit of debugging it looks like setCalibration in ImagePlus
+> doesn't set the calibration.
+>
+> this code:
+>         ImagePlus overlay_im = new Duplicator().run(imp);
+>         IJ.log("1-> "+cal.getCalibration() + " - " +
+> cal.getCalibration().scaled());
+>         overlay_im.setCalibration(cal.getCalibration());
+>         IJ.log("2-> " + overlay_im.getCalibration()+ " - " +
+> overlay_im.getCalibration().scaled());
+> produces this output:
+> 1-> w=0.19120458891013384, h=0.19120458891013384, d=1.0, unit=mm, f=20,
+> nc=null, table=null, vunit=Gray Value - true
+> 2-> w=1.0, h=1.0, d=1.0, unit=pixel, f=20, nc=null, table=null, vunit=Gray
+> Value - false
+>
+> any help?
+>
+> Gerrit.
+>
+>
+>
+>
+>
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130128/3f4bb26c/attachment.html>
+
+From rasbandw at mail.nih.gov  Mon Jan 28 14:12:14 2013
+From: rasbandw at mail.nih.gov (Rasband, Wayne (NIH/NIMH) [E])
+Date: Mon, 28 Jan 2013 15:12:14 -0500
+Subject: [ImageJ-devel] strange behaviour using calibration object.
+In-Reply-To: <3C7514B7E7E76C499962737F8BE1358A01321E01@SCOMP0936.wurnet.nl>
+References: <3C7514B7E7E76C499962737F8BE1358A01321E01@SCOMP0936.wurnet.nl>
+Message-ID: <924A4791-3BD1-40D5-8281-844A81A74C2E@nih.gov>
+
+On Jan 28, 2013, at 8:52 AM, Polder, Gerrit wrote:
+
+> Since today my calibration software doesn't work anymore.
+> After a little bit of debugging it looks like setCalibration in ImagePlus doesn't set the calibration.
+> 
+> this code:
+>        ImagePlus overlay_im = new Duplicator().run(imp);
+>        IJ.log("1-> "+cal.getCalibration() + " - " + cal.getCalibration().scaled());
+>        overlay_im.setCalibration(cal.getCalibration());
+>        IJ.log("2-> " + overlay_im.getCalibration()+ " - " + overlay_im.getCalibration().scaled());
+> produces this output:
+> 1-> w=0.19120458891013384, h=0.19120458891013384, d=1.0, unit=mm, f=20, nc=null, table=null, vunit=Gray Value - true
+> 2-> w=1.0, h=1.0, d=1.0, unit=pixel, f=20, nc=null, table=null, vunit=Gray Value - false
+
+Your code does not compile but this version works as expected:
+
+   ImagePlus imp = IJ.getImage();
+   ImagePlus imp2 = new Duplicator().run(imp);
+   IJ.log("1-> "+imp.getCalibration() + " - " + imp.getCalibration().scaled());
+   IJ.log("2-> " + imp2.getCalibration()+ " - " + imp2.getCalibration().scaled());
+
+This is the output:
+
+1-> w=0.02, h=0.02, d=0.02, unit=mm, f=20, nc=null, table=null, vunit=Gray Value - true
+2-> w=0.02, h=0.02, d=0.02, unit=mm, f=20, nc=null, table=null, vunit=Gray Value - true
+
+
+-wayne
+
+
+
+
+From gerrit.polder at wur.nl  Mon Jan 28 15:41:58 2013
+From: gerrit.polder at wur.nl (Polder, Gerrit)
+Date: Mon, 28 Jan 2013 21:41:58 +0000
+Subject: [ImageJ-devel] strange behaviour using calibration object.
+In-Reply-To: <924A4791-3BD1-40D5-8281-844A81A74C2E@nih.gov>
+References: <3C7514B7E7E76C499962737F8BE1358A01321E01@SCOMP0936.wurnet.nl>
+	<924A4791-3BD1-40D5-8281-844A81A74C2E@nih.gov>
+Message-ID: <3C7514B7E7E76C499962737F8BE1358A0132233D@SCOMP0936.wurnet.nl>
+
+Wayne,
+
+thanks, the thing is I have a separate class cal, it's a class I wrote myself.
+This class implements the getCalibration functions which returns a Calibration object, in which I filled w,h and the unit.
+So I can imagine that you can't compile it. I did show this on the last developer conference, maybe you remember it.
+This class detects a blue area in the image and decodes the qrcode within this area and does a calibration based on a black disk with holes.
+The number of holes determines the size of the disk. I'm currently making a separate plugin for this calibration and decode.
+The idea is that the plugin gives a new image with only the blue area, the decoded qrcode as title and calibrated according to the disk.
+This way this information can be used in other plugins. I don't see other ways to get this information from the plugin. 
+Or I need to return a resultstable which is little bit of overkill in my opinion.
+
+I don't see why IJ.log("1-> "+cal.getCalibration() + " - " + cal.getCalibration().scaled()); works,
+and overlay_im.setCalibration(cal.getCalibration()); not.
+Even more since it worked properly last week ????
+The only thing which was changed is the Fiji update this morning, I believe ij1.47h to 1.47i, along with other libraries.
+
+In the mean time I found another problem, I have implemented the run(ImageProcessor ip) in my plugin.
+I do a ip.setroi(roi of blue region) at the end and after running the plugin this roi was set on the input image.
+It is very handy to have this information for further processing of the input image.
+This behavior also stopped working this morning, the roi now is set to the whole image.
+
+Is there a way to downgrade Fiji, in order to test this with 1.47h?
+
+is Barry DeZonia right, does this question better fit on the regular list?
+
+I'm a little bit confused,
+thanks,
+Gerrit.
+
+
+
+On 28 jan. 2013, at 21:12, "Rasband, Wayne (NIH/NIMH) [E]" <rasbandw at mail.nih.gov> wrote:
+
+> On Jan 28, 2013, at 8:52 AM, Polder, Gerrit wrote:
+> 
+>> Since today my calibration software doesn't work anymore.
+>> After a little bit of debugging it looks like setCalibration in ImagePlus doesn't set the calibration.
+>> 
+>> this code:
+>>       ImagePlus overlay_im = new Duplicator().run(imp);
+>>       IJ.log("1-> "+cal.getCalibration() + " - " + cal.getCalibration().scaled());
+>>       overlay_im.setCalibration(cal.getCalibration());
+>>       IJ.log("2-> " + overlay_im.getCalibration()+ " - " + overlay_im.getCalibration().scaled());
+>> produces this output:
+>> 1-> w=0.19120458891013384, h=0.19120458891013384, d=1.0, unit=mm, f=20, nc=null, table=null, vunit=Gray Value - true
+>> 2-> w=1.0, h=1.0, d=1.0, unit=pixel, f=20, nc=null, table=null, vunit=Gray Value - false
+> 
+> Your code does not compile but this version works as expected:
+> 
+>   ImagePlus imp = IJ.getImage();
+>   ImagePlus imp2 = new Duplicator().run(imp);
+>   IJ.log("1-> "+imp.getCalibration() + " - " + imp.getCalibration().scaled());
+>   IJ.log("2-> " + imp2.getCalibration()+ " - " + imp2.getCalibration().scaled());
+> 
+> This is the output:
+> 
+> 1-> w=0.02, h=0.02, d=0.02, unit=mm, f=20, nc=null, table=null, vunit=Gray Value - true
+> 2-> w=0.02, h=0.02, d=0.02, unit=mm, f=20, nc=null, table=null, vunit=Gray Value - true
+> 
+> 
+> -wayne
+> 
+> 
+> 
+> 
+
+
+
+
+
+From ctrueden at wisc.edu  Mon Jan 28 16:03:04 2013
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Mon, 28 Jan 2013 16:03:04 -0600
+Subject: [ImageJ-devel] strange behaviour using calibration object.
+In-Reply-To: <3C7514B7E7E76C499962737F8BE1358A0132233D@SCOMP0936.wurnet.nl>
+References: <3C7514B7E7E76C499962737F8BE1358A01321E01@SCOMP0936.wurnet.nl>
+	<924A4791-3BD1-40D5-8281-844A81A74C2E@nih.gov>
+	<3C7514B7E7E76C499962737F8BE1358A0132233D@SCOMP0936.wurnet.nl>
+Message-ID: <CADN69ym+_EvjHzouiiRRsBgdxtm8aGTAfs7P9_0osi2c-M0nnw@mail.gmail.com>
+
+Hi Gerrit,
+
+> Is there a way to downgrade Fiji, in order to test this with 1.47h?
+
+You can use Help > Update ImageJ... to switch the version of core ImageJ
+from 1.47i to older versions like 1.46. However, AFAIK it does not support
+intermediate versions like 1.47h. But you can also just delete ij-1.47i.jar
+out of the jars folder and put ij-1.47h.jar there instead, and that will do
+the trick.
+
+> is Barry DeZonia right, does this question better fit on the regular
+> list?
+
+The following page describes the intended uses of the lists:
+    http://developer.imagej.net/mailing-lists
+
+But it is not a big deal either way; most of the ImageJ developers read
+both lists anyway.
+
+Regards,
+Curtis
+
+
+On Mon, Jan 28, 2013 at 3:41 PM, Polder, Gerrit <gerrit.polder at wur.nl>wrote:
+
+> Wayne,
+>
+> thanks, the thing is I have a separate class cal, it's a class I wrote
+> myself.
+> This class implements the getCalibration functions which returns a
+> Calibration object, in which I filled w,h and the unit.
+> So I can imagine that you can't compile it. I did show this on the last
+> developer conference, maybe you remember it.
+> This class detects a blue area in the image and decodes the qrcode within
+> this area and does a calibration based on a black disk with holes.
+> The number of holes determines the size of the disk. I'm currently making
+> a separate plugin for this calibration and decode.
+> The idea is that the plugin gives a new image with only the blue area, the
+> decoded qrcode as title and calibrated according to the disk.
+> This way this information can be used in other plugins. I don't see other
+> ways to get this information from the plugin.
+> Or I need to return a resultstable which is little bit of overkill in my
+> opinion.
+>
+> I don't see why IJ.log("1-> "+cal.getCalibration() + " - " +
+> cal.getCalibration().scaled()); works,
+> and overlay_im.setCalibration(cal.getCalibration()); not.
+> Even more since it worked properly last week ????
+> The only thing which was changed is the Fiji update this morning, I
+> believe ij1.47h to 1.47i, along with other libraries.
+>
+> In the mean time I found another problem, I have implemented the
+> run(ImageProcessor ip) in my plugin.
+> I do a ip.setroi(roi of blue region) at the end and after running the
+> plugin this roi was set on the input image.
+> It is very handy to have this information for further processing of the
+> input image.
+> This behavior also stopped working this morning, the roi now is set to the
+> whole image.
+>
+> Is there a way to downgrade Fiji, in order to test this with 1.47h?
+>
+> is Barry DeZonia right, does this question better fit on the regular list?
+>
+> I'm a little bit confused,
+> thanks,
+> Gerrit.
+>
+>
+>
+> On 28 jan. 2013, at 21:12, "Rasband, Wayne (NIH/NIMH) [E]" <
+> rasbandw at mail.nih.gov> wrote:
+>
+> > On Jan 28, 2013, at 8:52 AM, Polder, Gerrit wrote:
+> >
+> >> Since today my calibration software doesn't work anymore.
+> >> After a little bit of debugging it looks like setCalibration in
+> ImagePlus doesn't set the calibration.
+> >>
+> >> this code:
+> >>       ImagePlus overlay_im = new Duplicator().run(imp);
+> >>       IJ.log("1-> "+cal.getCalibration() + " - " +
+> cal.getCalibration().scaled());
+> >>       overlay_im.setCalibration(cal.getCalibration());
+> >>       IJ.log("2-> " + overlay_im.getCalibration()+ " - " +
+> overlay_im.getCalibration().scaled());
+> >> produces this output:
+> >> 1-> w=0.19120458891013384, h=0.19120458891013384, d=1.0, unit=mm, f=20,
+> nc=null, table=null, vunit=Gray Value - true
+> >> 2-> w=1.0, h=1.0, d=1.0, unit=pixel, f=20, nc=null, table=null,
+> vunit=Gray Value - false
+> >
+> > Your code does not compile but this version works as expected:
+> >
+> >   ImagePlus imp = IJ.getImage();
+> >   ImagePlus imp2 = new Duplicator().run(imp);
+> >   IJ.log("1-> "+imp.getCalibration() + " - " +
+> imp.getCalibration().scaled());
+> >   IJ.log("2-> " + imp2.getCalibration()+ " - " +
+> imp2.getCalibration().scaled());
+> >
+> > This is the output:
+> >
+> > 1-> w=0.02, h=0.02, d=0.02, unit=mm, f=20, nc=null, table=null,
+> vunit=Gray Value - true
+> > 2-> w=0.02, h=0.02, d=0.02, unit=mm, f=20, nc=null, table=null,
+> vunit=Gray Value - true
+> >
+> >
+> > -wayne
+> >
+> >
+> >
+> >
+>
+>
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130128/106b3f8d/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Mon Jan 28 16:06:09 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Mon, 28 Jan 2013 23:06:09 +0100 (CET)
+Subject: [ImageJ-devel] strange behaviour using calibration object.
+In-Reply-To: <3C7514B7E7E76C499962737F8BE1358A0132233D@SCOMP0936.wurnet.nl>
+References: <3C7514B7E7E76C499962737F8BE1358A01321E01@SCOMP0936.wurnet.nl>
+	<924A4791-3BD1-40D5-8281-844A81A74C2E@nih.gov>
+	<3C7514B7E7E76C499962737F8BE1358A0132233D@SCOMP0936.wurnet.nl>
+Message-ID: <alpine.DEB.1.00.1301282304000.32206@s15462909.onlinehome-server.info>
+
+Hi Gerrit,
+
+On Mon, 28 Jan 2013, Polder, Gerrit wrote:
+
+> Is there a way to downgrade Fiji, in order to test this with 1.47h?
+
+You can always download the desired ImageJ version from
+
+	http://maven.imagej.net/content/repositories/releases/net/imagej/ij/
+
+and copy it to Fiji.app/jars/ (but make sure that you remove conflicting
+ij-1.*.jar files, or else it is a game of luck whether you really get the
+desired ImageJ version or not). Then restart Fiji.
+
+Ciao,
+Johannes
+
+
+From gerrit.polder at wur.nl  Tue Jan 29 05:26:22 2013
+From: gerrit.polder at wur.nl (Polder, Gerrit)
+Date: Tue, 29 Jan 2013 11:26:22 +0000
+Subject: [ImageJ-devel] strange behaviour using calibration object.
+In-Reply-To: <A3945E20-09C7-4F69-94D9-4A4104533132@nih.gov>
+References: <3C7514B7E7E76C499962737F8BE1358A01321E01@SCOMP0936.wurnet.nl>
+	<924A4791-3BD1-40D5-8281-844A81A74C2E@nih.gov>
+	<3C7514B7E7E76C499962737F8BE1358A0132233D@SCOMP0936.wurnet.nl>
+	<A3945E20-09C7-4F69-94D9-4A4104533132@nih.gov>
+Message-ID: <3C7514B7E7E76C499962737F8BE1358A0132277E@SCOMP0936.wurnet.nl>
+
+Wayne, Johannes, Curtis,
+
+thanks for your valuable help, I finally found out what is going on.
+Two things:
+
+- The setCalibration problem.
+When I used my calibration plugin from another plugin I did a global set scale on beforehand, using:
+                    IJ.run(imp, "Set Scale...", "distance=0 known=0 pixel=1 unit=pixel global"); // clear current scale
+In this case overlay_im.setCalibration(cal.getCalibration()); does not work, it is obviously overruled by the global setting.
+This was also the case in ij-1.47h, but I didn't notice !!!!!!!!!!!
+I fixed this by running "Set Scale" in stead of copying the Calibration object.
+
+- The ip.setroi() problem.
+This problem was indeed introduced in ij-1.47i. I tested it again with ij-1.47h, and then it worked fine.
+I fixed it by using ImagePlus.setRoi() as Wayne suggested.
+
+kindly,
+Gerrit.
+
+
+On 29 Jan 2013, at 04:57, "Rasband, Wayne (NIH/NIMH) [E]" <rasbandw at mail.nih.gov> wrote:
+
+> 
+> On Jan 28, 2013, at 4:41 PM, Polder, Gerrit wrote:
+> 
+>> Wayne,
+>> 
+>> thanks, the thing is I have a separate class cal, it's a class I wrote myself.
+>> This class implements the getCalibration functions which returns a Calibration object, in which I filled w,h and the unit.
+>> So I can imagine that you can't compile it. I did show this on the last developer conference, maybe you remember it.
+>> This class detects a blue area in the image and decodes the qrcode within this area and does a calibration based on a black disk with holes.
+>> The number of holes determines the size of the disk. I'm currently making a separate plugin for this calibration and decode.
+>> The idea is that the plugin gives a new image with only the blue area, the decoded qrcode as title and calibrated according to the disk.
+>> This way this information can be used in other plugins. I don't see other ways to get this information from the plugin. 
+>> Or I need to return a resultstable which is little bit of overkill in my opinion.
+>> 
+>> I don't see why IJ.log("1-> "+cal.getCalibration() + " - " + cal.getCalibration().scaled()); works,
+>> and overlay_im.setCalibration(cal.getCalibration()); not.
+>> Even more since it worked properly last week ????
+>> The only thing which was changed is the Fiji update this morning, I believe ij1.47h to 1.47i, along with other libraries.
+> 
+> Send me a minimal, but complete, plugin that reproduces the problem I will try to figure out what is causing it.
+> 
+>> In the mean time I found another problem, I have implemented the run(ImageProcessor ip) in my plugin.
+>> I do a ip.setroi(roi of blue region) at the end and after running the plugin this roi was set on the input image.
+>> It is very handy to have this information for further processing of the input image.
+>> This behavior also stopped working this morning, the roi now is set to the whole image.
+> 
+> It would be better to use the ImagePlus.setRoi() method to set the roi.
+> 
+>> Is there a way to downgrade Fiji, in order to test this with 1.47h?
+> 
+> You can downgrade to ImageJ 1.46 using the Help>Update ImageJ command.
+> 
+>> is Barry DeZonia right, does this question better fit on the regular list?
+> 
+> I can try to help you resolve this problem. It's a little too esoteric for the ImageJ mailing list.
+> 
+> Best regards,
+> 
+> -wayne
+> 
+> 
+>> On 28 jan. 2013, at 21:12, "Rasband, Wayne (NIH/NIMH) [E]" <rasbandw at mail.nih.gov> wrote:
+>> 
+>>> On Jan 28, 2013, at 8:52 AM, Polder, Gerrit wrote:
+>>> 
+>>>> Since today my calibration software doesn't work anymore.
+>>>> After a little bit of debugging it looks like setCalibration in ImagePlus doesn't set the calibration.
+>>>> 
+>>>> this code:
+>>>>     ImagePlus overlay_im = new Duplicator().run(imp);
+>>>>     IJ.log("1-> "+cal.getCalibration() + " - " + cal.getCalibration().scaled());
+>>>>     overlay_im.setCalibration(cal.getCalibration());
+>>>>     IJ.log("2-> " + overlay_im.getCalibration()+ " - " + overlay_im.getCalibration().scaled());
+>>>> produces this output:
+>>>> 1-> w=0.19120458891013384, h=0.19120458891013384, d=1.0, unit=mm, f=20, nc=null, table=null, vunit=Gray Value - true
+>>>> 2-> w=1.0, h=1.0, d=1.0, unit=pixel, f=20, nc=null, table=null, vunit=Gray Value - false
+>>> 
+>>> Your code does not compile but this version works as expected:
+>>> 
+>>> ImagePlus imp = IJ.getImage();
+>>> ImagePlus imp2 = new Duplicator().run(imp);
+>>> IJ.log("1-> "+imp.getCalibration() + " - " + imp.getCalibration().scaled());
+>>> IJ.log("2-> " + imp2.getCalibration()+ " - " + imp2.getCalibration().scaled());
+>>> 
+>>> This is the output:
+>>> 
+>>> 1-> w=0.02, h=0.02, d=0.02, unit=mm, f=20, nc=null, table=null, vunit=Gray Value - true
+>>> 2-> w=0.02, h=0.02, d=0.02, unit=mm, f=20, nc=null, table=null, vunit=Gray Value - true
+>>> 
+>>> 
+>>> -wayne
+>>> 
+>>> 
+>>> 
+>>> 
+>> 
+>> 
+>> 
+> 
+> 
+> 
+
+
+
+
+
+
+
+From gerrit.polder at wur.nl  Tue Jan 29 10:10:09 2013
+From: gerrit.polder at wur.nl (Polder, Gerrit)
+Date: Tue, 29 Jan 2013 16:10:09 +0000
+Subject: [ImageJ-devel] Netbeans and Maven
+In-Reply-To: <CADN69ymHLoJ18dBPxXHx-L2PshFgDqq7b7hFWjAWe545oXLSDw@mail.gmail.com>
+References: <3C7514B7E7E76C499962737F8BE1358A0130700E@SCOMP0936.wurnet.nl>
+	<alpine.DEB.1.00.1301150053580.32206@s15462909.onlinehome-server.info>
+	<3C7514B7E7E76C499962737F8BE1358A0130DB63@SCOMP0936.wurnet.nl>
+	<CADN69ymHLoJ18dBPxXHx-L2PshFgDqq7b7hFWjAWe545oXLSDw@mail.gmail.com>
+Message-ID: <3C7514B7E7E76C499962737F8BE1358A01322BA5@SCOMP0936.wurnet.nl>
+
+Curtis, Johannes,
+
+thanks to fixing my other problems I now have I version which I would like to add to a personal update site.
+So I followed the instructions on the link you provide me.
+After filling in the values I get the question to upload an empty db.xml.gz.
+When I click ok nothing happens. Here is a screenshot and the java exceptions I get in the console:
+
+[cid:4CE37434-F5E4-419E-AC6E-30D561CC54A8 at wurnet.nl]
+
+console log:
+
+
+Found 0 plugins.
+Uncaught exception in thread Thread[AWT-EventQueue-0,6,main]
+java.lang.NullPointerException
+at imagej.updater.core.FilesUploader.<init>(FilesUploader.java:97)
+at imagej.updater.core.FilesUploader.<init>(FilesUploader.java:86)
+at imagej.updater.core.FilesUploader.initialUpload(FilesUploader.java:356)
+at imagej.updater.gui.UpdaterFrame.initializeUpdateSite(UpdaterFrame.java:863)
+at imagej.updater.gui.SitesDialog$SiteDialog.initializeUpdateSite(SitesDialog.java:377)
+at imagej.updater.gui.SitesDialog$SiteDialog.actionPerformed(SitesDialog.java:413)
+at javax.swing.AbstractButton.fireActionPerformed(AbstractButton.java:2028)
+at javax.swing.AbstractButton$Handler.actionPerformed(AbstractButton.java:2351)
+at javax.swing.DefaultButtonModel.fireActionPerformed(DefaultButtonModel.java:387)
+at javax.swing.DefaultButtonModel.setPressed(DefaultButtonModel.java:242)
+at javax.swing.plaf.basic.BasicButtonListener.mouseReleased(BasicButtonListener.java:236)
+at java.awt.Component.processMouseEvent(Component.java:6382)
+at javax.swing.JComponent.processMouseEvent(JComponent.java:3275)
+at java.awt.Component.processEvent(Component.java:6147)
+at java.awt.Container.processEvent(Container.java:2083)
+at java.awt.Component.dispatchEventImpl(Component.java:4744)
+at java.awt.Container.dispatchEventImpl(Container.java:2141)
+at java.awt.Component.dispatchEvent(Component.java:4572)
+at java.awt.LightweightDispatcher.retargetMouseEvent(Container.java:4619)
+at java.awt.LightweightDispatcher.processMouseEvent(Container.java:4280)
+at java.awt.LightweightDispatcher.dispatchEvent(Container.java:4210)
+at java.awt.Container.dispatchEventImpl(Container.java:2127)
+at java.awt.Window.dispatchEventImpl(Window.java:2489)
+at java.awt.Component.dispatchEvent(Component.java:4572)
+at java.awt.EventQueue.dispatchEventImpl(EventQueue.java:704)
+at java.awt.EventQueue.access$400(EventQueue.java:82)
+at java.awt.EventQueue$2.run(EventQueue.java:663)
+at java.awt.EventQueue$2.run(EventQueue.java:661)
+at java.security.AccessController.doPrivileged(Native Method)
+at java.security.AccessControlContext$1.doIntersectionPrivilege(AccessControlContext.java:87)
+at java.security.AccessControlContext$1.doIntersectionPrivilege(AccessControlContext.java:98)
+at java.awt.EventQueue$3.run(EventQueue.java:677)
+at java.awt.EventQueue$3.run(EventQueue.java:675)
+at java.security.AccessController.doPrivileged(Native Method)
+at java.security.AccessControlContext$1.doIntersectionPrivilege(AccessControlContext.java:87)
+at java.awt.EventQueue.dispatchEvent(EventQueue.java:674)
+at java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:296)
+at java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:211)
+at java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:201)
+at java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:196)
+at java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:188)
+at java.awt.EventDispatchThread.run(EventDispatchThread.java:122)
+
+
+any idea whats wrong?
+
+btw, bommel is on our local intranet, you can not access it from outside.
+I'm pretty sure links and url are ok and writable.
+
+thanks again,
+Gerrit.
+
+
+On 15 Jan 2013, at 17:01, Curtis Rueden <ctrueden at wisc.edu<mailto:ctrueden at wisc.edu>> wrote:
+
+Hi Gerrit,
+
+
+> My users does not have Fiji, they need a very simple approach, so they
+> have standard ImageJ installed and the only thing they need to do is
+> to copy the jar file I send them to the plugins folder.
+>
+> So I have to think about a new approach to deploy my software to my
+> users.
+
+I would suggest setting up an update site:
+    http://fiji.sc/How_to_set_up_and_populate_an_update_site
+
+
+
+
+
+
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: Screenshot_29_01_2013_17_09.png
+Type: image/png
+Size: 122858 bytes
+Desc: Screenshot_29_01_2013_17_09.png
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130129/44eab864/attachment-0001.png>
+
+From Johannes.Schindelin at gmx.de  Wed Jan 30 12:39:46 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Wed, 30 Jan 2013 19:39:46 +0100 (CET)
+Subject: [ImageJ-devel] Fwd: Updater in ImageJ2
+In-Reply-To: <87535161-5B33-4C6E-87E7-76F6D708517F@ucsf.edu>
+References: <F128C4F9-ACE5-4C7E-91DA-7DBFEA6F30DB@ucsf.edu>
+	<87535161-5B33-4C6E-87E7-76F6D708517F@ucsf.edu>
+Message-ID: <alpine.DEB.1.00.1301292249270.6375@bonsai2>
+
+Hi Nico,
+
+On Mon, 28 Jan 2013, Nico Stuurman wrote:
+
+> It would be nice to finally get Micro-Manager distributed through the
+> Fiji/Imagej2 updater (which of the two should I be using).
+
+Yeah! Actually, the Fiji updater migrated to ImageJ2, so they are one and
+the same (Fiji just hands off to ImageJ2).
+
+> I tried both over Christmas break and got stuck pretty early on.  Below
+> are the error messages from the ImageJ2 updater.    Advice on how to
+> proceed will be appreciated!
+
+I am sorry to have let this slip for so long, but unfortunately I have to
+let it slip for a bit more. However, you'll be delighted to hear why: I am
+busy preparing a publication (together with others) about that cool
+project I told you about already in October 2010. It does involve an
+update site serving a (slightly modified) Micro-Manager, so I did put in
+some work into the updater to support Micro-Manager. (Don't worry, I
+*want* to have our additional drivers/plugins in main-line Micro-Manager,
+but due to my time management being blatantly ignored in that project, it
+is not possible at this time.)
+
+> > 12/24/12 12:41:58 PM	[0x0-0x2e02e0].net.imagej.ImageJ[11884]	Uncaught exception in thread Thread[AWT-EventQueue-0,6,main]
+> > 12/24/12 12:41:58 PM	[0x0-0x2e02e0].net.imagej.ImageJ[11884]	java.lang.RuntimeException: Unknown update site in [null] (known: [])
+> > 12/24/12 12:41:58 PM	[0x0-0x2e02e0].net.imagej.ImageJ[11884]		at imagej.updater.core.FilesCollection.getSiteNamesToUpload(FilesCollection.java:258)
+> > 12/24/12 12:41:58 PM	[0x0-0x2e02e0].net.imagej.ImageJ[11884]		at imagej.updater.gui.FileTable.setFileAction(FileTable.java:355)
+> > 12/24/12 12:41:58 PM	[0x0-0x2e02e0].net.imagej.ImageJ[11884]		at imagej.updater.gui.FileTable$FileTableModel.setValueAt(FileTable.java:461)
+> > 12/24/12 12:41:58 PM	[0x0-0x2e02e0].net.imagej.ImageJ[11884]		at javax.swing.JTable.setValueAt(JTable.java:2710)
+> > [...]
+
+This looks as if you marked a file for upload, but somehow no update site
+was associated with it. How exactly did you mark that file for upload?
+
+>> > Is the idea that one can pull in the Fiji plugins through this
+>> > updater?  How does one do so?
+
+The idea is that the ImageJ2 updater on the user site will look at all the
+update sites that were registered, and update existing, and install new,
+files.
+
+The developer will add the update site with upload information and mark
+the files for upload that have been updated/added, and mark files for
+removal that became obsolete in the meantime.
+
+I added to the Updater -- just for the purpose of Micro-Manager -- support
+for the subdirectories lib/, mm/ mmfocus/ and mmplugins/:
+
+https://github.com/imagej/imagej/blob/master/core/updater/core/src/main/java/imagej/updater/core/Checksummer.java#L423
+
+I would have preferred to stay with the default directory layout of Fiji,
+but did not dare to ask you to change Micro-Manager, as already my request
+to allow for supporting multiple platforms by putting the
+platform-specific files into mm/<platform>/ rather than the base directory
+caused quite a few hiccups back in October 2010.
+
+In the meantime, the command-line version of the updater also learnt a
+couple more tricks that might be useful for Micro-Manager, such as:
+
+- adding new update sites
+- using SSH private keys via the configuration in $HOME/.ssh/config
+- adding a 'show' command to show details about a given file
+- showing upload conflicts that prevent a successful upload
+
+Note that there is still no interactive conflict handling as in the
+graphical version of the updater. This is mainly due to the fact that I
+personally use the command-line version mostly in automated settings. But
+I will set aside time to work with you on the Micro-Manager update site,
+so we will sort out these issues, I am sure.
+
+You can call the command-line updater like this:
+
+	/path/to/Fiji.app/ImageJ-linux64 --update <subcommand> [<options>]
+
+It will list the available subcommands if you call it without subcommand
+or the 'help' subcommand.
+
+Ciao,
+Johannes
+
+
+From gerrit.polder at wur.nl  Thu Jan 31 08:07:18 2013
+From: gerrit.polder at wur.nl (Polder, Gerrit)
+Date: Thu, 31 Jan 2013 14:07:18 +0000
+Subject: [ImageJ-devel] another Maven question
+Message-ID: <3C7514B7E7E76C499962737F8BE1358A0132401E@SCOMP0936.wurnet.nl>
+
+I'm starting to get quite happy about Maven, it has a lot of benefits above ant.
+Today however I came across a (minor) problem.
+
+I'm using an OverlayedImageCanvas in my code.
+Netbeans detects it, searches the Maven repositories, adds fiji.util.gui.OverlayedImageCanvas; to the imports, and
+        <dependency>
+            <groupId>fiji</groupId>
+            <artifactId>fiji-lib</artifactId>
+            <version>20100908</version>
+            <type>jar</type>
+        </dependency>
+to the POM all automatically.
+
+So far so good, but when Fiji is updated, the following conflict comes up:
+
+Conflict: jars/fiji-lib-2.0.0-SNAPSHOT.jar
+Multiple obsolete versions of jars/fiji-lib-2.0.0-SNAPSHOT.jar exist: /Applications/Fiji.app/jars/fiji-lib-20100908.jar
+
+It's no problem to delete fiji-lib-20100908.jar, my code keeps running, but when I change the version number in the POM to 2.0.0-SNAPSHOT, the code doesn't compile anymore.
+
+kindly,
+Gerrit (again).
+
+
+
+
+
+
+
+
+
+
+From Johannes.Schindelin at gmx.de  Thu Jan 31 08:47:45 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Thu, 31 Jan 2013 15:47:45 +0100 (CET)
+Subject: [ImageJ-devel] another Maven question
+In-Reply-To: <3C7514B7E7E76C499962737F8BE1358A0132401E@SCOMP0936.wurnet.nl>
+References: <3C7514B7E7E76C499962737F8BE1358A0132401E@SCOMP0936.wurnet.nl>
+Message-ID: <alpine.DEB.1.00.1301311546460.32206@s15462909.onlinehome-server.info>
+
+Hi Gerrit,
+
+On Thu, 31 Jan 2013, Polder, Gerrit wrote:
+
+> I'm starting to get quite happy about Maven, it has a lot of benefits
+> above ant.
+> Today however I came across a (minor) problem.
+> 
+> I'm using an OverlayedImageCanvas in my code.
+> Netbeans detects it, searches the Maven repositories, adds
+> fiji.util.gui.OverlayedImageCanvas; to the imports, and
+>         <dependency>
+>             <groupId>fiji</groupId>
+>             <artifactId>fiji-lib</artifactId>
+>             <version>20100908</version>
+>             <type>jar</type>
+>         </dependency>
+> to the POM all automatically.
+
+This is only half correct, though. The 20100908 version is obsolete and
+predates my move to Madison, even.
+
+The trick is to change the version to 2.0.0-SNAPSHOT *and* the groupId to
+sc.fiji.
+
+Ciao,
+Dscho
+
+
+From Johannes.Schindelin at gmx.de  Thu Jan 31 09:44:23 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Thu, 31 Jan 2013 16:44:23 +0100 (CET)
+Subject: [ImageJ-devel] another Maven question
+In-Reply-To: <3C7514B7E7E76C499962737F8BE1358A013240FF@SCOMP0936.wurnet.nl>
+References: <3C7514B7E7E76C499962737F8BE1358A0132401E@SCOMP0936.wurnet.nl>
+	<alpine.DEB.1.00.1301311546460.32206@s15462909.onlinehome-server.info>
+	<3C7514B7E7E76C499962737F8BE1358A013240FF@SCOMP0936.wurnet.nl>
+Message-ID: <alpine.DEB.1.00.1301311642250.32206@s15462909.onlinehome-server.info>
+
+Hi,
+
+On Thu, 31 Jan 2013, Polder, Gerrit wrote:
+
+> On 31 Jan 2013, at 15:47, Johannes Schindelin <Johannes.Schindelin at gmx.de<mailto:Johannes.Schindelin at gmx.de>> wrote:
+> 
+> > On Thu, 31 Jan 2013, Polder, Gerrit wrote:
+> > 
+> > I'm starting to get quite happy about Maven, it has a lot of benefits
+> > above ant.
+> > Today however I came across a (minor) problem.
+> > 
+> > I'm using an OverlayedImageCanvas in my code.
+> > Netbeans detects it, searches the Maven repositories, adds
+> > fiji.util.gui.OverlayedImageCanvas; to the imports, and
+> >        <dependency>
+> >            <groupId>fiji</groupId>
+> >            <artifactId>fiji-lib</artifactId>
+> >            <version>20100908</version>
+> >            <type>jar</type>
+> >        </dependency>
+> > to the POM all automatically.
+> > 
+> > This is only half correct, though. The 20100908 version is obsolete and
+> > predates my move to Madison, even.
+> > 
+> > The trick is to change the version to 2.0.0-SNAPSHOT *and* the groupId to
+> > sc.fiji.
+>
+> ok, thanks, and the import?
+
+The import stays the same. It is just a different version and groupId
+since my original attempt at making use of Maven in Fiji was misguided.
+For backwards compatibility, the old version (with the wrong groupId)
+stays where it is, though.
+
+Ciao,
+Johannes
+
+
+From Johannes.Schindelin at gmx.de  Thu Jan 31 10:35:12 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Thu, 31 Jan 2013 17:35:12 +0100 (CET)
+Subject: [ImageJ-devel] updater
+In-Reply-To: <3C7514B7E7E76C499962737F8BE1358A01324243@SCOMP0936.wurnet.nl>
+References: <3C7514B7E7E76C499962737F8BE1358A0132401E@SCOMP0936.wurnet.nl>
+	<alpine.DEB.1.00.1301311546460.32206@s15462909.onlinehome-server.info>
+	<3C7514B7E7E76C499962737F8BE1358A01324243@SCOMP0936.wurnet.nl>
+Message-ID: <alpine.DEB.1.00.1301311733310.32206@s15462909.onlinehome-server.info>
+
+Hi Gerrit,
+
+On Thu, 31 Jan 2013, Polder, Gerrit wrote:
+
+> Johannes,
+> 
+> sorry to bother you again, I know you are very busy.
+> 
+> This has to do with bug 550, I still get:
+> java.lang.NullPointerException
+> at imagej.updater.core.FilesUploader.<init>(FilesUploader.java:97)
+> at imagej.updater.core.FilesUploader.<init>(FilesUploader.java:86)
+> at imagej.updater.core.FilesUploader.initialUpload(FilesUploader.java:356)
+> at imagej.updater.gui.UpdaterFrame.initializeUpdateSite(UpdaterFrame.java:863)
+> 
+> when I try to initialise my update site.
+> 
+> Is there a way to add the files by hand for the time being?
+> Where can I find an empty db.xml.gz?
+
+The easiest would be to initialize the update site locally. Use something
+like the UpdaterTest, it uses an SSH host "file:localhost:/path/to/x":
+
+https://github.com/imagej/imagej/blob/master/core/updater/core/src/test/java/imagej/updater/core/UpdaterTest.java#L1405
+
+Ciao,
+Johannes
+
+

@@ -1,0 +1,171 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] jython scripting,	No compatible service: io.scif.SCIFIOService
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20jython%20scripting%2C%0A%09No%20compatible%20service%3A%20io.scif.SCIFIOService&In-Reply-To=%3C5307379A.4030505%40helsinki.fi%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001953.html">
+   <LINK REL="Next"  HREF="001955.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] jython scripting,	No compatible service: io.scif.SCIFIOService</H1>
+    <B>Harri J&#228;&#228;linoja</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20jython%20scripting%2C%0A%09No%20compatible%20service%3A%20io.scif.SCIFIOService&In-Reply-To=%3C5307379A.4030505%40helsinki.fi%3E"
+       TITLE="[ImageJ-devel] jython scripting,	No compatible service: io.scif.SCIFIOService">harri.jaalinoja at helsinki.fi
+       </A><BR>
+    <I>Fri Feb 21 05:25:14 CST 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001953.html">[ImageJ-devel] Scripting examples
+</A></li>
+        <LI>Next message: <A HREF="001955.html">[ImageJ-devel] jython scripting,	No compatible service: io.scif.SCIFIOService
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1954">[ date ]</a>
+              <a href="thread.html#1954">[ thread ]</a>
+              <a href="subject.html#1954">[ subject ]</a>
+              <a href="author.html#1954">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+I started to learn about ImgLib2 for the purpose of creating scripts I 
+can run headlessly. I would like to use jython since I already used that 
+with ImageJ1. First I downloaded a recent Fiji version. My idea was that 
+this would be the easiest way to get the dependencies (scifio, imglib2 
+etc.) right.
+
+mkdir fiji-20140219
+cd fiji-20140219/
+wget 
+<A HREF="http://jenkins.imagej.net/job/Stable-Fiji/lastSuccessfulBuild/artifact/fiji-linux64.tar.gz">http://jenkins.imagej.net/job/Stable-Fiji/lastSuccessfulBuild/artifact/fiji-linux64.tar.gz</A>
+tar xf fiji-linux64.tar.gz
+
+
+Then I just put all the jar files in the Fiji distribution in one long 
+variable and gave that as the classpath for Jython
+CP=`find /home/hajaalin/Software/fiji-20140219/Fiji.app/jars -name 
+'*.jar' |sed ':a;N;$!ba;s/\n/:/g'`
+
+Here's my test script:
+
+----- imglib0.py ------
+import sys
+
+#from io.scif.config import SCIFIOConfig
+from io.scif.config import *
+from io.scif.img import ImgIOException,ImgOpener
+
+from java.io import File
+
+from net.imglib2.img import Img
+from net.imglib2.img.display.imagej import ImageJFunctions
+from net.imglib2.type import NativeType
+from net.imglib2.type.numeric import RealType
+
+filename = sys.argv[1]
+
+io = ImgOpener()
+config = SCIFIOConfig()
+config.imgOpenerSetImgModes( SCIFIOConfig.ImgMode.CELL )
+img = io.openImg(filename)
+
+ImageJFunctions.show( img )
+---------------------------
+
+
+When I run it, I get an error I've seen on the list before:
+
+<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">hajaalin at biotek973</A>:~/Software/fiji-20140219/Fiji.app$ jython 
+-Dpython.path=$CP macros/imglib0.py 
+/home/hajaalin/Data/Misha/composite1.ome.tif
+[WARNING] Class pool is empty: forgot to call Thread#setClassLoader?
+Traceback (most recent call last):
+   File &quot;macros/imglib0.py&quot;, line 16, in &lt;module&gt;
+     io = ImgOpener()
+     at 
+org.scijava.service.ServiceHelper.loadService(ServiceHelper.java:218)
+     at 
+org.scijava.service.ServiceHelper.loadService(ServiceHelper.java:172)
+     at 
+org.scijava.service.ServiceHelper.loadServices(ServiceHelper.java:149)
+     at org.scijava.Context.&lt;init&gt;(Context.java:179)
+     at org.scijava.Context.&lt;init&gt;(Context.java:121)
+     at org.scijava.Context.&lt;init&gt;(Context.java:109)
+     at 
+io.scif.img.AbstractImgIOComponent.&lt;init&gt;(AbstractImgIOComponent.java:59)
+     at io.scif.img.ImgOpener.&lt;init&gt;(ImgOpener.java:94)
+     at sun.reflect.NativeConstructorAccessorImpl.newInstance0(Native 
+Method)
+     at 
+sun.reflect.NativeConstructorAccessorImpl.newInstance(NativeConstructorAccessorImpl.java:57)
+     at 
+sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+     at java.lang.reflect.Constructor.newInstance(Constructor.java:526)
+     at 
+org.python.core.PyReflectedConstructor.constructProxy(PyReflectedConstructor.java:163)
+
+java.lang.IllegalArgumentException: java.lang.IllegalArgumentException: 
+No compatible service: io.scif.SCIFIOService
+
+
+If I try to run the script via Fiji, I don't get even that far:
+
+<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">hajaalin at biotek973</A>:~/Software/fiji-20140219/Fiji.app$ ./ImageJ-linux64 
+macros/imglib0.py /home/hajaalin/Data/Misha/composite1.ome.tif
+Traceback (most recent call last):
+   File &quot;macros/imglib0.py&quot;, line 4, in &lt;module&gt;
+     from io.scif.config import *
+ImportError: No module named io
+
+
+So now my questions are:
+1. Is there a better way to get all the dependency jars?
+2. Is there something wrong with my general setup (jython + script + 
+required jars)?
+
+
+Thanks, best regards,
+Harri
+
+-- 
+__________________________________________________
+Harri J&#228;&#228;linoja
+Light Microscopy Unit
+Institute of Biotechnology, University of Helsinki
+<A HREF="http://www.biocenter.helsinki.fi/bi/lmu/">http://www.biocenter.helsinki.fi/bi/lmu/</A>
++358 9 191 59370 fax +358 9 191 59366
+
+
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001953.html">[ImageJ-devel] Scripting examples
+</A></li>
+	<LI>Next message: <A HREF="001955.html">[ImageJ-devel] jython scripting,	No compatible service: io.scif.SCIFIOService
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1954">[ date ]</a>
+              <a href="thread.html#1954">[ thread ]</a>
+              <a href="subject.html#1954">[ subject ]</a>
+              <a href="author.html#1954">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

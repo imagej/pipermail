@@ -1,0 +1,179 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [fiji-devel] Imglib2: using threadpools in core	algorithms
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20Imglib2%3A%20using%20threadpools%20in%20core%0A%09algorithms&In-Reply-To=%3Calpine.DEB.1.00.1312060915120.10295%40bonsai2%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001876.html">
+   <LINK REL="Next"  HREF="001849.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [fiji-devel] Imglib2: using threadpools in core	algorithms</H1>
+    <B>Johannes Schindelin</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20Imglib2%3A%20using%20threadpools%20in%20core%0A%09algorithms&In-Reply-To=%3Calpine.DEB.1.00.1312060915120.10295%40bonsai2%3E"
+       TITLE="[ImageJ-devel] [fiji-devel] Imglib2: using threadpools in core	algorithms">Johannes.Schindelin at gmx.de
+       </A><BR>
+    <I>Fri Dec  6 09:34:37 CST 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001876.html">[ImageJ-devel] [fiji-devel] Imglib2: using threadpools in core	algorithms
+</A></li>
+        <LI>Next message: <A HREF="001849.html">[ImageJ-devel] [fiji-devel] Imglib2: using threadpools in core	algorithms
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1842">[ date ]</a>
+              <a href="thread.html#1842">[ thread ]</a>
+              <a href="subject.html#1842">[ subject ]</a>
+              <a href="author.html#1842">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Tobi,
+
+On Fri, 6 Dec 2013, Tobias Pietzsch wrote:
+
+&gt;<i> On Dec 5, 2013, at 11:56 PM, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt; wrote:
+</I>&gt;<i> 
+</I>&gt;<i> &gt; &gt; * Encapsulates internal dependencies such as java.util.concurrent
+</I>&gt;<i> &gt; &gt; (e.g., Avian doesn't have that package!).
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; And Android / J2ME doesn't have java.util.concurrent either. I am
+</I>&gt;<i> &gt; interested in porting ImageJ2 to Android (which would necessitate a
+</I>&gt;<i> &gt; port of ImgLib2 to Android). The more &quot;weird&quot; Java packages we use,
+</I>&gt;<i> &gt; the more involved it will be to refactor those usages out later to
+</I>&gt;<i> &gt; make such a thing possible. The &quot;swappability&quot; of SJC services will
+</I>&gt;<i> &gt; obviate the need to do it in some cases.
+</I>&gt;<i> 
+</I>&gt;<i> On a closer look, ThreadService uses java.util.concurrent.Callable and
+</I>&gt;<i> import java.util.concurrent.Future.
+</I>
+Yes, they do. At least Callable is so simple that it does not make sense
+whatsoever to reimplement it.
+
+&gt;<i> It also extends java.util.concurrent.ThreadFactory. So the Android/AVIAN
+</I>&gt;<i> argument is not really valid.
+</I>
+Whoa, slow! The *more* you take from the concurrent package, the *harder*
+it gets to support Android/Avian. It's not &quot;take it or leave it&quot;. So
+Curtis' argument is a very valid one! Just because you use two interfaces
+that are easily provided in a support library does not mean that you could
+just as easily buy into the complete concurrent package, because that one
+is *not* easily provided in a support library!
+
+&gt;<i> To reiterate my previous question why not extend the ExecutorService
+</I>&gt;<i> interface instead?
+</I>&gt;<i>
+</I>&gt;<i> One answer I could give to that myself is that we do not need/want the
+</I>&gt;<i> full ExecutorService, e.g., an imglib algorithm should not be allowed to
+</I>&gt;<i> shutdown() the ExecutorService.
+</I>
+There you go.
+
+&gt;<i> On the other hand, we do not need/want the full ThreadService, e.g.
+</I>&gt;<i> using newThread() from the ThreadFactory is not wanted.
+</I>
+In ImgLib2 core, no you do not need that right now. But scijava-common is
+about striking a balance between what ImgLib2 needs and what other
+scientific Java projects need.
+
+Personally, I have a strong faith in ImgLib2 being able to cope with the
+ThreadService providing the newThread() method and just not use it.
+
+I also have a strong faith that both Lee with his SingleThreadService and
+myself with whatever I have to implement to support the ThreadService in
+Avian (if ever needed, really) will have a much smaller problem
+implementing ThreadService than a full-fledged ExecutorService.
+
+&gt;<i> So could we maybe extract the part of ExecutorService that we are
+</I>&gt;<i> interested in (invokeAll, invokeAny, and submit variants) into a new
+</I>&gt;<i> interface and make ThreadService extend that?
+</I>
+The idea of ThreadService (it being an interface already) was to *be* that
+new interface.
+
+&gt;<i> This would still not allow us to pass a standard ExecutorService into
+</I>&gt;<i> imglib algorithms but a ThreadService. I could live with it.
+</I>
+And again, scijava-common already has a default implementation using the
+ExecutorService (which we will have to override in the case of Android or
+Avian).
+
+&gt;<i> The question then is whether this should live in imglib, in
+</I>&gt;<i> scijava-common, or somewhere else. I hesitate making scijava-common a
+</I>&gt;<i> dependency of imglib.
+</I>
+Yes, you made that point earlier.
+
+Personally, I am less and less convinced that it is a good idea to go out
+of our way to make ImgLib2-core a kitchen sink. It is about
+multi-dimensional data processing, after all, not about common
+functionality to scientific Java projects.
+
+The name scijava-common was chosen to reflect the desire to put code used
+commonly in scientific Java projects into that library rather than
+reinvent the wheel in every scientific Java project.
+
+And it is understandable that the same scientists who would not use
+Bio-Formats for reading and writing AVIs (because the name suggests that
+Bio-Formats is intended for biologists, and they are physicists, after
+all) would refuse to link to ImgLib2-core for the useful stuff unrelated
+to image processing because they do not want to process images.
+
+Again, that is why scijava-common was started, and we put quite useful
+functionality into it that all arose from the Fiji/ImageJ2 projects but is
+of wider interest than just image processing, at the same time managing to
+keep the library small and sweet.
+
+&gt;<i> I know just having scijava-common as a dependency does not force me to
+</I>&gt;<i> use the application container but still&#8230; Making imglib a dependency of
+</I>&gt;<i> scijava-common is not a good idea either.
+</I>
+Exactly. I think it is a wise idea to trust Curtis on the separation of
+concerns because he has spent literally the past four years on that
+subject.
+
+In particular, your intuition that imglib2-core should not be a dependency
+of scijava-common makes absolute sense from the point of view that modules
+need to be separated by virtue of their particular focus: the
+scijava-common library's focus being quite obviously *the* base for
+scientific Java programming, right?
+
+Ciao,
+Dscho
+</PRE>
+
+
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001876.html">[ImageJ-devel] [fiji-devel] Imglib2: using threadpools in core	algorithms
+</A></li>
+	<LI>Next message: <A HREF="001849.html">[ImageJ-devel] [fiji-devel] Imglib2: using threadpools in core	algorithms
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1842">[ date ]</a>
+              <a href="thread.html#1842">[ thread ]</a>
+              <a href="subject.html#1842">[ subject ]</a>
+              <a href="author.html#1842">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

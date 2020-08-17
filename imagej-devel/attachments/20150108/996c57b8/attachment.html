@@ -1,0 +1,121 @@
+<tt>
+&lt;div&nbsp;dir=&quot;ltr&quot;&gt;Hi&nbsp;Hadrien,&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&gt;&nbsp;I&nbsp;tried&nbsp;to&nbsp;use&nbsp;SCIFIO&nbsp;to&nbsp;write&nbsp;cropped&nbsp;image&nbsp;on&nbsp;disk&nbsp;but&nbsp;it&nbsp;doesn&nbsp;not&lt;/div&gt;&lt;div&gt;&gt;&nbsp;work.&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;The&nbsp;error&nbsp;you&nbsp;see&nbsp;is&nbsp;because&nbsp;SCIFIO&nbsp;operates&nbsp;on&nbsp;ImgLib2&nbsp;data&nbsp;structures,&nbsp;not&nbsp;ImagePlus&nbsp;objects.&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;&gt;&nbsp;Is&nbsp;there&nbsp;is&nbsp;any&nbsp;“easy”&nbsp;alternative&nbsp;to&nbsp;BF&nbsp;setCropRegion&nbsp;function&nbsp;in&lt;/div&gt;&lt;div&gt;&gt;&nbsp;SCIFIO&nbsp;?&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Yes:&nbsp;you&nbsp;create&nbsp;a&nbsp;SCIFIOConfig,&nbsp;calling&nbsp;imgOpenerSetRegion&nbsp;[1]&nbsp;on&nbsp;it,&nbsp;then&nbsp;pass&nbsp;it&nbsp;as&nbsp;an&nbsp;argument&nbsp;to&nbsp;the&nbsp;ImgOpener.&nbsp;You&#39;ll&nbsp;get&nbsp;back&nbsp;an&nbsp;ImgLib2&nbsp;data&nbsp;object&nbsp;which&nbsp;can&nbsp;then&nbsp;be&nbsp;fed&nbsp;to&nbsp;the&nbsp;SCIFIO&nbsp;ImgSaver.&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;I&#39;m&nbsp;sorry&nbsp;that&nbsp;I&nbsp;don&#39;t&nbsp;have&nbsp;time&nbsp;to&nbsp;whip&nbsp;up&nbsp;an&nbsp;example&nbsp;for&nbsp;you&nbsp;right&nbsp;now.&nbsp;It&nbsp;would&nbsp;be&nbsp;great&nbsp;to&nbsp;add&nbsp;more&nbsp;SCIFIO&nbsp;tutorials&nbsp;[2]&nbsp;that&nbsp;use&nbsp;the&nbsp;ImgOpener&nbsp;and&nbsp;ImgSaver,&nbsp;since&nbsp;they&nbsp;are&nbsp;much&nbsp;higher&nbsp;level&nbsp;APIs&nbsp;akin&nbsp;to&nbsp;the&nbsp;Bio-Formats&nbsp;&quot;BF&quot;&nbsp;functionality...&nbsp;please&nbsp;feel&nbsp;welcome&nbsp;to&nbsp;contribute&nbsp;some!&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Regards,&lt;/div&gt;&lt;div&gt;Curtis&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;[1] &lt;a&nbsp;href=&quot;http://javadoc.imagej.net/SCIFIO/io/scif/config/SCIFIOConfig.html#imgOpenerSetRegion(io.scif.img.ImageRegion)&quot;&gt;http://javadoc.imagej.net/SCIFIO/io/scif/config/SCIFIOConfig.html#imgOpenerSetRegion(io.scif.img.ImageRegion)&lt;/a&gt;&lt;/div&gt;&lt;div&gt;[2] &lt;a&nbsp;href=&quot;https://github.com/scifio/scifio-tutorials&quot;&gt;https://github.com/scifio/scifio-tutorials&lt;/a&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&nbsp;class=&quot;gmail_extra&quot;&gt;&lt;br&gt;&lt;div&nbsp;class=&quot;gmail_quote&quot;&gt;On&nbsp;Thu,&nbsp;Jan&nbsp;8,&nbsp;2015&nbsp;at&nbsp;2:18&nbsp;PM,&nbsp;Hadrien&nbsp;Mary&nbsp;&lt;span&nbsp;dir=&quot;ltr&quot;&gt;&lt;&lt;a&nbsp;href=&quot;mailto:hadrien.mary@gmail.com&quot;&nbsp;target=&quot;_blank&quot;&gt;hadrien.mary@gmail.com&lt;/a&gt;&gt;&lt;/span&gt;&nbsp;wrote:&lt;br&gt;&lt;blockquote&nbsp;class=&quot;gmail_quote&quot;&nbsp;style=&quot;margin:0&nbsp;0&nbsp;0&nbsp;.8ex;border-left:1px&nbsp;#ccc&nbsp;solid;padding-left:1ex&quot;&gt;Hi,&lt;br&gt;<br>
+&lt;br&gt;<br>
+I&nbsp;am&nbsp;writing&nbsp;a&nbsp;python&nbsp;macro&nbsp;which&nbsp;iterate&nbsp;over&nbsp;all&nbsp;rois&nbsp;in&nbsp;ROI&nbsp;Manager&lt;br&gt;<br>
+and&nbsp;then&nbsp;use&nbsp;setCropRegion&nbsp;function&nbsp;from&nbsp;bioformat&nbsp;plugin&nbsp;to&nbsp;open&nbsp;a&lt;br&gt;<br>
+cropped&nbsp;region&nbsp;of&nbsp;an&nbsp;image.&lt;br&gt;<br>
+&lt;br&gt;<br>
+I&nbsp;tried&nbsp;to&nbsp;use&nbsp;SCIFIO&nbsp;to&nbsp;write&nbsp;cropped&nbsp;image&nbsp;on&nbsp;disk&nbsp;but&nbsp;it&nbsp;doesn&nbsp;not&nbsp;work.&lt;br&gt;<br>
+&lt;br&gt;<br>
+(I&nbsp;am&nbsp;using&nbsp;an&nbsp;updated&nbsp;version&nbsp;of&nbsp;Fiji.)&lt;br&gt;<br>
+&lt;br&gt;<br>
+Here&nbsp;is&nbsp;my&nbsp;script:&lt;br&gt;<br>
+&lt;br&gt;<br>
+from&nbsp;ij.plugin.frame&nbsp;import&nbsp;RoiManager&lt;br&gt;<br>
+from&nbsp;ij&nbsp;import&nbsp;IJ&lt;br&gt;<br>
+from&nbsp;io.scif.img&nbsp;import&nbsp;ImgSaver&lt;br&gt;<br>
+&lt;br&gt;<br>
+from&nbsp;loci.plugins&nbsp;import&nbsp;BF&lt;br&gt;<br>
+from&nbsp;&lt;a&nbsp;href=&quot;http://loci.plugins.in&quot;&nbsp;target=&quot;_blank&quot;&gt;loci.plugins.in&lt;/a&gt;&nbsp;import&nbsp;ImporterOptions&lt;br&gt;<br>
+from&nbsp;loci.common&nbsp;import&nbsp;Region&lt;br&gt;<br>
+&lt;br&gt;<br>
+import&nbsp;os&lt;br&gt;<br>
+&lt;br&gt;<br>
+#&nbsp;Get&nbsp;current&nbsp;image&nbsp;filename&lt;br&gt;<br>
+imp&nbsp;=&nbsp;IJ.getImage()&lt;br&gt;<br>
+f&nbsp;=&nbsp;imp.getOriginalFileInfo()&lt;br&gt;<br>
+fname&nbsp;=&nbsp;os.path.join(f.directory,&nbsp;f.fileName)&lt;br&gt;<br>
+&lt;br&gt;<br>
+IJ.log(&#39;Image&nbsp;filename&nbsp;is&nbsp;%s&#39;&nbsp;%&nbsp;fname)&lt;br&gt;<br>
+&lt;br&gt;<br>
+#&nbsp;Iterate&nbsp;over&nbsp;all&nbsp;ROIs&nbsp;from&nbsp;ROI&nbsp;Manager&lt;br&gt;<br>
+rois&nbsp;=&nbsp;RoiManager.getInstance().getRoisAsArray()&lt;br&gt;<br>
+for&nbsp;i,&nbsp;roi&nbsp;in&nbsp;enumerate(rois):&lt;br&gt;<br>
+&lt;br&gt;<br>
+ &nbsp; &nbsp;crop_id&nbsp;=&nbsp;i&nbsp;+1&lt;br&gt;<br>
+ &nbsp; &nbsp;IJ.log(&quot;Opening&nbsp;crop&nbsp;%i&nbsp;/&nbsp;%i&quot;&nbsp;%&nbsp;(crop_id,&nbsp;len(rois)))&lt;br&gt;<br>
+&lt;br&gt;<br>
+ &nbsp; &nbsp;bounds&nbsp;=&nbsp;roi.getBounds()&lt;br&gt;<br>
+&lt;br&gt;<br>
+ &nbsp; &nbsp;x&nbsp;=&nbsp;bounds.x&lt;br&gt;<br>
+ &nbsp; &nbsp;y&nbsp;=&nbsp;bounds.y&lt;br&gt;<br>
+ &nbsp; &nbsp;w&nbsp;=&nbsp;bounds.width&lt;br&gt;<br>
+ &nbsp; &nbsp;h&nbsp;=&nbsp;bounds.height&lt;br&gt;<br>
+&lt;br&gt;<br>
+ &nbsp; &nbsp;#&nbsp;Import&nbsp;only&nbsp;cropped&nbsp;region&nbsp;of&nbsp;the&nbsp;image&lt;br&gt;<br>
+ &nbsp; &nbsp;options&nbsp;=&nbsp;ImporterOptions()&lt;br&gt;<br>
+ &nbsp; &nbsp;options.setCrop(True)&lt;br&gt;<br>
+ &nbsp; &nbsp;options.setCropRegion(0,&nbsp;Region(x,&nbsp;y,&nbsp;w,&nbsp;h))&lt;br&gt;<br>
+ &nbsp; &nbsp;options.setId(fname)&lt;br&gt;<br>
+ &nbsp; &nbsp;imps&nbsp;=&nbsp;BF.openImagePlus(options)&lt;br&gt;<br>
+&lt;br&gt;<br>
+ &nbsp; &nbsp;imp&nbsp;=&nbsp;imps[0]&lt;br&gt;<br>
+ &nbsp; &nbsp;imp.show()&lt;br&gt;<br>
+&lt;br&gt;<br>
+ &nbsp; &nbsp;crop_basename&nbsp;=&nbsp;&quot;crop%i_%s&quot;&nbsp;%&nbsp;(crop_id,&nbsp;f.fileName)&lt;br&gt;<br>
+ &nbsp; &nbsp;crop_fname&nbsp;=&nbsp;os.path.join(f.directory,&nbsp;crop_basename)&lt;br&gt;<br>
+ &nbsp; &nbsp;imp.setTitle(crop_basename)&lt;br&gt;<br>
+&lt;br&gt;<br>
+ &nbsp; &nbsp;#&nbsp;Save&nbsp;image&lt;br&gt;<br>
+ &nbsp; &nbsp;IJ.log(&quot;Saving&nbsp;crop&nbsp;to&nbsp;%s&quot;&nbsp;%&nbsp;crop_fname)&lt;br&gt;<br>
+ &nbsp; &nbsp;saver&nbsp;=&nbsp;ImgSaver()&lt;br&gt;<br>
+ &nbsp; &nbsp;saver.saveImg(crop_basename,&nbsp;imp)&lt;br&gt;<br>
+&lt;br&gt;<br>
+IJ.log(&#39;Done&#39;)&lt;br&gt;<br>
+&lt;br&gt;<br>
+It&nbsp;fails&nbsp;with&nbsp;this&nbsp;error:&lt;br&gt;<br>
+&lt;br&gt;<br>
+Traceback&nbsp;(most&nbsp;recent&nbsp;call&nbsp;last):&lt;br&gt;<br>
+ &nbsp;File&nbsp;&quot;/home/hadim/local/Fiji.app/plugins/Crop_Multi_Roi.py&quot;,&nbsp;line&lt;br&gt;<br>
+49,&nbsp;in&nbsp;&lt;module&gt;&lt;br&gt;<br>
+ &nbsp; &nbsp;saver.saveImg(crop_basename,&nbsp;imp)&lt;br&gt;<br>
+TypeError:&nbsp;saveImg():&nbsp;1st&nbsp;arg&nbsp;can&#39;t&nbsp;be&nbsp;coerced&nbsp;to&nbsp;io.scif.Writer,&nbsp;String&lt;br&gt;<br>
+&lt;br&gt;<br>
+at&nbsp;org.python.core.Py.TypeError(Py.java:235)&lt;br&gt;<br>
+at&nbsp;org.python.core.PyReflectedFunction.throwError(PyReflectedFunction.java:209)&lt;br&gt;<br>
+at&nbsp;org.python.core.PyReflectedFunction.throwBadArgError(PyReflectedFunction.java:312)&lt;br&gt;<br>
+at&nbsp;org.python.core.PyReflectedFunction.throwError(PyReflectedFunction.java:321)&lt;br&gt;<br>
+at&nbsp;org.python.core.PyReflectedFunction.__call__(PyReflectedFunction.java:167)&lt;br&gt;<br>
+at&nbsp;org.python.core.PyReflectedFunction.__call__(PyReflectedFunction.java:204)&lt;br&gt;<br>
+at&nbsp;org.python.core.PyObject.__call__(PyObject.java:422)&lt;br&gt;<br>
+at&nbsp;org.python.core.PyObject.__call__(PyObject.java:426)&lt;br&gt;<br>
+at&nbsp;org.python.core.PyMethod.__call__(PyMethod.java:139)&lt;br&gt;<br>
+at&nbsp;org.python.pycode._pyx7.f$0(/home/hadim/local/Fiji.app/plugins/Crop_Multi_Roi.py:51)&lt;br&gt;<br>
+at&nbsp;org.python.pycode._pyx7.call_function(/home/hadim/local/Fiji.app/plugins/Crop_Multi_Roi.py)&lt;br&gt;<br>
+at&nbsp;org.python.core.PyTableCode.call(PyTableCode.java:165)&lt;br&gt;<br>
+at&nbsp;org.python.core.PyCode.call(PyCode.java:18)&lt;br&gt;<br>
+at&nbsp;org.python.core.Py.runCode(Py.java:1275)&lt;br&gt;<br>
+at&nbsp;org.scijava.plugins.scripting.jython.JythonScriptEngine.eval(JythonScriptEngine.java:76)&lt;br&gt;<br>
+at&nbsp;org.scijava.script.ScriptModule.run(ScriptModule.java:175)&lt;br&gt;<br>
+at&nbsp;org.scijava.module.ModuleRunner.run(ModuleRunner.java:167)&lt;br&gt;<br>
+at&nbsp;org.scijava.module.ModuleRunner.call(ModuleRunner.java:126)&lt;br&gt;<br>
+at&nbsp;org.scijava.module.ModuleRunner.call(ModuleRunner.java:65)&lt;br&gt;<br>
+at&nbsp;org.scijava.thread.DefaultThreadService$2.call(DefaultThreadService.java:164)&lt;br&gt;<br>
+at&nbsp;java.util.concurrent.FutureTask.run(FutureTask.java:262)&lt;br&gt;<br>
+at&nbsp;java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)&lt;br&gt;<br>
+at&nbsp;java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)&lt;br&gt;<br>
+at&nbsp;java.lang.Thread.run(Thread.java:745)&lt;br&gt;<br>
+&lt;br&gt;<br>
+Three&nbsp;questions:&lt;br&gt;<br>
+&lt;br&gt;<br>
+how&nbsp;can&nbsp;I&nbsp;write&nbsp;cropped&nbsp;image&nbsp;(I&nbsp;need&nbsp;to&nbsp;write&nbsp;them&nbsp;as&nbsp;OME&nbsp;Tiff&nbsp;so&nbsp;I&lt;br&gt;<br>
+need&nbsp;BF&nbsp;or&nbsp;SCIFIO).&lt;br&gt;<br>
+Is&nbsp;there&nbsp;is&nbsp;any&nbsp;“easy”&nbsp;alternative&nbsp;to&nbsp;BF&nbsp;setCropRegion&nbsp;function&nbsp;in&nbsp;SCIFIO&nbsp;?&lt;br&gt;<br>
+I&nbsp;am&nbsp;currently&nbsp;using&nbsp;RoiManager.getInstance().getRoisAsArray()&nbsp;to&lt;br&gt;<br>
+retrieve&nbsp;all&nbsp;rois.&nbsp;How&nbsp;can&nbsp;I&nbsp;directly&nbsp;get&nbsp;a&nbsp;ROIManager&nbsp;instance&nbsp;from&lt;br&gt;<br>
+RoiSet.zip&nbsp;file&nbsp;?&lt;br&gt;<br>
+&lt;br&gt;<br>
+Any&nbsp;help&nbsp;would&nbsp;be&nbsp;very&nbsp;appreciated.&lt;br&gt;<br>
+&lt;br&gt;<br>
+Thanks&nbsp;!&lt;br&gt;<br>
+&lt;br&gt;<br>
+—&lt;br&gt;<br>
+Hadrien&nbsp;Mary&lt;br&gt;<br>
+&lt;br&gt;<br>
+_______________________________________________&lt;br&gt;<br>
+ImageJ-devel&nbsp;mailing&nbsp;list&lt;br&gt;<br>
+&lt;a&nbsp;href=&quot;mailto:ImageJ-devel@imagej.net&quot;&gt;ImageJ-devel@imagej.net&lt;/a&gt;&lt;br&gt;<br>
+&lt;a&nbsp;href=&quot;http://imagej.net/mailman/listinfo/imagej-devel&quot;&nbsp;target=&quot;_blank&quot;&gt;http://imagej.net/mailman/listinfo/imagej-devel&lt;/a&gt;&lt;br&gt;<br>
+&lt;/blockquote&gt;&lt;/div&gt;&lt;br&gt;&lt;/div&gt;<br>
+
+</tt>

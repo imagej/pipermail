@@ -1,0 +1,142 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] net.imglib2.algorithm.kdtree and rectangles
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20net.imglib2.algorithm.kdtree%20and%20rectangles&In-Reply-To=%3C4e00e039.505c340a.5d85.ffff9f62%40mx.google.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000446.html">
+   <LINK REL="Next"  HREF="000448.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] net.imglib2.algorithm.kdtree and rectangles</H1>
+    <B>Lee Kamentsky</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20net.imglib2.algorithm.kdtree%20and%20rectangles&In-Reply-To=%3C4e00e039.505c340a.5d85.ffff9f62%40mx.google.com%3E"
+       TITLE="[ImageJ-devel] net.imglib2.algorithm.kdtree and rectangles">leek at broadinstitute.org
+       </A><BR>
+    <I>Tue Jun 21 13:17:29 CDT 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000446.html">[ImageJ-devel] net.imglib2.algorithm.kdtree and rectangles
+</A></li>
+        <LI>Next message: <A HREF="000448.html">[ImageJ-devel] net.imglib2.algorithm.kdtree and rectangles
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#447">[ date ]</a>
+              <a href="thread.html#447">[ thread ]</a>
+              <a href="subject.html#447">[ subject ]</a>
+              <a href="author.html#447">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Thanks Tobias,
+I ended up not using the KD tree for my composite ROI, but I wrote a 
+hyperrectangle search class, 
+net.imglib2.algorithm.kdtree.VolumetricSearch, anyway. I'm looking at 
+net.imglib2.collection.KDTree and the searches in 
+net.imglib2.neighborsearch and I can see those are better places for it 
+now. I'll see if I can find some time to reimplement it there.
+
+But, the one in algorithms works - it's pretty cool to have a database 
+of N-dimensional intervals that you can search in log time.
+
+--Lee
+
+On 6/21/2011 1:21 PM, Tobias Pietzsch wrote:
+&gt;<i> On 06/10/2011 03:33 PM, Lee Kamentsky wrote:
+</I>&gt;&gt;<i> Hi all, esp Dscho &amp; Stephan P. I'm thinking of doing a composite region
+</I>&gt;&gt;<i> of interest which would be a collection any other kinds of region of
+</I>&gt;&gt;<i> interest. I'm thinking that the most efficient way to do this is to use
+</I>&gt;&gt;<i> a K-D tree to store references to the sub-ROIs: Wikipedia says that you
+</I>&gt;&gt;<i> can search for hyper-rectangles (the bounds of the ROIs) by storing the
+</I>&gt;&gt;<i> minimum and maximum extents as a 2N-d object in the hyperplane and then
+</I>&gt;&gt;<i> the search for rectangles containing a point becomes a range search in
+</I>&gt;&gt;<i> the 2N-d space for all points on one side of a hyperplane.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> So 2 questions:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> 1) Could I add a leaf that holds onto a real interval,
+</I>&gt;&gt;<i> &quot;RealntervalLeaf&lt;I extends RealInterval&gt;&quot;, a search method that returns
+</I>&gt;&gt;<i> all points on one side of a hyperplane (T point, Node&lt;T&gt; node, bool []
+</I>&gt;&gt;<i> above = false to retrieve nodes less than point in the given dimension,
+</I>&gt;&gt;<i> true to retrieve nodes greater than point in the given dimension) and
+</I>&gt;&gt;<i> some wrapper class that purports to be a database of &quot;I extends
+</I>&gt;&gt;<i> RealInterval&quot; with a simple interface for retrieving all RealIntervals
+</I>&gt;&gt;<i> containing a point?
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Hi Lee,
+</I>&gt;<i>
+</I>&gt;<i> I'm a bit out of the loop right now, just getting back into imglib 
+</I>&gt;<i> development. I don't know if this has been discussed in the Skype 
+</I>&gt;<i> channel or something, but...
+</I>&gt;<i>
+</I>&gt;<i> Did you consider using the new KDTree implementation in imglib2 core, 
+</I>&gt;<i> instead of the net.imglib2.algorithm.kdtree?
+</I>&gt;<i>
+</I>&gt;<i> The new KDTree does not require it's T to be a Leaf&lt; T &gt;
+</I>&gt;<i> and there are implementations of the 
+</I>&gt;<i> net.imglib2.neighborsearch.*NeighborSearch&lt; T &gt; interfaces.
+</I>&gt;<i>
+</I>&gt;<i> It uses exact median-finding algorithm for constructing the tree
+</I>&gt;<i> (instead of the approximate one in net.imglib2.algorithm.kdtree).
+</I>&gt;<i>
+</I>&gt;<i> It is also faster, if I remember correctly.
+</I>&gt;<i>
+</I>&gt;<i> best regards,
+</I>&gt;<i> Tobias
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> 2) imglib2-algorithms is really useful. There are going to be other
+</I>&gt;&gt;<i> cases where imglib2 or other components would like to use algorithms to
+</I>&gt;&gt;<i> construct things like NativeImg and RegionOfInterest. How do we manage
+</I>&gt;&gt;<i> this? It sure would be nice if imglib2 and imglib2-algorithms were
+</I>&gt;&gt;<i> interdependent. If we're not going to allow that, I'll probably
+</I>&gt;&gt;<i> implement the composite ROI in imglib2-algorithms and I'll wait until
+</I>&gt;&gt;<i> imglib2-algorithms to be completed before I use composite ROIs in ImageJ
+</I>&gt;&gt;<i> 2.0.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I'm probably going to do the first for the fun of it, the legacy ROI
+</I>&gt;&gt;<i> code will need it, need a break from the GUI stuff and this will be
+</I>&gt;&gt;<i> refreshing. Tell me what you all think.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> --Lee
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagejdev.org</A>
+</I>&gt;&gt;<i> <A HREF="http://imagejdev.org/mailman/listinfo/imagej-devel">http://imagejdev.org/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagejdev.org</A>
+</I>&gt;<i> <A HREF="http://imagejdev.org/mailman/listinfo/imagej-devel">http://imagejdev.org/mailman/listinfo/imagej-devel</A>
+</I>
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000446.html">[ImageJ-devel] net.imglib2.algorithm.kdtree and rectangles
+</A></li>
+	<LI>Next message: <A HREF="000448.html">[ImageJ-devel] net.imglib2.algorithm.kdtree and rectangles
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#447">[ date ]</a>
+              <a href="thread.html#447">[ thread ]</a>
+              <a href="subject.html#447">[ subject ]</a>
+              <a href="author.html#447">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

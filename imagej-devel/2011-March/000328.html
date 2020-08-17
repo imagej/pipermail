@@ -1,0 +1,177 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [fiji-devel] Linking to Fiji/Plugins
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20Linking%20to%20Fiji/Plugins&In-Reply-To=%3CAANLkTimr%3DUn0KHfhjBc8V5BgnO91eyo2SeO4MxtP3KGx%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000326.html">
+   <LINK REL="Next"  HREF="000330.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [fiji-devel] Linking to Fiji/Plugins</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20Linking%20to%20Fiji/Plugins&In-Reply-To=%3CAANLkTimr%3DUn0KHfhjBc8V5BgnO91eyo2SeO4MxtP3KGx%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] [fiji-devel] Linking to Fiji/Plugins">ctrueden at wisc.edu
+       </A><BR>
+    <I>Mon Mar 21 14:11:49 CDT 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000326.html">[ImageJ-devel] [fiji-devel] Imglib2 ??? (fwd)
+</A></li>
+        <LI>Next message: <A HREF="000330.html">[ImageJ-devel] javac Compiler error in imglib	mpicbg.imglib.util.Utils
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#328">[ date ]</a>
+              <a href="thread.html#328">[ thread ]</a>
+              <a href="subject.html#328">[ subject ]</a>
+              <a href="author.html#328">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Brad,
+
+I have a general question about how to utilize ImageJ/Fiji...  Is it
+&gt;<i> possible (and if so, what is the best way) to use ImageJ/Fiji as a
+</I>&gt;<i> general image processing framework?  Specifically, can it be
+</I>&gt;<i> incorporated into other Java applications?
+</I>&gt;<i>
+</I>
+The short answer is yes, you can use Fiji as a library, but with certain
+limits. Unfortunately, you have encountered many of the major limitations of
+ImageJ 1.x.
+
+The good news is that we are striving to address these shortcomings with the
+ImageJDev project (<A HREF="http://imagejdev.org/">http://imagejdev.org/</A>), with the first alpha of ImageJ
+2.0 due on April 1, and the final release due October 1. There is still much
+to be done but large portions of the core architecture are in
+place&#8212;particularly UI-independent frameworks for plugins, tools and events.
+
+  - a fair amount of plugins assume a UI interface (e.g. don't
+&gt;<i> provide a simple method with which you can pass all the relevant
+</I>&gt;<i> parameters, instead they have a run() that pops up dialogs, etc
+</I>&gt;<i>
+</I>
+Fiji contains some hacks to enable headless operation in many cases, but as
+you point out, if a plugin makes direct use of GUI code, then it will
+generally not be usable headless.
+
+To avoid this problem in ImageJ2, we have created an annotated plugin
+framework where inputs and output parameters are labeled and automatically
+harvested based on the application context (prompt user with a dialog,
+collect from a configuration file if run on the command line, etc.). For
+details, see: <A HREF="http://imagejdev.org/extensibility">http://imagejdev.org/extensibility</A>
+
+Some ImageJ1 plugins running in compatibility mode will still not be usable
+headless, but new IJ2 plugins will be much more flexible.
+
+  - I haven't found a clean way to reference code that's under the
+&gt;<i> Java default package in code that is not in the default package.  This
+</I>&gt;<i> could be mitigated if folks would put the computational logic in a
+</I>&gt;<i> named package, and make the plugin in the default package lightweight
+</I>&gt;<i> (e.g. just a run method that calls the class in the named package)
+</I>&gt;<i>
+</I>
+Hmm, I am not too familiar with this issue. It may continue to be a problem
+with ImageJ2, unless someone knows a way around it.
+
+  - it's been hard to get seamless image I/O, i.e., I haven't been
+&gt;<i> able to get a seamless I/O class - for example, getting a simple
+</I>&gt;<i> ImageReader that would do either native file formats or seamlessly
+</I>&gt;<i> link to bioformats and create the relevant ImagePlus
+</I>&gt;<i>
+</I>
+We plan to add I/O extensibility to ImageJ2, as a particular subclass of
+plugin. This will eliminate the need for HandleExtraFileTypes, and other
+complicated centralized I/O logic present in ImageJ1. This work is not yet
+complete, but you can track our progress at:
+<A HREF="http://imagejdev.org/input-and-output">http://imagejdev.org/input-and-output</A>
+
+In the meantime, the LOCI plugins (<A HREF="http://loci.wisc.edu/bio-formats/imagej">http://loci.wisc.edu/bio-formats/imagej</A>)
+provide a very simple class for extracting an ImagePlus using Bio-Formats.
+See:
+<A HREF="http://dev.loci.wisc.edu:8080/job/Bio-Formats/javadoc/loci/plugins/BF.html--">http://dev.loci.wisc.edu:8080/job/Bio-Formats/javadoc/loci/plugins/BF.html--</A>
+in particular, BF.openImagePlus(String) and
+BF.openImagePlus(ImporterOptions).
+
+HTH,
+Curtis
+
+On Fri, Mar 18, 2011 at 9:27 AM, Brad &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">brad.t.moore at gmail.com</A>&gt; wrote:
+
+&gt;<i> Hey all,
+</I>&gt;<i>
+</I>&gt;<i> I have a general question about how to utilize ImageJ/Fiji...  Is it
+</I>&gt;<i> possible (and if so, what is the best way) to use ImageJ/Fiji as a
+</I>&gt;<i> general image processing framework?  Specifically, can it be
+</I>&gt;<i> incorporated into other Java applications?
+</I>&gt;<i>
+</I>&gt;<i> That might be sound like a simple question (and an easy answer), but
+</I>&gt;<i> here's what I've tried:
+</I>&gt;<i> 1.  Executing Fiji via the command-line with --headless, -eval, -batch
+</I>&gt;<i>   + I could utilize Fiji plugins that were setup to work as a macro
+</I>&gt;<i>   - overhead with calling these operations as a separate process
+</I>&gt;<i>   - working in --headless mode produced odd results for some plugins
+</I>&gt;<i>
+</I>&gt;<i> 2.  Linking to various ImageJ/Fiji .jars
+</I>&gt;<i>   + could use it like a regular library
+</I>&gt;<i>   + speed
+</I>&gt;<i>   - a fair amount of plugins assume a UI interface (e.g. don't
+</I>&gt;<i> provide a simple method with which you can pass all the relevant
+</I>&gt;<i> parameters, instead they have a run() that pops up dialogs, etc
+</I>&gt;<i>   - I haven't found a clean way to reference code that's under the
+</I>&gt;<i> Java default package in code that is not in the default package.  This
+</I>&gt;<i> could be mitigated if folks would put the computational logic in a
+</I>&gt;<i> named package, and make the plugin in the default package lightweight
+</I>&gt;<i> (e.g. just a run method that calls the class in the named package)
+</I>&gt;<i>   - it's been hard to get seamless image I/O, i.e., I haven't been
+</I>&gt;<i> able to get a seamless I/O class - for example, getting a simple
+</I>&gt;<i> ImageReader that would do either native file formats or seamlessly
+</I>&gt;<i> link to bioformats and create the relevant ImagePlus
+</I>&gt;<i>
+</I>&gt;<i> I'd appreciate folks' input.  Is there something I should change about
+</I>&gt;<i> my basic approach...  Is there a doc/code/example I can be pointed to
+</I>&gt;<i> that successfully does this?  Intuitively, I'm trying to compare
+</I>&gt;<i> ImageJ/Fiji to a library/framework like OpenCV or ITK.  Can I use it
+</I>&gt;<i> like this?
+</I>&gt;<i>
+</I>&gt;<i> Cheers,
+</I>&gt;<i> -Brad
+</I>&gt;<i>
+</I>&gt;<i> --
+</I>&gt;<i> You received this message because you are subscribed to the Google Groups
+</I>&gt;<i> &quot;Fiji-devel&quot; group.
+</I>&gt;<i> To post to this group, send email to <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">fiji-devel at googlegroups.com.</A>
+</I>&gt;<i> To unsubscribe from this group, send email to
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">fiji-devel+unsubscribe at googlegroups.com.</A>
+</I>&gt;<i> For more options, visit this group at
+</I>&gt;<i> <A HREF="http://groups.google.com/group/fiji-devel?hl=en.">http://groups.google.com/group/fiji-devel?hl=en.</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20110321/2443c72b/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20110321/2443c72b/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000326.html">[ImageJ-devel] [fiji-devel] Imglib2 ??? (fwd)
+</A></li>
+	<LI>Next message: <A HREF="000330.html">[ImageJ-devel] javac Compiler error in imglib	mpicbg.imglib.util.Utils
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#328">[ date ]</a>
+              <a href="thread.html#328">[ thread ]</a>
+              <a href="subject.html#328">[ subject ]</a>
+              <a href="author.html#328">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

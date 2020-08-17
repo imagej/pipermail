@@ -1,0 +1,235 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Changes to the Interval and RealInterval interfaces
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Changes%20to%20the%20Interval%20and%20RealInterval%20interfaces&In-Reply-To=%3C001c01cc16e6%24b9276e40%242b764ac0%24%40de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000385.html">
+   <LINK REL="Next"  HREF="000387.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Changes to the Interval and RealInterval interfaces</H1>
+    <B>Stephan Preibisch</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Changes%20to%20the%20Interval%20and%20RealInterval%20interfaces&In-Reply-To=%3C001c01cc16e6%24b9276e40%242b764ac0%24%40de%3E"
+       TITLE="[ImageJ-devel] Changes to the Interval and RealInterval interfaces">preibisch at mpi-cbg.de
+       </A><BR>
+    <I>Fri May 20 07:09:09 CDT 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000385.html">[ImageJ-devel] [fiji-devel] [Bug 258] Opening multiposition LSM files by Drag&amp;Drop throws exception (fwd)
+</A></li>
+        <LI>Next message: <A HREF="000387.html">[ImageJ-devel] Changes to the Interval and RealInterval	interfaces
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#386">[ date ]</a>
+              <a href="thread.html#386">[ thread ]</a>
+              <a href="subject.html#386">[ subject ]</a>
+              <a href="author.html#386">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi guys,
+
+ 
+
+I am just implementing algorithms and I noticed that it saves quite some
+temporary arrays if Interval and RealInterval can set Positionables to their
+min and max location.
+
+ 
+
+The interface would look like (red just added):
+
+ 
+
+       /**
+
+        * 
+
+        * @param d dimension
+
+        * @return minimum
+
+        */
+
+       public long min( final int d );
+
+       
+
+       /**
+
+        * Write the minimum of each dimension into long[].
+
+        * 
+
+        * @param min
+
+        */
+
+       public void min( long[] min );
+
+       
+
+       /**
+
+        * Sets a {@link Positionable} to the minimum of this {@link
+Interval}
+
+        * 
+
+        * @param min
+
+        */
+
+       public void min( Positionable min );
+
+       
+
+       /**
+
+        * 
+
+        * @param d dimension
+
+        * @return maximum
+
+        */
+
+       public long max( final int d );
+
+       
+
+       /**
+
+        * Write the minimum of each dimension into long[].
+
+        * 
+
+        * @param max
+
+        */
+
+       public void max( long[] max );
+
+ 
+
+       /**
+
+        * Sets a {@link Positionable} to the maximum of this {@link
+Interval}
+
+        * 
+
+        * @param max
+
+        */
+
+       public void max( Positionable max );
+
+       
+
+       /**
+
+        * Write the number of pixels in each dimension into long[].
+
+        * 
+
+        * @param dimensions
+
+        */
+
+       public void dimensions( long[] dimensions );
+
+       
+
+       /**
+
+        * Get the number of pixels in a given dimension &lt;em&gt;d&lt;/em&gt;.
+
+        * 
+
+        * @param d
+
+        */
+
+       public long dimension( int d );
+
+ 
+
+ 
+
+Same applies to the RealInterval..
+
+ 
+
+Now you could write:
+
+ 
+
+interval.min( randomAccess );
+
+ 
+
+instead of:
+
+ 
+
+long[] tmp = new long[ numDimensions ];
+
+interval.min( tmp );
+
+randomAccess.setPosition( tmp );
+
+ 
+
+or
+
+ 
+
+for ( int d = 0; d &lt; numDimensions; ++d )
+
+   randomAccess.setPosition( interval.min( d ), d );
+
+ 
+
+which might be inefficient for the case that the input is a paged/compressed
+cell container. Potentially, it would have to load a lot of unnecessary
+cells on its way through the dimensions.
+
+ 
+
+What do you think? Everything is already implemented and updated, I simply
+have to push it..
+
+ 
+
+Steffi
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20110520/8f5047a3/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20110520/8f5047a3/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000385.html">[ImageJ-devel] [fiji-devel] [Bug 258] Opening multiposition LSM files by Drag&amp;Drop throws exception (fwd)
+</A></li>
+	<LI>Next message: <A HREF="000387.html">[ImageJ-devel] Changes to the Interval and RealInterval	interfaces
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#386">[ date ]</a>
+              <a href="thread.html#386">[ thread ]</a>
+              <a href="subject.html#386">[ subject ]</a>
+              <a href="author.html#386">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

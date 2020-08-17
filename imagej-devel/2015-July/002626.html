@@ -1,0 +1,205 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Problem getting the context
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Problem%20getting%20the%20context&In-Reply-To=%3CCA%2BB%3DmGrOj-%2BFr-9HZkDJHuzFq02PE984C76pNwjBovRG4ufm7A%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002625.html">
+   <LINK REL="Next"  HREF="002622.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Problem getting the context</H1>
+    <B>Mark Hiner</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Problem%20getting%20the%20context&In-Reply-To=%3CCA%2BB%3DmGrOj-%2BFr-9HZkDJHuzFq02PE984C76pNwjBovRG4ufm7A%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Problem getting the context">hiner at wisc.edu
+       </A><BR>
+    <I>Wed Jul 15 11:24:26 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002625.html">[ImageJ-devel] Problem getting the context
+</A></li>
+        <LI>Next message: <A HREF="002622.html">[ImageJ-devel] ImageJ distributions for Linux
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2626">[ date ]</a>
+              <a href="thread.html#2626">[ thread ]</a>
+              <a href="subject.html#2626">[ subject ]</a>
+              <a href="author.html#2626">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Thorsten,
+
+&gt;<i>The static initializer did not help.
+</I>
+Unfortunately the static initializer error message is missing some critical
+information: you can't launch from a class that will cause ImageJ 1.x
+classes to be loaded. TrackMatePlugin_.java contains fields that will cause
+ImageJ 1.x classes to be loaded, so a main method in that class will not be
+able to use an ImageJ2 context. Also, Curtis and I both prefer using
+Debug.run instead of a static initializer to launch from Eclipse.
+
+So I would recommend using the Main class in the test directory of
+TrackMate[1] to avoid premature IJ 1.x class loading. The existing
+runFilter call didn't work for me, but if you use: &quot;Debug.run(&quot;Tracks for
+TrackMate (807K)&quot;, null);&quot; in the main method then it will open Fiji, open
+the TrackMate sample image, and then you can run TrackMate and test
+FindMaxima.
+
+Hope that helps. Let me know if you run into problems.
+
+Best,
+Mark
+
+[1]
+<A HREF="https://github.com/fiji/TrackMate/blob/v2.7.4/src/test/java/fiji/plugin/trackmate/Main.java">https://github.com/fiji/TrackMate/blob/v2.7.4/src/test/java/fiji/plugin/trackmate/Main.java</A>
+
+On Tue, Jul 14, 2015 at 10:20 AM, Thorsten Wagner &lt;
+<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">wagner at biomedical-imaging.de</A>&gt; wrote:
+
+&gt;<i> Dear Mark,
+</I>&gt;<i>
+</I>&gt;<i> thank you for your willingness to help me.
+</I>&gt;<i>
+</I>&gt;<i> No, we are not using the latest TrackMate master. I'm implementing the
+</I>&gt;<i> find-maxima detector for TrackMate and therefore I'm using a modified
+</I>&gt;<i> version [1] (this is the version which produces the exception) of the
+</I>&gt;<i> find-maxima branch of TrackMate [2] .
+</I>&gt;<i>
+</I>&gt;<i> To reproduce this error (sorry that I've forgotten this important
+</I>&gt;<i> information in my last mail!):
+</I>&gt;<i>  - Start TrackMate with the Main Method in the TrackMatePlugIn_.java (I'm
+</I>&gt;<i> using eclipse and select &quot;Run as -&gt; Java Application&quot;)
+</I>&gt;<i>  - Select &quot;Next&quot; in TrackMate
+</I>&gt;<i>  - Select the &quot;Find Maxima&quot; detector
+</I>&gt;<i>  - Select a arbitary threshold
+</I>&gt;<i>  - Press Preview
+</I>&gt;<i>
+</I>&gt;<i> The static initializer did not help.
+</I>&gt;<i>
+</I>&gt;<i> Thank you for your help!
+</I>&gt;<i>
+</I>&gt;<i> Cheers,
+</I>&gt;<i> Thorsten
+</I>&gt;<i>
+</I>&gt;<i> [1]
+</I>&gt;<i> <A HREF="https://github.com/thorstenwagner/TrackMate/tree/master/src/main/java/fiji/plugin/trackmate/detection/findmaxima">https://github.com/thorstenwagner/TrackMate/tree/master/src/main/java/fiji/plugin/trackmate/detection/findmaxima</A> (These
+</I>&gt;<i> classes containing all changes that I've made)
+</I>&gt;<i> [2] <A HREF="https://github.com/fiji/TrackMate/tree/find-maxima">https://github.com/fiji/TrackMate/tree/find-maxima</A>
+</I>&gt;<i>
+</I>&gt;<i> Am Dienstag, den 14.07.2015, 09:45 -0500 schrieb Mark Hiner:
+</I>&gt;<i>
+</I>&gt;<i> Hi Thorsten,
+</I>&gt;<i>
+</I>&gt;<i> &gt;For some reasons we have to start TrackMate by the following main method:
+</I>&gt;<i>
+</I>&gt;<i> How exactly are you trying to launch TrackMate? Are you using the latest
+</I>&gt;<i> TrackMate master[1]? When I run this class in Eclipse, it works for me -
+</I>&gt;<i> launching TrackMate and opening the sample image (although I did have to
+</I>&gt;<i> change the path to <A HREF="http://fiji.sc/samples/FakeTracks.tif">http://fiji.sc/samples/FakeTracks.tif</A>)
+</I>&gt;<i>
+</I>&gt;<i> &gt;This is the exception:
+</I>&gt;<i> &gt;<A HREF="http://pastebin.com/A3N5LQBw">http://pastebin.com/A3N5LQBw</A>
+</I>&gt;<i>
+</I>&gt;<i> Note that this exception message includes suggested debugging and
+</I>&gt;<i> workaround options. It may be sufficient to add the suggested static
+</I>&gt;<i> initializer.
+</I>&gt;<i>
+</I>&gt;<i> &gt;However, this just leads to another exception:
+</I>&gt;<i> &gt;<A HREF="http://pastebin.com/m0VCTZ4S">http://pastebin.com/m0VCTZ4S</A>
+</I>&gt;<i>
+</I>&gt;<i> My first guess would be a class path problem with the way you are
+</I>&gt;<i> launching TrackMate. Also, it may be helpful to lean on the Fiji Debug
+</I>&gt;<i> launcher[2] to set things up properly. If you can share the exact command
+</I>&gt;<i> you used to launch (or your IDE environment) I can try to reproduce and
+</I>&gt;<i> debug.
+</I>&gt;<i>
+</I>&gt;<i> Best,
+</I>&gt;<i> Mark
+</I>&gt;<i>
+</I>&gt;<i> [1] <A HREF="https://github.com/fiji/TrackMate/commits/master">https://github.com/fiji/TrackMate/commits/master</A>
+</I>&gt;<i> [2] <A HREF="http://imagej.net/Developing_Fiji_in_Eclipse#Running_and_Debugging">http://imagej.net/Developing_Fiji_in_Eclipse#Running_and_Debugging</A>
+</I>&gt;<i>
+</I>&gt;<i> On Sat, Jul 11, 2015 at 4:17 AM, Thorsten Wagner &lt;
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">wagner at biomedical-imaging.de</A>&gt; wrote:
+</I>&gt;<i>
+</I>&gt;<i> Just an additional information:
+</I>&gt;<i>
+</I>&gt;<i> I tried to start it by imagej2:
+</I>&gt;<i>
+</I>&gt;<i> net.imagej.Main.main(args);
+</I>&gt;<i> new TrackMatePlugIn_().run( &quot;/home/thorsten/samples/FakeTracks.tif&quot; );
+</I>&gt;<i>
+</I>&gt;<i> However, this just leads to another exception:
+</I>&gt;<i> <A HREF="http://pastebin.com/m0VCTZ4S">http://pastebin.com/m0VCTZ4S</A>
+</I>&gt;<i>
+</I>&gt;<i> Cheers,
+</I>&gt;<i> Thorsten
+</I>&gt;<i>
+</I>&gt;<i> Am Samstag, den 11.07.2015, 11:14 +0200 schrieb Thorsten Wagner:
+</I>&gt;<i> &gt; Dear List, dear Brian,
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; we currently came across problems with ImageJ-OPs and TrackMate.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; For some reasons we have to start TrackMate by the following main
+</I>&gt;<i> &gt; method:
+</I>&gt;<i> &gt; <A HREF="https://github.com/thorstenwagner/TrackMate/blob/master/src/main/java">https://github.com/thorstenwagner/TrackMate/blob/master/src/main/java</A>
+</I>&gt;<i> &gt; /f
+</I>&gt;<i> &gt; iji/plugin/trackmate/TrackMatePlugIn_.java#L134
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; However, this always leads to the a exception at this line:
+</I>&gt;<i> &gt; <A HREF="https://github.com/thorstenwagner/TrackMate/blob/master/src/main/java">https://github.com/thorstenwagner/TrackMate/blob/master/src/main/java</A>
+</I>&gt;<i> &gt; /f
+</I>&gt;<i> &gt; iji/plugin/trackmate/detection/findmaxima/FindMaximaSpotDetector.java
+</I>&gt;<i> &gt; #L
+</I>&gt;<i> &gt; 123
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; This is the exception:
+</I>&gt;<i> &gt; <A HREF="http://pastebin.com/A3N5LQBw">http://pastebin.com/A3N5LQBw</A>
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Any ideas?
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Cheers,
+</I>&gt;<i> &gt; Thorsten
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20150715/b57106bf/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20150715/b57106bf/attachment.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002625.html">[ImageJ-devel] Problem getting the context
+</A></li>
+	<LI>Next message: <A HREF="002622.html">[ImageJ-devel] ImageJ distributions for Linux
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2626">[ date ]</a>
+              <a href="thread.html#2626">[ thread ]</a>
+              <a href="subject.html#2626">[ subject ]</a>
+              <a href="author.html#2626">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

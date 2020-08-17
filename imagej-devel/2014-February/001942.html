@@ -1,0 +1,146 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] ImageJ2 plugin thread question
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImageJ2%20plugin%20thread%20question&In-Reply-To=%3Calpine.DEB.1.00.1402131635001.14982%40s15462909.onlinehome-server.info%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001941.html">
+   <LINK REL="Next"  HREF="001943.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] ImageJ2 plugin thread question</H1>
+    <B>Johannes Schindelin</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImageJ2%20plugin%20thread%20question&In-Reply-To=%3Calpine.DEB.1.00.1402131635001.14982%40s15462909.onlinehome-server.info%3E"
+       TITLE="[ImageJ-devel] ImageJ2 plugin thread question">Johannes.Schindelin at gmx.de
+       </A><BR>
+    <I>Thu Feb 13 09:43:45 CST 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001941.html">[ImageJ-devel] ImageJ2 plugin thread question
+</A></li>
+        <LI>Next message: <A HREF="001943.html">[ImageJ-devel] ImageJ2 plugin thread question
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1942">[ date ]</a>
+              <a href="thread.html#1942">[ thread ]</a>
+              <a href="subject.html#1942">[ subject ]</a>
+              <a href="author.html#1942">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Yili,
+
+On Thu, 13 Feb 2014, Yili Zhao wrote:
+
+&gt;<i>   if I want to develop a plugin for ImageJ2, there are basically two kinds
+</I>&gt;<i> of plugin:
+</I>&gt;<i> 
+</I>&gt;<i>   1. first kind plugin does not need GUI;
+</I>&gt;<i> 
+</I>&gt;<i>   2. second kind plugin does need GUI.
+</I>
+There are many more, in particular, you need to separate 2) into at least
+3 subcategories: plugins that need a simple GUI enquiring parameters,
+plugins that need a simple GUI with minor interactivity (such as
+interpreting a &quot;maintain aspect-ratio&quot; checkbox to adjust the width if the
+user edits the height, and vice versa) and fully interactive GUIs (think
+Trainable Segmentation).
+
+In general, all of these mentioned plugins are actually *commands*: they
+*run*.
+
+There are other plugins (even in ImageJ 1.x, where the term &quot;plugin&quot; gets
+really, really blurred): tools, file formats for I/O, scripting languages,
+complete user interfaces, etc.
+
+&gt;<i>   Suppose this plugin will perform a long time-consumed task, so I want to
+</I>&gt;<i> ask that:
+</I>&gt;<i> 
+</I>&gt;<i>   1. will ImageJ2 run its plugin in a new thread? Because in Swing toolkit,
+</I>&gt;<i> all UI events should be processed in UI thread or the main thread, and
+</I>&gt;<i> there is only One UI thread, so it is a single thread model.
+</I>&gt;<i> Running a plugin in a new thread can guarantee the plugin will not block
+</I>&gt;<i> ImageJ2's GUI.
+</I>
+The idea in ImageJ2 is to avoid Swing-specific stuff (otherwise you doom
+yourself to a very limited, narrow mindset: one user, one machine, one
+desktop, something that is already not true at all).
+
+So what you would do is subscribe to the event service and react to those
+events.
+
+&gt;<i>   2. If this plugin need its own GUI, but this plugin is running in a
+</I>&gt;<i> thread which is not the UI thread (event dispatch thread), and this
+</I>&gt;<i> plugin's GUI should be created in UI thread for thread safe, how can this
+</I>&gt;<i> be done?
+</I>
+The same way as it is done with Swing: you subscribe to events and react
+on them. If the reaction takes a long time, you will have to spawn off a
+new thread to avoid blocking the main event thread.
+
+&gt;<i>   In order to avoid blocking the ImageJ2' user interface, I plan to do like
+</I>&gt;<i> this:
+</I>&gt;<i> 
+</I>&gt;<i>   1. execute the &quot;long time-consumed task&quot; in a separate worker thread;
+</I>
+Good idea.
+
+&gt;<i>   2. In the task running process, I want to report the running progress to
+</I>&gt;<i> the ImageJ2 main frame, so that the main frame can display a progress
+</I>&gt;<i> information to let user know the current status;
+</I>
+Good. You will need to add a @Parameter field of type StatusService to do
+that.
+
+&gt;<i>   3. When the task completed, it can notify the main frame, and the main
+</I>&gt;<i> frame can response to this event.
+</I>
+If you refer to the main window as the main frame, there is no need. If
+you refer to your plugin's main frame, you'll just have to dispose() of
+it.
+
+&gt;<i>   How can I implement this asynchronous task model in ImageJ2? (I think
+</I>&gt;<i> maybe I need some helper classes like  &quot;SwingWorker&quot; in JDK 6)
+</I>
+As I mentioned earlier, restricting yourself to Swing is bound to get you
+into such a lot of trouble it is simply not worth it.
+
+Better look at the ThreadService:
+
+	<A HREF="http://jenkins.imagej.net/view/SciJava/job/SciJava-common-javadoc/javadoc/org/scijava/thread/ThreadService.html">http://jenkins.imagej.net/view/SciJava/job/SciJava-common-javadoc/javadoc/org/scijava/thread/ThreadService.html</A>
+
+Ciao,
+Johannes
+
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001941.html">[ImageJ-devel] ImageJ2 plugin thread question
+</A></li>
+	<LI>Next message: <A HREF="001943.html">[ImageJ-devel] ImageJ2 plugin thread question
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1942">[ date ]</a>
+              <a href="thread.html#1942">[ thread ]</a>
+              <a href="subject.html#1942">[ subject ]</a>
+              <a href="author.html#1942">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

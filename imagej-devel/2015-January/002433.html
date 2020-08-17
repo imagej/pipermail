@@ -1,0 +1,240 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] About memory usage with Fiji/JVM
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20About%20memory%20usage%20with%20Fiji/JVM&In-Reply-To=%3CCAEpSnnZcSKfGSxiPiFSoegHc0pP%3DPbMNC9WxaAvGT7xh9LV3Hg%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002430.html">
+   <LINK REL="Next"  HREF="002436.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] About memory usage with Fiji/JVM</H1>
+    <B>Hadrien Mary</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20About%20memory%20usage%20with%20Fiji/JVM&In-Reply-To=%3CCAEpSnnZcSKfGSxiPiFSoegHc0pP%3DPbMNC9WxaAvGT7xh9LV3Hg%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] About memory usage with Fiji/JVM">hadrien.mary at gmail.com
+       </A><BR>
+    <I>Mon Jan 26 05:57:47 CST 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002430.html">[ImageJ-devel] Using imagej-ops to crop images
+</A></li>
+        <LI>Next message: <A HREF="002436.html">[ImageJ-devel] help with Confidence Interval Autoscale method?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2433">[ date ]</a>
+              <a href="thread.html#2433">[ thread ]</a>
+              <a href="subject.html#2433">[ subject ]</a>
+              <a href="author.html#2433">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+New SCIFIO I/O system in Fiji/IJ2 automatically detects wether virtual
+stack is needed according to system memory available and image size
+(if I understood correctly).
+
+Virtual stack is fine but it always better to work without when you
+can. For example working with timelapse stacks, sliding time is much
+faster when image is not a virtual stack (and it makes sense since RAM
+memory access is much faster than hard drive memory access...).
+
+Saying that I noticed something: when I close a big image (no virtual
+stack because moving time slider is fast), java does not release
+memory to system (and it's a normal behaviour according to this
+<A HREF="http://stackoverflow.com/questions/22912063/automatically-release-unused-memory-in-imagej-fiji">http://stackoverflow.com/questions/22912063/automatically-release-unused-memory-in-imagej-fiji</A>).
+Now when I load the same kind of image (same size), the JVM should use
+the free memory released by the previously closed image isn't it ? I
+have the feeling that it does not because, when I move the time slider
+on the second image, it's very slow....
+
+Some numbers:
+
+- image size : 4.6GB
+- Fiji memory after start : 0.3GB
+- Fiji memory after loading first image: 6.9GiB
+- Fiji memory after closing first image: 6.9GiB
+- Fiji memory after loading second image: 6.9GiB
+
+My hypothesis is that when loading an image, Fiji/SCIFIO look at free
+memory in the system but not in the JVM. Is that possible ? Did you
+already noticed that ?
+
+PS: I have attached to this mail some properties of my system.
+
+Best,
+
+--
+Hadrien Mary
+
+Ph.D student in Biology
+Tournier-Gachet Team
+CNRS - LBCMCP - UMR 5088
+
+Universit&#233; de Toulouse - B&#226;t. 4R3B1
+118, route de Narbonne - 31062 Toulouse
+-------------- next part --------------
+  java.version: 1.7.0_65
+  java.vendor: Oracle Corporation
+  os.name: Linux
+  os.version: 3.16.7-031607-generic
+  os.arch: amd64
+  file.separator: /
+  path.separator: :
+  line.separator: &lt;lf&gt;
+
+  user.name: hadim
+  user.home: /home/hadim
+  user.dir: /home/hadim
+  user.country: US
+  file.encoding: UTF-8
+  java.home: /usr/lib/jvm/java-7-openjdk-amd64/jre
+  java.class.path: /home/hadim/local/Fiji.app/jars/imagej-launcher-3.1.6.jar
+  java.ext.dirs: /usr/lib/jvm/java-7-openjdk-amd64/jre/lib/ext:/usr/java/packages/lib/ext
+  java.io.tmpdir: /tmp
+
+  IJ.getVersion: 2.0.0-rc-23/1.49m
+  IJ.getFullVersion: 1.49m99
+  IJ.isJava2: true
+  IJ.isJava15: true
+  IJ.isJava16: true
+  IJ.isLinux: true
+  IJ.isMacintosh: false
+  IJ.isMacOSX: false
+  IJ.isWindows: false
+  IJ.is64Bit: true
+
+  IJ.getDirectory(&quot;imagej&quot;): /home/hadim/local/Fiji.app/
+  IJ.getDirectory(&quot;home&quot;): /home/hadim/
+  IJ.getDirectory(&quot;plugins&quot;): /home/hadim/local/Fiji.app/plugins/
+  IJ.getDirectory(&quot;macros&quot;): /home/hadim/local/Fiji.app/macros/
+  IJ.getDirectory(&quot;luts&quot;): /home/hadim/local/Fiji.app/luts/
+  IJ.getDirectory(&quot;current&quot;): /home/hadim/
+  IJ.getDirectory(&quot;temp&quot;): /tmp/
+  IJ.getDirectory(&quot;default&quot;): /home/hadim/
+  IJ.getDirectory(&quot;image&quot;): null
+
+  Menus.getPlugInsPath: /home/hadim/local/Fiji.app/plugins/
+  Menus.getMacrosPath: /home/hadim/local/Fiji.app/macros/
+  Prefs.getImageJDir: /home/hadim/local/Fiji.app/
+  Prefs.getThreads: 16 (16 cores)
+  Prefs.open100Percent: false
+  Prefs.blackBackground: false
+  Prefs.useJFileChooser: false
+  Prefs.weightedColor: false
+  Prefs.blackCanvas: false
+  Prefs.pointAutoMeasure: false
+  Prefs.pointAutoNextSlice: false
+  Prefs.requireControlKey: false
+  Prefs.useInvertingLut: false
+  Prefs.antialiasedTools: true
+  Prefs.useInvertingLut: false
+  Prefs.intelByteOrder: false
+  Prefs.doubleBuffer: true
+  Prefs.noPointLabels: false
+  Prefs.disableUndo: false
+  Prefs dir: /home/hadim/.imagej
+  Current dir: /home/hadim/
+  Sample images dir: <A HREF="http://imagej.nih.gov/ij/images/">http://imagej.nih.gov/ij/images/</A>
+  Memory in use: 4475MB of 9585MB (46%)
+  Screen size: 1600x1200
+  Max window bounds: x=0,y=0,width=1600,height=1200
+  Union of bounds: x=0,y=0,width=2880,height=1200
+  Monitor1: x=0,y=0,width=1600,height=1200
+  Monitor2: x=1600,y=0,width=1280,height=1024
+
+All Java Properties
+  ij.dir: /home/hadim/local/Fiji.app
+  java.runtime.name: OpenJDK Runtime Environment
+  fiji.dir: /home/hadim/local/Fiji.app
+  imagej.dir: /home/hadim/local/Fiji.app
+  sun.boot.library.path: /usr/lib/jvm/java-7-openjdk-amd64/jre/lib/amd64
+  java.vm.version: 24.65-b04
+  fiji.defaultLibPath: lib/amd64/server/libjvm.so
+  java.vm.vendor: Oracle Corporation
+  java.vendor.url: <A HREF="http://java.oracle.com/">http://java.oracle.com/</A>
+  path.separator: :
+  java.vm.name: OpenJDK 64-Bit Server VM
+  file.encoding.pkg: sun.io
+  user.country: US
+  sun.os.patch.level: unknown
+  java.vm.specification.name: Java Virtual Machine Specification
+  user.dir: /home/hadim
+  java.runtime.version: 1.7.0_65-b32
+  java.awt.graphicsenv: sun.awt.X11GraphicsEnvironment
+  java.endorsed.dirs: /usr/lib/jvm/java-7-openjdk-amd64/jre/lib/endorsed
+  os.arch: amd64
+  java.io.tmpdir: /tmp
+  line.separator: 
+
+  java.vm.specification.vendor: Oracle Corporation
+  os.name: Linux
+  sun.jnu.encoding: UTF-8
+  java.library.path: /home/hadim/local/Fiji.app/lib/linux64:/home/hadim/local/Fiji.app/mm/linux64
+  sun.awt.enableExtraMouseButtons: true
+  java.specification.name: Java Platform API Specification
+  java.class.version: 51.0
+  sun.management.compiler: HotSpot 64-Bit Tiered Compilers
+  os.version: 3.16.7-031607-generic
+  user.home: /home/hadim
+  user.timezone: Europe/Paris
+  java.awt.printerjob: sun.print.PSPrinterJob
+  file.encoding: UTF-8
+  java.specification.version: 1.7
+  plugins.dir: /home/hadim/local/Fiji.app
+  java.class.path: /home/hadim/local/Fiji.app/jars/imagej-launcher-3.1.6.jar
+  user.name: hadim
+  java.vm.specification.version: 1.7
+  java.home: /usr/lib/jvm/java-7-openjdk-amd64/jre
+  sun.arch.data.model: 64
+  user.language: en
+  java.specification.vendor: Oracle Corporation
+  awt.toolkit: sun.awt.X11.XToolkit
+  java.vm.info: mixed mode
+  java.version: 1.7.0_65
+  java.ext.dirs: /usr/lib/jvm/java-7-openjdk-amd64/jre/lib/ext:/usr/java/packages/lib/ext
+  sun.boot.class.path: /usr/lib/jvm/java-7-openjdk-amd64/jre/lib/resources.jar:/usr/lib/jvm/java-7-openjdk-amd64/jre/lib/rt.jar:/usr/lib/jvm/java-7-openjdk-amd64/jre/lib/sunrsasign.jar:/usr/lib/jvm/java-7-openjdk-amd64/jre/lib/jsse.jar:/usr/lib/jvm/java-7-openjdk-amd64/jre/lib/jce.jar:/usr/lib/jvm/java-7-openjdk-amd64/jre/lib/charsets.jar:/usr/lib/jvm/java-7-openjdk-amd64/jre/lib/rhino.jar:/usr/lib/jvm/java-7-openjdk-amd64/jre/lib/jfr.jar:/usr/lib/jvm/java-7-openjdk-amd64/jre/classes
+  java.vendor: Oracle Corporation
+  ij.executable: /home/hadim/local/Fiji.app/ImageJ-linux64
+  python.cachedir.skip: true
+  file.separator: /
+  java.vendor.url.bug: <A HREF="http://bugreport.sun.com/bugreport/">http://bugreport.sun.com/bugreport/</A>
+  sun.font.fontmanager: sun.awt.X11FontManager
+  sun.io.unicode.encoding: UnicodeLittle
+  sun.cpu.endian: little
+  sun.desktop: gnome
+  fiji.executable: /home/hadim/local/Fiji.app/ImageJ-linux64
+  sun.cpu.isalist: 
+</PRE>
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002430.html">[ImageJ-devel] Using imagej-ops to crop images
+</A></li>
+	<LI>Next message: <A HREF="002436.html">[ImageJ-devel] help with Confidence Interval Autoscale method?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2433">[ date ]</a>
+              <a href="thread.html#2433">[ thread ]</a>
+              <a href="subject.html#2433">[ subject ]</a>
+              <a href="author.html#2433">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

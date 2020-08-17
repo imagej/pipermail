@@ -1,0 +1,130 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [LOCI ImageJ] IJ2 Plugin Service
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5BLOCI%20ImageJ%5D%20IJ2%20Plugin%20Service&In-Reply-To=%3CCADN69y%3DbPp78mp7QFCsB%2BjOzGKkb0n-2y40xH6dfgeNPNX3WCA%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002060.html">
+   <LINK REL="Next"  HREF="002066.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [LOCI ImageJ] IJ2 Plugin Service</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5BLOCI%20ImageJ%5D%20IJ2%20Plugin%20Service&In-Reply-To=%3CCADN69y%3DbPp78mp7QFCsB%2BjOzGKkb0n-2y40xH6dfgeNPNX3WCA%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] [LOCI ImageJ] IJ2 Plugin Service">ctrueden at wisc.edu
+       </A><BR>
+    <I>Wed Apr 30 09:55:33 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002060.html">[ImageJ-devel] IJ2 Plugin Service
+</A></li>
+        <LI>Next message: <A HREF="002066.html">[ImageJ-devel] [LOCI ImageJ] IJ2 Plugin Service
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2063">[ date ]</a>
+              <a href="thread.html#2063">[ thread ]</a>
+              <a href="subject.html#2063">[ subject ]</a>
+              <a href="author.html#2063">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Jay,
+
+&gt;<i> when I export the application as a runnable jar, ij.plugin()service
+</I>&gt;<i> returns all the Command.class plugins but 0 plugins of type
+</I>&gt;<i> JEXPlugin.class
+</I>
+This is an issue we have discussed before: Eclipse creates uberjars using a
+&quot;jar-in-jar&quot; approach, and SciJava Common's plugin mechanism does not read
+the metadata out of a jar-in-jar. Almost certainly this is because the
+classloader being used to discover the SciJava plugins is not the one
+embedded in the uberjar to enable loading of classes from inside nested
+JARs. The question is: why not?
+
+I filed an issue:
+<A HREF="https://github.com/scijava/scijava-common/issues/40">https://github.com/scijava/scijava-common/issues/40</A>
+
+Brian Northan wrote:
+
+&gt;<i> To create an executable jar you might want to look at the maven
+</I>&gt;<i> assembly plugin.
+</I>
+That is indeed how we create the current ImageJ uberjar at:
+<A HREF="http://developer.imagej.net/how-can-i-call-imagej-my-software">http://developer.imagej.net/how-can-i-call-imagej-my-software</A>
+
+However, that uberjar does not shade (i.e., rename) its dependencies, and
+is hence broken when attempting to combine it with other versions of those
+same dependencies. So we discourage its use. To create an uberjar with
+properly shaded dependencies, the maven-shade-plugin can be used. We
+haven't had time to experiment with this approach yet.
+
+The Eclipse &quot;jar-in-jar&quot; approach seems potentially useful, except for the
+annoying classloader issues that go along with it, because it avoids
+multiple JARs with the same contents overwriting on one another's resources.
+
+Regards,
+Curtis
+
+
+On Sat, Apr 26, 2014 at 3:14 AM, Jay Warrick &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">warrick at wisc.edu</A>&gt; wrote:
+
+&gt;<i> Sorry resending this from a registered email.
+</I>&gt;<i>
+</I>&gt;<i> Hi All,
+</I>&gt;<i>
+</I>&gt;<i> I use Eclipse and use the eclipse function to export my program as a
+</I>&gt;<i> runnable jar with referenced jars packaged in the application jar. I use
+</I>&gt;<i> the IJ plugin service to discover both IJ plugins of type Command.class as
+</I>&gt;<i> well as my own type called JEXPlugin.class. When I run the application from
+</I>&gt;<i> eclipse, the JEXPlugins are discovered by the ij.plugin() service. However,
+</I>&gt;<i> when I export the application as a runnable jar, ij.plugin()service returns
+</I>&gt;<i> all the Command.class plugins but 0 plugins of type JEXPlugin.class using
+</I>&gt;<i> the call &quot;ij.plugin().getPluginsOfType(JEXPlugin.class);&quot;
+</I>&gt;<i>
+</I>&gt;<i> Any idea why or how to fix it?
+</I>&gt;<i>
+</I>&gt;<i> Thanks,
+</I>&gt;<i>
+</I>&gt;<i> Jay
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ at loci.wisc.edu</A>
+</I>&gt;<i> <A HREF="http://loci.wisc.edu/mailman/listinfo/imagej">http://loci.wisc.edu/mailman/listinfo/imagej</A>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140430/603c1a1e/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20140430/603c1a1e/attachment.html</A>&gt;
+</PRE>
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002060.html">[ImageJ-devel] IJ2 Plugin Service
+</A></li>
+	<LI>Next message: <A HREF="002066.html">[ImageJ-devel] [LOCI ImageJ] IJ2 Plugin Service
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2063">[ date ]</a>
+              <a href="thread.html#2063">[ thread ]</a>
+              <a href="subject.html#2063">[ subject ]</a>
+              <a href="author.html#2063">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

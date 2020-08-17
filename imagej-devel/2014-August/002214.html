@@ -1,0 +1,244 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [fiji-devel] creating io.scif.img.ImgOpener	currently fails in Fiji
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20creating%20io.scif.img.ImgOpener%0A%09currently%20fails%20in%20Fiji&In-Reply-To=%3C8B608E3E-0F9E-4184-B6B1-5062E6A061E2%40mpi-cbg.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002212.html">
+   <LINK REL="Next"  HREF="002208.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [fiji-devel] creating io.scif.img.ImgOpener	currently fails in Fiji</H1>
+    <B>Tobias Pietzsch</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20creating%20io.scif.img.ImgOpener%0A%09currently%20fails%20in%20Fiji&In-Reply-To=%3C8B608E3E-0F9E-4184-B6B1-5062E6A061E2%40mpi-cbg.de%3E"
+       TITLE="[ImageJ-devel] [fiji-devel] creating io.scif.img.ImgOpener	currently fails in Fiji">pietzsch at mpi-cbg.de
+       </A><BR>
+    <I>Tue Aug 26 14:00:22 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002212.html">[ImageJ-devel] [fiji-devel] creating io.scif.img.ImgOpener currently fails in Fiji
+</A></li>
+        <LI>Next message: <A HREF="002208.html">[ImageJ-devel] [fiji-devel] creating io.scif.img.ImgOpener currently fails in Fiji
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2214">[ date ]</a>
+              <a href="thread.html#2214">[ thread ]</a>
+              <a href="subject.html#2214">[ subject ]</a>
+              <a href="author.html#2214">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Awesome! Thank you!
+Tobias
+
+On 25 Aug 2014, at 20:03, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt; wrote:
+
+&gt;<i> Hi Tobias,
+</I>&gt;<i> 
+</I>&gt;<i> &gt; This is a critical bug in SJC which I will work on resolving today if
+</I>&gt;<i> &gt; possible.
+</I>&gt;<i> 
+</I>&gt;<i> Latest released versions of the SciJava software stack now have this bug fixed.
+</I>&gt;<i> 
+</I>&gt;<i> You can get the needed component versions by using pom-imagej 2.49 as parent.
+</I>&gt;<i> 
+</I>&gt;<i> Regards,
+</I>&gt;<i> Curtis
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> On Fri, Aug 22, 2014 at 11:51 AM, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt; wrote:
+</I>&gt;<i> Hi Tobias,
+</I>&gt;<i> 
+</I>&gt;<i> &gt; I imagine that in many cases it would be helpful to somehow produce an
+</I>&gt;<i> &gt; explicit list of transitive (runtime) dependencies at compile time.
+</I>&gt;<i> &gt; But this is probably not possible because these dependencies are
+</I>&gt;<i> &gt; specified as interfaces and there is no way of knowing beforehand the
+</I>&gt;<i> &gt; dependencies of the implementing class that will be used at runtime.
+</I>&gt;<i> 
+</I>&gt;<i> Actually, you can do it either way. If you ask for an interface, it adds all concrete service plugins that implement that interface. If you ask for a concrete class, you get that concrete class only. But it is true that whenever you ask for an interface, you will also transitively bring in all dependencies of all implementing classes.
+</I>&gt;<i> 
+</I>&gt;<i> &gt; In the present case it is even worse, because, if I understand
+</I>&gt;<i> &gt; correctly, simply put the problem was not a missing dependency is
+</I>&gt;<i> &gt; missing but additional stuff being present?
+</I>&gt;<i> 
+</I>&gt;<i> Right. There was an additional AppEventService that had a dependency on the most problematic and limited ImageJ service: the DefaultLegacyService.
+</I>&gt;<i> 
+</I>&gt;<i> Another way I plan to (eventually!) mitigate that is to make the DefaultLegacyService less crabby: I want it to be possible to have more than one, that simply ends up referencing the same instance of ImageJ 1.x. This shouldn't be too hard to do but haven't had to time explore that yet. This would &quot;paper over&quot; the problem you had in that you wouldn't have received an exception, but still would have brought in a whole bunch of unneeded service dependencies for the purposes of ImgOpener.
+</I>&gt;<i> 
+</I>&gt;<i> The real fix here is to retool the AppEvent API as described here:
+</I>&gt;<i> <A HREF="https://github.com/scijava/scijava-common/commit/852f05cf1dbfb3ce99ccd416fee64573a0692764">https://github.com/scijava/scijava-common/commit/852f05cf1dbfb3ce99ccd416fee64573a0692764</A>
+</I>&gt;<i> 
+</I>&gt;<i> This is a critical bug in SJC which I will work on resolving today if possible.
+</I>&gt;<i> 
+</I>&gt;<i> Regards,
+</I>&gt;<i> Curtis
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> On Fri, Aug 22, 2014 at 11:45 AM, Tobias Pietzsch &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pietzsch at mpi-cbg.de</A>&gt; wrote:
+</I>&gt;<i> Hi Curtis,
+</I>&gt;<i> 
+</I>&gt;<i> On 22 Aug 2014, at 16:51, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt; wrote:
+</I>&gt;<i> 
+</I>&gt;&gt;<i> Hi Tobias,
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> &gt; Except now all dependencies are not there anymore because now there
+</I>&gt;&gt;<i> &gt; are non-obvious (to me) implicit runtime dependencies.
+</I>&gt;&gt;<i> &gt;
+</I>&gt;&gt;<i> &gt; I find this unfortunate.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> I agree that this is a two-edged sword. We have more types of plugins now, which can alter the runtime behavior in more ways, so of course it becomes possible for ill-behaved plugins to bring down the system.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> This is already true in ImageJ 1.x though, because it is extensible at runtime: any plugin class could have a static initializer block that hoses up the JVM however it can imagine. It is just easier to do now.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> IMO, it would not be worth it to eliminate these powerful extension points just because of this possibility. The flexibility gained outweighs any disadvantages.
+</I>&gt;<i> 
+</I>&gt;<i> I agree that it is very powerful and I&#8217;m not proposing to eliminate it.
+</I>&gt;<i> 
+</I>&gt;<i> I&#8217;m happy that my problem is just a quirk and that I will be able to continue just calling new ImgOpener(), in blissfull ignorance of what is going on behind the scenes.
+</I>&gt;<i> 
+</I>&gt;&gt;<i> We have already taken great pains to mitigate the issue with services in the context: when you create a new ImgOpener without specifying an SJC context, it uses _only_ relevant service types: things that implement the SciJavaService and SCIFIOService interfaces. In other words: _not_ ImageJServices or other service types. The reason LegacyService is being (erroneously!) pulled in here is due to a bug in the design of the SJC AppEventService, as I said. I introduced a &quot;LegacyAppEventService&quot; which is a SciJavaService but depends on the ImageJ LegacyService. Hence, any Context that asks for SciJavaServices now pulls in a DefaultLegacyService whenever the LegacyAppEventService is on the classpath. The fix is to stop doing that.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> Anyway, if it still bothers you that any ol' developer can add something to the classpath which hoses up your programs, then you can stop it: create a more carefully controlled SJC Context and pass that to the ImgOpener. Alternately, we could change ImgOpener to be even more conservative in which services it uses. Of course, there are downsides there: any additional file format plugins, codec plugins, etc., might not be work properly if they do not have access to the services they need.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> I am very open to ideas for mitigating the extensibility issues here.
+</I>&gt;<i> 
+</I>&gt;<i> I currently have only limited knowledge of the workings of scijava-common so I admit that I have no ideas here.
+</I>&gt;<i> 
+</I>&gt;<i> I imagine that in many cases it would be helpful to somehow produce an explicit list of transitive (runtime) dependencies at compile time. But this is probably not possible because these dependencies are specified as interfaces and there is no way of knowing beforehand the dependencies of the implementing class that will be used at runtime.
+</I>&gt;<i> In the present case it is even worse, because, if I understand correctly, simply put the problem was not a missing dependency is missing but additional stuff being present?
+</I>&gt;<i> 
+</I>&gt;<i> best regards,
+</I>&gt;<i> Tobias
+</I>&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> Regards,
+</I>&gt;&gt;<i> Curtis
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> On Fri, Aug 22, 2014 at 9:35 AM, Tobias Pietzsch &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pietzsch at mpi-cbg.de</A>&gt; wrote:
+</I>&gt;&gt;<i> Hi Johannes,
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> On 22 Aug 2014, at 09:04, Johannes Schindelin &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">Johannes.Schindelin at gmx.de</A>&gt; wrote:
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> Hi Tobias,
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> On Fri, 22 Aug 2014, Tobias Pietzsch wrote:
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> Currently
+</I>&gt;&gt;&gt;&gt;<i> new io.scif.img.ImgOpener();
+</I>&gt;&gt;&gt;&gt;<i> fails with
+</I>&gt;&gt;&gt;&gt;<i> java.lang.IllegalArgumentException: Invalid service: net.imagej.legacy.LegacyAppEventService
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> Yep, the explanation is very easy:
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> [...]
+</I>&gt;&gt;&gt;&gt;<i> Caused by: java.lang.UnsupportedOperationException: Cannot instantiate more than one DefaultLegacyService
+</I>&gt;&gt;&gt;&gt;<i> [&#8230;]
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> I missed that...
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> There is already a context, including a legacy service. Unfortunately, the
+</I>&gt;&gt;&gt;<i> best way to get at this context from an *ImageJ 1.x plugin* that I could
+</I>&gt;&gt;&gt;<i> come up with is:
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> 	import org.scijava.Context;
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> 	...
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> 	final Context context = (Context)
+</I>&gt;&gt;&gt;<i> 		IJ.runPlugIn(Context.class.getName(), &quot;&quot;);
+</I>&gt;&gt;&gt;<i> 	final ImgOpener opener = new ImgOpener(context);
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> (There is no way to make that more convenient without letting SCIFIO
+</I>&gt;&gt;&gt;<i> depend on ImageJ 1.x, which is of course a big no-no).
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> The problem with this solution you suggested is that it does not work in Eclipse:
+</I>&gt;&gt;<i> Exception in thread &quot;main&quot; java.lang.IllegalArgumentException: Invalid service: net.imagej.legacy.DefaultLegacyService
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> As much as I understand the need for the runtime service discovery used by the scijava stack, there are certainly downsides to it.
+</I>&gt;&gt;<i> My feeling is that in some ways it undermines the advantages that we have gained by switching to maven.
+</I>&gt;&gt;<i> I can import a maven project into my Eclipse, and all the dependencies are there, explicitly and automatically, which is really very convenient.
+</I>&gt;&gt;<i> Except now all dependencies are not there anymore because now there are non-obvious (to me) implicit runtime dependencies.
+</I>&gt;&gt;<i> I find this unfortunate.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> That being said, I found a solution that works for now, both in Eclipse and in Fiji
+</I>&gt;&gt;<i>     final ImgOpener opener = new ImgOpener( new Context( SCIFIOService.class, AppService.class, StatusService.class ) );
+</I>&gt;&gt;<i> This avoids requiring the net.imagej.legacy.LegacyAppEventService.
+</I>&gt;&gt;<i> It seems to work, but I&#8217;m not sure: Are there any downsides to that?
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> best regards,
+</I>&gt;&gt;<i> Tobias
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> Of course, you could also turn your plugin into an ImageJ2 plugin -- which
+</I>&gt;&gt;&gt;<i> is handled properly in Fiji thanks to Fiji Just Being ImageJ2 -- and then
+</I>&gt;&gt;&gt;<i> it would become as easy as:
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> 		@Parameter
+</I>&gt;&gt;&gt;<i> 		private IOService io;
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> 		...
+</I>&gt;&gt;&gt;<i> 			// use the IOService (which lets SCIFIO handle
+</I>&gt;&gt;&gt;<i> 			// things) to open your dataset
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> Ciao,
+</I>&gt;&gt;&gt;<i> Johannes
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> -- 
+</I>&gt;&gt;&gt;<i> -- 
+</I>&gt;&gt;&gt;<i> Please avoid top-posting, and please make sure to reply-to-all!
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> Mailing list web interface: <A HREF="http://groups.google.com/group/fiji-devel">http://groups.google.com/group/fiji-devel</A>
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> --- 
+</I>&gt;&gt;&gt;<i> You received this message because you are subscribed to the Google Groups &quot;Fiji-devel&quot; group.
+</I>&gt;&gt;&gt;<i> To unsubscribe from this group and stop receiving emails from it, send an email to <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">fiji-devel+unsubscribe at googlegroups.com.</A>
+</I>&gt;&gt;&gt;<i> For more options, visit <A HREF="https://groups.google.com/d/optout.">https://groups.google.com/d/optout.</A>
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140826/ad4c761f/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20140826/ad4c761f/attachment.html</A>&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140826/ad4c761f/attachment.pgp">http://imagej.net/pipermail/imagej-devel/attachments/20140826/ad4c761f/attachment.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002212.html">[ImageJ-devel] [fiji-devel] creating io.scif.img.ImgOpener currently fails in Fiji
+</A></li>
+	<LI>Next message: <A HREF="002208.html">[ImageJ-devel] [fiji-devel] creating io.scif.img.ImgOpener currently fails in Fiji
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2214">[ date ]</a>
+              <a href="thread.html#2214">[ thread ]</a>
+              <a href="subject.html#2214">[ subject ]</a>
+              <a href="author.html#2214">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

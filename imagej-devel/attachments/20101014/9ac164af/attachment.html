@@ -1,0 +1,54 @@
+<tt>
+Hi&nbsp;Dscho,&lt;br&gt;&lt;br&gt;&lt;blockquote&nbsp;style=&quot;margin:&nbsp;0pt&nbsp;0pt&nbsp;0pt&nbsp;0.8ex;&nbsp;border-left:&nbsp;1px&nbsp;solid&nbsp;rgb(204,&nbsp;204,&nbsp;204);&nbsp;padding-left:&nbsp;1ex;&quot;&nbsp;class=&quot;gmail_quote&quot;&gt;Just&nbsp;the&nbsp;infinite&nbsp;recursion&nbsp;thing&nbsp;(which&nbsp;is&nbsp;harder&nbsp;than&nbsp;meets&nbsp;the&nbsp;eye;&lt;br&gt;<br>
+you&amp;#39;d&nbsp;have&nbsp;to&nbsp;build&nbsp;a&nbsp;graph&nbsp;and&nbsp;detect&nbsp;circles).&lt;br&gt;&lt;/blockquote&gt;<br>
+&lt;br&gt;Or&nbsp;we&nbsp;could&nbsp;invoke&nbsp;the&nbsp;callback&nbsp;only&nbsp;when&nbsp;the&nbsp;GUI&nbsp;changes&nbsp;by&nbsp;user&nbsp;action.&lt;br&gt;&lt;br&gt;&lt;blockquote&nbsp;style=&quot;margin:&nbsp;0pt&nbsp;0pt&nbsp;0pt&nbsp;0.8ex;&nbsp;border-left:&nbsp;1px&nbsp;solid&nbsp;rgb(204,&nbsp;204,&nbsp;204);&nbsp;padding-left:&nbsp;1ex;&quot;&nbsp;class=&quot;gmail_quote&quot;&gt;<br>
+It&amp;#39;s&nbsp;also&nbsp;not&nbsp;clear&nbsp;how&nbsp;the&nbsp;callback&nbsp;would&nbsp;signal&nbsp;to&nbsp;the&nbsp;dialog&nbsp;(be&nbsp;that&lt;br&gt;<br>
+an&nbsp;ImageJ,&nbsp;or&nbsp;a&nbsp;KNIME&nbsp;or&nbsp;CellProfiler&nbsp;dialog)&nbsp;_what_&nbsp;value&nbsp;was&nbsp;changed&nbsp;by&lt;br&gt;<br>
+the&nbsp;callback.&nbsp;(Just&nbsp;think&nbsp;of&nbsp;the&nbsp;user&nbsp;changing&nbsp;the&nbsp;width,&nbsp;and&nbsp;the&nbsp;callback&lt;br&gt;<br>
+wanting&nbsp;to&nbsp;modify&nbsp;the&nbsp;height&nbsp;_iff_&nbsp;&amp;quot;keep&nbsp;aspect-ratio&amp;quot;&nbsp;is&nbsp;checked.)&lt;br&gt;&lt;/blockquote&gt;<br>
+&lt;br&gt;A&nbsp;given&nbsp;parameter&amp;#39;s&nbsp;callback&nbsp;would&nbsp;be&nbsp;called&nbsp;only&nbsp;when&nbsp;the&nbsp;linked&nbsp;parameter&nbsp;changes.&lt;br&gt;&lt;br&gt;So&nbsp;the&nbsp;aspect&nbsp;ratio&nbsp;example&nbsp;might&nbsp;look&nbsp;like:&lt;br&gt;&lt;br&gt;&lt;div&nbsp;style=&quot;margin-left:&nbsp;40px;&quot;&gt;@Parameter(callback=&amp;quot;widthChanged&amp;quot;)&lt;br&gt;<br>
+<br>
+public&nbsp;int&nbsp;width;&lt;br&gt;&lt;br&gt;@Parameter(callback=&amp;quot;heightChanged&amp;quot;)&lt;br&gt;public&nbsp;int&nbsp;height;&lt;br&gt;&lt;br&gt;@Parameter(label=&amp;quot;Maintain&nbsp;aspect&nbsp;ratio&amp;quot;,&nbsp;callback=&amp;quot;aspectRatioToggled&amp;quot;)&lt;br&gt;public&nbsp;boolean&nbsp;aspectRatio;&lt;br&gt;<br>
+<br>
+&lt;br&gt;/**&nbsp;The&nbsp;plugin&nbsp;must&nbsp;populate&nbsp;these&nbsp;with&nbsp;the&nbsp;current/initial&nbsp;width&nbsp;and&nbsp;height&nbsp;choices.&nbsp;*/&lt;br&gt;private&nbsp;int&nbsp;originalWidth,&nbsp;originalHeight;&lt;br&gt;&lt;br&gt;/**&nbsp;Invoked&nbsp;when&nbsp;width&nbsp;text&nbsp;field&nbsp;changes.&nbsp;*/&lt;br&gt;public&nbsp;void&nbsp;widthChanged()&nbsp;{&lt;br&gt;<br>
+<br>
+ &nbsp;if&nbsp;(aspectRatio)&nbsp;constrainHeight();&lt;br&gt;}&lt;br&gt;&lt;br&gt;/**&nbsp;Invoked&nbsp;when&nbsp;height&nbsp;text&nbsp;field&nbsp;changes.&nbsp;*/&lt;br&gt;public&nbsp;void&nbsp;heightChanged()&nbsp;{&lt;br&gt; &nbsp;if&nbsp;(aspectRatio)&nbsp;constrainWidth();&lt;br&gt;}&lt;br&gt;&lt;br&gt;public&nbsp;void&nbsp;aspectRatioToggled()&nbsp;{&lt;br&gt;<br>
+ &nbsp;if&nbsp;(aspectRatio)&nbsp;constrainHeight();&nbsp;//&nbsp;arbitrarily&nbsp;change&nbsp;height,&nbsp;rather&nbsp;than&nbsp;width&lt;br&gt;<br>
+}&lt;br&gt;&lt;br&gt;/**&nbsp;Adjusts&nbsp;width&nbsp;to&nbsp;match&nbsp;original&nbsp;aspect&nbsp;ratio.&nbsp;*/&lt;br&gt;private&nbsp;void&nbsp;constrainWidth()&nbsp;{&lt;br&gt; &nbsp;width&nbsp;=&nbsp;originalWidth&nbsp;*&nbsp;height&nbsp;/&nbsp;originalHeight;&lt;br&gt;}&lt;br&gt;&lt;br&gt;/**&nbsp;Adjusts&nbsp;height&nbsp;to&nbsp;match&nbsp;original&nbsp;aspect&nbsp;ratio.&nbsp;*/&lt;br&gt;<br>
+private&nbsp;void&nbsp;constrainHeight()&nbsp;{&lt;br&gt;<br>
+ &nbsp;height&nbsp;=&nbsp;originalHeight&nbsp;*&nbsp;width&nbsp;/&nbsp;originalWidth;&lt;br&gt;}&lt;br&gt;&lt;/div&gt;&lt;br&gt;After&nbsp;invoking&nbsp;the&nbsp;callback,&nbsp;the&nbsp;plugin&nbsp;infrastructure&nbsp;updates&nbsp;all&nbsp;dialog&nbsp;fields&nbsp;to&nbsp;the&nbsp;latest&nbsp;values&nbsp;(and&nbsp;this&nbsp;update&nbsp;does&nbsp;not&nbsp;itself&nbsp;trigger&nbsp;any&nbsp;additional&nbsp;callbacks).&lt;br&gt;<br>
+<br>
+&lt;br&gt;-Curtis&lt;br&gt;&lt;br&gt;&lt;div&nbsp;class=&quot;gmail_quote&quot;&gt;On&nbsp;Tue,&nbsp;Oct&nbsp;12,&nbsp;2010&nbsp;at&nbsp;9:50&nbsp;PM,&nbsp;Johannes&nbsp;Schindelin&nbsp;&lt;span&nbsp;dir=&quot;ltr&quot;&gt;&amp;lt;&lt;a&nbsp;href=&quot;mailto:Johannes.Schindelin@gmx.de&quot;&nbsp;target=&quot;_blank&quot;&gt;Johannes.Schindelin@gmx.de&lt;/a&gt;&amp;gt;&lt;/span&gt;&nbsp;wrote:&lt;br&gt;<br>
+<br>
+&lt;blockquote&nbsp;class=&quot;gmail_quote&quot;&nbsp;style=&quot;margin:&nbsp;0pt&nbsp;0pt&nbsp;0pt&nbsp;0.8ex;&nbsp;border-left:&nbsp;1px&nbsp;solid&nbsp;rgb(204,&nbsp;204,&nbsp;204);&nbsp;padding-left:&nbsp;1ex;&quot;&gt;<br>
+Hi,&lt;br&gt;<br>
+&lt;div&gt;&lt;br&gt;<br>
+On&nbsp;Tue,&nbsp;12&nbsp;Oct&nbsp;2010,&nbsp;Curtis&nbsp;Rueden&nbsp;wrote:&lt;br&gt;<br>
+&lt;br&gt;<br>
+&amp;gt;&nbsp;&amp;gt;&nbsp;That&nbsp;was&nbsp;my&nbsp;first&nbsp;idea.&nbsp;But&nbsp;how&nbsp;would&nbsp;the&nbsp;user&nbsp;interface&nbsp;tell&nbsp;the&lt;br&gt;<br>
+&amp;gt;&nbsp;&amp;gt;&nbsp;callback&nbsp;without&nbsp;String&nbsp;or&nbsp;java.lang.reflect.Field&nbsp;ugliness&nbsp;which&lt;br&gt;<br>
+&amp;gt;&nbsp;&amp;gt;&nbsp;input&nbsp;was&nbsp;modified&nbsp;by&nbsp;the&nbsp;user&nbsp;(and&nbsp;by&nbsp;that,&nbsp;what&nbsp;field&nbsp;should&nbsp;be&lt;br&gt;<br>
+&amp;gt;&nbsp;&amp;gt;&nbsp;changed&nbsp;accordingly),&nbsp;and&nbsp;how&nbsp;would&nbsp;the&nbsp;callback&nbsp;tell&nbsp;that&nbsp;it&nbsp;changed&lt;br&gt;<br>
+&amp;gt;&nbsp;&amp;gt;&nbsp;something,&nbsp;and&nbsp;what?&lt;br&gt;<br>
+&amp;gt;&lt;br&gt;<br>
+&amp;gt;&nbsp;Each&nbsp;parameter&nbsp;has&nbsp;its&nbsp;own&nbsp;callback&nbsp;method,&nbsp;invoked&nbsp;when&nbsp;that&nbsp;particular&lt;br&gt;<br>
+&amp;gt;&nbsp;parameter&nbsp;changes.&nbsp;So&nbsp;as&nbsp;Lee&nbsp;said,&nbsp;which&nbsp;method&nbsp;is&nbsp;called&nbsp;indicates&lt;br&gt;<br>
+&amp;gt;&nbsp;which&nbsp;parameter&nbsp;was&nbsp;changed.&nbsp;(Perhaps&nbsp;it&nbsp;would&nbsp;be&nbsp;better&nbsp;to&nbsp;call&nbsp;the&lt;br&gt;<br>
+&amp;gt;&nbsp;attribute&nbsp;something&nbsp;like&nbsp;&amp;quot;onChange&amp;quot;&nbsp;instead.)&lt;br&gt;<br>
+&amp;gt;&lt;br&gt;<br>
+&amp;gt;&nbsp;Does&nbsp;that&nbsp;clarify&nbsp;it?&nbsp;Or&nbsp;is&nbsp;there&nbsp;a&nbsp;problem&nbsp;I&amp;#39;m&nbsp;not&nbsp;seeing?&lt;br&gt;<br>
+&lt;br&gt;<br>
+&lt;/div&gt;Just&nbsp;the&nbsp;infinite&nbsp;recursion&nbsp;thing&nbsp;(which&nbsp;is&nbsp;harder&nbsp;than&nbsp;meets&nbsp;the&nbsp;eye;&lt;br&gt;<br>
+you&amp;#39;d&nbsp;have&nbsp;to&nbsp;build&nbsp;a&nbsp;graph&nbsp;and&nbsp;detect&nbsp;circles).&lt;br&gt;<br>
+&lt;br&gt;<br>
+It&amp;#39;s&nbsp;also&nbsp;not&nbsp;clear&nbsp;how&nbsp;the&nbsp;callback&nbsp;would&nbsp;signal&nbsp;to&nbsp;the&nbsp;dialog&nbsp;(be&nbsp;that&lt;br&gt;<br>
+an&nbsp;ImageJ,&nbsp;or&nbsp;a&nbsp;KNIME&nbsp;or&nbsp;CellProfiler&nbsp;dialog)&nbsp;_what_&nbsp;value&nbsp;was&nbsp;changed&nbsp;by&lt;br&gt;<br>
+the&nbsp;callback.&nbsp;(Just&nbsp;think&nbsp;of&nbsp;the&nbsp;user&nbsp;changing&nbsp;the&nbsp;width,&nbsp;and&nbsp;the&nbsp;callback&lt;br&gt;<br>
+wanting&nbsp;to&nbsp;modify&nbsp;the&nbsp;height&nbsp;_iff_&nbsp;&amp;quot;keep&nbsp;aspect-ratio&amp;quot;&nbsp;is&nbsp;checked.)&lt;br&gt;<br>
+&lt;br&gt;<br>
+Ciao,&lt;br&gt;<br>
+Dscho&lt;br&gt;<br>
+&lt;br&gt;<br>
+&lt;/blockquote&gt;&lt;/div&gt;&lt;br&gt;<br>
+
+</tt>

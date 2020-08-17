@@ -1,0 +1,80 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] ModuleService.run
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ModuleService.run&In-Reply-To=%3C4e443284.c38ae50a.380d.5814%40mx.google.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000468.html">
+   <LINK REL="Next"  HREF="000470.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] ModuleService.run</H1>
+    <B>Lee Kamentsky</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ModuleService.run&In-Reply-To=%3C4e443284.c38ae50a.380d.5814%40mx.google.com%3E"
+       TITLE="[ImageJ-devel] ModuleService.run">leek at broadinstitute.org
+       </A><BR>
+    <I>Thu Aug 11 14:50:26 CDT 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000468.html">[ImageJ-devel] Documentation for ImageJ2
+</A></li>
+        <LI>Next message: <A HREF="000470.html">[ImageJ-devel] ModuleService.run
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#469">[ date ]</a>
+              <a href="thread.html#469">[ thread ]</a>
+              <a href="subject.html#469">[ subject ]</a>
+              <a href="author.html#469">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Curtis, all,
+I'm looking at ModuleService.run and thinking of how to use it in 
+CellProfiler. There's a comment:
+// TODO - Implement a better threading mechanism for launching modules.
+// Perhaps a ThreadService so that the UI can query currently
+// running modules and so forth?
+
+which is pretty relevant. I think that the natural thing to do would be 
+to return java.util.concurrent.Future&lt;Map&lt;String, Object&gt;&gt; which would 
+be a future promising the map of outputs for the module. You'd wrap the 
+ModuleRunner in a java.util.concurrent.Callable&lt;Map&lt;String, Object&gt;&gt; 
+instead of in a Runnable and use java.util.concurrent.FutureTask to 
+return the future.
+
+I like a programmatic style myself where you do things step-by-step 
+instead of an event-driven style like a ThreadService. This would be 
+great for scripting - you can imagine a script that executes a module, 
+then, further down, gets the results from the execution. The script 
+would proceed in parallel with the module execution and the additional 
+boilerplate for threading would be minimal - just an additional call to 
+Future.get() at the point where the result was needed.
+
+--Lee
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000468.html">[ImageJ-devel] Documentation for ImageJ2
+</A></li>
+	<LI>Next message: <A HREF="000470.html">[ImageJ-devel] ModuleService.run
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#469">[ date ]</a>
+              <a href="thread.html#469">[ thread ]</a>
+              <a href="subject.html#469">[ subject ]</a>
+              <a href="author.html#469">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

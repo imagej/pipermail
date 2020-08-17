@@ -1,0 +1,2285 @@
+From afraser at broadinstitute.org  Tue Oct  4 13:42:05 2011
+From: afraser at broadinstitute.org (Adam Fraser)
+Date: Tue, 4 Oct 2011 14:42:05 -0400
+Subject: [ImageJ-devel] autoscaling behavior in IJ2
+Message-ID: <CANCtz6fUVcK9ytQ4g5=CHATtP1ddyw1f3fVxAm-MUuXpjaumyA@mail.gmail.com>
+
+So I've been having a heck of a time trying to implement and understand the
+IJ 1.0 auto contrast behavior in IJ 2.0.
+
+The current IJ 2 implementation is in
+imagej.data.display.AbstractDatasetView.autoscale
+
+You can see the original code here:
+http://rsbweb.nih.gov/ij/developer/source/ij/plugin/frame/ContrastAdjuster.java.html
+search for: void autoAdjust
+
+I'm particularly perplexed by the AUTO_THRESHOLD variable.
+
+I'm available on IRC if anyone has a moment to discuss this.
+
+-Adam
+
+PS: Here's the related ticket:
+http://dev.imagejdev.org/trac/imagej/ticket/796
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20111004/0d15de7f/attachment.html>
+
+From ctrueden at wisc.edu  Fri Oct  7 14:05:24 2011
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Fri, 7 Oct 2011 14:05:24 -0500
+Subject: [ImageJ-devel] IJ1 unit tests
+Message-ID: <CADN69y=fn8xceAUEnWvba0stCkwai_SB_br2Jq_6JdQ9En_AgA@mail.gmail.com>
+
+Hi Wayne et. al,
+
+For quite some time now, we have had unit tests (written by Barry) for
+testing the behavior of IJ1. Unfortunately, they were originally written to
+compile against a patched version of IJ1 and we neglected to update them to
+work with IJ1 "out of the box."
+
+I have had a ticket about this situation (
+http://dev.imagejdev.org/trac/imagej/ticket/598) for the past few months,
+but have only just now finally fixed the tests to work against various
+versions of IJ1 from 1.44 onwards.
+
+I ran them against all development versions of 1.45 (a through q) and saved
+the result as a blog post:
+  http://imagejdev.org/2011/10/07/unit-tests-imagej-1x
+
+It looks like from 1.45a through 1.45q, a total of 7 code changes were
+introduced that result in test failures. These could be the result of
+bugfixes, or they could be new regressions. I wanted to let you know in case
+you were interested in pursuing these bugs, since I know how much you value
+backwards compatibility.
+
+Instructions on running the tests yourself can be found here:
+  http://imagejdev.org/source-code#Running_ImageJ_1.x_unit_tests
+
+My plan is to hook up the tests to Hudson (http://dev.imagejdev.org:8080/)
+and have it send an email whenever a new version of IJ1 is released with
+failing tests.
+
+What do you think?
+
+Regards,
+Curtis
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20111007/558e02dd/attachment.html>
+
+From ctrueden at wisc.edu  Sat Oct  8 16:24:41 2011
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Sat, 8 Oct 2011 16:24:41 -0500
+Subject: [ImageJ-devel] IJ1 unit tests
+In-Reply-To: <B7626506-E526-4A77-ACE3-533133088C19@nih.gov>
+References: <CADN69y=fn8xceAUEnWvba0stCkwai_SB_br2Jq_6JdQ9En_AgA@mail.gmail.com>
+	<B7626506-E526-4A77-ACE3-533133088C19@nih.gov>
+Message-ID: <CADN69y=sUguRwFu=-cei9yXCDyXsL2VML4sWoGGfp4C7Fxh5Ug@mail.gmail.com>
+
+Hi Wayne,
+
+I am willing to try to figure out why the tests are failing. I thought I
+> would start with the virtual stack tests so I converted
+> VirtualStackTest.java to an ImageJ plugin (attached), but I can't get it to
+> run because I can't find the files "gray8-2x3-sub1.tif" and
+> "gray8-2x3-sub2.tif" on the imagejdev website and I don't know how to
+> generate them.
+>
+
+The data files are included in the ImageJ2 SVN checkout, in the folder:
+  ij1-tests/src/test/resources/data
+
+You can also download them from this URL:
+
+http://dev.imagejdev.org/svn/imagej/trunk/ij1-tests/src/test/resources/data/
+
+Regards,
+Curtis
+
+
+On Sat, Oct 8, 2011 at 2:28 PM, Rasband, Wayne (NIH/NIMH) [E] <
+rasbandw at mail.nih.gov> wrote:
+
+> Hi Curtis,
+>
+> I am willing to try to figure out why the tests are failing. I thought I
+> would start with the virtual stack tests so I converted
+> VirtualStackTest.java to an ImageJ plugin (attached), but I can't get it to
+> run because I can't find the files "gray8-2x3-sub1.tif" and
+> "gray8-2x3-sub2.tif" on the imagejdev website and I don't know how to
+> generate them.
+>
+> -wayne
+>
+>
+>
+> import ij.*;
+> import ij.process.*;
+> import ij.plugin.*;
+> import static org.junit.Assert.assertArrayEquals;
+> import static org.junit.Assert.assertEquals;
+> import static org.junit.Assert.assertNotNull;
+> import static org.junit.Assert.assertNull;
+> import static org.junit.Assert.assertTrue;
+> import static org.junit.Assert.fail;
+>
+> public class Unit_Tests implements PlugIn {
+>
+>        public void run(String arg) {
+>                testGetProcessor();
+>        }
+>
+>   public void testGetProcessor() {
+>        String DATA_DIR = "src/test/resources/data/";
+>       // setup vstack
+>        VirtualStack vs =new VirtualStack(2,3,null,DATA_DIR);
+>        vs.addSlice("gray8-2x3-sub1.tif");
+>        vs.addSlice("gray8-2x3-sub2.tif");
+>        // test that it works
+>        ImageProcessor proc;
+>        // try valid entries and test returned data
+>        proc =vs.getProcessor(1);
+>        assertEquals(2,proc.getWidth());
+>        assertEquals(3,proc.getHeight());
+>        assertArrayEquals(new
+> byte[]{0,40,0,40,120,-96},(byte[])proc.getPixels());
+>        proc =vs.getProcessor(2);
+>        assertEquals(2,proc.getWidth());
+>        assertEquals(3,proc.getHeight());
+>        assertArrayEquals(new
+> byte[]{0,40,0,40,120,-96},(byte[])proc.getPixels());
+>     }
+>
+> }
+>
+>
+>
+>
+>
+>
+> On Oct 7, 2011, at 3:05 PM, Curtis Rueden wrote:
+>
+> > Hi Wayne et. al,
+> >
+> > For quite some time now, we have had unit tests (written by Barry) for
+> testing the behavior of IJ1. Unfortunately, they were originally written to
+> compile against a patched version of IJ1 and we neglected to update them to
+> work with IJ1 "out of the box."
+> >
+> > I have had a ticket about this situation (
+> http://dev.imagejdev.org/trac/imagej/ticket/598) for the past few months,
+> but have only just now finally fixed the tests to work against various
+> versions of IJ1 from 1.44 onwards.
+> >
+> > I ran them against all development versions of 1.45 (a through q) and
+> saved the result as a blog post:
+> >   http://imagejdev.org/2011/10/07/unit-tests-imagej-1x
+> >
+> > It looks like from 1.45a through 1.45q, a total of 7 code changes were
+> introduced that result in test failures. These could be the result of
+> bugfixes, or they could be new regressions. I wanted to let you know in case
+> you were interested in pursuing these bugs, since I know how much you value
+> backwards compatibility.
+> >
+> > Instructions on running the tests yourself can be found here:
+> >   http://imagejdev.org/source-code#Running_ImageJ_1.x_unit_tests
+> >
+> > My plan is to hook up the tests to Hudson (
+> http://dev.imagejdev.org:8080/) and have it send an email whenever a new
+> version of IJ1 is released with failing tests.
+> >
+> > What do you think?
+> >
+> > Regards,
+> > Curtis
+> >
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20111008/793840d1/attachment.html>
+
+From rasbandw at mail.nih.gov  Sat Oct  8 14:28:24 2011
+From: rasbandw at mail.nih.gov (Rasband, Wayne (NIH/NIMH) [E])
+Date: Sat, 8 Oct 2011 15:28:24 -0400
+Subject: [ImageJ-devel] IJ1 unit tests
+In-Reply-To: <CADN69y=fn8xceAUEnWvba0stCkwai_SB_br2Jq_6JdQ9En_AgA@mail.gmail.com>
+References: <CADN69y=fn8xceAUEnWvba0stCkwai_SB_br2Jq_6JdQ9En_AgA@mail.gmail.com>
+Message-ID: <B7626506-E526-4A77-ACE3-533133088C19@nih.gov>
+
+Hi Curtis,
+
+I am willing to try to figure out why the tests are failing. I thought I would start with the virtual stack tests so I converted VirtualStackTest.java to an ImageJ plugin (attached), but I can't get it to run because I can't find the files "gray8-2x3-sub1.tif" and "gray8-2x3-sub2.tif" on the imagejdev website and I don't know how to generate them.
+
+-wayne
+
+
+
+import ij.*;
+import ij.process.*;
+import ij.plugin.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+ 
+public class Unit_Tests implements PlugIn {
+
+	public void run(String arg) {
+		testGetProcessor();
+	}
+
+   public void testGetProcessor() {
+	String DATA_DIR = "src/test/resources/data/";
+       // setup vstack
+        VirtualStack vs =new VirtualStack(2,3,null,DATA_DIR);
+        vs.addSlice("gray8-2x3-sub1.tif");
+        vs.addSlice("gray8-2x3-sub2.tif");
+        // test that it works
+        ImageProcessor proc;
+        // try valid entries and test returned data
+        proc =vs.getProcessor(1);
+        assertEquals(2,proc.getWidth());
+        assertEquals(3,proc.getHeight());
+        assertArrayEquals(new byte[]{0,40,0,40,120,-96},(byte[])proc.getPixels());
+        proc =vs.getProcessor(2);
+        assertEquals(2,proc.getWidth());
+        assertEquals(3,proc.getHeight());
+        assertArrayEquals(new byte[]{0,40,0,40,120,-96},(byte[])proc.getPixels());
+    }
+
+}
+
+
+
+
+
+
+On Oct 7, 2011, at 3:05 PM, Curtis Rueden wrote:
+
+> Hi Wayne et. al,
+> 
+> For quite some time now, we have had unit tests (written by Barry) for testing the behavior of IJ1. Unfortunately, they were originally written to compile against a patched version of IJ1 and we neglected to update them to work with IJ1 "out of the box."
+> 
+> I have had a ticket about this situation (http://dev.imagejdev.org/trac/imagej/ticket/598) for the past few months, but have only just now finally fixed the tests to work against various versions of IJ1 from 1.44 onwards.
+> 
+> I ran them against all development versions of 1.45 (a through q) and saved the result as a blog post:
+>   http://imagejdev.org/2011/10/07/unit-tests-imagej-1x
+> 
+> It looks like from 1.45a through 1.45q, a total of 7 code changes were introduced that result in test failures. These could be the result of bugfixes, or they could be new regressions. I wanted to let you know in case you were interested in pursuing these bugs, since I know how much you value backwards compatibility.
+> 
+> Instructions on running the tests yourself can be found here:
+>   http://imagejdev.org/source-code#Running_ImageJ_1.x_unit_tests
+> 
+> My plan is to hook up the tests to Hudson (http://dev.imagejdev.org:8080/) and have it send an email whenever a new version of IJ1 is released with failing tests.
+> 
+> What do you think?
+> 
+> Regards,
+> Curtis
+> 
+
+
+
+
+From ctrueden at wisc.edu  Mon Oct 10 11:26:39 2011
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Mon, 10 Oct 2011 11:26:39 -0500
+Subject: [ImageJ-devel] IJ1 unit tests
+In-Reply-To: <E9196938-F3AC-4162-B416-5211DB09E315@nih.gov>
+References: <CADN69y=fn8xceAUEnWvba0stCkwai_SB_br2Jq_6JdQ9En_AgA@mail.gmail.com>
+	<E9196938-F3AC-4162-B416-5211DB09E315@nih.gov>
+Message-ID: <CADN69ymeZ6FBie1x4dtg+xhnzgGQeqVC07UuyA6s=OdQbFNC-g@mail.gmail.com>
+
+Hi Wayne,
+
+I was able to run all the failing tests.
+>
+
+Thanks for investigating. Barry is updating the tests now in response to
+your comments, and will reply with any remaining issues. We should have all
+the tests passing again very soon, and will get them automated soon as well.
+
+Regards,
+Curtis
+
+
+On Sun, Oct 9, 2011 at 6:20 PM, Rasband, Wayne (NIH/NIMH) [E] <
+rasbandw at mail.nih.gov> wrote:
+
+> Hi Curtis & Barry,
+>
+> I was able to run all the failing tests. Thanks for pointing me to the
+> right place on imagejdev website.
+>
+> >1. testDrawPixelsImageProcessor(ij.gui.ArrowTest): expected:<0> but
+> was:<73>
+>
+> ImageJ 1.45 uses a different method for drawing arrows. This change was
+> required to support outlined arrows. Arrows drawn with the new method do not
+> have the exact same pixel layout. I would recommend removing this test.
+>
+> > 2. testFitSplineForStraightening(ij.gui.PolygonRoiTest): array lengths
+> differed, expected.length=4 actual.length=8
+>
+> This test assumes that the number of points in a polygon ROI is the same as
+> the size of the array returned by getXCoordinates(), which is not
+> necessarily the case. It is better to use getPolygon() or getFloatPolygon().
+>
+> > 3. testGetUncalibratedLength(ij.gui.PolygonRoiTest): expected:<1.0> but
+> was:<6.324555320336759>
+>
+> This is a bug in the test. The distance between (1,3) and (5,11) is not
+> 1.0.
+>
+> > 4. testGetConvexHull(ij.gui.ShapeRoiTest)
+>
+> This test assumes that ShapeRoi.getConvexHull() always returns null, which
+> is no longer the case.
+>
+> > 5. testGetFeretValues(ij.gui.ShapeRoiTest): arrays first differed at
+> element [0]; expected:<10.44016> but was:<10.44030650891055>
+>
+> The ShapeRoi.getFeretValues() method in v1.45 calculates the Feret diameter
+> of simple ROIs more accurately. Perhaps this test needs to use a larger
+> tolerance value.
+>
+> > 6. testGetPixels(ij.VirtualStackTest): arrays first differed at element
+> [2]; expected:<0> but was:<120>
+> > 7.    testGetProcessor(ij.VirtualStackTest): arrays first differed at
+> element [2]; expected:<0> but was:<120>
+>
+> The virtual stack tests assume the two images in the virtual stack are 2x3
+> but they are actually 3x2.
+>
+> Best regards,
+>
+> -wayne
+>
+>
+> On Oct 7, 2011, at 3:05 PM, Curtis Rueden wrote:
+>
+> > Hi Wayne et. al,
+> >
+> > For quite some time now, we have had unit tests (written by Barry) for
+> testing the behavior of IJ1. Unfortunately, they were originally written to
+> compile against a patched version of IJ1 and we neglected to update them to
+> work with IJ1 "out of the box."
+> >
+> > I have had a ticket about this situation (
+> http://dev.imagejdev.org/trac/imagej/ticket/598) for the past few months,
+> but have only just now finally fixed the tests to work against various
+> versions of IJ1 from 1.44 onwards.
+> >
+> > I ran them against all development versions of 1.45 (a through q) and
+> saved the result as a blog post:
+> >   http://imagejdev.org/2011/10/07/unit-tests-imagej-1x
+> >
+> > It looks like from 1.45a through 1.45q, a total of 7 code changes were
+> introduced that result in test failures. These could be the result of
+> bugfixes, or they could be new regressions. I wanted to let you know in case
+> you were interested in pursuing these bugs, since I know how much you value
+> backwards compatibility.
+> >
+> > Instructions on running the tests yourself can be found here:
+> >   http://imagejdev.org/source-code#Running_ImageJ_1.x_unit_tests
+> >
+> > My plan is to hook up the tests to Hudson (
+> http://dev.imagejdev.org:8080/) and have it send an email whenever a new
+> version of IJ1 is released with failing tests.
+> >
+> > What do you think?
+> >
+> > Regards,
+> > Curtis
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20111010/45e82917/attachment.html>
+
+From bdezonia at wisc.edu  Mon Oct 10 14:12:36 2011
+From: bdezonia at wisc.edu (Barry DeZonia)
+Date: Mon, 10 Oct 2011 14:12:36 -0500
+Subject: [ImageJ-devel] IJ1 unit tests
+In-Reply-To: <CADN69ymeZ6FBie1x4dtg+xhnzgGQeqVC07UuyA6s=OdQbFNC-g@mail.gmail.com>
+References: <CADN69y=fn8xceAUEnWvba0stCkwai_SB_br2Jq_6JdQ9En_AgA@mail.gmail.com>
+	<E9196938-F3AC-4162-B416-5211DB09E315@nih.gov>
+	<CADN69ymeZ6FBie1x4dtg+xhnzgGQeqVC07UuyA6s=OdQbFNC-g@mail.gmail.com>
+Message-ID: <CAKcvfuQkvE+-Y-LcHAL8q_qR=5a6LZA+RCNt7E6z15vbmmx4rA@mail.gmail.com>
+
+All,
+
+I have updated the tests as Wayne suggested. All of them are now passing.
+
+On Mon, Oct 10, 2011 at 11:26 AM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+
+> Hi Wayne,
+>
+>
+> I was able to run all the failing tests.
+>>
+>
+> Thanks for investigating. Barry is updating the tests now in response to
+> your comments, and will reply with any remaining issues. We should have all
+> the tests passing again very soon, and will get them automated soon as well.
+>
+> Regards,
+> Curtis
+>
+>
+>
+> On Sun, Oct 9, 2011 at 6:20 PM, Rasband, Wayne (NIH/NIMH) [E] <
+> rasbandw at mail.nih.gov> wrote:
+>
+>> Hi Curtis & Barry,
+>>
+>> I was able to run all the failing tests. Thanks for pointing me to the
+>> right place on imagejdev website.
+>>
+>> >1. testDrawPixelsImageProcessor(ij.gui.ArrowTest): expected:<0> but
+>> was:<73>
+>>
+>> ImageJ 1.45 uses a different method for drawing arrows. This change was
+>> required to support outlined arrows. Arrows drawn with the new method do not
+>> have the exact same pixel layout. I would recommend removing this test.
+>>
+>> > 2. testFitSplineForStraightening(ij.gui.PolygonRoiTest): array lengths
+>> differed, expected.length=4 actual.length=8
+>>
+>> This test assumes that the number of points in a polygon ROI is the same
+>> as the size of the array returned by getXCoordinates(), which is not
+>> necessarily the case. It is better to use getPolygon() or getFloatPolygon().
+>>
+>> > 3. testGetUncalibratedLength(ij.gui.PolygonRoiTest): expected:<1.0> but
+>> was:<6.324555320336759>
+>>
+>> This is a bug in the test. The distance between (1,3) and (5,11) is not
+>> 1.0.
+>>
+>> > 4. testGetConvexHull(ij.gui.ShapeRoiTest)
+>>
+>> This test assumes that ShapeRoi.getConvexHull() always returns null, which
+>> is no longer the case.
+>>
+>> > 5. testGetFeretValues(ij.gui.ShapeRoiTest): arrays first differed at
+>> element [0]; expected:<10.44016> but was:<10.44030650891055>
+>>
+>> The ShapeRoi.getFeretValues() method in v1.45 calculates the Feret
+>> diameter of simple ROIs more accurately. Perhaps this test needs to use a
+>> larger tolerance value.
+>>
+>> > 6. testGetPixels(ij.VirtualStackTest): arrays first differed at element
+>> [2]; expected:<0> but was:<120>
+>> > 7.    testGetProcessor(ij.VirtualStackTest): arrays first differed at
+>> element [2]; expected:<0> but was:<120>
+>>
+>> The virtual stack tests assume the two images in the virtual stack are 2x3
+>> but they are actually 3x2.
+>>
+>> Best regards,
+>>
+>> -wayne
+>>
+>>
+>> On Oct 7, 2011, at 3:05 PM, Curtis Rueden wrote:
+>>
+>> > Hi Wayne et. al,
+>> >
+>> > For quite some time now, we have had unit tests (written by Barry) for
+>> testing the behavior of IJ1. Unfortunately, they were originally written to
+>> compile against a patched version of IJ1 and we neglected to update them to
+>> work with IJ1 "out of the box."
+>> >
+>> > I have had a ticket about this situation (
+>> http://dev.imagejdev.org/trac/imagej/ticket/598) for the past few months,
+>> but have only just now finally fixed the tests to work against various
+>> versions of IJ1 from 1.44 onwards.
+>> >
+>> > I ran them against all development versions of 1.45 (a through q) and
+>> saved the result as a blog post:
+>> >   http://imagejdev.org/2011/10/07/unit-tests-imagej-1x
+>> >
+>> > It looks like from 1.45a through 1.45q, a total of 7 code changes were
+>> introduced that result in test failures. These could be the result of
+>> bugfixes, or they could be new regressions. I wanted to let you know in case
+>> you were interested in pursuing these bugs, since I know how much you value
+>> backwards compatibility.
+>> >
+>> > Instructions on running the tests yourself can be found here:
+>> >   http://imagejdev.org/source-code#Running_ImageJ_1.x_unit_tests
+>> >
+>> > My plan is to hook up the tests to Hudson (
+>> http://dev.imagejdev.org:8080/) and have it send an email whenever a new
+>> version of IJ1 is released with failing tests.
+>> >
+>> > What do you think?
+>> >
+>> > Regards,
+>> > Curtis
+>>
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20111010/e8fd2c25/attachment.html>
+
+From afraser at broadinstitute.org  Tue Oct 11 12:55:46 2011
+From: afraser at broadinstitute.org (Adam Fraser)
+Date: Tue, 11 Oct 2011 13:55:46 -0400
+Subject: [ImageJ-devel] IJ1 unit tests
+In-Reply-To: <CAKcvfuQkvE+-Y-LcHAL8q_qR=5a6LZA+RCNt7E6z15vbmmx4rA@mail.gmail.com>
+References: <CADN69y=fn8xceAUEnWvba0stCkwai_SB_br2Jq_6JdQ9En_AgA@mail.gmail.com>
+	<E9196938-F3AC-4162-B416-5211DB09E315@nih.gov>
+	<CADN69ymeZ6FBie1x4dtg+xhnzgGQeqVC07UuyA6s=OdQbFNC-g@mail.gmail.com>
+	<CAKcvfuQkvE+-Y-LcHAL8q_qR=5a6LZA+RCNt7E6z15vbmmx4rA@mail.gmail.com>
+Message-ID: <CANCtz6dzffvb_R1P6VP-w1wG8Cb333K78mbbZomn=mXBrPzq=w@mail.gmail.com>
+
+hooray!
+
+On Mon, Oct 10, 2011 at 3:12 PM, Barry DeZonia <bdezonia at wisc.edu> wrote:
+
+> All,
+>
+> I have updated the tests as Wayne suggested. All of them are now passing.
+>
+>
+> On Mon, Oct 10, 2011 at 11:26 AM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+>
+>> Hi Wayne,
+>>
+>>
+>> I was able to run all the failing tests.
+>>>
+>>
+>> Thanks for investigating. Barry is updating the tests now in response to
+>> your comments, and will reply with any remaining issues. We should have all
+>> the tests passing again very soon, and will get them automated soon as well.
+>>
+>> Regards,
+>> Curtis
+>>
+>>
+>>
+>> On Sun, Oct 9, 2011 at 6:20 PM, Rasband, Wayne (NIH/NIMH) [E] <
+>> rasbandw at mail.nih.gov> wrote:
+>>
+>>> Hi Curtis & Barry,
+>>>
+>>> I was able to run all the failing tests. Thanks for pointing me to the
+>>> right place on imagejdev website.
+>>>
+>>> >1. testDrawPixelsImageProcessor(ij.gui.ArrowTest): expected:<0> but
+>>> was:<73>
+>>>
+>>> ImageJ 1.45 uses a different method for drawing arrows. This change was
+>>> required to support outlined arrows. Arrows drawn with the new method do not
+>>> have the exact same pixel layout. I would recommend removing this test.
+>>>
+>>> > 2. testFitSplineForStraightening(ij.gui.PolygonRoiTest): array lengths
+>>> differed, expected.length=4 actual.length=8
+>>>
+>>> This test assumes that the number of points in a polygon ROI is the same
+>>> as the size of the array returned by getXCoordinates(), which is not
+>>> necessarily the case. It is better to use getPolygon() or getFloatPolygon().
+>>>
+>>> > 3. testGetUncalibratedLength(ij.gui.PolygonRoiTest): expected:<1.0> but
+>>> was:<6.324555320336759>
+>>>
+>>> This is a bug in the test. The distance between (1,3) and (5,11) is not
+>>> 1.0.
+>>>
+>>> > 4. testGetConvexHull(ij.gui.ShapeRoiTest)
+>>>
+>>> This test assumes that ShapeRoi.getConvexHull() always returns null,
+>>> which is no longer the case.
+>>>
+>>> > 5. testGetFeretValues(ij.gui.ShapeRoiTest): arrays first differed at
+>>> element [0]; expected:<10.44016> but was:<10.44030650891055>
+>>>
+>>> The ShapeRoi.getFeretValues() method in v1.45 calculates the Feret
+>>> diameter of simple ROIs more accurately. Perhaps this test needs to use a
+>>> larger tolerance value.
+>>>
+>>> > 6. testGetPixels(ij.VirtualStackTest): arrays first differed at element
+>>> [2]; expected:<0> but was:<120>
+>>> > 7.    testGetProcessor(ij.VirtualStackTest): arrays first differed at
+>>> element [2]; expected:<0> but was:<120>
+>>>
+>>> The virtual stack tests assume the two images in the virtual stack are
+>>> 2x3 but they are actually 3x2.
+>>>
+>>> Best regards,
+>>>
+>>> -wayne
+>>>
+>>>
+>>> On Oct 7, 2011, at 3:05 PM, Curtis Rueden wrote:
+>>>
+>>> > Hi Wayne et. al,
+>>> >
+>>> > For quite some time now, we have had unit tests (written by Barry) for
+>>> testing the behavior of IJ1. Unfortunately, they were originally written to
+>>> compile against a patched version of IJ1 and we neglected to update them to
+>>> work with IJ1 "out of the box."
+>>> >
+>>> > I have had a ticket about this situation (
+>>> http://dev.imagejdev.org/trac/imagej/ticket/598) for the past few
+>>> months, but have only just now finally fixed the tests to work against
+>>> various versions of IJ1 from 1.44 onwards.
+>>> >
+>>> > I ran them against all development versions of 1.45 (a through q) and
+>>> saved the result as a blog post:
+>>> >   http://imagejdev.org/2011/10/07/unit-tests-imagej-1x
+>>> >
+>>> > It looks like from 1.45a through 1.45q, a total of 7 code changes were
+>>> introduced that result in test failures. These could be the result of
+>>> bugfixes, or they could be new regressions. I wanted to let you know in case
+>>> you were interested in pursuing these bugs, since I know how much you value
+>>> backwards compatibility.
+>>> >
+>>> > Instructions on running the tests yourself can be found here:
+>>> >   http://imagejdev.org/source-code#Running_ImageJ_1.x_unit_tests
+>>> >
+>>> > My plan is to hook up the tests to Hudson (
+>>> http://dev.imagejdev.org:8080/) and have it send an email whenever a new
+>>> version of IJ1 is released with failing tests.
+>>> >
+>>> > What do you think?
+>>> >
+>>> > Regards,
+>>> > Curtis
+>>>
+>>
+>>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20111011/5242c1a7/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Fri Oct 14 12:43:36 2011
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Fri, 14 Oct 2011 12:43:36 -0500 (CDT)
+Subject: [ImageJ-devel] [PATCH] Do not import com.apple.mrj.* in MacAdapter
+Message-ID: <alpine.DEB.1.00.1110141237280.32316@s15462909.onlinehome-server.info>
+
+
+It is not needed, and the AppleJavaExtensions.jar does not provide
+that package anyway. So this is needed to build ImageJ1 with Maven
+on non-MacOSX.
+
+Signed-off-by: Johannes Schindelin <johannes.schindelin at gmx.de>
+---
+
+	Hi Wayne,
+
+	For debugging purposes, we try to integrate the build process of 
+	ij.jar into our ImageJ2 workflow. A side effect is that Fiji will 
+	run with a standard ij.jar very soon now.
+
+	But when I try to build ImageJ1's sources with Maven, it complains 
+	about the package com.apple.mrj not being found in 
+	AppleJavaExtensions.jar (which is provided by Apple to compile 
+	stuff for MacOSX on other platforms, such as my Linux setup).
+
+	Wayne, may I ask you to apply this patch? It should not change 
+	things on your side, but it will fix build errors here.
+
+	Thanks!
+	Johannes
+
+ plugins/MacAdapter.source |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/plugins/MacAdapter.source b/plugins/MacAdapter.source
+index 8cfabed..9cbff58 100644
+--- a/plugins/MacAdapter.source
++++ b/plugins/MacAdapter.source
+@@ -1,7 +1,6 @@
+ import ij.plugin.*;
+ import ij.*;
+ import ij.io.*;
+-import com.apple.mrj.*;
+ import com.apple.eawt.*;
+ import java.util.Vector;
+ 
+-- 
+1.7.7.4535.g6ecb2
+
+
+
+
+From sapristi at gmail.com  Fri Oct 14 17:53:14 2011
+From: sapristi at gmail.com (Albert Cardona)
+Date: Sat, 15 Oct 2011 00:53:14 +0200
+Subject: [ImageJ-devel] reading images larger than signed int max value
+Message-ID: <CAJj13_8sxOCQ-XtbzvLX2TnxB9rbP9yuq0ays+ya9Ssz7P_GmQ@mail.gmail.com>
+
+Melissa, Curtis, Johannes,
+
+Thoughts on large files. ImageJ 1 cannot open images larger than the
+maximum signed int value, but there is no reason why ImageJ 2
+shouldn't be able to.
+
+Are you guys planning for imglib2 on a PlanarCellContainer that
+behaves like a PlanarArrayContainer that has been internally chopped
+up into as many cells as necessary, circumventing the array size
+limit? And given the large size, extra bonus if the file is lazily
+loaded, that is, each cell is loaded on demand from the large file on
+disk.
+
+>From some time ago I recall having heard or read that LOCI Bioformats
+can already read ROIs from images in disk. Is that right? If you could
+point me to an example that would b appreciated.
+
+What motivated the above is that we are currently dealing with 32k x
+32k 16-bit images, which we had to cut into tiles. And larger images
+are bound to come.
+
+Albert
+
+-- 
+http://albert.rierol.net
+http://www.ini.uzh.ch/~acardona/
+
+
+
+From afraser at broadinstitute.org  Mon Oct 17 11:37:02 2011
+From: afraser at broadinstitute.org (Adam Fraser)
+Date: Mon, 17 Oct 2011 12:37:02 -0400
+Subject: [ImageJ-devel] image for the about dialog
+Message-ID: <CANCtz6cO3Gd2k5cfbz8GoT9a=E5M-wWeWkjvEsYVRxBbTjh-OQ@mail.gmail.com>
+
+Hi all,
+
+I'm looking for a sexy image to use in the background of the new 2.0 about
+dialog. Preferably a visually interesting, high magnification image of a
+cell or cells. Is there anyone out there who might want to donate such an
+image to the project?
+
+Attached is the ImageJ1.0 about image. Notes: (1) YAY! Beautiful colors! and
+(2) LAME! Horrific jpeg and scaling artifacts!
+
+-Adam
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20111017/e1a53142/attachment.html>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: Screen shot 2011-10-17 at 12.32.50 PM.png
+Type: image/png
+Size: 48006 bytes
+Desc: not available
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20111017/e1a53142/attachment.png>
+
+From eliceiri at wisc.edu  Tue Oct 18 07:34:34 2011
+From: eliceiri at wisc.edu (Kevin W Eliceiri)
+Date: Tue, 18 Oct 2011 07:34:34 -0500
+Subject: [ImageJ-devel] image for the about dialog
+In-Reply-To: <CANCtz6cO3Gd2k5cfbz8GoT9a=E5M-wWeWkjvEsYVRxBbTjh-OQ@mail.gmail.com>
+References: <CANCtz6cO3Gd2k5cfbz8GoT9a=E5M-wWeWkjvEsYVRxBbTjh-OQ@mail.gmail.com>
+Message-ID: <75a09a262398c.4e9d2c0a@wiscmail.wisc.edu>
+
+Hi Adam,
+
+here a few quick candidates
+
+
+best
+kevin
+
+On 10/17/11, Adam Fraser   wrote:
+> Hi all,
+> 
+> I&#39;m looking for a sexy image to use in the background of the new 2.0 about dialog. Preferably a visually interesting, high magnification image of a cell or cells. Is there anyone out there who might want to donate such an image to the project?
+> 
+> 
+> 
+> 
+> 
+> 
+> Attached is the ImageJ1.0 about image. Notes: (1) YAY! Beautiful colors! and (2) LAME! Horrific jpeg and scaling artifacts!
+> 
+> 
+> -Adam
+> 
+> 
+> 
+> 
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+
+--
+Kevin W. Eliceiri
+Director and Principal Investigator
+Laboratory for Optical and Computational Instrumentation (LOCI)
+http://www.loci.wisc.edu
+Departments of Molecular Biology and Biomedical Engineering
+Affiliate Investigator, Morgridge Institute for Research (MIR)
+Room 271 Animal Sciences
+1675 Observatory Drive
+Madison, WI 53706
+Phone: 608-263-6288
+Fax: 608-262-4570
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: collagentumorg.tiff
+Type: image/tiff
+Size: 1052492 bytes
+Desc: not available
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20111018/a6b941d3/attachment.tiff>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: NMJBanner970x200.jpg
+Type: image/jpeg
+Size: 43360 bytes
+Desc: not available
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20111018/a6b941d3/attachment.jpg>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: cells.jpg
+Type: image/jpeg
+Size: 110593 bytes
+Desc: not available
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20111018/a6b941d3/attachment-0001.jpg>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: histospectral.jpg
+Type: image/jpeg
+Size: 242671 bytes
+Desc: not available
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20111018/a6b941d3/attachment-0002.jpg>
+
+From sapristi at gmail.com  Tue Oct 18 09:33:27 2011
+From: sapristi at gmail.com (Albert Cardona)
+Date: Tue, 18 Oct 2011 16:33:27 +0200
+Subject: [ImageJ-devel] image for the about dialog
+In-Reply-To: <75a09a262398c.4e9d2c0a@wiscmail.wisc.edu>
+References: <CANCtz6cO3Gd2k5cfbz8GoT9a=E5M-wWeWkjvEsYVRxBbTjh-OQ@mail.gmail.com>
+	<75a09a262398c.4e9d2c0a@wiscmail.wisc.edu>
+Message-ID: <CAJj13_99aqz6VaS30rk1YKMhpvbYHGLyZujsc7ZMzFnb1wLr6g@mail.gmail.com>
+
+Will this call be open for a while?
+
+We have nice candidate images which I cannot access at the moment.
+Will do in less than 2 weeks.
+
+Albert
+
+
+-- 
+http://albert.rierol.net
+http://www.ini.uzh.ch/~acardona/
+
+
+
+From ctrueden at wisc.edu  Tue Oct 18 09:40:20 2011
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Tue, 18 Oct 2011 09:40:20 -0500
+Subject: [ImageJ-devel] image for the about dialog
+In-Reply-To: <CAJj13_99aqz6VaS30rk1YKMhpvbYHGLyZujsc7ZMzFnb1wLr6g@mail.gmail.com>
+References: <CANCtz6cO3Gd2k5cfbz8GoT9a=E5M-wWeWkjvEsYVRxBbTjh-OQ@mail.gmail.com>
+	<75a09a262398c.4e9d2c0a@wiscmail.wisc.edu>
+	<CAJj13_99aqz6VaS30rk1YKMhpvbYHGLyZujsc7ZMzFnb1wLr6g@mail.gmail.com>
+Message-ID: <CADN69ynjDCWttoADxjbiSz-2NVshCxo48kQuu=DO1mLBtZ5n3w@mail.gmail.com>
+
+Hi Albert,
+
+Will this call be open for a while?
+>
+
+Sure, we can start with a placeholder image and switch to a better one any
+time before the release. There's nothing to say we can't update the image
+between beta releases either, so no rush on it. We could even have the About
+dialog choose a random image from a pool (as long as we keep the JAR size
+small). Before December would be best though.
+
+Thanks,
+Curtis
+
+
+On Tue, Oct 18, 2011 at 9:33 AM, Albert Cardona <sapristi at gmail.com> wrote:
+
+> Will this call be open for a while?
+>
+> We have nice candidate images which I cannot access at the moment.
+> Will do in less than 2 weeks.
+>
+> Albert
+>
+>
+> --
+> http://albert.rierol.net
+> http://www.ini.uzh.ch/~acardona/
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20111018/d61fc59c/attachment.html>
+
+From eliceiri at wisc.edu  Tue Oct 18 11:20:11 2011
+From: eliceiri at wisc.edu (Kevin Eliceiri)
+Date: Tue, 18 Oct 2011 11:20:11 -0500
+Subject: [ImageJ-devel] image for the about dialog
+In-Reply-To: <CADN69ynjDCWttoADxjbiSz-2NVshCxo48kQuu=DO1mLBtZ5n3w@mail.gmail.com>
+References: <CANCtz6cO3Gd2k5cfbz8GoT9a=E5M-wWeWkjvEsYVRxBbTjh-OQ@mail.gmail.com>
+	<75a09a262398c.4e9d2c0a@wiscmail.wisc.edu>
+	<CAJj13_99aqz6VaS30rk1YKMhpvbYHGLyZujsc7ZMzFnb1wLr6g@mail.gmail.com>
+	<CADN69ynjDCWttoADxjbiSz-2NVshCxo48kQuu=DO1mLBtZ5n3w@mail.gmail.com>
+Message-ID: <4E9DA73B.6050907@wisc.edu>
+
+> Hi Albert,
+>
+>     Will this call be open for a while?
+>
+>
+> Sure, we can start with a placeholder image and switch to a better one 
+> any time before the release. There's nothing to say we can't update 
+> the image between beta releases either, so no rush on it. We could 
+> even have the About dialog choose a random image from a pool (as long 
+> as we keep the JAR size small). Before December would be best though.
+>
+> Thanks,
+> Curtis
+>
+>
+> On Tue, Oct 18, 2011 at 9:33 AM, Albert Cardona <sapristi at gmail.com 
+> <mailto:sapristi at gmail.com>> wrote:
+>
+>     Will this call be open for a while?
+>
+>     We have nice candidate images which I cannot access at the moment.
+>     Will do in less than 2 weeks.
+>
+>     Albert
+>
+>
+>     --
+>     http://albert.rierol.net
+>     http://www.ini.uzh.ch/~acardona/ <http://www.ini.uzh.ch/%7Eacardona/>
+>
+>
+Yes, we can use some now as placeholder, and I really like the idea of 
+rotating through them as in spirit of project to represent multiple groups.
+
+best
+k
+
+-- 
+Kevin Eliceiri
+Director
+Laboratory for Optical and Computational Instrumentation
+http://www.loci.wisc.edu
+Room 271 Animal Sciences
+1675 Observatory Drive
+Madison, WI 53706
+Phone: 608-263-6288
+Fax: 608-262-4570
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20111018/ac29087e/attachment.html>
+
+From gharris at mbl.edu  Tue Oct 18 16:25:24 2011
+From: gharris at mbl.edu (Grant B. Harris)
+Date: Tue, 18 Oct 2011 17:25:24 -0400
+Subject: [ImageJ-devel] Hackathons getting a name.
+Message-ID: <4E9DEEC4.6020800@mbl.edu>
+
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20111018/4e69cd9f/attachment.html>
+
+From melissa at glencoesoftware.com  Tue Oct 18 16:41:14 2011
+From: melissa at glencoesoftware.com (Melissa Linkert)
+Date: Tue, 18 Oct 2011 17:41:14 -0400
+Subject: [ImageJ-devel] [fiji-devel] reading images larger than signed
+	int max value
+In-Reply-To: <CAJj13_8sxOCQ-XtbzvLX2TnxB9rbP9yuq0ays+ya9Ssz7P_GmQ@mail.gmail.com>
+References: <CAJj13_8sxOCQ-XtbzvLX2TnxB9rbP9yuq0ays+ya9Ssz7P_GmQ@mail.gmail.com>
+Message-ID: <20111018214114.GG4142@medusa>
+
+Hi Albert,
+
+> Thoughts on large files. ImageJ 1 cannot open images larger than the
+> maximum signed int value, but there is no reason why ImageJ 2
+> shouldn't be able to.
+> 
+> Are you guys planning for imglib2 on a PlanarCellContainer that
+> behaves like a PlanarArrayContainer that has been internally chopped
+> up into as many cells as necessary, circumventing the array size
+> limit? And given the large size, extra bonus if the file is lazily
+> loaded, that is, each cell is loaded on demand from the large file on
+> disk.
+
+I won't pretend to know anything about imglib, but for what it's
+worth it is possible to read small tiles from images using Bio-Formats (as you
+likely already know).  See this method in IFormatReader:
+
+http://git.openmicroscopy.org/?p=bioformats.git;a=blob;f=components/bio-formats/src/loci/formats/IFormatReader.java#l236
+
+Unless the whole image is compressed as a single stream, opening a
+small tile will not cause the entire image to be read.
+
+> From some time ago I recall having heard or read that LOCI Bioformats
+> can already read ROIs from images in disk. Is that right? If you could
+> point me to an example that would b appreciated.
+
+Bio-Formats can read ROIs stored in some file formats, e.g. Zeiss LSM.
+A brand new example of how to work with the parsed ROIs is available here:
+
+http://git.openmicroscopy.org/?p=bioformats.git;a=blob;f=components/bio-formats/utils/PrintROIs.java
+
+See also loci.plugins.util.ROIHandler, which translates ROIs read using
+Bio-Formats into ImageJ ROIs:
+
+http://git.openmicroscopy.org/?p=bioformats.git;a=blob;f=components/loci-plugins/src/loci/plugins/util/ROIHandler.java
+
+In writing the example I remembered just how painful it is to work with
+ROIs using the current API, so if either of those examples is unclear
+please let me know.
+
+Regards,
+-Melissa
+
+On Sat, Oct 15, 2011 at 12:53:14AM +0200, Albert Cardona wrote:
+> Melissa, Curtis, Johannes,
+> 
+> Thoughts on large files. ImageJ 1 cannot open images larger than the
+> maximum signed int value, but there is no reason why ImageJ 2
+> shouldn't be able to.
+> 
+> Are you guys planning for imglib2 on a PlanarCellContainer that
+> behaves like a PlanarArrayContainer that has been internally chopped
+> up into as many cells as necessary, circumventing the array size
+> limit? And given the large size, extra bonus if the file is lazily
+> loaded, that is, each cell is loaded on demand from the large file on
+> disk.
+> 
+> From some time ago I recall having heard or read that LOCI Bioformats
+> can already read ROIs from images in disk. Is that right? If you could
+> point me to an example that would b appreciated.
+> 
+> What motivated the above is that we are currently dealing with 32k x
+> 32k 16-bit images, which we had to cut into tiles. And larger images
+> are bound to come.
+> 
+> Albert
+> 
+> -- 
+> http://albert.rierol.net
+> http://www.ini.uzh.ch/~acardona/
+> 
+> -- 
+> You received this message because you are subscribed to the Google Groups "Fiji-devel" group.
+> To post to this group, send email to fiji-devel at googlegroups.com.
+> To unsubscribe from this group, send email to fiji-devel+unsubscribe at googlegroups.com.
+> For more options, visit this group at http://groups.google.com/group/fiji-devel?hl=en.
+> 
+
+
+
+From christophe.leterrier at gmail.com  Wed Oct 19 03:34:13 2011
+From: christophe.leterrier at gmail.com (Christophe Leterrier)
+Date: Wed, 19 Oct 2011 10:34:13 +0200
+Subject: [ImageJ-devel] Candidates images for the "about ImageJ" dialog
+Message-ID: <CALmP0ELdTw2R6C6d1pUXQ8ujAc0jHZqk7HHjYcYF=7j90VuFMg@mail.gmail.com>
+
+Hi,
+
+Fist I'd like to introduce me as it is my first post here... Cellular
+neurobiologist, interested in microscopy, long-time ImageJ user (member of
+ImageJ and Fiji mailing lists), macro programmer. Unfortunately still Java
+illiterate (though I'm planning to learn), so I can't contribute to
+technical discussion nor really participate in IJ2 dev.
+
+Anyway I've stumbled upon the ImageJ-devel post for new "About" images in
+IJ2, so I thought maybe I could at least contribute something. Here are two
+candidates that ressemble the original IJ image. These are COS cells in
+culture, labeled for nucleus (DAPI), microtubules (alpha-tubulin) and
+microtubule plus ends (EB3). This are quite large so a crop is definitely
+possible.
+
+First image:
+http://www.cleterrier.net/up/IJ2_AboutImage1.png
+
+Second image:
+http://www.cleterrier.net/up/IJ2_AboutImage2.png
+
+By the way, maybe having several image and choosing one of them when calling
+"About..." would help reflect the diversity of applications for ImageJ. Or
+even better, a rotating image background (although I have no idea how
+complicated it is to implement). As an exemple and a bit of a shameless
+plug, on my personal website I have a randomly-rotating banner picture
+showing some microscopy images: http://www.cleterrier.net/ (reload the page
+to change the banner picture).
+
+Cheers,
+
+Christophe
+
+--
+Christophe Leterrier
+INSERM UMR641 Neurobiology of ionic channels (Michael Seagar)
+Ionic channels and neuronal polarity team (B?n?dicte Dargent)
+IFR Jean Roche - Mediterranee University
+51, bd Pierre Dramard 13916 Marseille cedex 20 France
+http://ifrjr.nord.univ-mrs.fr/-Institut-Jean-Roche-?lang=en
+
+tel: (33) 4 91 69 89 30
+fax: (33) 4 91 09 05 06
+email: christophe.leterrier at univmed.fr
+http://www.cleterrier.net
+http://fr.linkedin.com/in/cleterrier
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20111019/bcda0a42/attachment.html>
+
+From G.Landini at bham.ac.uk  Wed Oct 19 03:40:11 2011
+From: G.Landini at bham.ac.uk (Gabriel Landini)
+Date: Wed, 19 Oct 2011 09:40:11 +0100
+Subject: [ImageJ-devel] Candidates images for the "about ImageJ" dialog
+In-Reply-To: <CALmP0ELdTw2R6C6d1pUXQ8ujAc0jHZqk7HHjYcYF=7j90VuFMg@mail.gmail.com>
+References: <CALmP0ELdTw2R6C6d1pUXQ8ujAc0jHZqk7HHjYcYF=7j90VuFMg@mail.gmail.com>
+Message-ID: <201110190940.11070.G.Landini@bham.ac.uk>
+
+On Wednesday 19 Oct 2011 09:34:13 Christophe Leterrier wrote:
+
+> First image:
+> http://www.cleterrier.net/up/IJ2_AboutImage1.png
+
+L'acc?s au fichier requiert une autorisation.
+
+
+G.
+
+
+
+From christophe.leterrier at gmail.com  Wed Oct 19 03:45:47 2011
+From: christophe.leterrier at gmail.com (Christophe Leterrier)
+Date: Wed, 19 Oct 2011 10:45:47 +0200
+Subject: [ImageJ-devel] Fwd: Candidates images for the "about ImageJ" dialog
+In-Reply-To: <CALmP0EJ5UiJFJCM0ELuJjyuBjw075DbGk4hcLR30hGDtU0VMuw@mail.gmail.com>
+References: <CALmP0ELdTw2R6C6d1pUXQ8ujAc0jHZqk7HHjYcYF=7j90VuFMg@mail.gmail.com>
+	<201110190940.11070.G.Landini@bham.ac.uk>
+	<CALmP0EJ5UiJFJCM0ELuJjyuBjw075DbGk4hcLR30hGDtU0VMuw@mail.gmail.com>
+Message-ID: <CALmP0E+DzkdhTyOL0KjOepJMsCzMDh7oF3cfD72cER3xpMrOTQ@mail.gmail.com>
+
+Thanks for the warning! Fixed the permissions, should be OK now.
+
+C
+
+
+2011/10/19 Gabriel Landini <G.Landini at bham.ac.uk>
+
+> On Wednesday 19 Oct 2011 09:34:13 Christophe Leterrier wrote:
+>
+> > First image:
+> > http://www.cleterrier.net/up/IJ2_AboutImage1.png
+>
+> L'acc?s au fichier requiert une autorisation.
+>
+>
+> G.
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20111019/be3a0744/attachment.html>
+
+From G.Landini at bham.ac.uk  Wed Oct 19 04:04:16 2011
+From: G.Landini at bham.ac.uk (Gabriel Landini)
+Date: Wed, 19 Oct 2011 10:04:16 +0100
+Subject: [ImageJ-devel] Candidates images for the "about ImageJ" dialog
+In-Reply-To: <CALmP0ELdTw2R6C6d1pUXQ8ujAc0jHZqk7HHjYcYF=7j90VuFMg@mail.gmail.com>
+References: <CALmP0ELdTw2R6C6d1pUXQ8ujAc0jHZqk7HHjYcYF=7j90VuFMg@mail.gmail.com>
+Message-ID: <201110191004.16263.G.Landini@bham.ac.uk>
+
+Some ideas about the "about" image. In Fibonacci order:
+
+1. What about making this an open contest and advertise a bit mode widely it 
+in the IJ and Fiji lists perhaps?, rather than IJ-devel only? 
+We might otherwise be missing lots of interesting stuff. 
+Also that would it make people feel a bit more interested  in the development 
+of IJ2.
+
+2. Relax the theme and let's see what other images than cells people submit. 
+
+3. I also think that we would want to see what the images would look like at 
+the intended resolution of the about window, so I suggest the images should be 
+submitted at that size, reduced or cropped to avoid disappointment when 
+reducing them (and detail being lost) or scaling artifacts.
+Maybe this can be done in some of the wikis (the Tudor one has, I think, a 
+plugin (?) for polls that might be possible to adapt to this?).
+
+5. There are lots of interesting and beautiful images for which it would be 
+difficult or impossible to read any text overwritten on them, so an idea would 
+be to use the images with an artificial darkening horizontal gradient or 
+similar so the text is readable.
+
+8. I like the idea of various images alternating or randomly used for this, so 
+perhaps there could be a pool of sample images to choose from at run time. If 
+space is an issue, when the about samples folder is not existent or empty the 
+about window could use just a default image stored in the jar file or a blank 
+frame.
+
+Cheers 
+Gabriel
+
+
+
+
+From eliceiri at wisc.edu  Wed Oct 19 06:47:23 2011
+From: eliceiri at wisc.edu (Kevin W Eliceiri)
+Date: Wed, 19 Oct 2011 06:47:23 -0500
+Subject: [ImageJ-devel] Candidates images for the "about ImageJ" dialog
+In-Reply-To: <201110191004.16263.G.Landini@bham.ac.uk>
+References: <CALmP0ELdTw2R6C6d1pUXQ8ujAc0jHZqk7HHjYcYF=7j90VuFMg@mail.gmail.com>
+	<201110191004.16263.G.Landini@bham.ac.uk>
+Message-ID: <7720ffd1254f6.4e9e727b@wiscmail.wisc.edu>
+
+Hi Gabriel,
+
+These are great ideas, and we will definitely explore having some sort of rotating image to best represent the diverse use of the community. I really like that. ?However that will happen later after ImageJ2 is released as non-beta and hardened in regular use. At this point we just need a few images to put in there as a place holder for the first release.
+
+
+best
+kevin
+
+On 10/19/11, Gabriel Landini   wrote:
+> Some ideas about the "about" image. In Fibonacci order:
+> 
+> 1. What about making this an open contest and advertise a bit mode widely it 
+> in the IJ and Fiji lists perhaps?, rather than IJ-devel only? 
+> We might otherwise be missing lots of interesting stuff. 
+> Also that would it make people feel a bit more interested  in the development 
+> of IJ2.
+> 
+> 2. Relax the theme and let's see what other images than cells people submit. 
+> 
+> 3. I also think that we would want to see what the images would look like at 
+> the intended resolution of the about window, so I suggest the images should be 
+> submitted at that size, reduced or cropped to avoid disappointment when 
+> reducing them (and detail being lost) or scaling artifacts.
+> Maybe this can be done in some of the wikis (the Tudor one has, I think, a 
+> plugin (?) for polls that might be possible to adapt to this?).
+> 
+> 5. There are lots of interesting and beautiful images for which it would be 
+> difficult or impossible to read any text overwritten on them, so an idea would 
+> be to use the images with an artificial darkening horizontal gradient or 
+> similar so the text is readable.
+> 
+> 8. I like the idea of various images alternating or randomly used for this, so 
+> perhaps there could be a pool of sample images to choose from at run time. If 
+> space is an issue, when the about samples folder is not existent or empty the 
+> about window could use just a default image stored in the jar file or a blank 
+> frame.
+> 
+> Cheers 
+> Gabriel
+> 
+> 
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+
+--
+Kevin W. Eliceiri
+Director and Principal Investigator
+Laboratory for Optical and Computational Instrumentation (LOCI)
+http://www.loci.wisc.edu
+Departments of Molecular Biology and Biomedical Engineering
+Affiliate Investigator, Morgridge Institute for Research (MIR)
+Room 271 Animal Sciences
+1675 Observatory Drive
+Madison, WI 53706
+Phone: 608-263-6288
+Fax: 608-262-4570
+
+
+
+From afraser at broadinstitute.org  Wed Oct 19 09:26:32 2011
+From: afraser at broadinstitute.org (Adam Fraser)
+Date: Wed, 19 Oct 2011 10:26:32 -0400
+Subject: [ImageJ-devel] Candidates images for the "about ImageJ" dialog
+In-Reply-To: <7720ffd1254f6.4e9e727b@wiscmail.wisc.edu>
+References: <CALmP0ELdTw2R6C6d1pUXQ8ujAc0jHZqk7HHjYcYF=7j90VuFMg@mail.gmail.com>
+	<201110191004.16263.G.Landini@bham.ac.uk>
+	<7720ffd1254f6.4e9e727b@wiscmail.wisc.edu>
+Message-ID: <CANCtz6eAfyCj0Kow42pHvheMhdWshttVveudPep4i5+-s3eyHQ@mail.gmail.com>
+
+Another idea would be to design the dialog in a way that it can use a
+rotation of images.
+
+On Wed, Oct 19, 2011 at 7:47 AM, Kevin W Eliceiri <eliceiri at wisc.edu> wrote:
+
+> Hi Gabriel,
+>
+> These are great ideas, and we will definitely explore having some sort of
+> rotating image to best represent the diverse use of the community. I really
+> like that.  However that will happen later after ImageJ2 is released as
+> non-beta and hardened in regular use. At this point we just need a few
+> images to put in there as a place holder for the first release.
+>
+>
+> best
+> kevin
+>
+> On 10/19/11, Gabriel Landini   wrote:
+> > Some ideas about the "about" image. In Fibonacci order:
+> >
+> > 1. What about making this an open contest and advertise a bit mode widely
+> it
+> > in the IJ and Fiji lists perhaps?, rather than IJ-devel only?
+> > We might otherwise be missing lots of interesting stuff.
+> > Also that would it make people feel a bit more interested  in the
+> development
+> > of IJ2.
+> >
+> > 2. Relax the theme and let's see what other images than cells people
+> submit.
+> >
+> > 3. I also think that we would want to see what the images would look like
+> at
+> > the intended resolution of the about window, so I suggest the images
+> should be
+> > submitted at that size, reduced or cropped to avoid disappointment when
+> > reducing them (and detail being lost) or scaling artifacts.
+> > Maybe this can be done in some of the wikis (the Tudor one has, I think,
+> a
+> > plugin (?) for polls that might be possible to adapt to this?).
+> >
+> > 5. There are lots of interesting and beautiful images for which it would
+> be
+> > difficult or impossible to read any text overwritten on them, so an idea
+> would
+> > be to use the images with an artificial darkening horizontal gradient or
+> > similar so the text is readable.
+> >
+> > 8. I like the idea of various images alternating or randomly used for
+> this, so
+> > perhaps there could be a pool of sample images to choose from at run
+> time. If
+> > space is an issue, when the about samples folder is not existent or empty
+> the
+> > about window could use just a default image stored in the jar file or a
+> blank
+> > frame.
+> >
+> > Cheers
+> > Gabriel
+> >
+> >
+> > _______________________________________________
+> > ImageJ-devel mailing list
+> > ImageJ-devel at imagejdev.org
+> > http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+> --
+> Kevin W. Eliceiri
+> Director and Principal Investigator
+> Laboratory for Optical and Computational Instrumentation (LOCI)
+> http://www.loci.wisc.edu
+> Departments of Molecular Biology and Biomedical Engineering
+> Affiliate Investigator, Morgridge Institute for Research (MIR)
+> Room 271 Animal Sciences
+> 1675 Observatory Drive
+> Madison, WI 53706
+> Phone: 608-263-6288
+> Fax: 608-262-4570
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20111019/f2370da3/attachment.html>
+
+From jason at lifesci.dundee.ac.uk  Wed Oct 19 10:02:12 2011
+From: jason at lifesci.dundee.ac.uk (Jason Swedlow)
+Date: Wed, 19 Oct 2011 16:02:12 +0100
+Subject: [ImageJ-devel] Release of OMERO 4.3.3
+Message-ID: <27AF2D10-9E1A-425C-A2F9-7D61BA4345E6@lifesci.dundee.ac.uk>
+
+Dear All-
+
+Today, The OME Consortium (http://openmicroscopy.org/site/about/development-teams), is proud to release OMERO-Beta4.3.3.
+
+This is a point release, focussing on fixes for ImageJ integration, export, and LDAP.   We also fixed a few things in OMERO.insight and OMERO.web.  
+
+Full details are available at http://trac.openmicroscopy.org.uk/ome/milestone/OMERO-Beta4.3.3
+
+The software is available at http://openmicroscopy.org
+
+For those of you new to OMERO, see  http://www.openmicroscopy.org/site/products/omero
+
+The full list of features in OMERO, including new features in OMERO Beta4.3.3, is at 
+
+http://openmicroscopy.org/site/products/feature-list
+
+Much of our work over the last few weeks has been devoted to updating the (very popular!!!) movies demo'ing OMERO functionality on that page.  Most are updated for 4.3.2, and won't have changed in 4.3.3-- we hope you like them.  Any problems, do let us know.
+
+Our thanks to a number of posts on our forums that picked up bugs and problems in 4.3.2.  We prioritise addressing these community issues.  The 4.3.3 page lists the reports, and the fixes we've done.  
+
+*******************************
+
+The OME Team is now hard at work on our next release, provisionally titled OMERO Beta4.4.  Confusingly, these are currently in a different milestone:
+
+http://trac.openmicroscopy.org.uk/ome/milestone/OMERO-Beta4.4
+
+We'll get this all resolved over the next few days.  However, the overall theme here is important to note-- integration with other projects will be our focus over the next many months.  In 4.4, we want to have a solid foundation for this integration for us, and others.
+
+Comments and ideas are welcome, on the Forums or on these lists.
+
+In collaboration with Urban Liebel at  Karlsruhe Institute of Technology, we are providing demo accounts for OMERO.  Use the Demo link at openmicroscopy.org to contact us if you are interested in this.
+
+Our feedback system, OMERO.qa (http://qa.openmicroscopy.org.uk) is a facility users and developers can use to log comments and exceptions.  OMERO.qa supports uploading of problematic data files, and tracking of responses to any user queries.  
+
+As always, thanks for your support.
+
+Cheers,
+
+Jason
+
+
+**************************
+Wellcome Trust Centre for Gene Regulation & Expression
+College of Life Sciences
+MSI/WTB/JBC Complex
+University of Dundee
+Dow Street
+Dundee  DD1 5EH
+United Kingdom
+
+phone (01382) 385819
+Intl phone:  44 1382 385819 
+FAX   (01382) 388072 
+email: jason at lifesci.dundee.ac.uk
+
+Lab Page: http://gre.lifesci.dundee.ac.uk/staff/jason_swedlow.html
+Open Microscopy Environment: http://openmicroscopy.org
+**************************
+
+The University of Dundee is a Scottish Registered Charity, No. SC015096.
+
+
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20111019/c264068f/attachment.html>
+
+From schindelin at wisc.edu  Wed Oct 19 12:50:56 2011
+From: schindelin at wisc.edu (Johannes Schindelin)
+Date: Wed, 19 Oct 2011 12:50:56 -0500 (CDT)
+Subject: [ImageJ-devel] Candidates images for the "about ImageJ" dialog
+In-Reply-To: <201110191004.16263.G.Landini@bham.ac.uk>
+References: <CALmP0ELdTw2R6C6d1pUXQ8ujAc0jHZqk7HHjYcYF=7j90VuFMg@mail.gmail.com>
+	<201110191004.16263.G.Landini@bham.ac.uk>
+Message-ID: <alpine.DEB.1.00.1110191249190.32316@s15462909.onlinehome-server.info>
+
+Hi Gabriel,
+
+On Wed, 19 Oct 2011, Gabriel Landini wrote:
+
+> 5. There are lots of interesting and beautiful images for which it would 
+>    be difficult or impossible to read any text overwritten on them, so 
+>    an idea would be to use the images with an artificial darkening 
+>    horizontal gradient or similar so the text is readable.
+
+You mean something like this Beanshell, right?
+
+-- snipsnap --
+imp = IJ.getImage();
+width = imp.getWidth();
+height = imp.getHeight();
+
+text = "ImageJ2\n"
+	+ "Extensible and robust image processing\n"
+	+ "at your fingertips";
+ip = new ByteProcessor(width, height);
+ip.setColor(java.awt.Color.WHITE);
+ip.drawString(text, 10, 20);
+ip.invert();
+
+ip2 = ip.duplicate();
+ip2.dilate();
+
+stack = new ImagePlus("", ip2).getStack();
+mask = new fiji.process3d.EDT().compute(stack).getProcessor();
+for (j = 0; j < height; j++)
+	for (i = 0; i < width; i++) {
+		value = mask.getf(i, j);
+		// transform smoothly so that 0 is still 0
+		// but large values are 1, so we can multiply the
+		// original image with said value
+		if (value >= 20)
+			value = 1;
+		else
+			value = Math.sin(value * Math.PI / 2 / 20);
+		mask.setf(i, j, (float)value);
+	}
+
+// blending routine
+blend(ip3) {
+	for (j = 0; j < height; j++)
+		for (i = 0; i < width; i++) {
+			if (ip.getf(i, j) != 0 && ip2.getf(i, j) == 0)
+				ip3.setf(i, j, 255);
+			else
+				ip3.setf(i, j, ip3.getf(i, j)
+					* mask.getf(i, j));
+		}
+}
+
+// blend in the text into the original image
+ip3 = imp.getProcessor().duplicate();
+if (ip3 instanceof ColorProcessor) {
+	red = new byte[width * height];
+	green = new byte[width * height];
+	blue = new byte[width * height];
+	ip3.getRGB(red, green, blue);
+	blend(new ByteProcessor(width, height, red, null));
+	blend(new ByteProcessor(width, height, green, null));
+	blend(new ByteProcessor(width, height, blue, null));
+	ip3.setRGB(red, green, blue);
+}
+else
+	blend(ip3);
+
+new ImagePlus("About ImageJ2", ip3).show();
+
+
+
+From G.Landini at bham.ac.uk  Wed Oct 19 17:30:43 2011
+From: G.Landini at bham.ac.uk (Gabriel Landini)
+Date: Wed, 19 Oct 2011 23:30:43 +0100
+Subject: [ImageJ-devel] Candidates images for the "about ImageJ" dialog
+In-Reply-To: <alpine.DEB.1.00.1110191249190.32316@s15462909.onlinehome-server.info>
+References: <CALmP0ELdTw2R6C6d1pUXQ8ujAc0jHZqk7HHjYcYF=7j90VuFMg@mail.gmail.com>
+	<201110191004.16263.G.Landini@bham.ac.uk>
+	<alpine.DEB.1.00.1110191249190.32316@s15462909.onlinehome-server.info>
+Message-ID: <201110192330.43715.G.Landini@bham.ac.uk>
+
+On Wednesday 19 Oct 2011 18:50:56 Dscho wrote:
+> You mean something like this Beanshell, right?
+
+Yes that effect looks nice (the font is not very readable though).
+Maybe one can just operate on the image with an already antialiased text with 
+the shadow. That should be quicker?
+
+Cheers
+
+Gabriel
+
+
+
+From schindelin at wisc.edu  Wed Oct 19 18:31:18 2011
+From: schindelin at wisc.edu (Johannes Schindelin)
+Date: Wed, 19 Oct 2011 18:31:18 -0500 (CDT)
+Subject: [ImageJ-devel] Candidates images for the "about ImageJ" dialog
+In-Reply-To: <201110192330.43715.G.Landini@bham.ac.uk>
+References: <CALmP0ELdTw2R6C6d1pUXQ8ujAc0jHZqk7HHjYcYF=7j90VuFMg@mail.gmail.com>
+	<201110191004.16263.G.Landini@bham.ac.uk>
+	<alpine.DEB.1.00.1110191249190.32316@s15462909.onlinehome-server.info>
+	<201110192330.43715.G.Landini@bham.ac.uk>
+Message-ID: <alpine.DEB.1.00.1110191830420.32316@s15462909.onlinehome-server.info>
+
+Hi Gabriel,
+
+On Wed, 19 Oct 2011, Gabriel Landini wrote:
+
+> On Wednesday 19 Oct 2011 18:50:56 Dscho wrote:
+> > You mean something like this Beanshell, right?
+> 
+> Yes that effect looks nice (the font is not very readable though). Maybe 
+> one can just operate on the image with an already antialiased text with 
+> the shadow. That should be quicker?
+
+I just wanted to say that the readability is a solvable problem.
+
+Ciao,
+Dscho
+
+
+
+From ctrueden at wisc.edu  Thu Oct 20 22:36:15 2011
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Thu, 20 Oct 2011 22:36:15 -0500
+Subject: [ImageJ-devel] Candidates images for the "about ImageJ" dialog
+In-Reply-To: <201110191004.16263.G.Landini@bham.ac.uk>
+References: <CALmP0ELdTw2R6C6d1pUXQ8ujAc0jHZqk7HHjYcYF=7j90VuFMg@mail.gmail.com>
+	<201110191004.16263.G.Landini@bham.ac.uk>
+Message-ID: <CADN69ynq_iWbVyVfdvg1Ng3eUGdhMpGUmVab3-AWsVyC93mOcQ@mail.gmail.com>
+
+Hi Gabriel,
+
+Some ideas about the "about" image.
+>
+
+I agree with all of your ideas, and have filed a ticket about it:
+  http://dev.imagejdev.org/trac/imagej/ticket/841
+
+For now I assigned it to the 2.0 final release milestone.
+
+Regards,
+Curtis
+
+
+On Wed, Oct 19, 2011 at 4:04 AM, Gabriel Landini <G.Landini at bham.ac.uk>wrote:
+
+> Some ideas about the "about" image. In Fibonacci order:
+>
+> 1. What about making this an open contest and advertise a bit mode widely
+> it
+> in the IJ and Fiji lists perhaps?, rather than IJ-devel only?
+> We might otherwise be missing lots of interesting stuff.
+> Also that would it make people feel a bit more interested  in the
+> development
+> of IJ2.
+>
+> 2. Relax the theme and let's see what other images than cells people
+> submit.
+>
+> 3. I also think that we would want to see what the images would look like
+> at
+> the intended resolution of the about window, so I suggest the images should
+> be
+> submitted at that size, reduced or cropped to avoid disappointment when
+> reducing them (and detail being lost) or scaling artifacts.
+> Maybe this can be done in some of the wikis (the Tudor one has, I think, a
+> plugin (?) for polls that might be possible to adapt to this?).
+>
+> 5. There are lots of interesting and beautiful images for which it would be
+> difficult or impossible to read any text overwritten on them, so an idea
+> would
+> be to use the images with an artificial darkening horizontal gradient or
+> similar so the text is readable.
+>
+> 8. I like the idea of various images alternating or randomly used for this,
+> so
+> perhaps there could be a pool of sample images to choose from at run time.
+> If
+> space is an issue, when the about samples folder is not existent or empty
+> the
+> about window could use just a default image stored in the jar file or a
+> blank
+> frame.
+>
+> Cheers
+> Gabriel
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20111020/c0e284b3/attachment.html>
+
+From ctrueden at wisc.edu  Fri Oct 21 00:07:41 2011
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Fri, 21 Oct 2011 00:07:41 -0500
+Subject: [ImageJ-devel] [fiji-devel] reading images larger than signed
+	int max value
+In-Reply-To: <CAJj13_8sxOCQ-XtbzvLX2TnxB9rbP9yuq0ays+ya9Ssz7P_GmQ@mail.gmail.com>
+References: <CAJj13_8sxOCQ-XtbzvLX2TnxB9rbP9yuq0ays+ya9Ssz7P_GmQ@mail.gmail.com>
+Message-ID: <CADN69y=VpbjvfuChh4X_FUHsGG8K51nmHOShT2j-wEBB_RAiLQ@mail.gmail.com>
+
+Hi Albert,
+
+Thoughts on large files. ImageJ 1 cannot open images larger than the
+> maximum signed int value, but there is no reason why ImageJ 2
+> shouldn't be able to.
+>
+
+Absolutely. This has been a goal of IJ2 from the beginning. However, given
+the magnitude of the project, the first release will not provide a full
+solution. However, the architecture (i.e., ImgLib2) is in place for a full
+solution to be implemented in a reasonable time frame.
+
+Relevant tickets in our issue tracking system include:
+  http://dev.imagejdev.org/trac/imagej/ticket/19
+  http://dev.imagejdev.org/trac/imagej/ticket/216
+
+As Aivar notes in one of ticket #19's comments, he began development at the
+last Fiji hackathon on a tiled image viewer for
+ImageJ<http://dev.imagejdev.org/trac/imagej/browser/trunk/zoomviewer/src/imagej/display/zoomview>.
+We plan to pursue this capability further early next year.
+
+Are you guys planning for imglib2 on a PlanarCellContainer that
+> behaves like a PlanarArrayContainer that has been internally chopped
+> up into as many cells as necessary, circumventing the array size
+> limit? And given the large size, extra bonus if the file is lazily
+> loaded, that is, each cell is loaded on demand from the large file on
+> disk.
+>
+
+Yes, we don't have a ticket for it yet, but it is very similar to #216. We
+will definitely need to create an ImgLib2 cell container (of which a planar
+cell container is just a special case). It will be needed not only for
+tiling, but also for caching image processing operations on huge datasets in
+general. For example, you can currently open a 200GB dataset (e.g., 1024 x
+1024 x 100 focal planes x 1000 time points x 16-bit) as a virtual stack. But
+you can't easily process every plane with a plugin filter and then keep
+browsing the processed planes. With a cell container that caches out blocks
+to disk as needed, it would at least be possible, if slow. And this
+capability would make it easier to implement undo as well, since prior
+dataset states could be cached to and from disk in a similar way.
+
+Regards,
+Curtis
+
+
+On Fri, Oct 14, 2011 at 5:53 PM, Albert Cardona <sapristi at gmail.com> wrote:
+
+> Melissa, Curtis, Johannes,
+>
+> Thoughts on large files. ImageJ 1 cannot open images larger than the
+> maximum signed int value, but there is no reason why ImageJ 2
+> shouldn't be able to.
+>
+> Are you guys planning for imglib2 on a PlanarCellContainer that
+> behaves like a PlanarArrayContainer that has been internally chopped
+> up into as many cells as necessary, circumventing the array size
+> limit? And given the large size, extra bonus if the file is lazily
+> loaded, that is, each cell is loaded on demand from the large file on
+> disk.
+>
+> From some time ago I recall having heard or read that LOCI Bioformats
+> can already read ROIs from images in disk. Is that right? If you could
+> point me to an example that would b appreciated.
+>
+> What motivated the above is that we are currently dealing with 32k x
+> 32k 16-bit images, which we had to cut into tiles. And larger images
+> are bound to come.
+>
+> Albert
+>
+> --
+> http://albert.rierol.net
+> http://www.ini.uzh.ch/~acardona/
+>
+> --
+> You received this message because you are subscribed to the Google Groups
+> "Fiji-devel" group.
+> To post to this group, send email to fiji-devel at googlegroups.com.
+> To unsubscribe from this group, send email to
+> fiji-devel+unsubscribe at googlegroups.com.
+> For more options, visit this group at
+> http://groups.google.com/group/fiji-devel?hl=en.
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20111021/f4092339/attachment.html>
+
+From pol.kennel at gmail.com  Tue Oct 25 02:27:18 2011
+From: pol.kennel at gmail.com (Pol Kennel)
+Date: Tue, 25 Oct 2011 07:27:18 +0000 (UTC)
+Subject: [ImageJ-devel] =?utf-8?q?Invitation_=C3=A0_se_connecter_sur_Linke?=
+	=?utf-8?q?dIn?=
+Message-ID: <944967150.798288.1319527638042.JavaMail.app@ela4-app0131.prod>
+
+Imagejdev.org,
+
+J'aimerais vous inviter ? rejoindre mon r?seau professionnel en ligne, sur le site LinkedIn.
+
+Pol
+
+Pol  Kennel
+Doctorat at LIRMM
+Montpellier Area, France
+
+Confirm that you know Pol  Kennel:
+https://www.linkedin.com/e/-z432zq-gu6kopp3-3/isd/4679990795/JvtyGS6o/?hs=false&tok=1xZE_4VoG_AAY1
+
+--
+You are receiving Invitation to Connect emails. Click to unsubscribe:
+http://www.linkedin.com/e/-z432zq-gu6kopp3-3/gHCXnPo9_Djza05S4fFqTUo9_QbAaAlgsBsKk3nN/goo/imagej-devel%40imagejdev%2Eorg/20061/I1625496582_1/?hs=false&tok=1U_Dhwhwq_AAY1
+
+(c) 2011 LinkedIn Corporation. 2029 Stierlin Ct, Mountain View, CA 94043, USA.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20111025/72d559d0/attachment.html>
+
+From afraser at broadinstitute.org  Thu Oct 27 18:47:35 2011
+From: afraser at broadinstitute.org (Adam Fraser)
+Date: Thu, 27 Oct 2011 19:47:35 -0400
+Subject: [ImageJ-devel] new icons and logo
+Message-ID: <CANCtz6ferh3rrDgGjy0W-yH11X_BtzGXAP0MMfZ3R14et2=LEQ@mail.gmail.com>
+
+Hi all!
+
+Attached are the cleaned up versions of the icon and a jpg (for now) of the
+scope logo at about 512px. I'll make sure to send you guys all the sources
+later and I'll include a png on transparency of the larger version. Just
+wanted to get you something to look at.
+
+Cheers!
+Adam
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20111027/a3070740/attachment.html>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: logo_16.png
+Type: image/png
+Size: 3269 bytes
+Desc: not available
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20111027/a3070740/attachment.png>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: logo_32.png
+Type: image/png
+Size: 4006 bytes
+Desc: not available
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20111027/a3070740/attachment-0001.png>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: logo_64.png
+Type: image/png
+Size: 6074 bytes
+Desc: not available
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20111027/a3070740/attachment-0002.png>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: logo.jpg
+Type: image/jpeg
+Size: 77065 bytes
+Desc: not available
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20111027/a3070740/attachment.jpg>
+
+From G.Landini at bham.ac.uk  Fri Oct 28 03:23:33 2011
+From: G.Landini at bham.ac.uk (Gabriel Landini)
+Date: Fri, 28 Oct 2011 09:23:33 +0100
+Subject: [ImageJ-devel] new icons and logo
+In-Reply-To: <CANCtz6ferh3rrDgGjy0W-yH11X_BtzGXAP0MMfZ3R14et2=LEQ@mail.gmail.com>
+References: <CANCtz6ferh3rrDgGjy0W-yH11X_BtzGXAP0MMfZ3R14et2=LEQ@mail.gmail.com>
+Message-ID: <201110280923.33587.G.Landini@bham.ac.uk>
+
+On Friday 28 Oct 2011 00:47:35 Adam Fraser wrote:
+> Attached are the cleaned up versions of the icon and a jpg (for now) of the
+> scope logo at about 512px. I'll make sure to send you guys all the sources
+> later and I'll include a png on transparency of the larger version. Just
+> wanted to get you something to look at.
+
+Sorry to be critical, but the perspective seems to be wrong making the 
+microscope to look odd.
+
+If you one see both sides proximal and distal of the revolving piece, then one 
+cannot see the connection between the bronze and black tube as horizontal 
+lines. The perspective of the top and bottom do not match.
+
+What about using something like the image below, possibly converted to vector 
+graphics?
+
+http://www.arsmachina.com/images/watson1354-2.jpg
+
+Those are the same people from where Wayne used the image for IJ, and they 
+seemed to be OK being used. Maybe they can be approached again.
+
+Cheers
+
+Gabriel
+
+
+
+From ctrueden at wisc.edu  Fri Oct 28 10:11:51 2011
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Fri, 28 Oct 2011 10:11:51 -0500
+Subject: [ImageJ-devel] new icons and logo
+In-Reply-To: <201110280923.33587.G.Landini@bham.ac.uk>
+References: <CANCtz6ferh3rrDgGjy0W-yH11X_BtzGXAP0MMfZ3R14et2=LEQ@mail.gmail.com>
+	<201110280923.33587.G.Landini@bham.ac.uk>
+Message-ID: <CADN69y=FgrhGrrs4B-KyhH03yqAPy9Si4L6q_C9R_6BxCwxdUw@mail.gmail.com>
+
+Hi Gabriel,
+
+Sorry to be critical, but the perspective seems to be wrong making the
+> microscope to look odd.
+>
+
+The drawing is essentially verbatim from a photograph that Johannes & I
+took. See the gallery at:
+  https://www.dropbox.com/gallery/5695175/1//microscopes?h=a9095a
+
+Specifically, check out image 14 of 38.
+
+What about using something like the image below, possibly converted to
+> vector
+> graphics?
+>
+
+Unfortunately, Adam is leaving the team, and will not have time to develop
+any more vectorized images. Also, keep in mind that the image must be simple
+enough to be discernible at various smaller resolutions including 32x32 and
+even 16x16 (with a little tweaking).
+
+Perhaps we should do a similar thing for the logo as with the About dialog
+images: let's hold an open contest where people can submit candidate logos,
+and then the community can vote on the one they like best. What do you
+think?
+
+Regards,
+Curtis
+
+
+On Fri, Oct 28, 2011 at 3:23 AM, Gabriel Landini <G.Landini at bham.ac.uk>wrote:
+
+> On Friday 28 Oct 2011 00:47:35 Adam Fraser wrote:
+> > Attached are the cleaned up versions of the icon and a jpg (for now) of
+> the
+> > scope logo at about 512px. I'll make sure to send you guys all the
+> sources
+> > later and I'll include a png on transparency of the larger version. Just
+> > wanted to get you something to look at.
+>
+> Sorry to be critical, but the perspective seems to be wrong making the
+> microscope to look odd.
+>
+> If you one see both sides proximal and distal of the revolving piece, then
+> one
+> cannot see the connection between the bronze and black tube as horizontal
+> lines. The perspective of the top and bottom do not match.
+>
+> What about using something like the image below, possibly converted to
+> vector
+> graphics?
+>
+> http://www.arsmachina.com/images/watson1354-2.jpg
+>
+> Those are the same people from where Wayne used the image for IJ, and they
+> seemed to be OK being used. Maybe they can be approached again.
+>
+> Cheers
+>
+> Gabriel
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20111028/6dfbc651/attachment.html>
+
+From G.Landini at bham.ac.uk  Fri Oct 28 10:42:51 2011
+From: G.Landini at bham.ac.uk (Gabriel Landini)
+Date: Fri, 28 Oct 2011 16:42:51 +0100
+Subject: [ImageJ-devel] new icons and logo
+In-Reply-To: <CADN69y=FgrhGrrs4B-KyhH03yqAPy9Si4L6q_C9R_6BxCwxdUw@mail.gmail.com>
+References: <CANCtz6ferh3rrDgGjy0W-yH11X_BtzGXAP0MMfZ3R14et2=LEQ@mail.gmail.com>
+	<201110280923.33587.G.Landini@bham.ac.uk>
+	<CADN69y=FgrhGrrs4B-KyhH03yqAPy9Si4L6q_C9R_6BxCwxdUw@mail.gmail.com>
+Message-ID: <201110281642.51714.G.Landini@bham.ac.uk>
+
+On Friday 28 Oct 2011 16:11:51 Curtis Rueden wrote:
+> The drawing is essentially verbatim from a photograph that Johannes & I
+> took. See the gallery at:
+> https://www.dropbox.com/gallery/5695175/1//microscopes?h=a9095a
+> 
+> Specifically, check out image 14 of 38.
+
+Yes, exactly, if you brighten it, it shows that the bottom brass piece of the 
+main tube (attached to the revolving piece is oncave (while the logo is 
+completely horizontal). And the top one (at the ocular piece should be 
+slightly convex.
+As it stands it mixes 2 different perspectives in a single object... but... 
+thinking about it, Picasso did not do too bad with that approach :-)
+
+> Unfortunately, Adam is leaving the team, and will not have time to develop
+> any more vectorized images. Also, keep in mind that the image must be
+> simple enough to be discernible at various smaller resolutions including
+> 32x32 and even 16x16 (with a little tweaking).
+
+Sorry to hear that... Yes, sure the drawing has a lot of work and maybe when 
+reduced it is not even noticeable.
+
+Also perhaps with a little of retouching that can be changed to match the 
+picture. Are the vector graphics editable and available?
+
+> Perhaps we should do a similar thing for the logo as with the About dialog
+> images: let's hold an open contest where people can submit candidate
+> logos, and then the community can vote on the one they like best. What do
+> you think?
+
+Why not!
+Cheers
+
+Gabriel
+
+
+
+From afraser at broadinstitute.org  Fri Oct 28 12:04:37 2011
+From: afraser at broadinstitute.org (Adam Fraser)
+Date: Fri, 28 Oct 2011 13:04:37 -0400
+Subject: [ImageJ-devel] new icons and logo
+In-Reply-To: <201110281642.51714.G.Landini@bham.ac.uk>
+References: <CANCtz6ferh3rrDgGjy0W-yH11X_BtzGXAP0MMfZ3R14et2=LEQ@mail.gmail.com>
+	<201110280923.33587.G.Landini@bham.ac.uk>
+	<CADN69y=FgrhGrrs4B-KyhH03yqAPy9Si4L6q_C9R_6BxCwxdUw@mail.gmail.com>
+	<201110281642.51714.G.Landini@bham.ac.uk>
+Message-ID: <CANCtz6d_=whGPSdQxAMX+-5ZQ3RhXXiwPr-w=4v7BSA6vpixvg@mail.gmail.com>
+
+Hi Gabriel (et al.),
+
+I appreciate your critical eye, and I see the part that you're keying in on.
+
+As Curtis said, the image is near verbatim from the photo (I straightened
+out the scope so it's vertical to clean up aliasing).
+
+Anyway, take a close look at the one of the top-down views of the scope.
+You'll notice that the objective mount is actually shifted towards the back
+side (wrt the logo angle) of the scope. This is the reason that it appears
+so strange?it IS actually tilted towards the viewing perspective of the
+logo.
+
+This bugs me as much as it bugs you, so I've Attached is a minor revision
+that I think confuses the viewer less.
+
+-Adam
+
+PS: I LOVE the other scope image you sent, but unfortunately that'd take
+some serious time to rebuild in Photoshop, and there's a good chance that it
+won't be very discernable as a small icon. Anyway, today's my last day of
+work here, so yeah... tweaks only please! :)
+
+On Fri, Oct 28, 2011 at 11:42 AM, Gabriel Landini <G.Landini at bham.ac.uk>wrote:
+
+> On Friday 28 Oct 2011 16:11:51 Curtis Rueden wrote:
+> > The drawing is essentially verbatim from a photograph that Johannes & I
+> > took. See the gallery at:
+> > https://www.dropbox.com/gallery/5695175/1//microscopes?h=a9095a
+> >
+> > Specifically, check out image 14 of 38.
+>
+> Yes, exactly, if you brighten it, it shows that the bottom brass piece of
+> the
+> main tube (attached to the revolving piece is oncave (while the logo is
+> completely horizontal). And the top one (at the ocular piece should be
+> slightly convex.
+> As it stands it mixes 2 different perspectives in a single object... but...
+> thinking about it, Picasso did not do too bad with that approach :-)
+>
+> > Unfortunately, Adam is leaving the team, and will not have time to
+> develop
+> > any more vectorized images. Also, keep in mind that the image must be
+> > simple enough to be discernible at various smaller resolutions including
+> > 32x32 and even 16x16 (with a little tweaking).
+>
+> Sorry to hear that... Yes, sure the drawing has a lot of work and maybe
+> when
+> reduced it is not even noticeable.
+>
+> Also perhaps with a little of retouching that can be changed to match the
+> picture. Are the vector graphics editable and available?
+>
+> > Perhaps we should do a similar thing for the logo as with the About
+> dialog
+> > images: let's hold an open contest where people can submit candidate
+> > logos, and then the community can vote on the one they like best. What do
+> > you think?
+>
+> Why not!
+> Cheers
+>
+> Gabriel
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20111028/ef99af0e/attachment.html>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: logo2.jpg
+Type: image/jpeg
+Size: 88852 bytes
+Desc: not available
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20111028/ef99af0e/attachment.jpg>
+
+From G.Landini at bham.ac.uk  Fri Oct 28 13:44:03 2011
+From: G.Landini at bham.ac.uk (Gabriel Landini)
+Date: Fri, 28 Oct 2011 19:44:03 +0100
+Subject: [ImageJ-devel] new icons and logo
+In-Reply-To: <CANCtz6d_=whGPSdQxAMX+-5ZQ3RhXXiwPr-w=4v7BSA6vpixvg@mail.gmail.com>
+References: <CANCtz6ferh3rrDgGjy0W-yH11X_BtzGXAP0MMfZ3R14et2=LEQ@mail.gmail.com>
+	<201110281642.51714.G.Landini@bham.ac.uk>
+	<CANCtz6d_=whGPSdQxAMX+-5ZQ3RhXXiwPr-w=4v7BSA6vpixvg@mail.gmail.com>
+Message-ID: <201110281944.04305.G.Landini@bham.ac.uk>
+
+On Friday 28 Oct 2011 18:04:37 Adam Fraser wrote:
+> Anyway, take a close look at the one of the top-down views of the scope.
+> You'll notice that the objective mount is actually shifted towards the
+> back side (wrt the logo angle) of the scope. This is the reason that it
+> appears so strange?it IS actually tilted towards the viewing perspective
+> of the logo.
+
+I think that what makes the tube look a bit strange is the lower boundary.
+I assume that the horizon is somewhere where the focusing knob is so the lower 
+end needs to be slightly curved.
+Have a look at the attached image. If that border can be made curved instead 
+of horizontal I think it would be better.
+ 
+> PS: I LOVE the other scope image you sent, but unfortunately that'd take
+> some serious time to rebuild in Photoshop, and there's a good chance that
+> it won't be very discernable as a small icon. Anyway, today's my last day
+> of work here, so yeah... tweaks only please! :)
+
+Sure I understand, and of course I opened my mouth with a constructive intent. 
+We want the best imaging program to have the best logo ;-)
+
+Best of luck in your next move!
+
+Cheers
+Gabriel
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: IMG_20110922_142334-1.jpg
+Type: image/jpeg
+Size: 73765 bytes
+Desc: not available
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20111028/26427eaf/attachment.jpg>
+
+From sapristi at gmail.com  Fri Oct 28 17:35:46 2011
+From: sapristi at gmail.com (Albert Cardona)
+Date: Sat, 29 Oct 2011 00:35:46 +0200
+Subject: [ImageJ-devel] new icons and logo
+In-Reply-To: <CANCtz6d_=whGPSdQxAMX+-5ZQ3RhXXiwPr-w=4v7BSA6vpixvg@mail.gmail.com>
+References: <CANCtz6ferh3rrDgGjy0W-yH11X_BtzGXAP0MMfZ3R14et2=LEQ@mail.gmail.com>
+	<201110280923.33587.G.Landini@bham.ac.uk>
+	<CADN69y=FgrhGrrs4B-KyhH03yqAPy9Si4L6q_C9R_6BxCwxdUw@mail.gmail.com>
+	<201110281642.51714.G.Landini@bham.ac.uk>
+	<CANCtz6d_=whGPSdQxAMX+-5ZQ3RhXXiwPr-w=4v7BSA6vpixvg@mail.gmail.com>
+Message-ID: <CAJj13_8dYknYBJ3zAtHXWsmDXZ3sxMLu4VZSXqz9fgf-bBekmw@mail.gmail.com>
+
+> PS: I LOVE the other scope image you sent, but unfortunately that'd take
+> some serious time to rebuild in Photoshop, and there's a good chance that it
+> won't be very discernable as a small icon. Anyway, today's my last day of
+> work here, so yeah... tweaks only please! :)
+
+
+Potrace in Inkscape did a reasonable job. See attachments.
+
+But I like the microscope in your icon better.
+
+Albert
+
+
+-- 
+http://albert.rierol.net
+http://www.ini.uzh.ch/~acardona/
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: watson1354-2_snap.png
+Type: image/png
+Size: 165620 bytes
+Desc: not available
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20111029/2850ce88/attachment.png>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: watson1354-2.svg.zip
+Type: application/zip
+Size: 395939 bytes
+Desc: not available
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20111029/2850ce88/attachment.zip>
+
+From ctrueden at wisc.edu  Mon Oct 31 14:03:47 2011
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Mon, 31 Oct 2011 14:03:47 -0500
+Subject: [ImageJ-devel] [PATCH] Do not import com.apple.mrj.* in
+	MacAdapter
+In-Reply-To: <alpine.DEB.1.00.1110141237280.32316@s15462909.onlinehome-server.info>
+References: <alpine.DEB.1.00.1110141237280.32316@s15462909.onlinehome-server.info>
+Message-ID: <CADN69ykn1m+WqH2wRV9hKbL=Z89qNP9p5BZ0MDx0wdf0XZhs-Q@mail.gmail.com>
+
+Hi Wayne,
+
+I wanted to follow up on a patch that Dscho sent a while back, regarding
+the line "import com.apple.mrj.*;" in the MacAdapter.source file. Would it
+be possible to remove this line of code? It causes a compilation error on
+non-Mac platforms.
+
+The reason that "import com.apple.eawt.*;" is OK is because we depend on
+AppleJavaExtensions.jar (see
+http://developer.apple.com/library/mac/#samplecode/AppleJavaExtensions/Introduction/Intro.html),
+which is Apple's official way of compiling Apple-specific code on non-Mac
+platforms. But unfortunately the AppleJavaExtensions does not include stubs
+for the old com.apple.mrj.* classes.
+
+Thanks,
+Curtis
+
+
+On Fri, Oct 14, 2011 at 12:43 PM, Johannes Schindelin <
+Johannes.Schindelin at gmx.de> wrote:
+
+> It is not needed, and the AppleJavaExtensions.jar does not provide
+> that package anyway. So this is needed to build ImageJ1 with Maven
+> on non-MacOSX.
+>
+> Signed-off-by: Johannes Schindelin <johannes.schindelin at gmx.de>
+> ---
+>
+>        Hi Wayne,
+>
+>        For debugging purposes, we try to integrate the build process of
+>        ij.jar into our ImageJ2 workflow. A side effect is that Fiji will
+>        run with a standard ij.jar very soon now.
+>
+>        But when I try to build ImageJ1's sources with Maven, it complains
+>        about the package com.apple.mrj not being found in
+>        AppleJavaExtensions.jar (which is provided by Apple to compile
+>        stuff for MacOSX on other platforms, such as my Linux setup).
+>
+>        Wayne, may I ask you to apply this patch? It should not change
+>        things on your side, but it will fix build errors here.
+>
+>        Thanks!
+>        Johannes
+>
+>  plugins/MacAdapter.source |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+>
+> diff --git a/plugins/MacAdapter.source b/plugins/MacAdapter.source
+> index 8cfabed..9cbff58 100644
+> --- a/plugins/MacAdapter.source
+> +++ b/plugins/MacAdapter.source
+> @@ -1,7 +1,6 @@
+>  import ij.plugin.*;
+>  import ij.*;
+>  import ij.io.*;
+> -import com.apple.mrj.*;
+>  import com.apple.eawt.*;
+>  import java.util.Vector;
+>
+> --
+> 1.7.7.4535.g6ecb2
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20111031/df1f8a65/attachment.html>
+

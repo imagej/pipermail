@@ -1,0 +1,218 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Problems prting plugIn to ImageJ2
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Problems%20prting%20plugIn%20to%20ImageJ2&In-Reply-To=%3CCADN69y%3DnJVpN40LdfPsyXJUBrMpCO9jQS4T9_12SKJRkd1jKuA%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001273.html">
+   <LINK REL="Next"  HREF="001275.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Problems prting plugIn to ImageJ2</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Problems%20prting%20plugIn%20to%20ImageJ2&In-Reply-To=%3CCADN69y%3DnJVpN40LdfPsyXJUBrMpCO9jQS4T9_12SKJRkd1jKuA%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Problems prting plugIn to ImageJ2">ctrueden at wisc.edu
+       </A><BR>
+    <I>Fri Nov  9 13:32:13 CST 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001273.html">[ImageJ-devel] Problems prting plugIn to ImageJ2
+</A></li>
+        <LI>Next message: <A HREF="001275.html">[ImageJ-devel] Nice to get connected!
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1274">[ date ]</a>
+              <a href="thread.html#1274">[ thread ]</a>
+              <a href="subject.html#1274">[ subject ]</a>
+              <a href="author.html#1274">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Michael,
+
+&gt;<i> I've just started looking into to porting my existing ImageJ plugins
+</I>&gt;<i> to ImageJ2. I have hit a problem in that calls to functions like
+</I>&gt;<i> setDisplayRange seem not to take effect until my plugin returns.
+</I>
+Yes, that is expected behavior, and a consequence of how ImageJ2's legacy
+layer works.
+
+&gt;<i> The following plugin lets me interactively adjust the image display
+</I>&gt;<i> range when run with ImageJ1 but with ImageJ2 there is no effect to the
+</I>&gt;<i> image until I close the plugIn dialog.
+</I>
+Right. The rule of thumb is that IJ1 plugins which interactively alter an
+image will not do so in ImageJ2, due to the way the legacy layer works.
+
+&gt;<i> I also note that the ImageJ2 Adjust-&gt;Brightness/Contrast (appears new)
+</I>&gt;<i> can update the image interactively, whereas the Adjust-&gt;WindowLevel
+</I>&gt;<i> (looks like existing ImageJ1 UI) does not work.
+</I>
+We rewrote the Brightness/Contrast command specifically due to this issue.
+The goal is to port all of ImageJ1's interactive plugins to ImageJ2, to
+avoid this limitation in the legacy layer.
+
+There is an ImageJ2 design page about backwards compatibility and the
+legacy layer online at:
+    <A HREF="http://developer.imagej.net/compatibility">http://developer.imagej.net/compatibility</A>
+
+We may be able to overcome the limitation with interactive plugins to an
+extent, but it is difficult in general.
+
+Another solution which is coming soon is that we are working on a toggle in
+the Help menu to fully switch back and forth between ImageJ1 and ImageJ2
+modes. The legacy layer will translate all data structures upon switch, so
+you can run your interactive legacy plugins in ImageJ1 mode, then switch
+back to ImageJ2 when finished.
+
+When you say you want to port your existing ImageJ plugins, do you mean use
+them in ImageJ2 via the legacy layer? (Which is what you have tried so
+far.) Or fully update the code to use ImageJ2 data structures? For the
+latter, the migration will be complete when no more ImageJ1 classes (ij.*)
+are used, but only ImageJ2 classes (imagej.*). If you decide to go that
+route, we would be very happy to help with the conversion process. The plan
+is to write a plugin porting guide, but we do not have one yet.
+
+Regards,
+Curtis
+
+
+On Wed, Nov 7, 2012 at 4:57 PM, Michael Ellis &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">michael.ellis at dsuk.biz</A>&gt;wrote:
+
+&gt;<i> I've just started looking into to porting my existing ImageJ plugins to
+</I>&gt;<i> ImageJ2. I have hit a problem in that calls to functions like
+</I>&gt;<i> setDisplayRange seem not to take effect until my plugin returns.
+</I>&gt;<i>
+</I>&gt;<i> The following plugin lets me interactively adjust the image display range
+</I>&gt;<i> when run with ImageJ1 but with ImageJ2 there is no effect to the image
+</I>&gt;<i> until I close the plugIn dialog.
+</I>&gt;<i>
+</I>&gt;<i> I also note that the ImageJ2 Adjust-&gt;Brightness/Contrast (appears new) can
+</I>&gt;<i> update the image interactively, whereas the Adjust-&gt;WindowLevel (looks like
+</I>&gt;<i> existing ImageJ1 UI) does not work.
+</I>&gt;<i>
+</I>&gt;<i> Any help greatly appreciated!
+</I>&gt;<i>
+</I>&gt;<i>  Example code below
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> //===========================================================================
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> package SmartCapture;
+</I>&gt;<i>
+</I>&gt;<i> import java.awt.AWTEvent;
+</I>&gt;<i> import ij.IJ;
+</I>&gt;<i> import ij.ImagePlus;
+</I>&gt;<i> import ij.gui.DialogListener;
+</I>&gt;<i> import ij.gui.GenericDialog;
+</I>&gt;<i> import ij.plugin.filter.ExtendedPlugInFilter;
+</I>&gt;<i> import ij.plugin.filter.PlugInFilterRunner;
+</I>&gt;<i> import ij.process.ImageProcessor;
+</I>&gt;<i>
+</I>&gt;<i> public class Test_IJ2 implements ExtendedPlugInFilter, DialogListener {
+</I>&gt;<i>
+</I>&gt;<i>  private final static String PLUGIN_NAME = Test_IJ2.class.getSimpleName();
+</I>&gt;<i>
+</I>&gt;<i>  private static int FLAGS = // bitwise or of the following flags:
+</I>&gt;<i>  DOES_8G | KEEP_PREVIEW; // When using preview, the preview image can be
+</I>&gt;<i> kept as a result
+</I>&gt;<i>
+</I>&gt;<i>  ImagePlus imp;
+</I>&gt;<i>  private double low;
+</I>&gt;<i>  private double high;
+</I>&gt;<i>
+</I>&gt;<i>  public int setup(String arg, ImagePlus imp) {
+</I>&gt;<i>
+</I>&gt;<i> if (imp == null) {
+</I>&gt;<i>  IJ.error(PLUGIN_NAME, &quot;No image.\nOpen or create an image first then run
+</I>&gt;<i> &quot;
+</I>&gt;<i>  + PLUGIN_NAME);
+</I>&gt;<i>  return DONE;
+</I>&gt;<i>  }
+</I>&gt;<i>
+</I>&gt;<i> this.imp = imp;
+</I>&gt;<i>
+</I>&gt;<i>  return FLAGS;
+</I>&gt;<i>  }
+</I>&gt;<i>
+</I>&gt;<i>  public int showDialog(ImagePlus imp, String command, PlugInFilterRunner
+</I>&gt;<i> pfr) {
+</I>&gt;<i>
+</I>&gt;<i> assert (imp != null);
+</I>&gt;<i>  if (imp == null)
+</I>&gt;<i>  return DONE;
+</I>&gt;<i>
+</I>&gt;<i>  GenericDialog gd = new GenericDialog(PLUGIN_NAME + &quot;...&quot;);
+</I>&gt;<i>  gd.addMessage(imp.getTitle());
+</I>&gt;<i>  gd.addSlider(&quot;low&quot;, 0, 255, 0);
+</I>&gt;<i>  gd.addSlider(&quot;high&quot;, 0, 255, 255);
+</I>&gt;<i>  gd.addPreviewCheckbox(pfr, &quot; Preview&quot;);
+</I>&gt;<i>  gd.addDialogListener(this);
+</I>&gt;<i>  gd.showDialog(); // user input (or reading from macro) happens here
+</I>&gt;<i>  if (gd.wasCanceled()) // dialog cancelled?
+</I>&gt;<i>  return DONE;
+</I>&gt;<i>  return IJ.setupDialog(imp, FLAGS);
+</I>&gt;<i>  }
+</I>&gt;<i>
+</I>&gt;<i> public boolean dialogItemChanged(GenericDialog gd, AWTEvent e) {
+</I>&gt;<i>
+</I>&gt;<i>  low = gd.getNextNumber();
+</I>&gt;<i>  high = gd.getNextNumber();
+</I>&gt;<i>  IJ.log(String.format(&quot;low=%g high=%g\n&quot;, low, high));
+</I>&gt;<i>
+</I>&gt;<i>  return true;
+</I>&gt;<i>  }
+</I>&gt;<i>
+</I>&gt;<i>  public void run(ImageProcessor ip) {
+</I>&gt;<i>  IJ.log(&quot;run called\n&quot;);
+</I>&gt;<i>  imp.setDisplayRange(low, high);
+</I>&gt;<i>  }
+</I>&gt;<i>
+</I>&gt;<i>  public void setNPasses(int nPasses) {
+</I>&gt;<i>  IJ.log(String.format(&quot;setNPasses(%d)\n&quot;, nPasses));
+</I>&gt;<i>  }
+</I>&gt;<i>
+</I>&gt;<i> }
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20121109/e2bb49c5/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20121109/e2bb49c5/attachment-0001.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001273.html">[ImageJ-devel] Problems prting plugIn to ImageJ2
+</A></li>
+	<LI>Next message: <A HREF="001275.html">[ImageJ-devel] Nice to get connected!
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1274">[ date ]</a>
+              <a href="thread.html#1274">[ thread ]</a>
+              <a href="subject.html#1274">[ subject ]</a>
+              <a href="author.html#1274">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

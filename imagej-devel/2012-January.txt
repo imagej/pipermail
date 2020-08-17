@@ -1,0 +1,817 @@
+From michael at doube.net  Tue Jan  3 02:58:05 2012
+From: michael at doube.net (Michael Doube)
+Date: Tue, 03 Jan 2012 09:58:05 +0100
+Subject: [ImageJ-devel] Calling IJ legacy methods
+Message-ID: <4F02C31D.2080304@doube.net>
+
+Hi everyone,
+
+I'm starting the long process of getting BoneJ into shape to run under
+IJ2, as we discussed at the Hackathon in Dresden last year.
+
+There are of course a ton of dependencies on classes in ij.jar, so in
+general, how can us plugin developers deal with this during migration?
+
+In particular, right now I'm looking for a BrowserLauncher, a la
+ij.plugin.BrowserLauncher (which is already borrowed code). But there
+will be many more situations like this I'm sure.
+
+Regards,
+
+Michael
+
+
+
+From schindelin at wisc.edu  Tue Jan  3 05:18:39 2012
+From: schindelin at wisc.edu (Johannes Schindelin)
+Date: Tue, 03 Jan 2012 12:18:39 +0100 (CET)
+Subject: [ImageJ-devel] Calling IJ legacy methods
+In-Reply-To: <4F02C31D.2080304@doube.net>
+References: <4F02C31D.2080304@doube.net>
+Message-ID: <alpine.DEB.1.00.1201031214480.1927@bonsai2>
+
+Hi Mike,
+
+On Tue, 3 Jan 2012, Michael Doube wrote:
+
+> I'm starting the long process of getting BoneJ into shape to run under
+> IJ2, as we discussed at the Hackathon in Dresden last year.
+
+Cool!
+
+> There are of course a ton of dependencies on classes in ij.jar, so in
+> general, how can us plugin developers deal with this during migration?
+
+The macro language support I started to implement (and which I did not
+work on for some time for several reasons) should have a few hints:
+
+http://fiji.sc/cgi-bin/gitweb.cgi?p=imagej2/.git;a=blob;f=script/macro/src/main/java/imagej/script/MacroFunctions.java;h=e25a48876bf050ded11fc5b7700103bf17f0a127;hb=2da5e16cfc1809d7874bed8740a16cd151b23301
+
+(Note: we'll probably move some source code repositories around, so the
+URL is very likely to change in the next few weeks; will keep you posted!
+
+> In particular, right now I'm looking for a BrowserLauncher, a la
+> ij.plugin.BrowserLauncher (which is already borrowed code). But there
+> will be many more situations like this I'm sure.
+
+I don't think it exists yet, but it's probably a job for the
+PlatformService.
+
+Ciao,
+Dscho
+
+
+
+From ctrueden at wisc.edu  Tue Jan  3 09:04:55 2012
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Tue, 3 Jan 2012 09:04:55 -0600
+Subject: [ImageJ-devel] Calling IJ legacy methods
+In-Reply-To: <alpine.DEB.1.00.1201031214480.1927@bonsai2>
+References: <4F02C31D.2080304@doube.net>
+	<alpine.DEB.1.00.1201031214480.1927@bonsai2>
+Message-ID: <CADN69ykDYrSLAQn1MRAZZCvmLRW2+c9XeewdsjVJARaXM0i_GA@mail.gmail.com>
+
+Hi Michael & Dscho,
+
+> In particular, right now I'm looking for a BrowserLauncher
+
+We can discuss more when I return from vacation (Jan 17) but one option is
+to create a BrowserService by stealing the (permissively licensed)
+BrowserLauncher code and exposing the functions through an extension of
+AbstractService. This sort of thing is an excellent way for more developers
+to contribute to IJ2 right now, since it's how we would add such support
+anyway. Many currently missing utility features can be added in such
+fashion.
+
+Regards,
+Curtis
+
+On Jan 3, 2012 5:19 AM, "Johannes Schindelin" <schindelin at wisc.edu> wrote:
+>
+> Hi Mike,
+>
+> On Tue, 3 Jan 2012, Michael Doube wrote:
+>
+> > I'm starting the long process of getting BoneJ into shape to run under
+> > IJ2, as we discussed at the Hackathon in Dresden last year.
+>
+> Cool!
+>
+> > There are of course a ton of dependencies on classes in ij.jar, so in
+> > general, how can us plugin developers deal with this during migration?
+>
+> The macro language support I started to implement (and which I did not
+> work on for some time for several reasons) should have a few hints:
+>
+>
+http://fiji.sc/cgi-bin/gitweb.cgi?p=imagej2/.git;a=blob;f=script/macro/src/main/java/imagej/script/MacroFunctions.java;h=e25a48876bf050ded11fc5b7700103bf17f0a127;hb=2da5e16cfc1809d7874bed8740a16cd151b23301
+>
+> (Note: we'll probably move some source code repositories around, so the
+> URL is very likely to change in the next few weeks; will keep you posted!
+>
+> > In particular, right now I'm looking for a BrowserLauncher, a la
+> > ij.plugin.BrowserLauncher (which is already borrowed code). But there
+> > will be many more situations like this I'm sure.
+>
+> I don't think it exists yet, but it's probably a job for the
+> PlatformService.
+>
+> Ciao,
+> Dscho
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20120103/18be8f84/attachment.html>
+
+From ctrueden at wisc.edu  Thu Jan 19 14:33:04 2012
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Thu, 19 Jan 2012 14:33:04 -0600
+Subject: [ImageJ-devel] EuclideanSpace and imagej.display.Display
+In-Reply-To: <CADN69ykPYRo230BNyxcTjuR_s-Mgv_yLDtK6+JYMQb-TuBxinA@mail.gmail.com>
+References: <4de92b82.8c00e50a.0bee.3c54@mx.google.com>
+	<CADN69ykPYRo230BNyxcTjuR_s-Mgv_yLDtK6+JYMQb-TuBxinA@mail.gmail.com>
+Message-ID: <CADN69ym2EdZBdceTMDn-ZqonVq-LE16orBt6R8z9-3AgOFzXgQ@mail.gmail.com>
+
+Hi Lee,
+
+ I'm running into a number of problems with overlays that are caused by the
+> fact that the EuclideanSpace is now defined on the Dataset and not on the
+> Display used to composite datasets and overlays. There are more than a few
+> issues:
+>
+
+Over the past few weeks, and during the Dresden hackathon, I finally found
+time to pursue a lot of these issues, and have made changes to the codebase
+to improve the data/display hierarchy.
+
+   - The ImageDisplay interface now implements CalibratedInterval, which
+   extends not only EuclideanSpace but also Interval. Further, unlike Data
+   objects, ImageDisplay now also implements PositionableByAxis (which extends
+   Localizable and Positionable). So an ImageDisplay always has a current
+   position in the N-dimensional structure, and can report what that is.
+   - Data objects (Datasets and Overlays) now implement CalibratedInterval,
+   but not PositionableByAxis, since it makes no sense to ask a Data object
+   what its current position is.
+   - However, the DataView object, which wraps a Data and provides
+   visualization-specific metadata about how that Data is currently being
+   visualized, *does* implement PositionableByAxis.
+   - An ImageDisplay is still a collection of DataViews as before, but uses
+   the CombinedInterval class to combine the N-dimensional spaces of its
+   constituent views into a single aggregate space.
+
+Hopefully these changes are along the lines of what we discussed when I
+visited Broad all those months ago.
+
+
+>    - Trac issue ImageJ 558 - the user takes a Z-stack, multichannel image
+>    and thresholds it to get a BinaryMaskOverlay and associated ROI. The ROI is
+>    properly defined in a 4-dimensional space. However, when displayed, a
+>    single X/Y plane should be sampled and displayed, but there is no mechanism
+>    to retrieve the plane being displayed or the color display mode. The code
+>    iterates through the entire stack and that's what causes it to update
+>    slowly.
+>
+>
+I haven't had time to examine this issue in much detail, but the fix you
+implemented long ago seems fine for the time being.
+
+
+>    - Datasets have axes which capture the metadata of what a particular
+>    dimension means. Overlays don't have that.
+>
+>
+As mentioned above, things have now been unified so that all Data objects
+(including both Datasets and Overlays) are N-dimensional with axes, by
+extending the CalibratedInterval interface, which in turn extends Interval
+and CalibratedSpace (which extends EuclideanSpace).
+
+
+>    - Channels are really categorical, not ordinal - there's no reason the
+>    red channel is zero, the green is one and the blue is two and, with a
+>    channel-stack, the DAPI channel in one image might be the PI channel in a
+>    second. You can properly relate one channel to the other through metadata,
+>    but overlays don't have that.
+>
+>
+I think channels are sometimes categorical, and sometimes ordinal. For
+example, a hyperspectral dataset that provides 32 channels ranging from 400
+nm through 550 nm sampled every 5 nm would be a continuous domain, similar
+to other dimensions. But if you have two channels?one transmitted channel
+captured using a grayscale camera, and another channel detected from
+fluorescence caused by laser scanning?those are definitely categorical.
+
+Still, ultimately, they become ordinal in that you must provide an index
+for each channel. That doesn't mean you should assume continuity though, of
+course.
+
+
+>    - You might want to composite datasets - take two images and place
+>    them adjacently. What happens if they have different axes? What happens if
+>    they have different channel layouts?
+>
+>
+In general, some math needs to happen. The new
+CombinedInterval<http://fiji.sc/cgi-bin/gitweb.cgi?p=imagej2/.git;a=blob;f=core/data/src/main/java/imagej/data/CombinedInterval.java;h=24aec4a1305a28aaead11709733ef96e677a1672;hb=refs/heads/svn/trunk>class
+handles the union of multiple CalibratedInterval objects, fairly
+naively at the moment, but with the potential to improve the logic as you
+suggest in the future. We are also planning to tap into Unidata's Ucar
+Units<https://github.com/ctrueden/ucar-units>project to assist with
+this.
+
+ So, what I'm thinking is the following:
+>
+>    - A display represents the EuclideanSpace that's used to composite
+>    overlays and datasets.  Think of the display as a big N-dimensional
+>    container and the overlays and datasets float inside that container.
+>    - The display has a set of axes that are the union of all of the axes
+>       that appear in the view data objects.
+>       - There are two behaviors for a view object that does not have an
+>       axis in the space. Perhaps the user selects the behavior?:
+>          - The value in space outside of a single plane defined by a
+>          coordinate location along the axis is nan or null.
+>          - The value in space along the missing axis is the same at all
+>          locations along that axis.
+>
+>
+Yes, this is as we discussed at Broad a few months back. It is really
+working now! :-)
+
+Currently, if a constituent DataView lacks an axis from the aggregate
+space, the value for that axis can be specified explicitly, and defaults to
+0 otherwise. So, for example, all Overlays currently have the X and Y axes,
+and no other axes. Embedding a rectangle overlay in a 4D dataset (with,
+say, XYZT) causes that rectangle to be visible at Z=0, T=0, and no other Z
+and T positions, unless the DataView.setPosition(long, AxisType) method is
+used to override a different position for that dimension.
+
+In the future, we could enable the user to specify an alternative behavior
+as you suggest, such that the overlay becomes visible at *all* positions of
+that axis. But for now it is always a constant value.
+
+
+>    - A display window holds the information about what plane is being
+>    displayed and how the channels are composited.
+>       - The views are asked to display according to the plane
+>       information. A plane is an interval where the min=max for all dimensions
+>       but X and Y. The views could construct appropriate projectors based on the
+>       interval. The display window should also control the channel compositing
+>       information and the views should reference the display window's compositing
+>       information instead of maintaining their own copies.
+>
+>
+Right, as things stand now, the ImageDisplay tracks its current position
+(i.e., it implements PositionableByAxis) and the DisplayPanel provides the
+GUI that actually presents the information onscreen. However, one vital
+remaining task is to finish decoupling these two classes. Currently there
+is still some unfortunate coupling between ImageDisplay, ImageCanvas,
+DisplayPanel and DisplayWindow, which needs to change. The ImageDisplay and
+DataViews should be completely UI-agnostic, with the active user interface
+components subscribing to display events and updating themselves
+accordingly. This will help eliminate some problematic sections of code,
+particularly SwingDatasetView and SwingOverlayView, which are discouraged
+to use in ImageJ plugins due to their Swing-specific nature.
+
+
+>    - Perhaps there is a SpatialDataObject or perhaps the DataObject is
+>    always spatial. In any case, the axis information and channel metadata
+>    should be pushed up the inheritance hierarchy so that Overlay has a
+>    first-class representation of that and operations that generate overlays
+>    from datasets copy the information to the overlays they create.
+>
+>
+We went the route of "data objects are always spatial." And yeah, a lot of
+functionality was pushed up into AbstractData, AbstractDataView and
+AbstractImageDisplay. Hopefully this will reduce the amount of dataset- and
+overlay-specific code throughout the system.
+
+
+>    - There is a spectral dimension, but the channel axis doesn't capture
+>    that. Channels are categorical and should have names so they can be matched
+>    in the same way that axes are matched.
+>
+>
+It is a good point that we should add some support for categorical
+dimensions in general. It is not enough to have calibrations; it should be
+possible to label each axis position individually. This is useful for a
+variety of reasons. We will need to revisit this idea later, when time
+permits.
+
+ It's some work to refactor these things, but as the code base grows and
+> becomes more entrenched it will become increasingly difficult to refactor,
+> so we should do it sooner rather than later. I don't think this is much
+> coding at this point and if you look at the code, there are places where
+> this organization clarifies some things.
+>
+
+The coding work has been nontrivial, but certainly doable. There is more
+left to do as well, but I think we are in reasonable shape.
+
+Thanks very much for your comments! I really appreciate how much thought
+and effort you have put into the ImageJ design over the past year.
+
+Regards,
+Curtis
+
+
+On Fri, Jun 3, 2011 at 1:44 PM, Lee Kamentsky <leek at broadinstitute.org>wrote:
+
+> **
+> I'm running into a number of problems with overlays that are caused by the
+> fact that the EuclideanSpace is now defined on the Dataset and not on the
+> Display used to composite datasets and overlays. There are more than a few
+> issues:
+>
+>
+>    - Trac issue ImageJ 558 - the user takes a Z-stack, multichannel image
+>    and thresholds it to get a BinaryMaskOverlay and associated ROI. The ROI is
+>    properly defined in a 4-dimensional space. However, when displayed, a
+>    single X/Y plane should be sampled and displayed, but there is no mechanism
+>    to retrieve the plane being displayed or the color display mode. The code
+>    iterates through the entire stack and that's what causes it to update
+>    slowly.
+>
+>
+>    - Datasets have axes which capture the metadata of what a particular
+>    dimension means. Overlays don't have that.
+>     - Channels are really categorical, not ordinal - there's no reason
+>    the red channel is zero, the green is one and the blue is two and, with a
+>    channel-stack, the DAPI channel in one image might be the PI channel in a
+>    second. You can properly relate one channel to the other through metadata,
+>    but overlays don't have that.
+>    - You might want to composite datasets - take two images and place
+>    them adjacently. What happens if they have different axes? What happens if
+>    they have different channel layouts?
+>
+> So, what I'm thinking is the following:
+>
+>    - A display represents the EuclideanSpace that's used to composite
+>    overlays and datasets.  Think of the display as a big N-dimensional
+>    container and the overlays and datasets float inside that container.
+>     - The display has a set of axes that are the union of all of the axes
+>       that appear in the view data objects.
+>       - There are two behaviors for a view object that does not have an
+>       axis in the space. Perhaps the user selects the behavior?:
+>          - The value in space outside of a single plane defined by a
+>          coordinate location along the axis is nan or null.
+>          - The value in space along the missing axis is the same at all
+>          locations along that axis.
+>        - A display window holds the information about what plane is being
+>    displayed and how the channels are composited.
+>       - The views are asked to display according to the plane
+>       information. A plane is an interval where the min=max for all dimensions
+>       but X and Y. The views could construct appropriate projectors based on the
+>       interval. The display window should also control the channel compositing
+>       information and the views should reference the display window's compositing
+>       information instead of maintaining their own copies.
+>        - Perhaps there is a SpatialDataObject or perhaps the DataObject
+>    is always spatial. In any case, the axis information and channel metadata
+>    should be pushed up the inheritance hierarchy so that Overlay has a
+>    first-class representation of that and operations that generate overlays
+>    from datasets copy the information to the overlays they create.
+>    - There is a spectral dimension, but the channel axis doesn't capture
+>    that. Channels are categorical and should have names so they can be matched
+>    in the same way that axes are matched.
+>
+> It's some work to refactor these things, but as the code base grows and
+> becomes more entrenched it will become increasingly difficult to refactor,
+> so we should do it sooner rather than later. I don't think this is much
+> coding at this point and if you look at the code, there are places where
+> this organization clarifies some things.
+>
+> --Lee
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20120119/1b2d714f/attachment.html>
+
+From leek at broadinstitute.org  Thu Jan 19 14:47:36 2012
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Thu, 19 Jan 2012 15:47:36 -0500
+Subject: [ImageJ-devel] EuclideanSpace and imagej.display.Display
+In-Reply-To: <CADN69ym2EdZBdceTMDn-ZqonVq-LE16orBt6R8z9-3AgOFzXgQ@mail.gmail.com>
+References: <4de92b82.8c00e50a.0bee.3c54@mx.google.com>
+	<CADN69ykPYRo230BNyxcTjuR_s-Mgv_yLDtK6+JYMQb-TuBxinA@mail.gmail.com>
+	<CADN69ym2EdZBdceTMDn-ZqonVq-LE16orBt6R8z9-3AgOFzXgQ@mail.gmail.com>
+Message-ID: <4f18816b.89bc340a.328e.1558@mx.google.com>
+
+Pretty impressive progress - I'm hoping that it's easier to make coding 
+choices with a more comprehensive model of the N-D space. Generally, 
+thanks for following through. The only specific point I have is that you 
+are probably right about the difficulties posed by the nature of the 
+spectral dimension. I can't think of a clean way to handle both kinds of 
+spectral "positions" in a unified way, so perhaps indexes and reference 
+to the channel labels is the best that can be done.
+
+Thanks,
+--Lee
+
+On 1/19/2012 3:33 PM, Curtis Rueden wrote:
+> Hi Lee,
+>
+>     I'm running into a number of problems with overlays that are
+>     caused by the fact that the EuclideanSpace is now defined on the
+>     Dataset and not on the Display used to composite datasets and
+>     overlays. There are more than a few issues:
+>
+>
+> Over the past few weeks, and during the Dresden hackathon, I finally 
+> found time to pursue a lot of these issues, and have made changes to 
+> the codebase to improve the data/display hierarchy.
+>
+>   * The ImageDisplay interface now implements CalibratedInterval,
+>     which extends not only EuclideanSpace but also Interval. Further,
+>     unlike Data objects, ImageDisplay now also implements
+>     PositionableByAxis (which extends Localizable and Positionable).
+>     So an ImageDisplay always has a current position in the
+>     N-dimensional structure, and can report what that is.
+>   * Data objects (Datasets and Overlays) now implement
+>     CalibratedInterval, but not PositionableByAxis, since it makes no
+>     sense to ask a Data object what its current position is.
+>   * However, the DataView object, which wraps a Data and provides
+>     visualization-specific metadata about how that Data is currently
+>     being visualized, *does* implement PositionableByAxis.
+>   * An ImageDisplay is still a collection of DataViews as before, but
+>     uses the CombinedInterval class to combine the N-dimensional
+>     spaces of its constituent views into a single aggregate space.
+>
+> Hopefully these changes are along the lines of what we discussed when 
+> I visited Broad all those months ago.
+>
+>       * Trac issue ImageJ 558 - the user takes a Z-stack, multichannel
+>         image and thresholds it to get a BinaryMaskOverlay and
+>         associated ROI. The ROI is properly defined in a 4-dimensional
+>         space. However, when displayed, a single X/Y plane should be
+>         sampled and displayed, but there is no mechanism to retrieve
+>         the plane being displayed or the color display mode. The code
+>         iterates through the entire stack and that's what causes it to
+>         update slowly.
+>
+>
+> I haven't had time to examine this issue in much detail, but the fix 
+> you implemented long ago seems fine for the time being.
+>
+>       * Datasets have axes which capture the metadata of what a
+>         particular dimension means. Overlays don't have that.
+>
+>
+> As mentioned above, things have now been unified so that all Data 
+> objects (including both Datasets and Overlays) are N-dimensional with 
+> axes, by extending the CalibratedInterval interface, which in turn 
+> extends Interval and CalibratedSpace (which extends EuclideanSpace).
+>
+>       * Channels are really categorical, not ordinal - there's no
+>         reason the red channel is zero, the green is one and the blue
+>         is two and, with a channel-stack, the DAPI channel in one
+>         image might be the PI channel in a second. You can properly
+>         relate one channel to the other through metadata, but overlays
+>         don't have that.
+>
+>
+> I think channels are sometimes categorical, and sometimes ordinal. For 
+> example, a hyperspectral dataset that provides 32 channels ranging 
+> from 400 nm through 550 nm sampled every 5 nm would be a continuous 
+> domain, similar to other dimensions. But if you have two 
+> channels---one transmitted channel captured using a grayscale camera, 
+> and another channel detected from fluorescence caused by laser 
+> scanning---those are definitely categorical.
+>
+> Still, ultimately, they become ordinal in that you must provide an 
+> index for each channel. That doesn't mean you should assume continuity 
+> though, of course.
+>
+>       * You might want to composite datasets - take two images and
+>         place them adjacently. What happens if they have different
+>         axes? What happens if they have different channel layouts?
+>
+>
+> In general, some math needs to happen. The new CombinedInterval 
+> <http://fiji.sc/cgi-bin/gitweb.cgi?p=imagej2/.git;a=blob;f=core/data/src/main/java/imagej/data/CombinedInterval.java;h=24aec4a1305a28aaead11709733ef96e677a1672;hb=refs/heads/svn/trunk> 
+> class handles the union of multiple CalibratedInterval objects, fairly 
+> naively at the moment, but with the potential to improve the logic as 
+> you suggest in the future. We are also planning to tap into Unidata's 
+> Ucar Units <https://github.com/ctrueden/ucar-units> project to assist 
+> with this.
+>
+>     So, what I'm thinking is the following:
+>
+>       * A display represents the EuclideanSpace that's used to
+>         composite overlays and datasets.  Think of the display as a
+>         big N-dimensional container and the overlays and datasets
+>         float inside that container.
+>           o The display has a set of axes that are the union of all of
+>             the axes that appear in the view data objects.
+>           o There are two behaviors for a view object that does not
+>             have an axis in the space. Perhaps the user selects the
+>             behavior?:
+>               + The value in space outside of a single plane defined
+>                 by a coordinate location along the axis is nan or null.
+>               + The value in space along the missing axis is the same
+>                 at all locations along that axis.
+>
+>
+> Yes, this is as we discussed at Broad a few months back. It is really 
+> working now! :-)
+>
+> Currently, if a constituent DataView lacks an axis from the aggregate 
+> space, the value for that axis can be specified explicitly, and 
+> defaults to 0 otherwise. So, for example, all Overlays currently have 
+> the X and Y axes, and no other axes. Embedding a rectangle overlay in 
+> a 4D dataset (with, say, XYZT) causes that rectangle to be visible at 
+> Z=0, T=0, and no other Z and T positions, unless the 
+> DataView.setPosition(long, AxisType) method is used to override a 
+> different position for that dimension.
+>
+> In the future, we could enable the user to specify an alternative 
+> behavior as you suggest, such that the overlay becomes visible at 
+> *all* positions of that axis. But for now it is always a constant value.
+>
+>       * A display window holds the information about what plane is
+>         being displayed and how the channels are composited.
+>           o The views are asked to display according to the plane
+>             information. A plane is an interval where the min=max for
+>             all dimensions but X and Y. The views could construct
+>             appropriate projectors based on the interval. The display
+>             window should also control the channel compositing
+>             information and the views should reference the display
+>             window's compositing information instead of maintaining
+>             their own copies.
+>
+>
+> Right, as things stand now, the ImageDisplay tracks its current 
+> position (i.e., it implements PositionableByAxis) and the DisplayPanel 
+> provides the GUI that actually presents the information onscreen. 
+> However, one vital remaining task is to finish decoupling these two 
+> classes. Currently there is still some unfortunate coupling between 
+> ImageDisplay, ImageCanvas, DisplayPanel and DisplayWindow, which needs 
+> to change. The ImageDisplay and DataViews should be completely 
+> UI-agnostic, with the active user interface components subscribing to 
+> display events and updating themselves accordingly. This will help 
+> eliminate some problematic sections of code, particularly 
+> SwingDatasetView and SwingOverlayView, which are discouraged to use in 
+> ImageJ plugins due to their Swing-specific nature.
+>
+>       * Perhaps there is a SpatialDataObject or perhaps the DataObject
+>         is always spatial. In any case, the axis information and
+>         channel metadata should be pushed up the inheritance hierarchy
+>         so that Overlay has a first-class representation of that and
+>         operations that generate overlays from datasets copy the
+>         information to the overlays they create.
+>
+>
+> We went the route of "data objects are always spatial." And yeah, a 
+> lot of functionality was pushed up into AbstractData, AbstractDataView 
+> and AbstractImageDisplay. Hopefully this will reduce the amount of 
+> dataset- and overlay-specific code throughout the system.
+>
+>       * There is a spectral dimension, but the channel axis doesn't
+>         capture that. Channels are categorical and should have names
+>         so they can be matched in the same way that axes are matched.
+>
+>
+> It is a good point that we should add some support for categorical 
+> dimensions in general. It is not enough to have calibrations; it 
+> should be possible to label each axis position individually. This is 
+> useful for a variety of reasons. We will need to revisit this idea 
+> later, when time permits.
+>
+>     It's some work to refactor these things, but as the code base
+>     grows and becomes more entrenched it will become increasingly
+>     difficult to refactor, so we should do it sooner rather than
+>     later. I don't think this is much coding at this point and if you
+>     look at the code, there are places where this organization
+>     clarifies some things.
+>
+>
+> The coding work has been nontrivial, but certainly doable. There is 
+> more left to do as well, but I think we are in reasonable shape.
+>
+> Thanks very much for your comments! I really appreciate how much 
+> thought and effort you have put into the ImageJ design over the past year.
+>
+> Regards,
+> Curtis
+>
+>
+> On Fri, Jun 3, 2011 at 1:44 PM, Lee Kamentsky <leek at broadinstitute.org 
+> <mailto:leek at broadinstitute.org>> wrote:
+>
+>     I'm running into a number of problems with overlays that are
+>     caused by the fact that the EuclideanSpace is now defined on the
+>     Dataset and not on the Display used to composite datasets and
+>     overlays. There are more than a few issues:
+>
+>       * Trac issue ImageJ 558 - the user takes a Z-stack, multichannel
+>         image and thresholds it to get a BinaryMaskOverlay and
+>         associated ROI. The ROI is properly defined in a 4-dimensional
+>         space. However, when displayed, a single X/Y plane should be
+>         sampled and displayed, but there is no mechanism to retrieve
+>         the plane being displayed or the color display mode. The code
+>         iterates through the entire stack and that's what causes it to
+>         update slowly.
+>
+>       * Datasets have axes which capture the metadata of what a
+>         particular dimension means. Overlays don't have that.
+>       * Channels are really categorical, not ordinal - there's no
+>         reason the red channel is zero, the green is one and the blue
+>         is two and, with a channel-stack, the DAPI channel in one
+>         image might be the PI channel in a second. You can properly
+>         relate one channel to the other through metadata, but overlays
+>         don't have that.
+>       * You might want to composite datasets - take two images and
+>         place them adjacently. What happens if they have different
+>         axes? What happens if they have different channel layouts?
+>
+>     So, what I'm thinking is the following:
+>
+>       * A display represents the EuclideanSpace that's used to
+>         composite overlays and datasets.  Think of the display as a
+>         big N-dimensional container and the overlays and datasets
+>         float inside that container.
+>           o The display has a set of axes that are the union of all of
+>             the axes that appear in the view data objects.
+>           o There are two behaviors for a view object that does not
+>             have an axis in the space. Perhaps the user selects the
+>             behavior?:
+>               + The value in space outside of a single plane defined
+>                 by a coordinate location along the axis is nan or null.
+>               + The value in space along the missing axis is the same
+>                 at all locations along that axis.
+>       * A display window holds the information about what plane is
+>         being displayed and how the channels are composited.
+>           o The views are asked to display according to the plane
+>             information. A plane is an interval where the min=max for
+>             all dimensions but X and Y. The views could construct
+>             appropriate projectors based on the interval. The display
+>             window should also control the channel compositing
+>             information and the views should reference the display
+>             window's compositing information instead of maintaining
+>             their own copies.
+>       * Perhaps there is a SpatialDataObject or perhaps the DataObject
+>         is always spatial. In any case, the axis information and
+>         channel metadata should be pushed up the inheritance hierarchy
+>         so that Overlay has a first-class representation of that and
+>         operations that generate overlays from datasets copy the
+>         information to the overlays they create.
+>       * There is a spectral dimension, but the channel axis doesn't
+>         capture that. Channels are categorical and should have names
+>         so they can be matched in the same way that axes are matched.
+>
+>     It's some work to refactor these things, but as the code base
+>     grows and becomes more entrenched it will become increasingly
+>     difficult to refactor, so we should do it sooner rather than
+>     later. I don't think this is much coding at this point and if you
+>     look at the code, there are places where this organization
+>     clarifies some things.
+>
+>     --Lee
+>
+>
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20120119/f5566a30/attachment.html>
+
+From ctrueden at wisc.edu  Fri Jan 20 16:58:04 2012
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Fri, 20 Jan 2012 16:58:04 -0600
+Subject: [ImageJ-devel] frame grabber interface ?
+In-Reply-To: <CANu_RTr39mo-8eZmwogAwu0FEoY==mwMLsdqN-vDsntPDz3yYQ@mail.gmail.com>
+References: <967d6979-2ea4-4551-8533-d7810df324d7@q7g2000yqn.googlegroups.com>
+	<CANu_RTr39mo-8eZmwogAwu0FEoY==mwMLsdqN-vDsntPDz3yYQ@mail.gmail.com>
+Message-ID: <CADN69ym2H9uipP=+U_QJ3AaYzhfi=b20wny5uVpg7h0qkbH+tQ@mail.gmail.com>
+
+Hi Adrian,
+
+I agree with Johan. Micro-Manager went to a lot of effort to create a
+unified interface for acquisition, so best would be to use it. The ImageJ2
+and Micro-Manager teams are working together in areas of overlap, and I
+expect will do so more as both projects mature. The Micro-Manager
+developers gave a lot of initial feedback and suggestions regarding
+difficulties they encountered with ImageJ1, which has really helped guide
+the development of ImageJ2. So the plan is for Micro-Manager to take
+advantage of IJ2's flexible architecture, once things are far enough along.
+
+In short, I don't see Micro-Manager going away any time soon, so it makes a
+lot of sense to base your acquisition code there. Then you get ImageJ
+integration for free.
+
+Regards,
+Curtis
+
+P.S. The ImageJX mailing list has quieted down because the imagej-devel
+mailing list has grown and become more of an external list. The name
+ImageJX made more sense when we were discussing the idea of a new ImageJ,
+whereas imagej-devel makes more sense now that we are actually doing it. I
+have updated the mailing lists page (
+http://developer.imagej.net/mailing-lists) to reflect that. Sorry for the
+confusion.
+
+
+On Thu, Jan 12, 2012 at 3:57 PM, Johan Henriksson <mahogny at areta.org> wrote:
+
+>
+> This mailing list does not seem to have received any message in a long
+>> while, but it seems the right spot to drop this question: what are
+>> current positions, plans, ideas, general feelings about capturing
+>> images from a camera with ImageJ[A2] ?
+>>
+>> In NIHImage there was Command-G.
+>>
+>> In ImageJ there is a few plug-ins that can capture frames from certain
+>> sources (QuickTime, Twain,..), with each its own interface. And of
+>> course there is MicroManager. And maybe I have overlooked other stuff.
+>>
+>
+> disclaimer: I have contributed to micromanager so I might be biased.
+>
+> but: my feeling is that all plugins but micromanager should be dropped,
+> and if a camera is only supported as a IJ plugin but not in MM then that
+> driver should be added. MM already provides a unified interface. there is
+> no need to put a unified interface on a unified interface, if MM already
+> covers the other hardware.
+>
+> + it is a lot of work to redo what MM already does...
+>
+> /Johan
+>
+> --
+> -----------------------------------------------------------
+> Johan Henriksson
+> PhD student, Karolinska Institutet
+> http://mahogny.areta.org  http://www.endrov.net
+>
+>  --
+> You received this message because you are subscribed to the Google Groups
+> "ImageJX" group.
+> To post to this group, send email to imagejx at googlegroups.com.
+> To unsubscribe from this group, send email to
+> imagejx+unsubscribe at googlegroups.com.
+> For more options, visit this group at
+> http://groups.google.com/group/imagejx?hl=en.
+>
+
+
+On Thu, Jan 12, 2012 at 7:55 AM, Adrian Daerr <adrian.daerr at gmx.de> wrote:
+
+> Hello,
+>
+> This mailing list does not seem to have received any message in a long
+> while, but it seems the right spot to drop this question: what are
+> current positions, plans, ideas, general feelings about capturing
+> images from a camera with ImageJ[A2] ?
+>
+> In NIHImage there was Command-G.
+>
+> In ImageJ there is a few plug-ins that can capture frames from certain
+> sources (QuickTime, Twain,..), with each its own interface. And of
+> course there is MicroManager. And maybe I have overlooked other stuff.
+>
+> I am currently looking into the possibility of adding grabbing from
+> GigE cameras directly into ImageJ (which would somewhat ease our
+> workflow here at the lab, where we currently have a separate grabbing
+> app that records to the disk), at least on Linux, and was wondering
+> how that would be best implemented.
+>
+> Do you think there is room/need for, or advantages in, having a nice
+> generic/unified grabbing interface in a future version of ImageJ ?
+> Do you think all things (hardware-)interface related are best written
+> as extensions for MicroManager, and ImageJ will continue to interface
+> with that ?
+> Would it be easy to provide just some simple interface (RMI ?,
+> FIFOs ?) which would enable external, possibly native applications to
+> send image data to ImageJ, for real-time display / processing /
+> capture ?
+> Should I just write yet another grabber plugin using the Java Native
+> Interface to talk to some native part ?
+>
+> Searching for 'camera', 'grabber', 'acquisition', etc on a few ML
+> (fiji-devel, imagejx notably) has not turned up anything, so I figured
+> I'd ask if I can start this in a usefull direction for the whole
+> community.
+>
+> cheers, Adrian
+>
+> --
+> You received this message because you are subscribed to the Google Groups
+> "ImageJX" group.
+> To post to this group, send email to imagejx at googlegroups.com.
+> To unsubscribe from this group, send email to
+> imagejx+unsubscribe at googlegroups.com.
+> For more options, visit this group at
+> http://groups.google.com/group/imagejx?hl=en.
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20120120/30e7f5ba/attachment.html>
+

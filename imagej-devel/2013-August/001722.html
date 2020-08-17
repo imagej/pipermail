@@ -1,0 +1,226 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [fiji-devel] Status reporting in ImgLib	Algorithms
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20Status%20reporting%20in%20ImgLib%0A%09Algorithms&In-Reply-To=%3Calpine.DEB.1.00.1308051847010.24252%40s15462909.onlinehome-server.info%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001721.html">
+   <LINK REL="Next"  HREF="001723.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [fiji-devel] Status reporting in ImgLib	Algorithms</H1>
+    <B>Johannes Schindelin</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20Status%20reporting%20in%20ImgLib%0A%09Algorithms&In-Reply-To=%3Calpine.DEB.1.00.1308051847010.24252%40s15462909.onlinehome-server.info%3E"
+       TITLE="[ImageJ-devel] [fiji-devel] Status reporting in ImgLib	Algorithms">Johannes.Schindelin at gmx.de
+       </A><BR>
+    <I>Mon Aug  5 12:11:42 CDT 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001721.html">[ImageJ-devel] [fiji-devel] Status reporting in ImgLib	Algorithms
+</A></li>
+        <LI>Next message: <A HREF="001723.html">[ImageJ-devel] [fiji-devel] Status reporting in ImgLib	Algorithms
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1722">[ date ]</a>
+              <a href="thread.html#1722">[ thread ]</a>
+              <a href="subject.html#1722">[ subject ]</a>
+              <a href="author.html#1722">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Tobias,
+
+On Mon, 5 Aug 2013, Tobias Pietzsch wrote:
+
+&gt;<i> First of all, I am very reluctant to add any dependency to
+</I>&gt;<i> imglib2-algorithms core.
+</I>
+Oh really? ;-)
+
+&gt;<i> I admit that I did not really look into scijava-common so far, so I
+</I>&gt;<i> cannot really comment on how severe I think this would be.
+</I>
+I think it might make a lot of sense to look into scijava-common because
+it addresses a lot of very general issues with Java programming.
+
+For example, we do often have the problem of inversion of control (IoC):
+you will want to let consumers of your code override certain aspects, but
+still provide your own, default implementation.
+
+The status service is actually an excellent example for this: lengthy
+operations will need to be able to report their progress. For the ImgLib2
+developers, stderr is probably not only sufficient, but even desirable.
+
+For most users, stderr is completely inacceptable, especially on Windows
+where Java's stderr is re-routed to NUL: by default. Gone. Never to be
+seen.
+
+The best way I can think of to address this issue is to have an interface
+that describes progress updates, a default implementation writing that to
+stderr, and a way to inject different implementations for those clicky
+clicky user interfaces.
+
+The way scijava-common addresses this issue is to offer the StatusService
+interface:
+
+<A HREF="https://github.com/scijava/scijava-common/blob/master/src/main/java/org/scijava/app/StatusService.java">https://github.com/scijava/scijava-common/blob/master/src/main/java/org/scijava/app/StatusService.java</A>
+
+along with a default implementation:
+
+<A HREF="https://github.com/scijava/scijava-common/blob/master/src/main/java/org/scijava/app/DefaultStatusService.java">https://github.com/scijava/scijava-common/blob/master/src/main/java/org/scijava/app/DefaultStatusService.java</A>
+
+And if you want to override it, you can easily do so by implementing the
+StatusService, annotating the implementing class with the
+
+	@Plugin(type = StatusService.class)
+
+annotation.
+
+Of course, you are free to reinvent the wheel in ImgLib2 if you so desire,
+but please do not ask me to be a fan of that idea.
+
+&gt;<i> I had a quick look and saw that scijava-common is itself not without
+</I>&gt;<i> dependencies. I found it depends on org.bushe.eventbus. On the eventbus
+</I>&gt;<i> website I found the notice:
+</I>&gt;<i>
+</I>&gt;<i> Update 3/2013: The EventBus has gone stale and is unlikely to be
+</I>&gt;<i> extended to other platforms. Suitable, though more primitive,
+</I>&gt;<i> replacements can be found for GWT (GWT EventBus), Javascript (TIBCO
+</I>&gt;<i> PageBus - an OpenAjax Hub implementation) and Flex (Parsley's Messaging)
+</I>&gt;<i> So would that mean dragging in a dead project as a transitive dependency?
+</I>
+Two points about this:
+
+1) EventBus is very stable and we can easily extend it should we ever need
+that. We now even have a Git-SVN mirror for easier debugging, making it
+safe to rely on said component:
+
+	<A HREF="https://github.com/scijava/eventbus">https://github.com/scijava/eventbus</A>
+
+2) EventBus is -- as you pointed out -- a *transitive* dependency. No user
+of scijava-common needs to use it directly. Actually, no user of
+scijava-common needs to use it *full stop*. The point of a
+transitive dependency, after all, is that the dependency can switch to any
+other way to provide the functionality and your project still runs fine.
+And in the case of the eventbus dependency: as I laid out before, the
+inversion-of-control principle does even allow you to exclude eventbus.jar
+from the classpath completely, given a replacement implementation of the
+EventService interface.
+
+&gt;<i> As far as I can tell, the net.imglib2.multithreading stuff is a leftover
+</I>&gt;<i> from imglib1 times and I think I have mentioned several times that I
+</I>&gt;<i> would like to get rid of it&#8230; :-)
+</I>&gt;<i>
+</I>&gt;<i> I guess that scijava-common ThreadService is more thought-through than
+</I>&gt;<i> the SimpleMultiThreading class. So replacing that I would see as an
+</I>&gt;<i> advantage.
+</I>
+Indeed, also from the Open Source point of view where you do not only use
+software libraries but also contribute improvements back, for a mutual
+benefit.
+
+&gt;<i> In general, I think ExecutorServices are a good fit for multithreading
+</I>&gt;<i> pixel processing algorithms, along the lines of submitting a runnable
+</I>&gt;<i> for every line/plane/.
+</I>&gt;<i> 
+</I>&gt;<i> I see that you have a need for status reporting in ImageJ2 but I'm not
+</I>&gt;<i> sure that it should be in imglib-algorithms.
+</I>
+As I said, if you want to implement the very same functionality in
+imglib2-algorithms, go ahead. We need that functionality, as do virtually
+all developers having any kind of graphical or web frontend.
+
+I would strongly encourage you to save the time, though, and use and
+improve what is there in scijava-common.
+
+&gt;<i> I would favour a way where we could keep the imglib2 code focused on
+</I>&gt;<i> processing pixels, not caring about framework issues.
+</I>
+Too late. ImgLib2 *is* used, and the users *need* status updates. Any way
+you turn it, we need that functionality.
+
+&gt;<i> In principle, status reporting can be performed before entering and
+</I>&gt;<i> after leaving a imglib2 &quot;work-unit&quot;.
+</I>
+Not without that &quot;work-unit&quot; knowing about the status reporting, because
+it needs to report the numbers based on internal state.
+
+&gt;<i> If fine grained reporting is required, then this would mean splitting up
+</I>&gt;<i> the work into smaller units and reporting in between.
+</I>&gt;<i> 
+</I>&gt;<i> In any case, even if we add scijava-common as a dependency, I strongly
+</I>&gt;<i> suggest to also keep non-reporting versions of the algorithms.
+</I>
+I thought the point of ImgLib2 was to prevent having to duplicate code.
+
+&gt;<i> If noone is listening to the status reports thats just wasted
+</I>&gt;<i> computation time. I think the overhead will be quite high in some cases.
+</I>
+As your benchmarks pointed out: if the code path through an interface
+always lands at the same implementation, the JIT is quite good at
+inlining the code.
+
+So if you override the StatusService with an implementation that has only
+empty, final methods, I would be highly surprised if your earlier
+benchmarks would be contradicted by the overhead you suspect.
+
+&gt;<i> For instance in your forked ComputeMinMax algorithm you do some work on
+</I>&gt;<i> updating status for every single pixel, which I think is definitely
+</I>&gt;<i> overdoing it.
+</I>
+That is a problem of the ComputeMinMax algorithm, I agree. But nothing
+that can serve as a counterargument against using scijava-common.
+
+&gt;<i> As a compromise I could image putting an empty protected method report()
+</I>&gt;<i> that is called periodically by the core algorithm implementation.
+</I>
+But that will be insufficient, don't you think? How would the report()
+function know 1) about internal state of the consumer, and 2) about the
+percentage of the progress?
+
+&gt;<i> The JIT would hopefully just optimize that away if you use the core
+</I>&gt;<i> algorithm. Then for the reporting version you would have to extend the
+</I>&gt;<i> core algorithm and override report().
+</I>
+As I pointed out above, the JIT has been consistent in your benchmarks in
+inlining short, final methods. It would be more than just surprising if
+that would not work for empty methods.
+
+The point is that ImgLib2 should cater for the common case. And the common
+case *is* a user interface with some sort of progress report.
+
+If you have a better idea, let's hear it.
+
+Ciao,
+Dscho
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001721.html">[ImageJ-devel] [fiji-devel] Status reporting in ImgLib	Algorithms
+</A></li>
+	<LI>Next message: <A HREF="001723.html">[ImageJ-devel] [fiji-devel] Status reporting in ImgLib	Algorithms
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1722">[ date ]</a>
+              <a href="thread.html#1722">[ thread ]</a>
+              <a href="subject.html#1722">[ subject ]</a>
+              <a href="author.html#1722">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

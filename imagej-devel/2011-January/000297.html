@@ -1,0 +1,718 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] OpenCL plugin
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20OpenCL%20plugin&In-Reply-To=%3CAANLkTimN1%3DWOOBmuHumvaU0UAAhrn_7x%3D%2BvT33CbZO9p%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000295.html">
+   <LINK REL="Next"  HREF="000298.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] OpenCL plugin</H1>
+    <B>Rick Lentz</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20OpenCL%20plugin&In-Reply-To=%3CAANLkTimN1%3DWOOBmuHumvaU0UAAhrn_7x%3D%2BvT33CbZO9p%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] OpenCL plugin">rwlentz at wisc.edu
+       </A><BR>
+    <I>Fri Jan 14 10:56:49 CST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000295.html">[ImageJ-devel] Fwd: OpenCL plugin
+</A></li>
+        <LI>Next message: <A HREF="000298.html">[ImageJ-devel] OpenCL plugin
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#297">[ date ]</a>
+              <a href="thread.html#297">[ thread ]</a>
+              <a href="subject.html#297">[ subject ]</a>
+              <a href="author.html#297">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Pol,
+
+  The Open Source community has been a great for me regarding collaboration
+and support.  For me, understanding the nature of OpenCL came from previous
+work done with CUDA.  It helped me to review free online videos of academic
+lectures (iTunesU - GPU computing) and articles pertaining to the device
+architecture (optimization) since this understanding help me organize a plan
+to implement an algorithm for a specific platform.
+
+  Here is a 32 bit version of the sobel.cl that should run fine on the GTS
+240 (that has also been committed in the repository in place of the old
+'double' version):
+
+
+__kernel void sobel( __global float* input,
+
+__global float* output,
+
+     int width,
+
+     int height )
+
+{
+
+    int x = get_global_id(0);
+
+    int y = get_global_id(1);
+
+    int offset = y * width + x;
+
+
+
+    float p0, p1, p2, p3, p5, p6, p7, p8 = 0;
+
+
+
+
+
+if( x &lt; 1 || y &lt; 1 || x &gt; width - 2 || y &gt; height - 2 )
+
+{
+
+  output[offset] = 0;
+
+}
+
+else
+
+{
+
+    p0 = input[offset - width - 1] ;
+
+    p1 = input[offset - width] ;
+
+    p2 = input[offset - width + 1] ;
+
+    p3 = input[offset - 1] ;
+
+    p5 = input[offset + 1] ;
+
+    p6 = input[offset + width - 1] ;
+
+    p7 = input[offset + width] ;
+
+    p8 = input[offset + width + 1] ;
+
+     float sum1 = p0 + 2*p1 + p2 - p6 - 2*p7 - p8;  //GY
+
+    float sum2 = p0 + 2*p3 + p6 - p2 - 2*p5 - p8;  //GX
+
+
+
+    output[offset] = sqrt(  sum1*sum1 + sum2*sum2 );
+
+}
+
+}
+
+
+For your last question, you can write OpenCL directly from Java if that is
+easier for you.  Here is an example from a unit test written by Michael
+Bien:
+
+
+
+/**
+
+ * This test was authored by Michael Bien to help identify a platform
+specific bug
+
+ * identified on OSX (specifically 10.6)
+
+ * @author Michael Bien
+
+ *
+
+ */
+
+public class ProgramTest {
+
+
+    @BeforeClass
+
+    public synchronized static void setUpClass() throws Exception {
+
+        out.println(&quot;OS: &quot; + System.getProperty(&quot;os.name&quot;));
+
+        out.println(&quot;ARCH: &quot; + System.getProperty(&quot;os.arch&quot;));
+
+        out.println(&quot;VM: &quot; + System.getProperty(&quot;java.vm.name&quot;));
+
+        out.println(&quot;lib path: &quot; + System.getProperty(&quot;java.library.path&quot;));
+
+    }
+
+    // NOTE THE OPENCL PROGRAM SOURCE HAS BEEN ADDED INSIDE THE JAVA CLASS
+DECLARATION.
+
+    private final static String programSource =&quot;&quot;
+
+//             + &quot; #pragma OPENCL EXTENSION cl_khr_fp64: enable   \n&quot;
+
+             +&quot;   __kernel void sobel( __global float* input, __global
+float* output, int width,  int height ) {     \n&quot;
+
+             +&quot;       int x = get_global_id(0);   \n&quot;
+
+             +&quot;       int y = get_global_id(1);   \n&quot;
+
+             +&quot;       int offset = y * width + x;   \n&quot;
+
+             +&quot;
+  \n&quot;
+
+             +&quot;         float p0, p1, p2, p3, p5, p6, p7, p8 = 0;
+\n&quot;
+
+             +&quot;
+  \n&quot;
+
+             +&quot;
+  \n&quot;
+
+             +&quot;              if( x &lt; 1 || y &lt; 1 || x &gt; width - 2 || y &gt;
+height - 2 )   \n&quot;
+
+             +&quot;              {   \n&quot;
+
+             +&quot;                 output[offset] = 0;   \n&quot;
+
+             +&quot;              }   \n&quot;
+
+             +&quot;              else   \n&quot;
+
+             +&quot;              {   \n&quot;
+
+             +&quot;                  p0 = input[offset - width - 1] ;   \n&quot;
+
+             +&quot;                  p1 = input[offset - width] ;   \n&quot;
+
+             +&quot;                  p2 = input[offset - width + 1] ;   \n&quot;
+
+             +&quot;                  p3 = input[offset - 1] ;   \n&quot;
+
+             +&quot;                  p5 = input[offset + 1] ;   \n&quot;
+
+             +&quot;                  p6 = input[offset + width - 1] ;   \n&quot;
+
+             +&quot;                  p7 = input[offset + width] ;   \n&quot;
+
+             +&quot;                  p8 = input[offset + width + 1] ;   \n&quot;
+
+             +&quot;   \n&quot;
+
+             +&quot;                  float sum1 = p0 + 2*p1 + p2 - p6 - 2*p7 -
+p8;  //GY   \n&quot;
+
+             +&quot;                  float sum2 = p0 + 2*p3 + p6 - p2 - 2*p5 -
+p8;  //GX   \n&quot;
+
+             +&quot;   \n&quot;
+
+             +&quot;                  output[offset] = sqrt(  sum1*sum1 +
+sum2*sum2 );   \n&quot;
+
+             +&quot;              }   \n&quot;
+
+             +&quot;      }  &quot;;
+
+
+    @Test
+
+    public synchronized void buildProgramTest() {
+
+
+
+        CLContext context = CLContext.create();
+
+
+
+        try {
+
+            System.out.println(context);
+
+            System.out.println(context.getPlatform().getVersion());
+
+
+            long contextID = context.ID;
+
+            CL cl = CLPlatform.getLowLevelCLInterface();
+
+
+            PointerBuffer buffer = (PointerBuffer)
+PointerBuffer.allocateDirect(1).put(programSource.length());
+
+            String[] srcArray = new String[]{programSource};
+
+
+            IntBuffer uploadStatus = Buffers.newDirectIntBuffer(1);
+
+            final long programID = cl.clCreateProgramWithSource(contextID,
+1, srcArray, buffer, uploadStatus);
+
+            checkError(&quot;on clCreateProgramWithSource&quot;, uploadStatus.get(0));
+
+
+            // Build the program
+
+            int buildStatus = cl.clBuildProgram(programID, 0, null, null,
+null);
+
+
+            System.out.println(&quot;please ignore &quot;+srcArray+ &quot;&quot; + buffer); //
+please ignore, just a artificial reference lock
+
+
+
+            System.out.println(&quot;src: &quot; + getProgramInfoString(cl, programID,
+CL.CL_PROGRAM_SOURCE));
+
+
+
+            checkError(&quot;on clBuildProgram&quot;, buildStatus);
+
+        } finally {
+
+            context.release();
+
+            System.out.println(&quot;-&gt; success&quot;);
+
+        }
+
+    }
+
+
+
+    private synchronized String getProgramInfoString(CL cl, long program,
+int flag) {
+
+
+        PointerBuffer size = PointerBuffer.allocateDirect(1);
+
+
+        int ret = cl.clGetProgramInfo(program, flag, 0, null, size);
+
+        checkError(&quot;on clGetProgramInfo&quot;, ret);
+
+
+        ByteBuffer buffer = Buffers.newDirectByteBuffer((int)size.get(0));
+
+
+        ret = cl.clGetProgramInfo(program, flag, buffer.capacity(), buffer,
+null);
+
+        checkError(&quot;on clGetProgramInfo&quot;, ret);
+
+
+        return CLUtil.clString2JavaString(buffer, (int)size.get(0));
+
+    }
+
+
+    private synchronized void checkError(String msg, int ret) {
+
+        if(ret != CL.CL_SUCCESS)
+
+            throw CLException.newException(ret, msg);
+
+    }
+
+}
+
+
+For me, I prefer to place the OpenCL code in separate files because it is
+easier for me to reuse them. When I first started using OpenCL from Java - I
+liked to see the OpenCL inside the Java class.  Over time reusability, use
+of runtime resource loading, and readability caused me to separate the CL
+code from the Java code.
+
+
+ImageJ plugins can also access GPU resources in other languages other than
+OpenCL.  CUDA is specific to NVidia's hardware and they have produced over
+1B devices.  Depending on the users of your ImageJ plugin - one might be
+preferable CUDA over OpenCL.  For the imagejdev.org group, the argument was
+distilled to performance vs hardware scope - and having more hardware
+coverage was a higher priority for our users.
+
+Once a GPU implementation has been optimized for a specific hardware -
+porting between CUDA and OpenCL is relatively easy.  If your interested in
+working with CUDA through Java, an example of the bindings can be found at
+<A HREF="http://www.jcuda.de/ImageJ/ImageJHowTo.html.">http://www.jcuda.de/ImageJ/ImageJHowTo.html.</A>  Further you may find
+discussions like this one interesting in understanding the tradeoffs:
+<A HREF="http://stackoverflow.com/questions/2633483/best-approach-for-gpgpu-cuda-opencl-in-java">http://stackoverflow.com/questions/2633483/best-approach-for-gpgpu-cuda-opencl-in-java</A>
+.
+
+Let me know if you have any problems running the updated float version of
+sobel filter.
+
+Sincerely,
+
+Rick Lentz
+
+On Fri, Jan 14, 2011 at 2:07 AM, Pol kennel &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pol.kennel at gmail.com</A>&gt; wrote:
+
+&gt;<i> Hi Rick,
+</I>&gt;<i>
+</I>&gt;<i> You perfectly understood what I need, this will lead to apply &quot;heavy&quot;
+</I>&gt;<i> texture features extraction on large image aiming segmentation (the method
+</I>&gt;<i> will be published soon).
+</I>&gt;<i> I hope to have time in future to create a clear plugin for IJ that could be
+</I>&gt;<i> shared with users and contribuate to IJ community :) So thanks for your
+</I>&gt;<i> help, I'll try your last tutorial today, with hopes to get started with
+</I>&gt;<i> OpenCL quick... I have a last (at least) question : are we constrained to
+</I>&gt;<i> write gpu code in Cl ? could we use directly java codes ?
+</I>&gt;<i>
+</I>&gt;<i> Best regards,
+</I>&gt;<i> Pol
+</I>&gt;<i>
+</I>&gt;<i> 2011/1/13 Rick Lentz &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">rwlentz at wisc.edu</A>&gt;
+</I>&gt;<i>
+</I>&gt;<i> Hi Pol,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>   I am thinking that the material under <A HREF="http://www.imagejdev.org/OpenCLwas">http://www.imagejdev.org/OpenCLwas</A> not going to be as useful for you as a getting started tutorial.  I have
+</I>&gt;&gt;<i> removed the publication related material from our website.  I created a Getting
+</I>&gt;&gt;<i> Started with OpenCL in ImageJ Tutorial&lt;<A HREF="https://docs.google.com/document/d/12aiL7urwcve7Mi-YyuOtAVlTZ5P6outcay75YiQlqyQ/edit?hl=en">https://docs.google.com/document/d/12aiL7urwcve7Mi-YyuOtAVlTZ5P6outcay75YiQlqyQ/edit?hl=en</A>&gt; with
+</I>&gt;&gt;<i> the goal of helping ImageJ users get started quickly with OpenCL.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>  Back to your issues, for the research publication I compiled the jogamp
+</I>&gt;&gt;<i> files - but for your application, I do not think you need to do this.  The
+</I>&gt;&gt;<i> compilation steps listed were specific to Ubuntu 9.10 and NVidia 3.1.  If I
+</I>&gt;&gt;<i> am understanding your ImageJ need correctly, I think you are looking to run
+</I>&gt;&gt;<i> a few Java examples that help you get into writing OpenCL plugins for
+</I>&gt;&gt;<i> ImageJ.  I hope the attached draft copy of the tutorial will help you get
+</I>&gt;&gt;<i> there quickly.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>  Please let me know if you any troubles with the tutorial - and have any
+</I>&gt;&gt;<i> feedback regarding the tutorial.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Best Regards,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Rick Lentz
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Hi Pol,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>   Can you do a fresh pull from our repository - You should not have to
+</I>&gt;&gt;<i> build these unless you really want to.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>   You can download the needed components directly from:
+</I>&gt;&gt;<i>   <A HREF="http://jogamp.org/deployment/webstart/">http://jogamp.org/deployment/webstart/</A>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>   I have also updated the ImageJ plugin demo source to include the most
+</I>&gt;&gt;<i> recent Jogamp OpenCL binaries and native libs.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Sincerely,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Rick
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> On Thu, Jan 13, 2011 at 9:55 AM, Pol kennel &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pol.kennel at gmail.com</A>&gt; wrote:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> In fact my *jocl* building also crash during Junit tests, with error
+</I>&gt;&gt;&gt;<i> stacks like :
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> [junit] Testcase: createContextTest(com.jogamp.opencl.gl.CLGLTest): Caused
+</I>&gt;&gt;&gt;<i> an ERROR
+</I>&gt;&gt;&gt;<i>     [junit] test timed out after 5000 milliseconds
+</I>&gt;&gt;&gt;<i>     [junit] java.lang.Exception: test timed out after 5000 milliseconds
+</I>&gt;&gt;&gt;<i>     [junit] at java.lang.Object.wait(Native Method)
+</I>&gt;&gt;&gt;<i>     [junit] at java.lang.Object.wait(Object.java:485)
+</I>&gt;&gt;&gt;<i>     [junit] at
+</I>&gt;&gt;&gt;<i> com.jogamp.opengl.impl.SharedResourceRunner.doAndWait(SharedResourceRunner.java:152)
+</I>&gt;&gt;&gt;<i>     [junit] at
+</I>&gt;&gt;&gt;<i> com.jogamp.opengl.impl.SharedResourceRunner.getOrCreateShared(SharedResourceRunner.java:100)
+</I>&gt;&gt;&gt;<i>     [junit] at
+</I>&gt;&gt;&gt;<i> com.jogamp.opengl.impl.x11.glx.X11GLXDrawableFactory.getOrCreateSharedContextImpl(X11GLXDrawableFactory.java:253)
+</I>&gt;&gt;&gt;<i>     [junit] at
+</I>&gt;&gt;&gt;<i> javax.media.opengl.GLDrawableFactory.getOrCreateSharedContext(GLDrawableFactory.java:275)
+</I>&gt;&gt;&gt;<i>     [junit] at
+</I>&gt;&gt;&gt;<i> javax.media.opengl.GLDrawableFactory.getIsSharedContextAvailable(GLDrawableFactory.java:250)
+</I>&gt;&gt;&gt;<i>     [junit] at
+</I>&gt;&gt;&gt;<i> javax.media.opengl.GLProfile.initProfilesForDeviceImpl(GLProfile.java:1251)
+</I>&gt;&gt;&gt;<i>     [junit] at
+</I>&gt;&gt;&gt;<i> javax.media.opengl.GLProfile.initProfilesForDevice(GLProfile.java:1224)
+</I>&gt;&gt;&gt;<i>     [junit] at
+</I>&gt;&gt;&gt;<i> javax.media.opengl.GLProfile.initProfilesForDefaultDevices(GLProfile.java:1192)
+</I>&gt;&gt;&gt;<i>     [junit] at
+</I>&gt;&gt;&gt;<i> javax.media.opengl.GLProfile.access$000(GLProfile.java:66)
+</I>&gt;&gt;&gt;<i>     [junit] at javax.media.opengl.GLProfile$1.run(GLProfile.java:112)
+</I>&gt;&gt;&gt;<i>     [junit] at java.security.AccessController.doPrivileged(Native
+</I>&gt;&gt;&gt;<i> Method)
+</I>&gt;&gt;&gt;<i>     [junit] at
+</I>&gt;&gt;&gt;<i> javax.media.opengl.GLProfile.initSingleton(GLProfile.java:110)
+</I>&gt;&gt;&gt;<i>     [junit] at com.jogamp.opencl.gl.CLGLTest.init(CLGLTest.java:70)
+</I>&gt;&gt;&gt;<i>     [junit] at
+</I>&gt;&gt;&gt;<i> com.jogamp.opencl.gl.CLGLTest.createContextTest(CLGLTest.java:102)
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> So there is another problem I don t identify...
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> 2011/1/13 Pol kennel &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pol.kennel at gmail.com</A>&gt;
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Hi Rick,
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> Thank a lot for your detailed answers an to pay attention to my problems
+</I>&gt;&gt;&gt;&gt;<i> !
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> I finally resolved my problem with the OpenGL lib with your previous
+</I>&gt;&gt;&gt;&gt;<i> mail : a link was not set correctly to the libGL.so file. I now have the
+</I>&gt;&gt;&gt;&gt;<i> same output with *ldd /usr/lib/libGL.so *command. So I build correctly
+</I>&gt;&gt;&gt;&gt;<i> C and OpenCL project, demos work well.
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> I also build correctly *gluegen*, *jogl*, *jocl* and *jocl-demos*projects (note that lines &quot;git clone
+</I>&gt;&gt;&gt;&gt;<i> <A HREF="http://github.com/sgothel/gluegen.git">http://github.com/sgothel/gluegen.git</A> gluegen&quot; and &quot;git clone
+</I>&gt;&gt;&gt;&gt;<i> <A HREF="http://github.com/sgothel/jogl-demos.git">http://github.com/sgothel/jogl-demos.git</A> jogl-demos&quot; are missing on
+</I>&gt;&gt;&gt;&gt;<i> the <A HREF="http://www.imagejdev.org/setting-jocl-jogl-and-gluegen">http://www.imagejdev.org/setting-jocl-jogl-and-gluegen</A> page of your
+</I>&gt;&gt;&gt;&gt;<i> tutorial).
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> However, I stoped in building *joal* and *jogl-demos. *You probably
+</I>&gt;&gt;&gt;&gt;<i> omit to precise the building of the *joal *project (but it could be
+</I>&gt;&gt;&gt;&gt;<i> intended ?) ; when building *joal* with *ant* in the */joal/make/*directory I get an error :
+</I>&gt;&gt;&gt;&gt;<i> &quot;*/home/pol/joal/make/build.xml:369: taskdef class
+</I>&gt;&gt;&gt;&gt;<i> com.sun.gluegen.ant.GlueGenTask cannot be found*
+</I>&gt;&gt;&gt;&gt;<i> * using the classloader
+</I>&gt;&gt;&gt;&gt;<i> AntClassLoader[/home/pol/gluegen/build/gluegen.jar:/home/pol/gluegen/build/antlr.jar:/home/pol/gluegen/make/lib/antlr.jar]
+</I>&gt;&gt;&gt;&gt;<i> *&quot;
+</I>&gt;&gt;&gt;&gt;<i> (gluegen.jar and antlr.jar still in the right directory, is there
+</I>&gt;&gt;&gt;&gt;<i> classpath to set for gluegen ?). In the *joal* readme file, I found
+</I>&gt;&gt;&gt;&gt;<i> that OpenAL lib are need, so i downloaded  libopenal-dev/openal1 packets
+</I>&gt;&gt;&gt;&gt;<i> from synaptic, and follow instructions saying to copy gluegen.properties and
+</I>&gt;&gt;&gt;&gt;<i> joal.properties and jogl.properties into home directory but don't know how
+</I>&gt;&gt;&gt;&gt;<i> to set correctly properties into this files.
+</I>&gt;&gt;&gt;&gt;<i> *joal* building stills crash.
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> Regarding to *jogl-demos *when* *building with* ant *in *
+</I>&gt;&gt;&gt;&gt;<i> ~/jogl-demos/make/*  i get 27 errors like :
+</I>&gt;&gt;&gt;&gt;<i> [javac] Compiling 169 source files to /home/pol/jogl-demos/build/classes
+</I>&gt;&gt;&gt;&gt;<i> [javac] /home/pol/jogl-demos/src/demos/applets/GearsJOALApplet.java:11:
+</I>&gt;&gt;&gt;&gt;<i> package com.jogamp.openal.util does not exist
+</I>&gt;&gt;&gt;&gt;<i> [javac] import com.jogamp.openal.util.ALut;&quot;
+</I>&gt;&gt;&gt;&gt;<i> [...]
+</I>&gt;&gt;&gt;&gt;<i> I suppose it s due to joal, OpenAL again....
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> (How) Did you install it ?
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> On the other side, i have update the decon project from svn.
+</I>&gt;&gt;&gt;&gt;<i> When running *SobelFilterExample.java *i get :
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> *Retrieving test image...  *
+</I>&gt;&gt;&gt;&gt;<i> *Starting iteration... 0*
+</I>&gt;&gt;&gt;&gt;<i> *Local work size dimensions are max array size of*
+</I>&gt;&gt;&gt;&gt;<i> *unavailable functions: [clCreateEventFromGLsyncKHR,
+</I>&gt;&gt;&gt;&gt;<i> clIcdGetPlatformIDsKHR]*
+</I>&gt;&gt;&gt;&gt;<i> *Discovered NVIDIA CUDA*
+</I>&gt;&gt;&gt;&gt;<i> *com.jogamp.opencl.CLException$CLInvalidBinaryException: *
+</I>&gt;&gt;&gt;&gt;<i> *CLDevice [id: 140626625730048 name: GeForce GTS 240 type: GPU profile:
+</I>&gt;&gt;&gt;&gt;<i> FULL_PROFILE] build log:*
+</I>&gt;&gt;&gt;&gt;<i> *ptxas application ptx input, line 104; error   : Instruction 'cvt'
+</I>&gt;&gt;&gt;&gt;<i> requires SM 1.3 or higher, or map_f64_to_f32 directive*
+</I>&gt;&gt;&gt;&gt;<i> *ptxas application ptx input, line 105; error   : Instruction 'cvt'
+</I>&gt;&gt;&gt;&gt;<i> requires SM 1.3 or higher, or map_f64_to_f32 directive*
+</I>&gt;&gt;&gt;&gt;<i> *ptxas application ptx input, line 106; error   : Instruction 'mul'
+</I>&gt;&gt;&gt;&gt;<i> requires SM 1.3 or higher, or map_f64_to_f32 directive*
+</I>&gt;&gt;&gt;&gt;<i> *ptxas application ptx input, line 107; error   : Instruction 'mul'
+</I>&gt;&gt;&gt;&gt;<i> requires SM 1.3 or higher, or map_f64_to_f32 directive*
+</I>&gt;&gt;&gt;&gt;<i> *ptxas application ptx input, line 108; error   : Instruction 'add'
+</I>&gt;&gt;&gt;&gt;<i> requires SM 1.3 or higher, or map_f64_to_f32 directive*
+</I>&gt;&gt;&gt;&gt;<i> *ptxas application ptx input, line 109; error   : Instruction 'sqrt'
+</I>&gt;&gt;&gt;&gt;<i> requires SM 1.3 or higher, or map_f64_to_f32 directive*
+</I>&gt;&gt;&gt;&gt;<i> *ptxas application ptx input, line 110; error   : Instruction 'cvt'
+</I>&gt;&gt;&gt;&gt;<i> requires SM 1.3 or higher, or map_f64_to_f32 directive*
+</I>&gt;&gt;&gt;&gt;<i> *ptxas fatal   : Ptx assembly aborted due to errors*
+</I>&gt;&gt;&gt;&gt;<i> *error   : Ptx compilation failed: gpu='sm_11', device
+</I>&gt;&gt;&gt;&gt;<i> code='cuModuleLoadDataEx_4'*
+</I>&gt;&gt;&gt;&gt;<i> *: Considering profile 'compute_11' for gpu='sm_11' in
+</I>&gt;&gt;&gt;&gt;<i> 'cuModuleLoadDataEx_4'*
+</I>&gt;&gt;&gt;&gt;<i> *: Retrieving binary for 'cuModuleLoadDataEx_4', for gpu='sm_11', usage
+</I>&gt;&gt;&gt;&gt;<i> mode='  '*
+</I>&gt;&gt;&gt;&gt;<i> *: Considering profile 'compute_11' for gpu='sm_11' in
+</I>&gt;&gt;&gt;&gt;<i> 'cuModuleLoadDataEx_4'*
+</I>&gt;&gt;&gt;&gt;<i> *: Control flags for 'cuModuleLoadDataEx_4' disable search path*
+</I>&gt;&gt;&gt;&gt;<i> *: Ptx binary found for 'cuModuleLoadDataEx_4',
+</I>&gt;&gt;&gt;&gt;<i> architecture='compute_11'*
+</I>&gt;&gt;&gt;&gt;<i> *: Ptx compilation for 'cuModuleLoadDataEx_4', for gpu='sm_11', ocg
+</I>&gt;&gt;&gt;&gt;<i> options='  '*
+</I>&gt;&gt;&gt;&gt;<i> *ptxas application ptx input, line 104; warning : Double is not
+</I>&gt;&gt;&gt;&gt;<i> supported. Demoting to float*
+</I>&gt;&gt;&gt;&gt;<i> *error: CL_INVALID_BINARY (man page:
+</I>&gt;&gt;&gt;&gt;<i> <A HREF="http://www.khronos.org/opencl/sdk/1.1/docs/man/xhtml/errors.html">http://www.khronos.org/opencl/sdk/1.1/docs/man/xhtml/errors.html</A>)*
+</I>&gt;&gt;&gt;&gt;<i> * at com.jogamp.opencl.CLException.newException(CLException.java:49)*
+</I>&gt;&gt;&gt;&gt;<i> * at com.jogamp.opencl.CLProgram.build(CLProgram.java:335)*
+</I>&gt;&gt;&gt;&gt;<i> * at com.jogamp.opencl.CLProgram.build(CLProgram.java:174)*
+</I>&gt;&gt;&gt;&gt;<i> * at publication.SobelFilterExample.&lt;init&gt;(SobelFilterExample.java:66)*
+</I>&gt;&gt;&gt;&gt;<i> * at
+</I>&gt;&gt;&gt;&gt;<i> publication.SobelFilterExample.runTest(SobelFilterExample.java:204)*
+</I>&gt;&gt;&gt;&gt;<i> * at publication.SobelFilterExample.main(SobelFilterExample.java:155)*
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> So I suppose it s due to miss installation of JOAL.
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> I'll be so thankful if you can get me out of this deadlock.... I can
+</I>&gt;&gt;&gt;&gt;<i> already see the light far away :)
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> Best regards,
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i>  Pol
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> PS : I'm often connected on google chat so if you prefer answer me
+</I>&gt;&gt;&gt;&gt;<i> online please let me know you gmail address.
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> 2011/1/12 Rick Lentz &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">rwlentz at wisc.edu</A>&gt;
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> Hi Pol,
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i>   Regarding your first question it is likely that the linker is missing
+</I>&gt;&gt;&gt;&gt;&gt;<i> a reference to OpenGL.  My instructions were for a prior major release of
+</I>&gt;&gt;&gt;&gt;&gt;<i> Ubuntu as well as a prior minor release of NVidia's CUDA SDK.  I have
+</I>&gt;&gt;&gt;&gt;&gt;<i> updated the setup instructions to reflect the current versions as well as
+</I>&gt;&gt;&gt;&gt;&gt;<i> tested against 64bit Mac and Linux OSs.
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i>   With regard to your specific problem, many of NVidia's examples
+</I>&gt;&gt;&gt;&gt;&gt;<i> include use of OpenGL.  NVidia's documentation indicates that libgl.so is
+</I>&gt;&gt;&gt;&gt;&gt;<i> referenced via static link to appear to be located in /usr/lib/libgl.so (per
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i> <A HREF="http://developer.download.nvidia.com/compute/cuda/3_2_prod/drivers/docs/README_Linux.txtunder">http://developer.download.nvidia.com/compute/cuda/3_2_prod/drivers/docs/README_Linux.txtunder</A> Chapter 5, Listing of Installed Components, 4th bullet).  Chapter 5 of
+</I>&gt;&gt;&gt;&gt;&gt;<i> NVidia's documentation goes on to describe the linking process that happens
+</I>&gt;&gt;&gt;&gt;&gt;<i> when installing the developer drivers.  Perhaps this linking did not happen
+</I>&gt;&gt;&gt;&gt;&gt;<i> when you installed the NVidia development drivers for Linux.  Did you get an
+</I>&gt;&gt;&gt;&gt;&gt;<i> error during installation of the developer drivers reporting something in
+</I>&gt;&gt;&gt;&gt;&gt;<i> this regard?  Chapter 5 concludes on how to check a Linux dynamic library
+</I>&gt;&gt;&gt;&gt;&gt;<i> using the command line tool ldd.  In this case, ldd /usr/lib/libGL.so
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i> Here is the output I get when running ldd /usr/lib/libGL.so
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i> ldd /usr/lib/libGL.so
+</I>&gt;&gt;&gt;&gt;&gt;<i> linux-vdso.so.1 =&gt;  (0x00007ffff33e6000)
+</I>&gt;&gt;&gt;&gt;&gt;<i>  libnvidia-tls.so.260.19.14 =&gt; /usr/lib/tls/libnvidia-tls.so.260.19.14
+</I>&gt;&gt;&gt;&gt;&gt;<i> (0x00007fc82b46b000)
+</I>&gt;&gt;&gt;&gt;&gt;<i> libnvidia-glcore.so.260.19.14 =&gt; /usr/lib/libnvidia-glcore.so.260.19.14
+</I>&gt;&gt;&gt;&gt;&gt;<i> (0x00007fc82987f000)
+</I>&gt;&gt;&gt;&gt;&gt;<i>  libX11.so.6 =&gt; /usr/lib/libX11.so.6 (0x00007fc829549000)
+</I>&gt;&gt;&gt;&gt;&gt;<i> libXext.so.6 =&gt; /usr/lib/libXext.so.6 (0x00007fc829337000)
+</I>&gt;&gt;&gt;&gt;&gt;<i>  libc.so.6 =&gt; /lib/libc.so.6 (0x00007fc828f93000)
+</I>&gt;&gt;&gt;&gt;&gt;<i> libdl.so.2 =&gt; /lib/libdl.so.2 (0x00007fc828d8f000)
+</I>&gt;&gt;&gt;&gt;&gt;<i>  libm.so.6 =&gt; /lib/libm.so.6 (0x00007fc828b0c000)
+</I>&gt;&gt;&gt;&gt;&gt;<i> libxcb.so.1 =&gt; /usr/lib/libxcb.so.1 (0x00007fc8288ef000)
+</I>&gt;&gt;&gt;&gt;&gt;<i>  /lib64/ld-linux-x86-64.so.2 (0x00007fc82b974000)
+</I>&gt;&gt;&gt;&gt;&gt;<i> libXau.so.6 =&gt; /usr/lib/libXau.so.6 (0x00007fc8286eb000)
+</I>&gt;&gt;&gt;&gt;&gt;<i>  libXdmcp.so.6 =&gt; /usr/lib/libXdmcp.so.6 (0x00007fc8284e5000)
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i> If the libGL.so file is present and linked property, you can double
+</I>&gt;&gt;&gt;&gt;&gt;<i> check for inclusion of libGL.so path by ensuring its path in your bash
+</I>&gt;&gt;&gt;&gt;&gt;<i> profile under the variable LD_LIBRARY_PATH.  NVidia asks for the installer
+</I>&gt;&gt;&gt;&gt;&gt;<i> to add these additions in the Linux install documents.  Here is the line in
+</I>&gt;&gt;&gt;&gt;&gt;<i> my .bashrc file that allows the linker to find libGL.so (specifically the
+</I>&gt;&gt;&gt;&gt;&gt;<i> &quot;:/usr/lib&quot; portion of this line):
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i> export
+</I>&gt;&gt;&gt;&gt;&gt;<i> LD_LIBRARY_PATH=&quot;/usr/lib:/usr/local/cuda/lib64:/usr/local/cuda/lib:/usr/lib32:/usr/local/lib&quot;
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i> I also had issues compiling the most recent version of NVidia's C
+</I>&gt;&gt;&gt;&gt;&gt;<i> samples.  I reflected a work around in the updated web documents (see the
+</I>&gt;&gt;&gt;&gt;&gt;<i> bottom of: <A HREF="http://www.imagejdev.org/setting-host-machine">http://www.imagejdev.org/setting-host-machine</A> ).
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i> Please let me know if you have any more questions or difficulties with
+</I>&gt;&gt;&gt;&gt;&gt;<i> the ImageJ OpenCL plugin examples.
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i> Sincerely,
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i> Rick Lentz
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i> On Tue, Jan 11, 2011 at 4:20 AM, Pol kennel &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pol.kennel at gmail.com</A>&gt;wrote:
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> Hello,
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> I am a PhD student working on image segmentation by texture analysis
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> with an application on remote sensing images (Montpellier, France). So i
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> have to process very large images (e.g. 15000*8000).
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> All methods I developed are formed as plugin under ImageJ API that I
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> really like, but not yet applicable on this sort of image.
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> Recently, I tough to use finally my graphic card (Nvidia GTS240) which
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> I think will help me a lot in my process. So after several search on the
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> web, I found this &lt;<A HREF="http://imagejdev.org/plugins/opencl-plugin">http://imagejdev.org/plugins/opencl-plugin</A>&gt; (OpenCL
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> plugin you wrote) great ! it's precisely what i need.
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> So I decided to follow your tutorial to setup the environment but met
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> some problems... :
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>    1. When launching makefile in &quot;~/NVIDIA_GPU_Computing_SDK/C/ &quot; and
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>    &quot;~/NVIDIA_GPU_Computing_SDK/OpenCL&quot; I had following error &quot;/usr/bin/ld:
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>    cannot find -lGL&quot;. Plus, I dont have the same demo files, maybe because of
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>    version ? (cudatoolkit_3.2.16_linux_64, gpucomputingsdk_3.2.16 and
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>    devdriver_3.2_linux_64_260.19.26 on Ubuntu 10.10). On the other side demos I
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>    have work perfectly (ooclDCT8x8, oclHistogram,...)
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>    2. *Main problem is that the repository you indicate to get the
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>    example project (<A HREF="http://www.loci.wisc.edu/svn/decon">http://www.loci.wisc.edu/svn/decon</A>) doesn't
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>    work... *&quot;
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>    <A HREF="http://dev.loci.wisc.edu/svn/software/branches/maven/projects/opencl-decon">http://dev.loci.wisc.edu/svn/software/branches/maven/projects/opencl-decon</A>&quot;
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>    repository works well. Is is the same ?
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> Thanks a lot if you find time to answer me (and sorry for my english).
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> And thanks you for work you are doing on ImageJ.
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> Best regards,
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> *
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> *
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> --
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> Pol Kennel
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> --
+</I>&gt;&gt;&gt;&gt;<i> Pol Kennel
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> --
+</I>&gt;&gt;&gt;<i> Pol Kennel
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;<i> --
+</I>&gt;<i> Pol Kennel
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20110114/f5b4105c/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20110114/f5b4105c/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000295.html">[ImageJ-devel] Fwd: OpenCL plugin
+</A></li>
+	<LI>Next message: <A HREF="000298.html">[ImageJ-devel] OpenCL plugin
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#297">[ date ]</a>
+              <a href="thread.html#297">[ thread ]</a>
+              <a href="subject.html#297">[ subject ]</a>
+              <a href="author.html#297">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

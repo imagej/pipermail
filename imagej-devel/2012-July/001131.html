@@ -1,0 +1,180 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Migrating an ImageJ1 plugin (Git, Ant etc.) to ImageJ2 (Git, Maven)
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Migrating%20an%20ImageJ1%20plugin%20%28Git%2C%0A%20Ant%20etc.%29%20to%20ImageJ2%20%28Git%2C%20Maven%29&In-Reply-To=%3Calpine.DEB.1.00.1207301919460.32459%40s15462909.onlinehome-server.info%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001128.html">
+   <LINK REL="Next"  HREF="001132.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Migrating an ImageJ1 plugin (Git, Ant etc.) to ImageJ2 (Git, Maven)</H1>
+    <B>Johannes Schindelin</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Migrating%20an%20ImageJ1%20plugin%20%28Git%2C%0A%20Ant%20etc.%29%20to%20ImageJ2%20%28Git%2C%20Maven%29&In-Reply-To=%3Calpine.DEB.1.00.1207301919460.32459%40s15462909.onlinehome-server.info%3E"
+       TITLE="[ImageJ-devel] Migrating an ImageJ1 plugin (Git, Ant etc.) to ImageJ2 (Git, Maven)">Johannes.Schindelin at gmx.de
+       </A><BR>
+    <I>Mon Jul 30 12:35:24 CDT 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001128.html">[ImageJ-devel] Migrating an ImageJ1 plugin (Git,	Ant etc.) to ImageJ2 (Git, Maven)
+</A></li>
+        <LI>Next message: <A HREF="001132.html">[ImageJ-devel] Migrating an ImageJ1 plugin (Git, Ant etc.) to ImageJ2 (Git, Maven)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1131">[ date ]</a>
+              <a href="thread.html#1131">[ thread ]</a>
+              <a href="subject.html#1131">[ subject ]</a>
+              <a href="author.html#1131">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Michael,
+
+On Sun, 29 Jul 2012, Michael Doube wrote:
+
+&gt;<i> In a new thread because it's a broad but different issue than the
+</I>&gt;<i> others: How to move an active ImageJ1 plugin project to an ImageJ2
+</I>&gt;<i> project?
+</I>&gt;<i> 
+</I>&gt;<i> The scenario:
+</I>&gt;<i> I have an active ImageJ1 plugin project, which I want to move to Image2.
+</I>&gt;<i> The old plugin needs to stay active with bugfixes and for archival
+</I>&gt;<i> reasons. Currently, releases are tracked on the master branch of a Git
+</I>&gt;<i> repository, the IDE is Eclipse and Ant is the builder. I'd like to keep
+</I>&gt;<i> the whole project (IJ1 and IJ2 plugins) in the same Git repository.
+</I>&gt;<i> 
+</I>&gt;<i> The plan at the moment is to:
+</I>&gt;<i> Keep releasing the old plugin on the master branch
+</I>&gt;<i> Work on the new plugin on a version branch
+</I>&gt;<i> When the new plugin is stable, send the old plugin to a legacy branch
+</I>&gt;<i> and merge the new plugin to master
+</I>
+Personally, I would actually develop them in the same branch, in different
+subdirectories, for the time being. And if at all possible, I would try to
+re-use code all the time.
+
+Ideally, however, you would really provide the very same .jar file (and
+likewise have really just one project) for both the IJ1 and IJ2 plugin. If
+you wrap the ImagePlus into an ImgLib2 structure in the IJ1-specific part,
+you should be able to use the exact same code to perform the actual
+computation from both IJ1 and IJ2.
+
+&gt;<i> Because the two plugins use different build systems, I've set them up as
+</I>&gt;<i> two separate Eclipse projects, one with the old style (Ant,
+</I>&gt;<i> plugins.config) and one with the new style (Maven, annotations). The two
+</I>&gt;<i> projects work on different branches of the same Git repository, so I can
+</I>&gt;<i> work on both of them simultaneously in the same instance of Eclipse.
+</I>
+If you have a look at, say,
+<A HREF="https://github.com/fiji/fiji/tree/master/src-plugins/Arrow">https://github.com/fiji/fiji/tree/master/src-plugins/Arrow</A>_ you will see
+that it is quite doable to use Maven to build IJ1 plugins without any
+hassle.
+
+&gt;<i> To do that I branched the new plugin off, cloned it locally into a new
+</I>&gt;<i> Eclipse project (Import...) then 'Mavenized' the new project. The
+</I>&gt;<i> pom.xml-related chatter from me lately has been a result of this
+</I>&gt;<i> process. The new branch has the old directory structure:
+</I>&gt;<i> workspace/src/org/bonej/MyPlugin.java but Maven expects something else
+</I>&gt;<i> by convention.
+</I>
+Yep, that is right, the convention is that your sources live in the
+src/main/java/ sub-directory of your project root directory. In your case,
+it would be:
+
+	BoneJ/src/main/java/org/bonej/MyPlugin.java
+
+Also, I would strongly advise to keep the sources outside of the Eclipse
+workspace. We had a lot of &quot;fun&quot; with Eclipse that was solved simply by
+moving the project files outside of the workspace.
+
+&gt;<i> The big question is, is this going to work at all or should I start
+</I>&gt;<i> again in a different way?
+</I>
+I'll not suggest to throw away all your hard work. If you want to follow
+my advice above, you can do that without re-starting the whole thing.
+
+For example, to get the IJ1 and IJ2 plugin reconciled into one branch, you
+could first change things in the IJ1 branch to use ImgLib2 and to use
+Maven, and then you could simply merge the IJ2 branch.
+
+&gt;<i> I am asking all this because processing of annotations doesn't work in
+</I>&gt;<i> my setup, so the new plugin's menu items aren't added to ImageJ2
+</I>&gt;<i> (solution is to use the Ant build.xml and Sun javac to do the release
+</I>&gt;<i> build, as we developed at the last Fiji Hackathon).
+</I>
+Yes, the annotation processing is a little hairy. Our solution in ImageJ2
+is to force certain settings by tracking the .factorypath and
+.settings/org.eclipse.jdt.apt.core.prefs as part of our source code. This
+tells Eclipse to adher to the standard mandated by the Java specifications
+which demand that annotation processors present in the classpath when
+compiling Java sources be run.
+
+I have ticket in the ImageJ2 ticket system to make it easier to start
+developing a plugin in Eclipse, by providing a File&gt;New Plugin (Eclipse)
+menu entry. I fully intend to write out the two files mentioned above
+together with a pom.xml file from there.
+
+Also note that starting with ImageJ2 beta3, Eclipse setups should be
+supported much better even when the annotation processors failed to be
+called: if you start ImageJ2 from within Eclipse, it should now detect
+that situation and run the annotation processors manually.
+
+&gt;<i> Do you see any disasters looming, or propose another streamlined
+</I>&gt;<i> approach that will work? Maven is impressive so far, so I'd like to
+</I>&gt;<i> continue with it, I just have to organise things so that it behaves
+</I>&gt;<i> correctly.
+</I>
+Right, the problem is however not so much Maven as Eclipse's Maven
+emulation. One other thing I would strongly suggest to do is to make the
+scijava pom.xml the parent of your top-level pom.xml. That way, you not
+only get the ImageJ2 versions for free, but you also get some settings
+fixing issues in particular with Eclipse that at least yours truly
+struggled with for extended amounts of time. Just as an example: at some
+stage, Eclipse's Maven emulation stopped running the buildnumber plugin
+(which embeds the current commit into your .jar file's manifest,
+super-useful). After hours of research I finally found how to force it
+back to normal.
+
+And yes, you probably guessed it, the pom.xml which File&gt;New Plugin
+(Eclipse) will write out will have the scijava pom as parent.
+
+Ciao,
+Dscho
+
+</PRE>
+
+
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001128.html">[ImageJ-devel] Migrating an ImageJ1 plugin (Git,	Ant etc.) to ImageJ2 (Git, Maven)
+</A></li>
+	<LI>Next message: <A HREF="001132.html">[ImageJ-devel] Migrating an ImageJ1 plugin (Git, Ant etc.) to ImageJ2 (Git, Maven)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1131">[ date ]</a>
+              <a href="thread.html#1131">[ thread ]</a>
+              <a href="subject.html#1131">[ subject ]</a>
+              <a href="author.html#1131">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

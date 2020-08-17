@@ -1,0 +1,331 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] JavaFX packaging update
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20JavaFX%20packaging%20update&In-Reply-To=%3CCADN69ykqsxbgZPaswGZShQaAsEO4iztJwiRWHRDrbhweh6OAVg%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002601.html">
+   <LINK REL="Next"  HREF="002603.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] JavaFX packaging update</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20JavaFX%20packaging%20update&In-Reply-To=%3CCADN69ykqsxbgZPaswGZShQaAsEO4iztJwiRWHRDrbhweh6OAVg%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] JavaFX packaging update">ctrueden at wisc.edu
+       </A><BR>
+    <I>Thu Jun 18 11:17:14 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002601.html">[ImageJ-devel] JavaFX, ImageJ, Maven and Java 8
+</A></li>
+        <LI>Next message: <A HREF="002603.html">[ImageJ-devel] JavaFX packaging update
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2602">[ date ]</a>
+              <a href="thread.html#2602">[ thread ]</a>
+              <a href="subject.html#2602">[ subject ]</a>
+              <a href="author.html#2602">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Wayne,
+
+&gt;<i> Running mvn a couple of times resolved the issue.
+</I>
+Great.
+
+&gt;<i> The next two issues are how to tell ImageJ where the plugins folder is
+</I>&gt;<i> and how to set the memory limit. Is there a way to define in
+</I>&gt;<i> Info.plist a &quot;plugins.dir&#8221; property with the value &#8220;$APPDIR&quot;, which I
+</I>&gt;<i> assume is the directory containing ImageJ.app?
+</I>
+The way the JavaFX launcher works is that it picks up any JVM settings from
+the Java Preferences API at launch time. And all arguments passed on the
+CLI go straight to the main method args. So we will be updating ImageJ2
+over the summer to process args on the Java side that were previously
+handled by the launcher, including -Dfoo style system property settings
+(since in most cases it is fine to set them early in the application
+startup). Of course, not all args will be possible to support this way&#8212;e.g.
+max heap size (but see below).
+
+Unfortunately, the current JavaFX launcher does not yet have a means to
+dynamically pass JVM args to Java itself. I have an SO issue posted about
+it [1] as well as a bug report in to Oracle (still under review; no public
+URL yet). Maybe the JavaFX team will add a way, since this packaging
+mechanism is being actively maintained and developed. But really it is not
+that urgent, since you can run &quot;java -Dplugins.dir=... -jar ImageJ.jar&quot; or
+whatever from the CLI as a developer. I.e.: the native launchers maybe do
+not need those features. Regardless, we will also add shell scripts to make
+common workflows (e.g., remote debugging) as simple as possible.
+
+&gt;<i>From a user standpoint, for things like max heap size, there is a nice
+</I>UserJvmOptionsService API [2] that we will use to expose common JVM
+settings in an options dialog box. It lets you set arbitrary arguments to
+pass to java (stored via the Java Preferences API) which take effect the
+next time the application is launched.
+
+See also imagej/imagej-launcher#33 on GitHub [3].
+
+Regards,
+Curtis
+
+[1] <A HREF="http://stackoverflow.com/q/30809330/1207769">http://stackoverflow.com/q/30809330/1207769</A>
+[2]
+<A HREF="http://docs.oracle.com/javase/8/docs/technotes/guides/deploy/jvm_options_api.html">http://docs.oracle.com/javase/8/docs/technotes/guides/deploy/jvm_options_api.html</A>
+[3] <A HREF="https://github.com/imagej/imagej-launcher/issues/33">https://github.com/imagej/imagej-launcher/issues/33</A>
+
+On Thu, Jun 18, 2015 at 10:30 AM, Rasband, Wayne (NIH/NIMH) [E] &lt;
+<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">rasbandw at mail.nih.gov</A>&gt; wrote:
+
+&gt;<i> Hi Curtis,
+</I>&gt;<i>
+</I>&gt;<i> Running mvn a couple of times resolved the issue. The next two issues are
+</I>&gt;<i> how to tell ImageJ where the plugins folder is and how to set the memory
+</I>&gt;<i> limit. Is there a way to define in Info.plist a &quot;plugins.dir&#8221; property with
+</I>&gt;<i> the value &#8220;$APPDIR&quot;, which I assume is the directory containing ImageJ.app?
+</I>&gt;<i>
+</I>&gt;<i> Best regards,
+</I>&gt;<i>
+</I>&gt;<i> -wayne
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> &gt; On Jun 17, 2015, at 10:34 PM, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at WISC.EDU</A>&gt; wrote:
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Hi Wayne,
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; It looks like the Maven command failed to build the project. The
+</I>&gt;<i> directory listing is only the source code from Git.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; The error indicates something went wrong downloading artifacts for the
+</I>&gt;<i> Maven build system. The first time you run Maven it downloads many things,
+</I>&gt;<i> but they all get cached into ~/.m2/repository, so subsequent builds are
+</I>&gt;<i> much more reasonable. It looks like you had a connectivity-related error,
+</I>&gt;<i> which can probably be resolved simply by running &quot;mvn&quot; again, or perhaps
+</I>&gt;<i> &quot;mvn -U&quot; to force an update.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; If running &quot;mvn&quot; and/or 'mvn -U&quot; a couple more times does not resolve
+</I>&gt;<i> the issue, let me know.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Regards,
+</I>&gt;<i> &gt; Curtis
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; On Wed, Jun 17, 2015 at 7:18 PM, Rasband, Wayne (NIH/NIMH) [E] &lt;
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">rasbandw at mail.nih.gov</A>&gt; wrote:
+</I>&gt;<i> &gt; Hi Curtis,
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; I was able to install maven after doing &quot;brew update&#8221;. I followed your
+</I>&gt;<i> instructions for building platform bundles for ImageJ 1.x, and it appeared
+</I>&gt;<i> to work except for this error:
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; [ERROR] Failed to execute goal
+</I>&gt;<i> org.apache.maven.plugins:maven-enforcer-plugin:1.3.1:enforce
+</I>&gt;<i> (enforce-rules) on project ij: Execution enforce-rules of goal
+</I>&gt;<i> org.apache.maven.plugins:maven-enforcer-plugin:1.3.1:enforce failed: Plugin
+</I>&gt;<i> org.apache.maven.plugins:maven-enforcer-plugin:1.3.1 or one of its
+</I>&gt;<i> dependencies could not be resolved: Could not transfer artifact
+</I>&gt;<i> org.eclipse.aether:aether-util:jar:0.9.0.M2 from/to central (
+</I>&gt;<i> <A HREF="https://repo.maven.apache.org/maven2">https://repo.maven.apache.org/maven2</A>): Connect to
+</I>&gt;<i> repo.maven.apache.org:443 [repo.maven.apache.org/199.27.76.215] failed:
+</I>&gt;<i> Operation timed out -&gt; [Help 1]
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; It generated an ImageJA folder but there is no target folder in it. This
+</I>&gt;<i> is what the ImageJA directory looks like:
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; ImageJA
+</I>&gt;<i> &gt;    applet.html
+</I>&gt;<i> &gt;    aREADME.txt
+</I>&gt;<i> &gt;    build.xml
+</I>&gt;<i> &gt;    pom.xml
+</I>&gt;<i> &gt;    release-notes.html
+</I>&gt;<i> &gt;    src/
+</I>&gt;<i> &gt;       main/
+</I>&gt;<i> &gt;          deploy/
+</I>&gt;<i> &gt;             package/
+</I>&gt;<i> &gt;                macosx/
+</I>&gt;<i> &gt;                   ImageJ-volume.icns
+</I>&gt;<i> &gt;                   ImageJ.icns
+</I>&gt;<i> &gt;                windows/
+</I>&gt;<i> &gt;                   ImageJ.ico
+</I>&gt;<i> &gt;          java/
+</I>&gt;<i> &gt;             ij/
+</I>&gt;<i> &gt;                CommandListener.java
+</I>&gt;<i> &gt;                CompositeImage.java
+</I>&gt;<i> &gt;                &#8230;
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Thanks for your help,
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; -wayne
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; &gt; On Jun 17, 2015, at 3:33 PM, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at WISC.EDU</A>&gt; wrote:
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> &gt; &gt; Hi Wayne,
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> &gt; &gt; It may be that the Maven download is choosing a mirror with wrong
+</I>&gt;<i> SHA1. Or it may be that your download is truly incomplete.
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> &gt; &gt; Did you try to rm the file out of /Library/Caches/Homebrew and do it
+</I>&gt;<i> again?
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> &gt; &gt; Did you try &quot;brew update&quot; first?
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> &gt; &gt; <A HREF="http://stackoverflow.com/q/12757694/1207769">http://stackoverflow.com/q/12757694/1207769</A>
+</I>&gt;<i> &gt; &gt; <A HREF="http://apple.stackexchange.com/q/57172">http://apple.stackexchange.com/q/57172</A>
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> &gt; &gt; Regards,
+</I>&gt;<i> &gt; &gt; Curtis
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> &gt; &gt; On Wed, Jun 17, 2015 at 1:51 PM, Rasband, Wayne (NIH/NIMH) [E] &lt;
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">rasbandw at mail.nih.gov</A>&gt; wrote:
+</I>&gt;<i> &gt; &gt; Hi Curtis,
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> &gt; &gt; I am still not having much luck. This is what I get when I try to use
+</I>&gt;<i> &quot;brew install maven&#8221; to install maven:
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> &gt; &gt; bash-3.2$ brew install maven
+</I>&gt;<i> &gt; &gt; ==&gt; Downloading
+</I>&gt;<i> <A HREF="http://www.apache.org/dyn/closer.cgi?path=maven/maven-3/3.2.3/binaries/apache-maven-3.2.3-bin.tar.gz">http://www.apache.org/dyn/closer.cgi?path=maven/maven-3/3.2.3/binaries/apache-maven-3.2.3-bin.tar.gz</A>
+</I>&gt;<i> &gt; &gt; ==&gt; Best Mirror
+</I>&gt;<i> <A HREF="http://apache.mesi.com.ar/maven/maven-3/3.2.3/binaries/apache-maven-3.2.3-bin.tar.gz">http://apache.mesi.com.ar/maven/maven-3/3.2.3/binaries/apache-maven-3.2.3-bin.tar.gz</A>
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> ########################################################################
+</I>&gt;<i> 100.0%
+</I>&gt;<i> &gt; &gt; Error: SHA1 mismatch
+</I>&gt;<i> &gt; &gt; Expected: 1ce6641f7dcb4fd5785bedcdca2979da83f6d23f
+</I>&gt;<i> &gt; &gt; Actual: 2e7c28f3ebc08b95934336680365cfaac2697155
+</I>&gt;<i> &gt; &gt; Archive: /Library/Caches/Homebrew/maven-3.2.3.tar.gz
+</I>&gt;<i> &gt; &gt; To retry an incomplete download, remove the file above.
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> &gt; &gt; Best regards,
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> &gt; &gt; -wayne
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> &gt; &gt; &gt; On Jun 17, 2015, at 12:09 PM, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at WISC.EDU</A>&gt;
+</I>&gt;<i> wrote:
+</I>&gt;<i> &gt; &gt; &gt;
+</I>&gt;<i> &gt; &gt; &gt; Hi Wayne,
+</I>&gt;<i> &gt; &gt; &gt;
+</I>&gt;<i> &gt; &gt; &gt; I just pushed some commits to the ImageJA repository [1] so that it
+</I>&gt;<i> can also build the same platform-specific application bundles -- but for
+</I>&gt;<i> vanilla ImageJ1 alone.
+</I>&gt;<i> &gt; &gt; &gt;
+</I>&gt;<i> &gt; &gt; &gt; To install Maven on your OS X machine, I recommend using Homebrew
+</I>&gt;<i> [2]. Then you can simply do:
+</I>&gt;<i> &gt; &gt; &gt;
+</I>&gt;<i> &gt; &gt; &gt;     brew install maven
+</I>&gt;<i> &gt; &gt; &gt;
+</I>&gt;<i> &gt; &gt; &gt; And you'll have a working mvn command.
+</I>&gt;<i> &gt; &gt; &gt;
+</I>&gt;<i> &gt; &gt; &gt; Note that the application bundling feature requires Java 8, since it
+</I>&gt;<i> is JavaFX-related functionality.
+</I>&gt;<i> &gt; &gt; &gt;
+</I>&gt;<i> &gt; &gt; &gt; So the commands you need to build platform bundles for ImageJ 1.x
+</I>&gt;<i> are:
+</I>&gt;<i> &gt; &gt; &gt;
+</I>&gt;<i> &gt; &gt; &gt;     git clone <A HREF="git://github.com/imagej/ImageJA">git://github.com/imagej/ImageJA</A>
+</I>&gt;<i> &gt; &gt; &gt;     cd ImageJA
+</I>&gt;<i> &gt; &gt; &gt;     mvn -Pdist
+</I>&gt;<i> &gt; &gt; &gt;
+</I>&gt;<i> &gt; &gt; &gt; And it should create them in the target/jfx/native folder. There
+</I>&gt;<i> should be .dmg and a .pkg installers, which including a Java 8 runtime
+</I>&gt;<i> embedded (in the ImageJ.app/Contents/PlugIns/Java.runtime folder
+</I>&gt;<i> internally). There should also be an ImageJ.app in there. There is also a
+</I>&gt;<i> double-clickable ImageJ.jar in the target/jfx/app folder (with empty lib/
+</I>&gt;<i> folder since ImageJ 1.x has no dependencies), as well another set of
+</I>&gt;<i> installers that do _not_ include the JRE in the target/jfx/native-nojre
+</I>&gt;<i> folder.
+</I>&gt;<i> &gt; &gt; &gt;
+</I>&gt;<i> &gt; &gt; &gt; Happy to help troubleshoot if you continue to have problems getting
+</I>&gt;<i> this working.
+</I>&gt;<i> &gt; &gt; &gt;
+</I>&gt;<i> &gt; &gt; &gt; Regards,
+</I>&gt;<i> &gt; &gt; &gt; Curtis
+</I>&gt;<i> &gt; &gt; &gt;
+</I>&gt;<i> &gt; &gt; &gt; P.S. You may notice one exception when building the ImageJA bundles,
+</I>&gt;<i> relating to the version string not conforming to &quot;x.y.z&quot; pattern, but it
+</I>&gt;<i> does not halt the build.
+</I>&gt;<i> &gt; &gt; &gt;
+</I>&gt;<i> &gt; &gt; &gt; [1] <A HREF="https://github.com/imagej/ImageJA">https://github.com/imagej/ImageJA</A>
+</I>&gt;<i> &gt; &gt; &gt; [2] <A HREF="http://brew.sh">http://brew.sh</A>
+</I>&gt;<i> &gt; &gt; &gt;
+</I>&gt;<i> &gt; &gt; &gt; On Wed, Jun 17, 2015 at 9:59 AM, Rasband, Wayne (NIH/NIMH) [E] &lt;
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">rasbandw at mail.nih.gov</A>&gt; wrote:
+</I>&gt;<i> &gt; &gt; &gt;
+</I>&gt;<i> &gt; &gt; &gt; &gt; On Jun 16, 2015, at 6:09 PM, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at WISC.EDU</A>&gt;
+</I>&gt;<i> wrote:
+</I>&gt;<i> &gt; &gt; &gt; &gt;
+</I>&gt;<i> &gt; &gt; &gt; &gt; Hi everyone,
+</I>&gt;<i> &gt; &gt; &gt; &gt;
+</I>&gt;<i> &gt; &gt; &gt; &gt; For those curious about the new JavaFX packaging for ImageJ, the
+</I>&gt;<i> relevant bits are now merged to master. So you can play with it if you like:
+</I>&gt;<i> &gt; &gt; &gt; &gt;
+</I>&gt;<i> &gt; &gt; &gt; &gt;   git clone <A HREF="git://github.com/imagej/imagej">git://github.com/imagej/imagej</A>
+</I>&gt;<i> &gt; &gt; &gt; &gt;   mvn -Pdist
+</I>&gt;<i> &gt; &gt; &gt; &gt;
+</I>&gt;<i> &gt; &gt; &gt; &gt; And you should get some platform-specific application bundles in
+</I>&gt;<i> target/jfx/app and target/jfx/native directories.
+</I>&gt;<i> &gt; &gt; &gt; &gt;
+</I>&gt;<i> &gt; &gt; &gt; &gt; Of course, the ImageJ Updater is still ignorant of the new
+</I>&gt;<i> directory structure (with core ImageJ stuff in the lib/ folder instead of
+</I>&gt;<i> jars/). And since the native launcher is no longer the ImageJ Launcher,
+</I>&gt;<i> many CLI flags do not work at the moment. But we will keep working on it!
+</I>&gt;<i> &gt; &gt; &gt;
+</I>&gt;<i> &gt; &gt; &gt; Hi Curtis,
+</I>&gt;<i> &gt; &gt; &gt;
+</I>&gt;<i> &gt; &gt; &gt; Is there an OS X application bundle that includes Java 8 available
+</I>&gt;<i> for download? I have not had any luck getting the the &#8216;mvn' command to work.
+</I>&gt;<i> &gt; &gt; &gt;
+</I>&gt;<i> &gt; &gt; &gt; -wayne
+</I>&gt;<i> &gt; &gt; &gt;
+</I>&gt;<i> &gt; &gt; &gt;
+</I>&gt;<i> &gt; &gt; &gt;
+</I>&gt;<i> &gt; &gt; &gt;
+</I>&gt;<i> &gt; &gt; &gt;
+</I>&gt;<i> &gt; &gt; &gt; _______________________________________________
+</I>&gt;<i> &gt; &gt; &gt; ImageJ-devel mailing list
+</I>&gt;<i> &gt; &gt; &gt; <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> &gt; &gt; &gt; <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i> &gt; &gt; &gt;
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20150618/058cebb4/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20150618/058cebb4/attachment-0001.html</A>&gt;
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002601.html">[ImageJ-devel] JavaFX, ImageJ, Maven and Java 8
+</A></li>
+	<LI>Next message: <A HREF="002603.html">[ImageJ-devel] JavaFX packaging update
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2602">[ date ]</a>
+              <a href="thread.html#2602">[ thread ]</a>
+              <a href="subject.html#2602">[ subject ]</a>
+              <a href="author.html#2602">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

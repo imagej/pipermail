@@ -1,0 +1,130 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Tutorial problems
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Tutorial%20problems&In-Reply-To=%3Calpine.DEB.1.00.1210201215080.2695%40bonsai2%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001246.html">
+   <LINK REL="Next"  HREF="001252.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Tutorial problems</H1>
+    <B>Johannes Schindelin</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Tutorial%20problems&In-Reply-To=%3Calpine.DEB.1.00.1210201215080.2695%40bonsai2%3E"
+       TITLE="[ImageJ-devel] Tutorial problems">Johannes.Schindelin at gmx.de
+       </A><BR>
+    <I>Sat Oct 20 05:36:43 CDT 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001246.html">[ImageJ-devel] [ImgLib2] PLEASE READ IF YOU ARE USING VIEWS - Change of Views.translate() sign
+</A></li>
+        <LI>Next message: <A HREF="001252.html">[ImageJ-devel] Tutorial problems
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1247">[ date ]</a>
+              <a href="thread.html#1247">[ thread ]</a>
+              <a href="subject.html#1247">[ subject ]</a>
+              <a href="author.html#1247">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi all,
+
+while playing around with ImgLib2, I realized that the imagej-tutorials do
+not work anymore. If you try to load and display a dataset, it gets loaded
+but not displayed.
+
+Now, I do not want to be a lame developer who just fires bug reports and
+forgets about them, so I investigated a little. The culprit seems to be
+the changes in the way UserInterfaces are instantiated. Earlier -- when
+the tutorial was written -- there was only one UserInterface and if you
+did not call createUI() on it (to show the main window) it still was able
+to show images with said UserInterface.
+
+In the meantime, we can show multiple user interfaces side by side, but
+that comes at a price: when looking for user interfaces to display images,
+the default one might not even be visible, resulting in -- nothing.
+
+I have a proposed fix on the 'tutorials' branch, where getVisibleUIs()
+falls back to the default UI if none was shown, but I have a hunch that we
+need a better solution where the default UI is the only visible UI in the
+beginning but as soon as createUI() has been called, the default UI is no
+longer being considered automatically visible.
+
+Hmm?
+
+Ciao,
+Dscho
+
+P.S.: there is a nasty issue with the {Bg,Fg}ColorButton when showing a
+stack without calling createUI() since it tries very, very, very hard to
+always update the button even if the main window was never shown. The
+stack trace looks like this:
+
+java.lang.IllegalArgumentException: There is no button associated with the specified tool
+        at imagej.ui.swing.SwingIconService$SwingIconDrawer.&lt;init&gt;(SwingIconService.java:86)
+        at imagej.ui.swing.SwingIconService.acquireDrawer(SwingIconService.java:68)
+        at imagej.core.tools.AbstractColorTool.acquireDrawer(AbstractColorTool.java:221)
+        at imagej.core.tools.AbstractColorTool.draw(AbstractColorTool.java:201)
+        at imagej.core.tools.AbstractColorTool.drawIcon(AbstractColorTool.java:170)
+        at imagej.core.tools.AbstractColorTool.onEvent(AbstractColorTool.java:195)
+        at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+        at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+        at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+        at java.lang.reflect.Method.invoke(Method.java:616)
+        at imagej.event.DefaultEventService$ProxySubscriber.onEvent(DefaultEventService.java:226)
+        at imagej.event.DefaultEventService$ProxySubscriber.onEvent(DefaultEventService.java:201)
+        at org.bushe.swing.event.ThreadSafeEventService.publish(ThreadSafeEventService.java:971)
+        at imagej.event.DefaultEventBus.access$201(DefaultEventBus.java:61)
+        at imagej.event.DefaultEventBus$2.run(DefaultEventBus.java:226)
+        at java.awt.event.InvocationEvent.dispatch(InvocationEvent.java:226)
+        at java.awt.EventQueue.dispatchEventImpl(EventQueue.java:670)
+        at java.awt.EventQueue.access$400(EventQueue.java:96)
+        at java.awt.EventQueue$2.run(EventQueue.java:631)
+        at java.awt.EventQueue$2.run(EventQueue.java:629)
+        at java.security.AccessController.doPrivileged(Native Method)
+        at java.security.AccessControlContext$1.doIntersectionPrivilege(AccessControlContext.java:105)
+        at java.awt.EventQueue.dispatchEvent(EventQueue.java:640)
+        at java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:275)
+        at java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:200)
+        at java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:190)
+        at java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:185)
+        at java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:177)
+        at java.awt.EventDispatchThread.run(EventDispatchThread.java:138)
+
+I wonder whether it makes sense to instantiate the ToolsService at all if
+the main window was not even shown?
+
+</PRE>
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001246.html">[ImageJ-devel] [ImgLib2] PLEASE READ IF YOU ARE USING VIEWS - Change of Views.translate() sign
+</A></li>
+	<LI>Next message: <A HREF="001252.html">[ImageJ-devel] Tutorial problems
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1247">[ date ]</a>
+              <a href="thread.html#1247">[ thread ]</a>
+              <a href="subject.html#1247">[ subject ]</a>
+              <a href="author.html#1247">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,143 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Simple usage of ImageJ2 and ImgLib2
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Simple%20usage%20of%20ImageJ2%20and%20ImgLib2&In-Reply-To=%3C81995B45-E832-42F0-BF07-D25598D54F14%40mpi-cbg.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001081.html">
+   <LINK REL="Next"  HREF="001117.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Simple usage of ImageJ2 and ImgLib2</H1>
+    <B>Stephan Preibisch</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Simple%20usage%20of%20ImageJ2%20and%20ImgLib2&In-Reply-To=%3C81995B45-E832-42F0-BF07-D25598D54F14%40mpi-cbg.de%3E"
+       TITLE="[ImageJ-devel] Simple usage of ImageJ2 and ImgLib2">preibisch at mpi-cbg.de
+       </A><BR>
+    <I>Mon Jul 16 09:15:48 CDT 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001081.html">[ImageJ-devel] Simple usage of ImageJ2 and ImgLib2
+</A></li>
+        <LI>Next message: <A HREF="001117.html">[ImageJ-devel] Basic usage of ImageJ2 libraries in seperate application (Simple display image in JFrame)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1083">[ date ]</a>
+              <a href="thread.html#1083">[ thread ]</a>
+              <a href="subject.html#1083">[ subject ]</a>
+              <a href="author.html#1083">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Padraig,
+
+the ImageJFunctions is part of the imglib2-ij.jar package which you need to import ... this is, however, the ImageJ1 way to display ImgLib2 data, so we are not so sure that is what you are interested in. Maybe Curtis or Johannes could help?
+
+Btw, if you are interested in getting a planar image (like each slice is a byte[], short[], float[], double[], etc.) you should use the PlanarImgFactory&lt; T &gt; which returns a PlanarImg&lt;T, A&gt;. It has a method &quot;A getPlane(int planeNo)&quot; which will return &quot;A&quot;, i.e. the FloatArray, ByteArray, DoubleArray, ... containing the array for the respective plane. Each &quot;A&quot; has a method called &quot;Object getCurrentStorageArray()&quot;, if it is a float-image it will be the &quot;FloatArray&quot; returning you float[]. Here is an example:
+
+		// open image as float (returns an ImgPlus which has a PlanarImg)
+		ImgPlus&lt; FloatType &gt; imgFloat = new ImgOpener().openImg( file.getAbsolutePath(),new PlanarImgFactory&lt; FloatType &gt;(), new FloatType() );
+		
+		// cast it to the right type of the PlanarImg
+		PlanarImg&lt; FloatType, FloatArray &gt; planarImg = (PlanarImg&lt; FloatType, FloatArray &gt;)imgFloat.getImg();  
+
+		// get plane number 0 (first plane)
+		final float[] values = planarImg.getPlane( 0 ).getCurrentStorageArray();
+
+Hope this helps,
+Stephan and Tobias
+
+
+On Jul 16, 2012, at 4:13 , Padraig Looney wrote:
+
+&gt;<i> Dear list,
+</I>&gt;<i> 
+</I>&gt;<i> Apologies if this posting is not in the correct place but I seem to have hit a brick wall in moving to ImgLib2 and ImageJ2.
+</I>&gt;<i> 
+</I>&gt;<i> I have used ImageJ 1 without the the user interface for a variety of software projects. In Image J to open an Image I would use
+</I>&gt;<i> 
+</I>&gt;<i> Opener opener = new opener();
+</I>&gt;<i> Imageplus imp = opener.openImage(&quot;someFile&quot;);
+</I>&gt;<i> imp.show();
+</I>&gt;<i> 
+</I>&gt;<i> and from there I could perform the processing and change the display etc. 
+</I>&gt;<i> 
+</I>&gt;<i> With a view to moving to imgLib2 and ImageJ2 I have been going through the Javadoc to try to display an image perform more complicated tasks. So I have found this example among others on the Imglib2 site but in the imgLibs package there is no ImageJFunctions anymore.
+</I>&gt;<i> 
+</I>&gt;<i> public &lt; T extends RealType&lt; T &gt; &amp; NativeType&lt; T &gt; &gt; Example1b()
+</I>&gt;<i>         throws ImgIOException, IncompatibleTypeException
+</I>&gt;<i>     {
+</I>&gt;<i>         // define the file to open
+</I>&gt;<i>         File file = new File( &quot;DrosophilaWing.tif&quot; );
+</I>&gt;<i>  
+</I>&gt;<i>         // open with ImgOpener using an ArrayImgFactory, here the return type will be
+</I>&gt;<i>         // defined by the opener
+</I>&gt;<i>         // the opener will ignore the Type of the ArrayImgFactory
+</I>&gt;<i>         ImgFactory&lt; ? &gt; imgFactory = new ArrayImgFactory&lt; T &gt;();
+</I>&gt;<i>         Img&lt; T &gt; image = new ImgOpener().openImg( file.getAbsolutePath(), imgFactory );
+</I>&gt;<i>  
+</I>&gt;<i>         // display it via ImgLib using ImageJ
+</I>&gt;<i>         ImageJFunctions.show( image );
+</I>&gt;<i>  
+</I>&gt;<i>         // open with ImgOpener as Float using a CellImgFactory, it will be opened as float 
+</I>&gt;<i>         // independent of the type of the image
+</I>&gt;<i>         // to enforce to open it as FloatType, an instance of FloatType has to be passed along
+</I>&gt;<i>         Img&lt; FloatType &gt; imageFloat = new ImgOpener().openImg( file.getAbsolutePath(),
+</I>&gt;<i>             new CellImgFactory&lt; FloatType &gt;( 10 ), new FloatType() );
+</I>&gt;<i>  
+</I>&gt;<i>         // display it via ImgLib using ImageJ
+</I>&gt;<i>         ImageJFunctions.show( imageFloat );
+</I>&gt;<i>     }
+</I>&gt;<i> 
+</I>&gt;<i> Ideally I would like to use Swing and get a Canvas containing the image and to be able to put this on a JFrame. I have gone through the ImageJ2 javadoc and I have found a range of classes that seem relevant such as Defaultdataset, SwingSdiImageDisplayViewer, SwingDisplayPanel but I keep running into errors with Services that don't exist because I am probably not using ImageJ2 as intended. 
+</I>&gt;<i> 
+</I>&gt;<i> Many thanks 
+</I>&gt;<i> 
+</I>&gt;<i> Padraig Looney
+</I>&gt;<i> Medical Physicist  
+</I>&gt;<i> Royal Surrey County Hospital
+</I>&gt;<i>  
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>
+
+</PRE>
+
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001081.html">[ImageJ-devel] Simple usage of ImageJ2 and ImgLib2
+</A></li>
+	<LI>Next message: <A HREF="001117.html">[ImageJ-devel] Basic usage of ImageJ2 libraries in seperate application (Simple display image in JFrame)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1083">[ date ]</a>
+              <a href="thread.html#1083">[ thread ]</a>
+              <a href="subject.html#1083">[ subject ]</a>
+              <a href="author.html#1083">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

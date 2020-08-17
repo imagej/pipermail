@@ -1,0 +1,1943 @@
+From pietzsch at mpi-cbg.de  Mon Feb  6 11:25:36 2012
+From: pietzsch at mpi-cbg.de (Tobias Pietzsch)
+Date: Mon, 06 Feb 2012 18:25:36 +0100
+Subject: [ImageJ-devel] [imglib2] remove redundant KDTree implementation in
+	imglib2-algorithms?
+Message-ID: <4F300D10.7030404@mpi-cbg.de>
+
+Hi guys,
+
+I was just about to use imglib2 KDTree and I noticed that there
+is still the legacy algorithm.kdtree package inherited from imglib1.
+
+There are now two implementations of a KDTree in imglib2.
+
+One is is the legacy imglib1 KDTree in net.imglib2.algorithm.kdtree.
+
+The other one is in the core.
+KDTree itself is in package net.imglib2.collection.
+The n-nearest-neighbor and radius search on this KDTree are in the
+net.imglib2.neighborsearch package.
+
+The new KDTree does not require it's T to be a Leaf< T >
+and the searches implement the appropriate 
+net.imglib2.neighborsearch.*NeighborSearch< T > interfaces.
+
+The new KDTree uses exact median-finding algorithm for constructing the
+tree instead of the approximate one in imglib1 kdtree.
+And it is faster.
+
+Because this is a confusing situation, _I would like to remove the
+"old" KDTree from the imglib-algorithms package_.
+
+(I would fix Lee's VolumetricSearch implementation which is the only
+thing using the imglib-algorithms KDTree currently.)
+
+Any objections?
+
+best regards,
+Tobias
+
+
+
+From leek at broadinstitute.org  Mon Feb  6 11:28:21 2012
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Mon, 06 Feb 2012 12:28:21 -0500
+Subject: [ImageJ-devel] [imglib2] remove redundant KDTree implementation
+ in imglib2-algorithms?
+In-Reply-To: <4F300D10.7030404@mpi-cbg.de>
+References: <4F300D10.7030404@mpi-cbg.de>
+Message-ID: <4f300db6.53b0e00a.0a38.68e1@mx.google.com>
+
+Thanks Tobias.
+
+On 2/6/2012 12:25 PM, Tobias Pietzsch wrote:
+> Hi guys,
+>
+> I was just about to use imglib2 KDTree and I noticed that there
+> is still the legacy algorithm.kdtree package inherited from imglib1.
+>
+> There are now two implementations of a KDTree in imglib2.
+>
+> One is is the legacy imglib1 KDTree in net.imglib2.algorithm.kdtree.
+>
+> The other one is in the core.
+> KDTree itself is in package net.imglib2.collection.
+> The n-nearest-neighbor and radius search on this KDTree are in the
+> net.imglib2.neighborsearch package.
+>
+> The new KDTree does not require it's T to be a Leaf< T >
+> and the searches implement the appropriate 
+> net.imglib2.neighborsearch.*NeighborSearch< T > interfaces.
+>
+> The new KDTree uses exact median-finding algorithm for constructing the
+> tree instead of the approximate one in imglib1 kdtree.
+> And it is faster.
+>
+> Because this is a confusing situation, _I would like to remove the
+> "old" KDTree from the imglib-algorithms package_.
+>
+> (I would fix Lee's VolumetricSearch implementation which is the only
+> thing using the imglib-algorithms KDTree currently.)
+>
+> Any objections?
+>
+> best regards,
+> Tobias
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+
+
+
+
+From schindelin at wisc.edu  Mon Feb  6 12:22:00 2012
+From: schindelin at wisc.edu (Johannes Schindelin)
+Date: Mon, 06 Feb 2012 19:22:00 +0100 (CET)
+Subject: [ImageJ-devel] [imglib2] remove redundant KDTree implementation
+ in imglib2-algorithms?
+In-Reply-To: <4F300D10.7030404@mpi-cbg.de>
+References: <4F300D10.7030404@mpi-cbg.de>
+Message-ID: <alpine.DEB.1.00.1202061920270.24259@s15462909.onlinehome-server.info>
+
+Hi Tobias,
+
+On Mon, 6 Feb 2012, Tobias Pietzsch wrote:
+
+> _I would like to remove the "old" KDTree from the imglib-algorithms
+> package_.
+> 
+> (I would fix Lee's VolumetricSearch implementation which is the only
+> thing using the imglib-algorithms KDTree currently.)
+> 
+> Any objections?
+
+None from my side. I actually was opposed to having a copy-edited version
+and keeping the old one back then.
+
+Ciao,
+Dscho
+
+
+
+From schindelin at wisc.edu  Mon Feb  6 19:52:04 2012
+From: schindelin at wisc.edu (Johannes Schindelin)
+Date: Tue, 07 Feb 2012 02:52:04 +0100 (CET)
+Subject: [ImageJ-devel] MenuService/AbstractSwingUI issues
+Message-ID: <alpine.DEB.1.00.1202070251490.24259@s15462909.onlinehome-server.info>
+
+Hi,
+
+it appears to me that AbstractSwingUI might be a bit too limiting at the
+moment with its builtin assumption that there is only one appFrame and
+that all menu item changes should be applied to that appFrame's
+application menu bar.
+
+So now I face the problematic situation where method calls to a ShadowMenu
+(which was already connected to a given JMenuBar using the
+SwingJMenuBarCreator -- why are there so many layers BTW?
+AbstractMenuCreator>AbstractSwingMenuCreator>SwingJMenuBarCreator?) are
+always redirected to the IJ2 menu bar -- which is bad when you want them
+to appear in the Script Editor's menu bar.
+
+Now, the MenuEvent knows pretty well which ShadowMenu it belongs to, but
+apparently no class feels responsible to retain the connection between the
+ShadowMenu and the SwingJMenuBarCreator used to turn this into an
+instance.
+
+Consequently, I do not see where it was intended to resolve this issue
+(this is related to the wasteful recreation of a complete menu bar
+whenever anything changed in any menu item).
+
+Help?
+Johannes
+
+
+
+From Johannes.Schindelin at gmx.de  Mon Feb  6 19:52:47 2012
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Tue, 7 Feb 2012 02:52:47 +0100 (CET)
+Subject: [ImageJ-devel] Jenkins' jocoserious jeremiads
+Message-ID: <alpine.DEB.1.00.1202070252170.24259@s15462909.onlinehome-server.info>
+
+Hi all,
+
+it seems that Jenkins is busy with testing Bio-Formats... for more than 3
+days now...
+
+Should I be worried?
+Dscho
+
+
+
+From melissa at glencoesoftware.com  Mon Feb  6 20:31:34 2012
+From: melissa at glencoesoftware.com (Melissa Linkert)
+Date: Mon, 6 Feb 2012 21:31:34 -0500
+Subject: [ImageJ-devel] Jenkins' jocoserious jeremiads
+In-Reply-To: <alpine.DEB.1.00.1202070252170.24259@s15462909.onlinehome-server.info>
+References: <alpine.DEB.1.00.1202070252170.24259@s15462909.onlinehome-server.info>
+Message-ID: <20120207023134.GC18801@medusa>
+
+Hi Johannes,
+
+> it seems that Jenkins is busy with testing Bio-Formats... for more than 3
+> days now...
+
+Thanks for pointing this out.
+
+I have no idea why that job was taking so long, but I've now killed all of the
+Bio-Formats testing jobs in the queue for tonight so that all of the
+daily build jobs can run.  I'll investigate what the cause might have
+been in the morning, as I do not have enough coffee in front of me at
+the moment to reliably diagnose the problem.
+
+Sorry for the trouble,
+-Melissa
+
+On Tue, Feb 07, 2012 at 02:52:47AM +0100, Johannes Schindelin wrote:
+> Hi all,
+> 
+> it seems that Jenkins is busy with testing Bio-Formats... for more than 3
+> days now...
+> 
+> Should I be worried?
+> Dscho
+> 
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+
+
+
+From schindelin at wisc.edu  Mon Feb  6 22:10:45 2012
+From: schindelin at wisc.edu (Johannes Schindelin)
+Date: Tue, 07 Feb 2012 05:10:45 +0100 (CET)
+Subject: [ImageJ-devel] Jenkins' jocoserious jeremiads
+In-Reply-To: <20120207023134.GC18801@medusa>
+References: <alpine.DEB.1.00.1202070252170.24259@s15462909.onlinehome-server.info>
+	<20120207023134.GC18801@medusa>
+Message-ID: <alpine.DEB.1.00.1202070508550.24259@s15462909.onlinehome-server.info>
+
+Hi Melissa,
+
+On Mon, 6 Feb 2012, Melissa Linkert wrote:
+
+> > it seems that Jenkins is busy with testing Bio-Formats... for more
+> > than 3 days now...
+> 
+> Thanks for pointing this out.
+> 
+> I have no idea why that job was taking so long, but I've now killed all
+> of the Bio-Formats testing jobs in the queue for tonight so that all of
+> the daily build jobs can run.  I'll investigate what the cause might
+> have been in the morning, as I do not have enough coffee in front of me
+> at the moment to reliably diagnose the problem.
+
+It looked to me as if Jenkins was stuck somewhere. The progress which
+supposedly advances whenever a test was performed did not advance at all
+in the half hour I looked.
+
+So I guess that there was something really awkward, such as an OOM
+infinite loop, or some such.
+
+In hindsight, I should have fired up JVisualVM and looked at the threads,
+so that's what I will do next time when it happens again.
+
+Ciao,
+Dscho
+
+
+
+From melissa at glencoesoftware.com  Tue Feb  7 08:58:53 2012
+From: melissa at glencoesoftware.com (Melissa Linkert)
+Date: Tue, 7 Feb 2012 09:58:53 -0500
+Subject: [ImageJ-devel] Jenkins' jocoserious jeremiads
+In-Reply-To: <alpine.DEB.1.00.1202070508550.24259@s15462909.onlinehome-server.info>
+References: <alpine.DEB.1.00.1202070252170.24259@s15462909.onlinehome-server.info>
+	<20120207023134.GC18801@medusa>
+	<alpine.DEB.1.00.1202070508550.24259@s15462909.onlinehome-server.info>
+Message-ID: <20120207145853.GC26585@medusa>
+
+Hi Johannes (and other Jenkins enthusiasts),
+
+> > I have no idea why that job was taking so long, but I've now killed all
+> > of the Bio-Formats testing jobs in the queue for tonight so that all of
+> > the daily build jobs can run.  I'll investigate what the cause might
+> > have been in the morning, as I do not have enough coffee in front of me
+> > at the moment to reliably diagnose the problem.
+> 
+> It looked to me as if Jenkins was stuck somewhere. The progress which
+> supposedly advances whenever a test was performed did not advance at all
+> in the half hour I looked.
+> 
+> So I guess that there was something really awkward, such as an OOM
+> infinite loop, or some such.
+> 
+> In hindsight, I should have fired up JVisualVM and looked at the threads,
+> so that's what I will do next time when it happens again.
+
+In looking at the logs for:
+
+http://dev.loci.wisc.edu:8080/job/Bio-Formats%20full%20repository%20data%20test/256/
+
+there are a *lot* of these exceptions:
+
+https://gist.github.com/1759740
+
+(in short: parsing of an XML file fails because the connection is
+reset while retrieving the corresponding DTD)
+
+I can only reproduce these locally if I completely switch off all network
+connections while the XML file is being parsed, so that suggests to me that
+the Jenkins server suffered network connectivity issues at some point on
+the evening of February 2.  Logging stopped at 20:48:07 on February 2, and
+in such a place as to suggest that an infinite loop was entered during the
+same XML parsing/DTD retrieval logic as caused the exception above.
+
+For now what I've done is:
+
+  0) Filed a ticket to fix up Bio-Formats' XML parsing to either not fetch
+     the DTD at all, or fail gracefully if it is not retrieved in some
+     specific amount of time (I haven't decided which yet):
+
+     http://trac.openmicroscopy.org.uk/ome/ticket/8012
+
+  1) Disabled the 'Bio-Formats full repository test' job until further notice.
+
+Hopefully having (0) resolved will be sufficient for now, with the knowledge
+that everything under the "Bio-Formats" tab will eventually be moved to OME's
+Jenkins server.  If, however, my assumptions are correct and there are
+indeed connectivity issues on that server, then it's quite possible that
+other (non-Bio-Formats) jobs will get stuck at some point as well.
+
+Of course, if anyone has a different idea of what is going on (or a better
+idea of how to solve the problem) then I would be happy to hear it.
+
+Regards,
+-Melissa
+
+On Tue, Feb 07, 2012 at 05:10:45AM +0100, Johannes Schindelin wrote:
+> Hi Melissa,
+> 
+> On Mon, 6 Feb 2012, Melissa Linkert wrote:
+> 
+> > > it seems that Jenkins is busy with testing Bio-Formats... for more
+> > > than 3 days now...
+> > 
+> > Thanks for pointing this out.
+> > 
+> > I have no idea why that job was taking so long, but I've now killed all
+> > of the Bio-Formats testing jobs in the queue for tonight so that all of
+> > the daily build jobs can run.  I'll investigate what the cause might
+> > have been in the morning, as I do not have enough coffee in front of me
+> > at the moment to reliably diagnose the problem.
+> 
+> It looked to me as if Jenkins was stuck somewhere. The progress which
+> supposedly advances whenever a test was performed did not advance at all
+> in the half hour I looked.
+> 
+> So I guess that there was something really awkward, such as an OOM
+> infinite loop, or some such.
+> 
+> In hindsight, I should have fired up JVisualVM and looked at the threads,
+> so that's what I will do next time when it happens again.
+> 
+> Ciao,
+> Dscho
+
+
+
+From Johannes.Schindelin at gmx.de  Tue Feb  7 14:47:48 2012
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Tue, 7 Feb 2012 21:47:48 +0100 (CET)
+Subject: [ImageJ-devel] Calling IJ legacy methods
+In-Reply-To: <4F02C31D.2080304@doube.net>
+References: <4F02C31D.2080304@doube.net>
+Message-ID: <alpine.DEB.1.00.1202072143110.24259@s15462909.onlinehome-server.info>
+
+Hi Mike,
+
+[Cc:ing the fiji-devel list since I think that others might want to get a
+glimpse about discussions regarding migrating code from IJ1 to IJ2]
+
+On Tue, 3 Jan 2012, Michael Doube wrote:
+
+> I'm starting the long process of getting BoneJ into shape to run under
+> IJ2, as we discussed at the Hackathon in Dresden last year.
+> 
+> There are of course a ton of dependencies on classes in ij.jar, so in
+> general, how can us plugin developers deal with this during migration?
+> 
+> In particular, right now I'm looking for a BrowserLauncher, a la
+> ij.plugin.BrowserLauncher (which is already borrowed code). But there
+> will be many more situations like this I'm sure.
+
+I finally worked on this issue:
+
+http://fiji.sc/cgi-bin/gitweb.cgi?p=imagej2/.git;a=shortlog;h=refs/heads/browser-launcher
+
+Curtis, when you're better, could you have a look? I _think_ it should be
+fine to be dcommitted.
+
+Mike, the way you would open URLs is by getting an instance of the
+PlatformService (for ImageJ2 plugins, just add a parameter of type
+PlatformService and you'll get it by the time run() is called) and then
+calling the open(URL) method on it.
+
+See e.g.
+http://fiji.sc/cgi-bin/gitweb.cgi?p=imagej2/.git;a=blob;f=core/plugins/app/src/main/java/imagej/core/plugins/app/ImageJWebsite.java;h=1c571ca11f9bbaba2af47203df51f749482cf45c;hb=d1f8b6119b3374126ba467a973b8fff709f9ab39
+
+Ciao,
+Dscho
+
+P.S.: Grant, while I did not add an ij-platform-linux, at least I did add
+an ij-platform-windows. Happy? ;-)
+
+
+
+From Johannes.Schindelin at gmx.de  Mon Feb 13 15:18:37 2012
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Mon, 13 Feb 2012 22:18:37 +0100 (CET)
+Subject: [ImageJ-devel] May I commit imglib and imagej2 in fiji.git?
+Message-ID: <alpine.DEB.1.00.1202132217060.24259@s15462909.onlinehome-server.info>
+
+Dear all,
+
+since I am working on ImageJ2's Jenkins job producing our javadocs at
+http://fiji.sc/javadoc/, I thought it might be a cute idea to update both
+imglib and imagej2 to their current revisions in fiji.git (so the Jenkins
+job picks up those revisions rather than now-obsolete ones).
+
+Any objections?
+
+Ciao,
+Johannes
+
+
+
+From Johannes.Schindelin at gmx.de  Tue Feb 14 16:29:16 2012
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Tue, 14 Feb 2012 16:29:16 -0600 (CST)
+Subject: [ImageJ-devel] Changes in ImgLib synchronization
+Message-ID: <alpine.DEB.1.00.1202141624220.3340@s15462909.onlinehome-server.info>
+
+Dear ImgLib developers,
+
+I worked pretty hard on the 2nd generation Git synchronizer which tries to
+keep our ImgLib repositories in sync (we now have already three public
+ImgLib repositories: one on fiji.sc, one on code.imagej.net and one on
+GitHub).
+
+Jenna Jenkins executes the synchronizer every 5 minutes. If there are
+diverging branches or any other problems Jenna will send out mails to
+fiji-devel, imagej-devel, Curtis and me. Since GoogleGroups cannot invite
+anyone directly anymore, most likely these mails will be moderated for
+fiji-devel.
+
+Since nobody interested in the "propagate branch deletions" issue took
+care of it, the issue waited patiently for this revision to be solved.
+
+If you are interested in the script: it lives in Fiji's
+bin/git-synchronizer.sh.
+
+Ciao,
+Johannes
+
+
+
+From michael at doube.net  Thu Feb 16 08:29:34 2012
+From: michael at doube.net (Michael Doube)
+Date: Thu, 16 Feb 2012 15:29:34 +0100
+Subject: [ImageJ-devel] Calling IJ legacy methods
+In-Reply-To: <alpine.DEB.1.00.1202072143110.24259@s15462909.onlinehome-server.info>
+References: <4F02C31D.2080304@doube.net>
+	<alpine.DEB.1.00.1202072143110.24259@s15462909.onlinehome-server.info>
+Message-ID: <4F3D12CE.3020902@doube.net>
+
+Hi Johannes, Curtis
+
+>> In particular, right now I'm looking for a BrowserLauncher, a la
+>> ij.plugin.BrowserLauncher (which is already borrowed code). But there
+>> will be many more situations like this I'm sure.
+> 
+> I finally worked on this issue:
+> 
+> http://fiji.sc/cgi-bin/gitweb.cgi?p=imagej2/.git;a=shortlog;h=refs/heads/browser-launcher
+> 
+> Curtis, when you're better, could you have a look? I _think_ it should be
+> fine to be dcommitted.
+> 
+> Mike, the way you would open URLs is by getting an instance of the
+> PlatformService (for ImageJ2 plugins, just add a parameter of type
+> PlatformService and you'll get it by the time run() is called) and then
+> calling the open(URL) method on it.
+
+I tried it but the imagej-2.0-SNAPSHOT-all.jar doesn't yet contain your
+changes. So is the situation (in general) going to go like this each
+time - developers have to request API features or work around using
+existing ones?
+
+Michael
+
+
+
+From Johannes.Schindelin at gmx.de  Thu Feb 16 10:08:15 2012
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Thu, 16 Feb 2012 10:08:15 -0600 (CST)
+Subject: [ImageJ-devel] Calling IJ legacy methods
+In-Reply-To: <4F3D12CE.3020902@doube.net>
+References: <4F02C31D.2080304@doube.net>
+	<alpine.DEB.1.00.1202072143110.24259@s15462909.onlinehome-server.info>
+	<4F3D12CE.3020902@doube.net>
+Message-ID: <alpine.DEB.1.00.1202161005090.3340@s15462909.onlinehome-server.info>
+
+Hi Mike,
+
+On Thu, 16 Feb 2012, Michael Doube wrote:
+
+> >> In particular, right now I'm looking for a BrowserLauncher, a la
+> >> ij.plugin.BrowserLauncher (which is already borrowed code). But there
+> >> will be many more situations like this I'm sure.
+> > 
+> > I finally worked on this issue:
+> > 
+> > http://fiji.sc/cgi-bin/gitweb.cgi?p=imagej2/.git;a=shortlog;h=refs/heads/browser-launcher
+> > 
+> > Curtis, when you're better, could you have a look? I _think_ it should
+> > be fine to be dcommitted.
+> > 
+> > Mike, the way you would open URLs is by getting an instance of the
+> > PlatformService (for ImageJ2 plugins, just add a parameter of type
+> > PlatformService and you'll get it by the time run() is called) and
+> > then calling the open(URL) method on it.
+> 
+> I tried it but the imagej-2.0-SNAPSHOT-all.jar doesn't yet contain your
+> changes. So is the situation (in general) going to go like this each
+> time - developers have to request API features or work around using
+> existing ones?
+
+I kind of assumed that you would give your feedback before I commit
+changes to Subversion.
+
+Will commit later today,
+Dscho
+
+
+
+From Johannes.Schindelin at gmx.de  Fri Feb 17 14:27:19 2012
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Fri, 17 Feb 2012 14:27:19 -0600 (CST)
+Subject: [ImageJ-devel] Calling IJ legacy methods
+In-Reply-To: <alpine.DEB.1.00.1202161005090.3340@s15462909.onlinehome-server.info>
+References: <4F02C31D.2080304@doube.net>
+	<alpine.DEB.1.00.1202072143110.24259@s15462909.onlinehome-server.info>
+	<4F3D12CE.3020902@doube.net>
+	<alpine.DEB.1.00.1202161005090.3340@s15462909.onlinehome-server.info>
+Message-ID: <alpine.DEB.1.00.1202171425430.3340@s15462909.onlinehome-server.info>
+
+Hi Mike,
+
+On Thu, 16 Feb 2012, Johannes Schindelin wrote:
+
+> On Thu, 16 Feb 2012, Michael Doube wrote:
+> 
+> > >> In particular, right now I'm looking for a BrowserLauncher, a la
+> > >> ij.plugin.BrowserLauncher (which is already borrowed code). But
+> > >> there will be many more situations like this I'm sure.
+> > > 
+> > > I finally worked on this issue:
+> > > 
+> > > http://fiji.sc/cgi-bin/gitweb.cgi?p=imagej2/.git;a=shortlog;h=refs/heads/browser-launcher
+> > > 
+> > > Curtis, when you're better, could you have a look? I _think_ it
+> > > should be fine to be dcommitted.
+> > > 
+> > > Mike, the way you would open URLs is by getting an instance of the
+> > > PlatformService (for ImageJ2 plugins, just add a parameter of type
+> > > PlatformService and you'll get it by the time run() is called) and
+> > > then calling the open(URL) method on it.
+> > 
+> > I tried it but the imagej-2.0-SNAPSHOT-all.jar doesn't yet contain
+> > your changes. So is the situation (in general) going to go like this
+> > each time - developers have to request API features or work around
+> > using existing ones?
+> 
+> Will commit later today,
+
+I finally committed the stuff. An example how to use it can be found here:
+
+http://fiji.sc/ImageJWebsite.java
+
+Ciao,
+Dscho
+
+
+
+From michael at doube.net  Mon Feb 20 07:57:13 2012
+From: michael at doube.net (Michael Doube)
+Date: Mon, 20 Feb 2012 14:57:13 +0100
+Subject: [ImageJ-devel] [fiji-devel] Re: Calling IJ legacy methods
+In-Reply-To: <alpine.DEB.1.00.1202171425430.3340@s15462909.onlinehome-server.info>
+References: <4F02C31D.2080304@doube.net>
+	<alpine.DEB.1.00.1202072143110.24259@s15462909.onlinehome-server.info>
+	<4F3D12CE.3020902@doube.net>
+	<alpine.DEB.1.00.1202161005090.3340@s15462909.onlinehome-server.info>
+	<alpine.DEB.1.00.1202171425430.3340@s15462909.onlinehome-server.info>
+Message-ID: <4F425139.3060800@doube.net>
+
+Hi Johannes,
+
+>> Will commit later today,
+> 
+> I finally committed the stuff. An example how to use it can be found here:
+> 
+> http://fiji.sc/ImageJWebsite.java
+
+I followed the example and have migrated the class to ImageJ2.
+https://github.com/mdoube/BoneJ/commit/54adf6758ec73cc6f25821b7055b855bab5395e7
+
+One down, lots to go.
+
+Michael
+
+
+
+From michael at doube.net  Tue Feb 21 04:42:56 2012
+From: michael at doube.net (Michael Doube)
+Date: Tue, 21 Feb 2012 11:42:56 +0100
+Subject: [ImageJ-devel] JAMA and other includes
+Message-ID: <4F437530.2010403@doube.net>
+
+Hi all,
+
+BoneJ currently contains a copy of JAMA, which is stupid (the
+containing, not JAMA itself). I can specify that my build environment
+looks for Jama-1.0.2.jar, but how do I make sure that Fiji / ImageJ2
+will have a JAMA (or whatever other dependency I might need), so the
+plugins actually run?
+
+Michael
+
+
+
+From Johannes.Schindelin at gmx.de  Tue Feb 21 10:51:32 2012
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Tue, 21 Feb 2012 10:51:32 -0600 (CST)
+Subject: [ImageJ-devel] JAMA and other includes
+In-Reply-To: <4F437530.2010403@doube.net>
+References: <4F437530.2010403@doube.net>
+Message-ID: <alpine.DEB.1.00.1202211045520.3340@s15462909.onlinehome-server.info>
+
+Hi Mike,
+
+On Tue, 21 Feb 2012, Michael Doube wrote:
+
+> BoneJ currently contains a copy of JAMA, which is stupid (the
+> containing, not JAMA itself). I can specify that my build environment
+> looks for Jama-1.0.2.jar, but how do I make sure that Fiji / ImageJ2
+> will have a JAMA (or whatever other dependency I might need), so the
+> plugins actually run?
+
+If you rely on the user to have a standard Fiji, Jama will be there.
+
+If you make a BoneJ update site, you should add "jars/Jama.jar" to the
+Dependencies section in the plugin details before uploading (you can edit
+directly below the section titles).
+
+Or did you talk about the compile time?
+
+Ciao,
+Dscho
+
+
+
+From ctrueden at wisc.edu  Tue Feb 21 15:55:46 2012
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Tue, 21 Feb 2012 15:55:46 -0600
+Subject: [ImageJ-devel] MenuService/AbstractSwingUI issues
+In-Reply-To: <alpine.DEB.1.00.1202070251490.24259@s15462909.onlinehome-server.info>
+References: <alpine.DEB.1.00.1202070251490.24259@s15462909.onlinehome-server.info>
+Message-ID: <CADN69ykHqiHqpxtCi8GEoSzBR99BvaPUHR0N+RG=6FjXNL_BDQ@mail.gmail.com>
+
+Hi everyone,
+
+Dscho and I have been discussing the ShadowMenu design, and we have a plans
+for several improvements:
+
+Multiple menu bars are not synced properly:
+  http://code.imagej.net/trac/imagej/ticket/985
+
+More context sensitivity is required for modules in menus:
+  http://code.imagej.net/trac/imagej/ticket/987
+
+More intelligent syncing between ShadowMenu and UI-specific menus:
+  http://code.imagej.net/trac/imagej/ticket/988
+
+it appears to me that AbstractSwingUI might be a bit too limiting at the
+> moment with its builtin assumption that there is only one appFrame and
+> that all menu item changes should be applied to that appFrame's
+> application menu bar.
+>
+
+> So now I face the problematic situation where method calls to a ShadowMenu
+> (which was already connected to a given JMenuBar using the
+> SwingJMenuBarCreator -- why are there so many layers BTW?
+> AbstractMenuCreator>AbstractSwingMenuCreator>SwingJMenuBarCreator?) are
+> always redirected to the IJ2 menu bar -- which is bad when you want them
+> to appear in the Script Editor's menu bar.
+>
+
+Yes, hopefully addressing ticket #988 will solve this problem.
+
+Regarding the layers, for the benefit of any curious lurkers: there is an
+unfortunate extra layer whose sole purpose is to work around the fact that
+both Swing and AWT menu classes do not implement common interfaces where
+their methods overlap. For example, all three of JMenuBar, JMenu and
+JPopupMenu implement the common method add(JMenuItem) but there is no
+common superclass or superinterface containing this method which can be
+used in our code. So in short, we need separate JMenuBarCreator,
+JMenuCreator and JPopupMenuCreator classes. To maintain DRYness (Don't
+Repeat Yourself!) of code, there is an AbstractSwingMenuCreator class which
+provides most of the needed code, leaving the aforementioned three
+subclasses to implement a couple of remaining methods.
+
+Lastly, the overlong names are to avoid name clashes between classes. We
+have made an effort in ImageJ2 to avoid having two classes with the same
+name in different packages. For example, for brevity we could have
+imagej.ext.ui.swing.MenuCreator and imagej.ext.ui.awt.MenuCreator, both of
+which implement imagej.ext.menu.MenuCreator. But that would be quite
+confusing. In the case of Swing we could call the implementation e.g.
+JMenuCreator rather than SwingJMenuCreator. However, that would not work
+for AWT, which would simply be "MenuCreator" again, hence a name clash, so
+we chose AWTMenuCreator instead. For consistency, all the Swing stuff is
+generally called "SwingThisOrThat" with AWT called "AWTThisOrThat" and so
+on. If people strongly dislike these names, we welcome alternative
+suggestions.
+
+Now, the MenuEvent knows pretty well which ShadowMenu it belongs to, but
+> apparently no class feels responsible to retain the connection between the
+> ShadowMenu and the SwingJMenuBarCreator used to turn this into an
+> instance.
+>
+
+Right, ticket #988: maintain that connection.
+
+Consequently, I do not see where it was intended to resolve this issue
+> (this is related to the wasteful recreation of a complete menu bar
+> whenever anything changed in any menu item).
+>
+
+Hopefully those tickets clarify the direction we are going with the menu
+system.
+
+Regards,
+Curtis
+
+
+On Mon, Feb 6, 2012 at 7:52 PM, Johannes Schindelin <schindelin at wisc.edu>wrote:
+
+> Hi,
+>
+> it appears to me that AbstractSwingUI might be a bit too limiting at the
+> moment with its builtin assumption that there is only one appFrame and
+> that all menu item changes should be applied to that appFrame's
+> application menu bar.
+>
+> So now I face the problematic situation where method calls to a ShadowMenu
+> (which was already connected to a given JMenuBar using the
+> SwingJMenuBarCreator -- why are there so many layers BTW?
+> AbstractMenuCreator>AbstractSwingMenuCreator>SwingJMenuBarCreator?) are
+> always redirected to the IJ2 menu bar -- which is bad when you want them
+> to appear in the Script Editor's menu bar.
+>
+> Now, the MenuEvent knows pretty well which ShadowMenu it belongs to, but
+> apparently no class feels responsible to retain the connection between the
+> ShadowMenu and the SwingJMenuBarCreator used to turn this into an
+> instance.
+>
+> Consequently, I do not see where it was intended to resolve this issue
+> (this is related to the wasteful recreation of a complete menu bar
+> whenever anything changed in any menu item).
+>
+> Help?
+> Johannes
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20120221/347d0365/attachment.html>
+
+From ctrueden at wisc.edu  Wed Feb 22 10:15:12 2012
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Wed, 22 Feb 2012 10:15:12 -0600
+Subject: [ImageJ-devel] [fiji-devel] Changes in ImgLib synchronization
+In-Reply-To: <alpine.DEB.1.00.1202141624220.3340@s15462909.onlinehome-server.info>
+References: <alpine.DEB.1.00.1202141624220.3340@s15462909.onlinehome-server.info>
+Message-ID: <CADN69y=DQjCRftAkGDD3s1gKWHfzaEUpOSrTx4sb9+5aTyzU+g@mail.gmail.com>
+
+Hi Dscho,
+
+I worked pretty hard on the 2nd generation Git synchronizer which tries to
+> keep our ImgLib repositories in sync (we now have already three public
+> ImgLib repositories: one on fiji.sc, one on code.imagej.net and one on
+> GitHub).
+>
+
+Nice, thanks very much for this!
+
+What do you think about combining the "Git-synchronizer" and
+"Update-IJ2s-Git-Mirror" jobs into a single "Repository-synchronizer" job?
+We can then add in additional repositories that require synchronization in
+the future (there will be several more, including imagej2).
+
+Relatedly, one thing I am planning to do is create a "scijava-base" project
+of some kind in the github.com/scijava space. Initially this would be
+toplevel Maven POM containing common settings: use of Java 1.6, version
+number constants to avoid version clashes between projects, a couple of
+necessary hacks, etc. Currently, these settings are duplicated between
+imagej2, imglib, imageja, scifio and loci-software project hierarchies. It
+would be better for them all to inherit from scijava-base. While we are at
+it, common scripts like the git-synchronizer could live there too.
+
+Regards,
+Curtis
+
+
+On Tue, Feb 14, 2012 at 4:29 PM, Johannes Schindelin <
+Johannes.Schindelin at gmx.de> wrote:
+
+> Dear ImgLib developers,
+>
+> I worked pretty hard on the 2nd generation Git synchronizer which tries to
+> keep our ImgLib repositories in sync (we now have already three public
+> ImgLib repositories: one on fiji.sc, one on code.imagej.net and one on
+> GitHub).
+>
+> Jenna Jenkins executes the synchronizer every 5 minutes. If there are
+> diverging branches or any other problems Jenna will send out mails to
+> fiji-devel, imagej-devel, Curtis and me. Since GoogleGroups cannot invite
+> anyone directly anymore, most likely these mails will be moderated for
+> fiji-devel.
+>
+> Since nobody interested in the "propagate branch deletions" issue took
+> care of it, the issue waited patiently for this revision to be solved.
+>
+> If you are interested in the script: it lives in Fiji's
+> bin/git-synchronizer.sh.
+>
+> Ciao,
+> Johannes
+>
+> --
+> Please avoid top-posting, and please make sure to reply-to-all!
+>
+> Mailing list web interface: http://groups.google.com/group/fiji-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20120222/4c48141e/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Wed Feb 22 10:39:43 2012
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Wed, 22 Feb 2012 10:39:43 -0600 (CST)
+Subject: [ImageJ-devel] [fiji-devel] Changes in ImgLib synchronization
+In-Reply-To: <CADN69y=DQjCRftAkGDD3s1gKWHfzaEUpOSrTx4sb9+5aTyzU+g@mail.gmail.com>
+References: <alpine.DEB.1.00.1202141624220.3340@s15462909.onlinehome-server.info>
+	<CADN69y=DQjCRftAkGDD3s1gKWHfzaEUpOSrTx4sb9+5aTyzU+g@mail.gmail.com>
+Message-ID: <alpine.DEB.1.00.1202221033060.3340@s15462909.onlinehome-server.info>
+
+Hi Curtis,
+
+On Wed, 22 Feb 2012, Curtis Rueden wrote:
+
+> > I worked pretty hard on the 2nd generation Git synchronizer which
+> > tries to keep our ImgLib repositories in sync (we now have already
+> > three public ImgLib repositories: one on fiji.sc, one on
+> > code.imagej.net and one on GitHub).
+> >
+> 
+> Nice, thanks very much for this!
+> 
+> What do you think about combining the "Git-synchronizer" and
+> "Update-IJ2s-Git-Mirror" jobs into a single "Repository-synchronizer"
+> job?  We can then add in additional repositories that require
+> synchronization in the future (there will be several more, including
+> imagej2).
+
+The IJ2 mirror is a Git-SVN mirror, so something slightly different. Also,
+I would like to keep the Jenkins job separate so that notifications about
+failures can be sent to different sets of email addresses.
+
+Having said that, it probably makes sense to extract the git-svn mirroring
+into a script that could be used for other SVN mirroring jobs.
+
+Speaking of jobs, if we want to add tons of such jobs, we might need to
+make job groups in Jenkins like the NEST initiative has done...
+
+> > Relatedly, one thing I am planning to do is create a "scijava-base"
+> > project
+> of some kind in the github.com/scijava space. Initially this would be
+> toplevel Maven POM containing common settings: use of Java 1.6, version
+> number constants to avoid version clashes between projects, a couple of
+> necessary hacks, etc. Currently, these settings are duplicated between
+> imagej2, imglib, imageja, scifio and loci-software project hierarchies.
+> It would be better for them all to inherit from scijava-base. While we
+> are at it, common scripts like the git-synchronizer could live there
+> too.
+
+Makes sense!
+
+Ciao,
+Dscho
+
+
+
+From ctrueden at wisc.edu  Wed Feb 22 16:05:16 2012
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Wed, 22 Feb 2012 16:05:16 -0600
+Subject: [ImageJ-devel] [fiji-devel] Changes in ImgLib synchronization
+In-Reply-To: <alpine.DEB.1.00.1202221033060.3340@s15462909.onlinehome-server.info>
+References: <alpine.DEB.1.00.1202141624220.3340@s15462909.onlinehome-server.info>
+	<CADN69y=DQjCRftAkGDD3s1gKWHfzaEUpOSrTx4sb9+5aTyzU+g@mail.gmail.com>
+	<alpine.DEB.1.00.1202221033060.3340@s15462909.onlinehome-server.info>
+Message-ID: <CADN69ym+4w4rALeu+R1AXLh0ft0B1tAfMTHqrh9PxeXMGUy1kw@mail.gmail.com>
+
+Hi Dscho,
+
+The IJ2 mirror is a Git-SVN mirror, so something slightly different. Also,
+> I would like to keep the Jenkins job separate so that notifications about
+> failures can be sent to different sets of email addresses.
+>
+
+Good point. One thing we could do is clone the job every time we want to
+keep a different repository in sync. That way there are separate failures,
+separate emails, etc., as you point out.
+
+Should we set up a syncing job for ImageJ2 between
+github.com/imagej/imagej.git and code.imagej.net:imagej.git and
+fiji.sc/srv/git/imagej2/.git ?
+
+Regards,
+Curtis
+
+
+On Wed, Feb 22, 2012 at 10:39 AM, Johannes Schindelin <
+Johannes.Schindelin at gmx.de> wrote:
+
+> Hi Curtis,
+>
+> On Wed, 22 Feb 2012, Curtis Rueden wrote:
+>
+> > > I worked pretty hard on the 2nd generation Git synchronizer which
+> > > tries to keep our ImgLib repositories in sync (we now have already
+> > > three public ImgLib repositories: one on fiji.sc, one on
+> > > code.imagej.net and one on GitHub).
+> > >
+> >
+> > Nice, thanks very much for this!
+> >
+> > What do you think about combining the "Git-synchronizer" and
+> > "Update-IJ2s-Git-Mirror" jobs into a single "Repository-synchronizer"
+> > job?  We can then add in additional repositories that require
+> > synchronization in the future (there will be several more, including
+> > imagej2).
+>
+> The IJ2 mirror is a Git-SVN mirror, so something slightly different. Also,
+> I would like to keep the Jenkins job separate so that notifications about
+> failures can be sent to different sets of email addresses.
+>
+> Having said that, it probably makes sense to extract the git-svn mirroring
+> into a script that could be used for other SVN mirroring jobs.
+>
+> Speaking of jobs, if we want to add tons of such jobs, we might need to
+> make job groups in Jenkins like the NEST initiative has done...
+>
+> > > Relatedly, one thing I am planning to do is create a "scijava-base"
+> > > project
+> > of some kind in the github.com/scijava space. Initially this would be
+> > toplevel Maven POM containing common settings: use of Java 1.6, version
+> > number constants to avoid version clashes between projects, a couple of
+> > necessary hacks, etc. Currently, these settings are duplicated between
+> > imagej2, imglib, imageja, scifio and loci-software project hierarchies.
+> > It would be better for them all to inherit from scijava-base. While we
+> > are at it, common scripts like the git-synchronizer could live there
+> > too.
+>
+> Makes sense!
+>
+> Ciao,
+> Dscho
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20120222/2db907ad/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Wed Feb 22 20:43:32 2012
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Wed, 22 Feb 2012 20:43:32 -0600 (CST)
+Subject: [ImageJ-devel] [fiji-devel] Changes in ImgLib synchronization
+In-Reply-To: <CADN69ym+4w4rALeu+R1AXLh0ft0B1tAfMTHqrh9PxeXMGUy1kw@mail.gmail.com>
+References: <alpine.DEB.1.00.1202141624220.3340@s15462909.onlinehome-server.info>
+	<CADN69y=DQjCRftAkGDD3s1gKWHfzaEUpOSrTx4sb9+5aTyzU+g@mail.gmail.com>
+	<alpine.DEB.1.00.1202221033060.3340@s15462909.onlinehome-server.info>
+	<CADN69ym+4w4rALeu+R1AXLh0ft0B1tAfMTHqrh9PxeXMGUy1kw@mail.gmail.com>
+Message-ID: <alpine.DEB.1.00.1202222041120.3340@s15462909.onlinehome-server.info>
+
+Hi Curtis,
+
+On Wed, 22 Feb 2012, Curtis Rueden wrote:
+
+> > The IJ2 mirror is a Git-SVN mirror, so something slightly different.
+> > Also, I would like to keep the Jenkins job separate so that
+> > notifications about failures can be sent to different sets of email
+> > addresses.
+> >
+> 
+> Good point. One thing we could do is clone the job every time we want to
+> keep a different repository in sync. That way there are separate
+> failures, separate emails, etc., as you point out.
+> 
+> Should we set up a syncing job for ImageJ2 between
+> github.com/imagej/imagej.git and code.imagej.net:imagej.git and
+> fiji.sc/srv/git/imagej2/.git ?
+
+I just did that. I also added a tab "Synchronizers" to the Jenkins
+dashboard so you can easily have a look just at those jobs.
+
+I also realized that our IJ1 synchronizer belongs into that group,
+although it is doubtful that the associated script is of any use to
+anybody except for us; IJ1 synchronization is just too specific to the
+layout of the IJ1 website.
+
+Ciao,
+Dscho
+
+
+
+From ctrueden at wisc.edu  Thu Feb 23 08:56:08 2012
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Thu, 23 Feb 2012 08:56:08 -0600
+Subject: [ImageJ-devel] [fiji-devel] Changes in ImgLib synchronization
+In-Reply-To: <alpine.DEB.1.00.1202222041120.3340@s15462909.onlinehome-server.info>
+References: <alpine.DEB.1.00.1202141624220.3340@s15462909.onlinehome-server.info>
+	<CADN69y=DQjCRftAkGDD3s1gKWHfzaEUpOSrTx4sb9+5aTyzU+g@mail.gmail.com>
+	<alpine.DEB.1.00.1202221033060.3340@s15462909.onlinehome-server.info>
+	<CADN69ym+4w4rALeu+R1AXLh0ft0B1tAfMTHqrh9PxeXMGUy1kw@mail.gmail.com>
+	<alpine.DEB.1.00.1202222041120.3340@s15462909.onlinehome-server.info>
+Message-ID: <CADN69y=vkvkm5qFhT5=X_tZXOvMFQ7Pwi6Ys7ZN5cgMk4ydWwQ@mail.gmail.com>
+
+Hi Dscho,
+
+> Should we set up a syncing job for ImageJ2?
+>
+
+> I just did that. I also added a tab "Synchronizers" to the Jenkins
+> dashboard so you can easily have a look just at those jobs.
+>
+
+Rock on; it looks great.
+
+
+> I also realized that our IJ1 synchronizer belongs into that group,
+> although it is doubtful that the associated script is of any use to
+> anybody except for us; IJ1 synchronization is just too specific to the
+> layout of the IJ1 website.
+>
+
+Sure. But it is still useful for the community to be able to check the
+status, and verify that the synchronization is working. And it serves as a
+nice model for how one could do something similar to track other projects
+that use tarballs instead of a public VCS.
+
+Regards,
+Curtis
+
+
+On Wed, Feb 22, 2012 at 8:43 PM, Johannes Schindelin <
+Johannes.Schindelin at gmx.de> wrote:
+
+> Hi Curtis,
+>
+> On Wed, 22 Feb 2012, Curtis Rueden wrote:
+>
+> > > The IJ2 mirror is a Git-SVN mirror, so something slightly different.
+> > > Also, I would like to keep the Jenkins job separate so that
+> > > notifications about failures can be sent to different sets of email
+> > > addresses.
+> > >
+> >
+> > Good point. One thing we could do is clone the job every time we want to
+> > keep a different repository in sync. That way there are separate
+> > failures, separate emails, etc., as you point out.
+> >
+> > Should we set up a syncing job for ImageJ2 between
+> > github.com/imagej/imagej.git and code.imagej.net:imagej.git and
+> > fiji.sc/srv/git/imagej2/.git ?
+>
+> I just did that. I also added a tab "Synchronizers" to the Jenkins
+> dashboard so you can easily have a look just at those jobs.
+>
+> I also realized that our IJ1 synchronizer belongs into that group,
+> although it is doubtful that the associated script is of any use to
+> anybody except for us; IJ1 synchronization is just too specific to the
+> layout of the IJ1 website.
+>
+> Ciao,
+> Dscho
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20120223/7cb61f38/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Thu Feb 23 13:39:30 2012
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Thu, 23 Feb 2012 13:39:30 -0600 (CST)
+Subject: [ImageJ-devel] [fiji-devel] Changes in ImgLib synchronization
+In-Reply-To: <CADN69y=vkvkm5qFhT5=X_tZXOvMFQ7Pwi6Ys7ZN5cgMk4ydWwQ@mail.gmail.com>
+References: <alpine.DEB.1.00.1202141624220.3340@s15462909.onlinehome-server.info>
+	<CADN69y=DQjCRftAkGDD3s1gKWHfzaEUpOSrTx4sb9+5aTyzU+g@mail.gmail.com>
+	<alpine.DEB.1.00.1202221033060.3340@s15462909.onlinehome-server.info>
+	<CADN69ym+4w4rALeu+R1AXLh0ft0B1tAfMTHqrh9PxeXMGUy1kw@mail.gmail.com>
+	<alpine.DEB.1.00.1202222041120.3340@s15462909.onlinehome-server.info>
+	<CADN69y=vkvkm5qFhT5=X_tZXOvMFQ7Pwi6Ys7ZN5cgMk4ydWwQ@mail.gmail.com>
+Message-ID: <alpine.DEB.1.00.1202231328390.3340@s15462909.onlinehome-server.info>
+
+Hi Curtis,
+
+On Thu, 23 Feb 2012, Curtis Rueden wrote:
+
+> > I also realized that our IJ1 synchronizer belongs into that group,
+> > although it is doubtful that the associated script is of any use to
+> > anybody except for us; IJ1 synchronization is just too specific to the
+> > layout of the IJ1 website.
+>
+> Sure. But it is still useful for the community to be able to check the
+> status, and verify that the synchronization is working. And it serves as
+> a nice model for how one could do something similar to track other
+> projects that use tarballs instead of a public VCS.
+
+Yeah, I agree. I should have made my point clearer: there is little gain
+from hacking up this script:
+
+https://github.com/fiji/ImageJA/blob/tools/jenkins-job.sh
+
+which calls
+
+https://github.com/fiji/ImageJA/blob/tools/commit-new-version.sh
+
+and
+
+https://github.com/fiji/ImageJA/blob/tools/sync-with-imagej.sh
+
+because it is so special-purpose. I fully agree that it makes sense to
+have it in a public repository, which is why I put it into the
+(independent) 'tools' branch of ImageJA. Not only can people look at it
+(compare to http://t.co/nwh7hBfg) but I have a backup in case I want to
+put the job somewhere else (which is how it ended up with our Jenkins in
+the first place, for a long time, I was doing it manually).
+
+OTOH it would be easy to hack up
+
+https://github.com/imagej/imagej/blob/master/bin/jenkins-git-job.sh
+
+to make it as configurable as the Git-synchronizer: the first parameter
+would be the SVN URL, and all subsequent parameters would be Git-SVN URLs
+in the same style as for the Git-synchronizer.
+
+But I'll do that only when we need it.
+
+Ciao,
+Dscho
+
+
+
+From Johannes.Schindelin at gmx.de  Mon Feb 27 19:16:12 2012
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Mon, 27 Feb 2012 19:16:12 -0600 (CST)
+Subject: [ImageJ-devel] Maven 3 support
+Message-ID: <alpine.DEB.1.00.1202271907170.3340@s15462909.onlinehome-server.info>
+
+Hi all,
+
+unfortunately, I updated the instructions on http://developer.imagej.net/
+on how to install Eclipse a bit prematurely: I was so happy that Eclipse
+IDE for Java Developers already brought its own Maven plugin that I
+edited the text to say that we prefer that version. Without checking that
+things actually compile.
+
+And sure enough, they don't, because Maven 3 no longer accepts the wagon
+extension in its current form.
+
+Now, a little research shows that somebody official _claims_ that starting
+with Maven 2.0.9, specifying that wagon extension for WebDAV is not at all
+necessary, it should be active by default.
+
+Since Maven 2.2.1 is the current Maven 2 version and even if I do not know
+what version m2e bundles, it seems to compile fine in my m2e
+installation, so I assume it is newer than 2.0.9.
+
+The only thing I am worried about: WebDAV is needed for deploying, too.
+And I have no idea how to test that (not without risking the heavens to
+break open and the archangels to hunt me down).
+
+So I'd like your help: could you test this commit?
+
+https://github.com/imagej/imagej/commit/2c755b58032c2f74d1a336c80166deedfb86e5e2
+
+(I guess that I implictly mean you, Curtis ;-)
+
+Ciao,
+Dscho
+
+P.S.: I needed to install Eclipse for all three Operating Systems
+supported by Fiji so I can make sure that the changes I intend to make on
+SwingOutputWindow do not break existing functionality (as I am on Linux, I
+always get these crappy scrollbars, and I verified that the same happens
+on Windows, but not on MacOSX, so I guess that some overly specific
+dimensioning code is responsible that assumes a bit too much).
+
+
+
+From ctrueden at wisc.edu  Tue Feb 28 11:13:52 2012
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Tue, 28 Feb 2012 11:13:52 -0600
+Subject: [ImageJ-devel] Maven 3 support
+In-Reply-To: <alpine.DEB.1.00.1202271907170.3340@s15462909.onlinehome-server.info>
+References: <alpine.DEB.1.00.1202271907170.3340@s15462909.onlinehome-server.info>
+Message-ID: <CADN69yn1eD-heEG__8Eaiohj9B0fJkHu162_v9rVEiyrUDi+OA@mail.gmail.com>
+
+Hi Dscho,
+
+And sure enough, they don't, because Maven 3 no longer accepts the wagon
+> extension in its current form.
+>
+
+I tested your change on my local system with Maven 3.0.4, but unfortunately
+it breaks the build:
+
+[ERROR] Failed to execute goal
+org.apache.maven.plugins:maven-deploy-plugin:2.7:deploy (default-deploy) on
+project pom-ij-base: Failed to deploy artifacts/metadata: No connector
+available to access repository imagej.snapshots (dav:
+http://maven.imagej.net/content/repositories/snapshots) of type default
+using the available factories WagonRepositoryConnectorFactory -> [Help 1]
+
+However, on my system with the wagon-webdav extension still in place, the
+deploy works fine. So our experiences are not in line here; Maven 3 +
+wagon-webdav works for me. Could there be some other cause to the problems
+you're seeing?
+
+Since Maven 2.2.1 is the current Maven 2 version and even if I do not know
+> what version m2e bundles, it seems to compile fine in my m2e
+> installation, so I assume it is newer than 2.0.9.
+>
+
+I agree that we do not need to support Maven 2.0.x. If our builds work with
+Maven 2.2.x and 3.0.x, then I am happy. (Actually, I am happy even if we
+require Maven 3, although there are some arguments not to limit ourselves
+that way.)
+
+P.S.: I needed to install Eclipse for all three Operating Systems
+> supported by Fiji so I can make sure that the changes I intend to make on
+> SwingOutputWindow do not break existing functionality (as I am on Linux, I
+> always get these crappy scrollbars, and I verified that the same happens
+> on Windows, but not on MacOSX, so I guess that some overly specific
+> dimensioning code is responsible that assumes a bit too much).
+>
+
+The crappy scroll bars have been a continuing nuisance. I think it may be a
+bug in JHotDraw. See also:
+
+https://github.com/imagej/imagej/blob/master/ui/awt-swing/swing/ui-base/src/main/java/imagej/ui/swing/display/JHotDrawImageCanvas.java#L294
+
+I certainly agree that this hack of "+5 in both dimensions" is overly
+specific. If you have a better idea, that's great.
+
+Regards,
+Curtis
+
+
+On Mon, Feb 27, 2012 at 7:16 PM, Johannes Schindelin <
+Johannes.Schindelin at gmx.de> wrote:
+
+> Hi all,
+>
+> unfortunately, I updated the instructions on http://developer.imagej.net/
+> on how to install Eclipse a bit prematurely: I was so happy that Eclipse
+> IDE for Java Developers already brought its own Maven plugin that I
+> edited the text to say that we prefer that version. Without checking that
+> things actually compile.
+>
+> And sure enough, they don't, because Maven 3 no longer accepts the wagon
+> extension in its current form.
+>
+> Now, a little research shows that somebody official _claims_ that starting
+> with Maven 2.0.9, specifying that wagon extension for WebDAV is not at all
+> necessary, it should be active by default.
+>
+> Since Maven 2.2.1 is the current Maven 2 version and even if I do not know
+> what version m2e bundles, it seems to compile fine in my m2e
+> installation, so I assume it is newer than 2.0.9.
+>
+> The only thing I am worried about: WebDAV is needed for deploying, too.
+> And I have no idea how to test that (not without risking the heavens to
+> break open and the archangels to hunt me down).
+>
+> So I'd like your help: could you test this commit?
+>
+>
+> https://github.com/imagej/imagej/commit/2c755b58032c2f74d1a336c80166deedfb86e5e2
+>
+> (I guess that I implictly mean you, Curtis ;-)
+>
+> Ciao,
+> Dscho
+>
+> P.S.: I needed to install Eclipse for all three Operating Systems
+> supported by Fiji so I can make sure that the changes I intend to make on
+> SwingOutputWindow do not break existing functionality (as I am on Linux, I
+> always get these crappy scrollbars, and I verified that the same happens
+> on Windows, but not on MacOSX, so I guess that some overly specific
+> dimensioning code is responsible that assumes a bit too much).
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20120228/ad6c161b/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Tue Feb 28 14:45:46 2012
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Tue, 28 Feb 2012 14:45:46 -0600 (CST)
+Subject: [ImageJ-devel] Maven 3 support
+In-Reply-To: <CADN69yn1eD-heEG__8Eaiohj9B0fJkHu162_v9rVEiyrUDi+OA@mail.gmail.com>
+References: <alpine.DEB.1.00.1202271907170.3340@s15462909.onlinehome-server.info>
+	<CADN69yn1eD-heEG__8Eaiohj9B0fJkHu162_v9rVEiyrUDi+OA@mail.gmail.com>
+Message-ID: <alpine.DEB.1.00.1202281431490.3340@s15462909.onlinehome-server.info>
+
+Hi Curtis,
+
+On Tue, 28 Feb 2012, Curtis Rueden wrote:
+
+> > And sure enough, they don't, because Maven 3 no longer accepts the
+> > wagon extension in its current form.
+>
+> I tested your change on my local system with Maven 3.0.4, but
+> unfortunately it breaks the build:
+>
+> [ERROR] Failed to execute goal
+> org.apache.maven.plugins:maven-deploy-plugin:2.7:deploy (default-deploy) on
+> project pom-ij-base: Failed to deploy artifacts/metadata: No connector
+> available to access repository imagej.snapshots (dav:
+> http://maven.imagej.net/content/repositories/snapshots) of type default
+> using the available factories WagonRepositoryConnectorFactory -> [Help 1]
+
+Bummer.
+
+> However, on my system with the wagon-webdav extension still in place,
+> the deploy works fine. So our experiences are not in line here; Maven 3
+> + wagon-webdav works for me. Could there be some other cause to the
+> problems you're seeing?
+
+The problems I was seeing were not even in deployment. A plain Eclipse IDE
+For Java Developers installation fails with this error:
+
+Project build error: Unresolveable build extension: Plugin
+org.apache.maven.wagon:wagon-webdav:1.0-beta-2 or one of its dependencies
+could not be resolved: Failed to collect dependencies for
+org.apache.maven.wagon:wagon-webdav:jar:1.0-beta-2 ()
+
+> Since Maven 2.2.1 is the current Maven 2 version and even if I do not know
+> > what version m2e bundles, it seems to compile fine in my m2e
+> > installation, so I assume it is newer than 2.0.9.
+> >
+>
+> I agree that we do not need to support Maven 2.0.x. If our builds work with
+> Maven 2.2.x and 3.0.x, then I am happy. (Actually, I am happy even if we
+> require Maven 3, although there are some arguments not to limit ourselves
+> that way.)
+
+Well, first I have to make it work with Maven 3 at all ;-) BTW I added a
+ticket for this: http://trac.imagej.net/ticket/1032
+
+> > P.S.: I needed to install Eclipse for all three Operating Systems
+> > supported by Fiji so I can make sure that the changes I intend to make
+> > on SwingOutputWindow do not break existing functionality (as I am on
+> > Linux, I always get these crappy scrollbars, and I verified that the
+> > same happens on Windows, but not on MacOSX, so I guess that some
+> > overly specific dimensioning code is responsible that assumes a bit
+> > too much).
+>
+> The crappy scroll bars have been a continuing nuisance. I think it may be a
+> bug in JHotDraw.
+
+Heh, I thought so, too... See: http://trac.imagej.net/ticket/1025
+
+Ciao,
+Dscho
+
+
+
+From ctrueden at wisc.edu  Tue Feb 28 15:33:38 2012
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Tue, 28 Feb 2012 15:33:38 -0600
+Subject: [ImageJ-devel] Maven 3 support
+In-Reply-To: <alpine.DEB.1.00.1202281431490.3340@s15462909.onlinehome-server.info>
+References: <alpine.DEB.1.00.1202271907170.3340@s15462909.onlinehome-server.info>
+	<CADN69yn1eD-heEG__8Eaiohj9B0fJkHu162_v9rVEiyrUDi+OA@mail.gmail.com>
+	<alpine.DEB.1.00.1202281431490.3340@s15462909.onlinehome-server.info>
+Message-ID: <CADN69ymm2d2VRs8AVWg54djDxknMNwkDwxTt7uZJx9PeizS+GA@mail.gmail.com>
+
+Hi Dscho,
+
+Well, first I have to make it work with Maven 3 at all ;-) BTW I added a
+> ticket for this: http://trac.imagej.net/ticket/1032
+>
+
+Sounds good. I agree we'll have to push to beta2 or beta3. But we
+definitely need to make things work with a fresh install of Eclipse IDE for
+Java Developers. At minimum, our setup instructions should explain a way to
+work around the issue (once we discover one).
+
+> The crappy scroll bars have been a continuing nuisance. I think it may be
+> a
+> > bug in JHotDraw.
+>
+> Heh, I thought so, too... See: http://trac.imagej.net/ticket/1025
+>
+
+Does your fix eliminate the need for the "+5 pixels" hack then?
+
+-Curtis
+
+
+On Tue, Feb 28, 2012 at 2:45 PM, Johannes Schindelin <
+Johannes.Schindelin at gmx.de> wrote:
+
+> Hi Curtis,
+>
+> On Tue, 28 Feb 2012, Curtis Rueden wrote:
+>
+> > > And sure enough, they don't, because Maven 3 no longer accepts the
+> > > wagon extension in its current form.
+> >
+> > I tested your change on my local system with Maven 3.0.4, but
+> > unfortunately it breaks the build:
+> >
+> > [ERROR] Failed to execute goal
+> > org.apache.maven.plugins:maven-deploy-plugin:2.7:deploy (default-deploy)
+> on
+> > project pom-ij-base: Failed to deploy artifacts/metadata: No connector
+> > available to access repository imagej.snapshots (dav:
+> > http://maven.imagej.net/content/repositories/snapshots) of type default
+> > using the available factories WagonRepositoryConnectorFactory -> [Help 1]
+>
+> Bummer.
+>
+> > However, on my system with the wagon-webdav extension still in place,
+> > the deploy works fine. So our experiences are not in line here; Maven 3
+> > + wagon-webdav works for me. Could there be some other cause to the
+> > problems you're seeing?
+>
+> The problems I was seeing were not even in deployment. A plain Eclipse IDE
+> For Java Developers installation fails with this error:
+>
+> Project build error: Unresolveable build extension: Plugin
+> org.apache.maven.wagon:wagon-webdav:1.0-beta-2 or one of its dependencies
+> could not be resolved: Failed to collect dependencies for
+> org.apache.maven.wagon:wagon- <goog_800799784>webdav:jar:1.0-beta-2 ()
+>
+> > Since Maven 2.2.1 is the current Maven 2 version and even if I do not
+> know
+> > > what version m2e bundles, it seems to compile fine in my m2e
+> > > installation, so I assume it is newer than 2.0.9.
+> > >
+> >
+> > I agree that we do not need to support Maven 2.0.x. If our builds work
+> with
+> > Maven 2.2.x and 3.0.x, then I am happy. (Actually, I am happy even if we
+> > require Maven 3, although there are some arguments not to limit ourselves
+> > that way.)
+>
+> Well, first I have to make it work with Maven 3 at all ;-) BTW I added a
+> ticket for this: http://trac.imagej.net/ticket/1032
+>
+> > > P.S.: I needed to install Eclipse for all three Operating Systems
+> > > supported by Fiji so I can make sure that the changes I intend to make
+> > > on SwingOutputWindow do not break existing functionality (as I am on
+> > > Linux, I always get these crappy scrollbars, and I verified that the
+> > > same happens on Windows, but not on MacOSX, so I guess that some
+> > > overly specific dimensioning code is responsible that assumes a bit
+> > > too much).
+> >
+> > The crappy scroll bars have been a continuing nuisance. I think it may
+> be a
+> > bug in JHotDraw.
+>
+> Heh, I thought so, too... See: http://trac.imagej.net/ticket/1025
+>
+> Ciao,
+> Dscho
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20120228/d18f2ee2/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Tue Feb 28 17:23:11 2012
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Tue, 28 Feb 2012 17:23:11 -0600 (CST)
+Subject: [ImageJ-devel] JHotDrawImageCanvas' +5 problem,
+	was Re: Maven 3 support
+In-Reply-To: <CADN69ymm2d2VRs8AVWg54djDxknMNwkDwxTt7uZJx9PeizS+GA@mail.gmail.com>
+References: <alpine.DEB.1.00.1202271907170.3340@s15462909.onlinehome-server.info>
+	<CADN69yn1eD-heEG__8Eaiohj9B0fJkHu162_v9rVEiyrUDi+OA@mail.gmail.com>
+	<alpine.DEB.1.00.1202281431490.3340@s15462909.onlinehome-server.info>
+	<CADN69ymm2d2VRs8AVWg54djDxknMNwkDwxTt7uZJx9PeizS+GA@mail.gmail.com>
+Message-ID: <alpine.DEB.1.00.1202281649200.3340@s15462909.onlinehome-server.info>
+
+Hi,
+
+On Tue, 28 Feb 2012, Curtis Rueden wrote:
+
+> > > The crappy scroll bars have been a continuing nuisance. I think it
+> > > may be a bug in JHotDraw.
+> >
+> > Heh, I thought so, too... See: http://trac.imagej.net/ticket/1025
+> >
+>
+> Does your fix eliminate the need for the "+5 pixels" hack then?
+
+I doubt it. My fix only triggers a re-layout after adding the menu bar (it
+does not even force an invalidation, so on Mac it actually does not change
+the layout at all).
+
+But let me try...
+
+*clicketyclick*
+
+Okay, it does not fix the problem.
+
+But reading the code, I have a hunch what is going wrong.
+JHotDrawImageCanvas overrides getPreferredSize() and returns the
+dimensions of the contained DrawingView's preferred size, enlarged by
+(5,5).
+
+However, JHotDrawImageCanvas actually contains a _JScrollPane_ whose
+JViewport contains the DrawingView. And I strongly suggest that that
+JViewport has insets, defaulting to (2,2,2,2) or some such.
+
+One thing that changes something is if I add this call just after
+instantiating the JScrollPane:
+
+	scrollPane.setBorder(new EmptyBorder(0, 0, 0, 0));
+
+Now I only need to add 1 per dimension...
+
+Leaving it as-is for now.
+
+Ciao,
+Dscho
+
+
+
+From pietzsch at mpi-cbg.de  Wed Feb 29 13:11:48 2012
+From: pietzsch at mpi-cbg.de (Tobias Pietzsch)
+Date: Wed, 29 Feb 2012 20:11:48 +0100
+Subject: [ImageJ-devel] [IMGLIB] moved algorithm and stats packages out of
+	imglib2-core
+Message-ID: <4F4E7874.9080606@mpi-cbg.de>
+
+Hi all,
+
+I moved the net.imglib2.algorithm and net.imglib2.stats packages
+from the imglib2-core into the imglib2-algorithms sub-project (because
+thats where they should belong.)
+
+With regard to the interfaces and classes from the algorithm package,
+I think we should reconsider whether we need those at all. In particular
+for the MultiThreaded interface, I imagine that something similar can
+be accomplished using the standard java.util.concurrent package.
+For instance, (potentially) multi-threaded algorithms could be started
+with an ExecutorService argument.
+
+best regards,
+Tobias
+
+
+
+From ctrueden at wisc.edu  Wed Feb 29 14:30:25 2012
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Wed, 29 Feb 2012 14:30:25 -0600
+Subject: [ImageJ-devel] [IMGLIB] moved algorithm and stats packages out
+	of imglib2-core
+In-Reply-To: <4F4E7874.9080606@mpi-cbg.de>
+References: <4F4E7874.9080606@mpi-cbg.de>
+Message-ID: <CADN69yme_NePuOE+2faNQ30bWYtEFgJGOPGse7+wb0pcni9-NQ@mail.gmail.com>
+
+Hi Tobias,
+
+I moved the net.imglib2.algorithm and net.imglib2.stats packages
+> from the imglib2-core into the imglib2-algorithms sub-project (because
+> thats where they should belong.)
+>
+
+The problem with moving things from core to algorithms right now is that
+implicitly, it changes the license from BSD to GPL. ImageJ2 cannot include
+imglib2-algorithms, because of this license difference.
+
+So, there are a couple of potential solutions:
+
+1) Keep things like net.imglib2.stats in imglib2 core, so that it can
+remain BSD licensed.
+
+2) Split imglib2-algorithms into multiple components:
+imglib2-algorithms-bsd and imglib2-algorithms-gpl, for example. Then we can
+include imglib2-algorithms-bsd as a dependency for ImageJ2.
+
+The thinking with net.imglib2.stats was that the histogram functionality is
+so common that it belongs in the "core" library. While modularity is nice,
+splitting things up too much runs the risk of confusing new developers who
+do not know why there are so many different JAR files. I agree with
+something Albert said a while back that one primary motivator for multiple
+JARs is to discriminate dependencies. That is, if some code depends on e.g.
+weka, and other code does not, there should be two Maven modules: one with
+a dependency on weka that includes the relevant code, and the other without
+such dependency that includes the rest.
+
+The tricky bit is, the other primary motivator for multiple JARs is, as
+touched on above, licensing. We need to balance and reconcile those two
+needs. The most surefire solution is to have a separate module/JAR for each
+combination of licenses and dependencies?and hopefully that number of
+modules remains manageable.
+
+Maybe it is time to split up imglib2-algorithms into multiple submodules? I
+would be happy to do it, if we all agree.
+
+Regards,
+Curtis
+
+
+On Wed, Feb 29, 2012 at 1:11 PM, Tobias Pietzsch <pietzsch at mpi-cbg.de>wrote:
+
+> Hi all,
+>
+> I moved the net.imglib2.algorithm and net.imglib2.stats packages
+> from the imglib2-core into the imglib2-algorithms sub-project (because
+> thats where they should belong.)
+>
+> With regard to the interfaces and classes from the algorithm package,
+> I think we should reconsider whether we need those at all. In particular
+> for the MultiThreaded interface, I imagine that something similar can
+> be accomplished using the standard java.util.concurrent package.
+> For instance, (potentially) multi-threaded algorithms could be started
+> with an ExecutorService argument.
+>
+> best regards,
+> Tobias
+>
+> ______________________________**_________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/**listinfo/imagej-devel<http://imagej.net/mailman/listinfo/imagej-devel>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20120229/9cc82aae/attachment.html>
+
+From wmohler at neuron.uchc.edu  Wed Feb 29 14:43:45 2012
+From: wmohler at neuron.uchc.edu (Bill Mohler)
+Date: Wed, 29 Feb 2012 15:43:45 -0500
+Subject: [ImageJ-devel] [IMGLIB] moved algorithm and stats packages out
+ of imglib2-core
+In-Reply-To: <CADN69yme_NePuOE+2faNQ30bWYtEFgJGOPGse7+wb0pcni9-NQ@mail.gmail.com>
+References: <4F4E7874.9080606@mpi-cbg.de>
+	<CADN69yme_NePuOE+2faNQ30bWYtEFgJGOPGse7+wb0pcni9-NQ@mail.gmail.com>
+Message-ID: <4F4E8E01.1010408@neuron.uchc.edu>
+
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20120229/705c899e/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Wed Feb 29 14:48:19 2012
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Wed, 29 Feb 2012 14:48:19 -0600 (CST)
+Subject: [ImageJ-devel] [IMGLIB] moved algorithm and stats packages out
+ of imglib2-core
+In-Reply-To: <4F4E7874.9080606@mpi-cbg.de>
+References: <4F4E7874.9080606@mpi-cbg.de>
+Message-ID: <alpine.DEB.1.00.1202291440530.3340@s15462909.onlinehome-server.info>
+
+Hi Tobias,
+
+On Wed, 29 Feb 2012, Tobias Pietzsch wrote:
+
+> I moved the net.imglib2.algorithm and net.imglib2.stats packages from
+> the imglib2-core into the imglib2-algorithms sub-project (because thats
+> where they should belong.)
+
+Agree.
+
+> With regard to the interfaces and classes from the algorithm package, I
+> think we should reconsider whether we need those at all.
+
+My understanding was that at least a few algorithms might be better off
+moving to ops (so that we do not have two competing subprojects in
+ImgLib2). But then, maybe we need to think a little more in line of
+Functional programming? In particular, we may want to group the
+subprojects thusly:
+
+- filtering (make a subset of inputs)
+- reduction (less outputs than inputs, think e.g. histogram)
+- transformation (same number of outputs as inputs)
+
+> In particular for the MultiThreaded interface, I imagine that something
+> similar can be accomplished using the standard java.util.concurrent
+> package.  For instance, (potentially) multi-threaded algorithms could be
+> started with an ExecutorService argument.
+
+That's probably a safe bet. java.util.concurrent is one of the best
+designed interfaces in the Java API.
+
+For other things, we should consider whether things in ops and things in
+algorithms try to do the same and consolidate.
+
+Ciao,
+Dscho
+
+
+
+From ctrueden at wisc.edu  Wed Feb 29 14:51:57 2012
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Wed, 29 Feb 2012 14:51:57 -0600
+Subject: [ImageJ-devel] [IMGLIB] moved algorithm and stats packages out
+	of imglib2-core
+In-Reply-To: <4F4E8E01.1010408@neuron.uchc.edu>
+References: <4F4E7874.9080606@mpi-cbg.de>
+	<CADN69yme_NePuOE+2faNQ30bWYtEFgJGOPGse7+wb0pcni9-NQ@mail.gmail.com>
+	<4F4E8E01.1010408@neuron.uchc.edu>
+Message-ID: <CADN69y=xMAcPfCymps8ouAHVwaS_LYGBVNOtu1Cvwb=B2=Gb6g@mail.gmail.com>
+
+Hi Bill,
+
+The hash of different licenses is starting to sound a bit icky. What's the
+> justification? Why not public domain ala IJ1?
+>
+
+It is not legal to "release" code to the public domain in the United
+States, nor in many other countries. The closest we can get is the BSD
+license. It is extremely permissive. The reason ImageJ1 is in the public
+domain is because there is one exception: code developed by the U.S.
+government (including at NIH) *cannot* be copyrighted, and is automatically
+in the public domain. But ImageJ2 does not fall into that category, as it
+is being developed as a community effort across several universities
+internationally.
+
+Similarly, ImgLib2 is BSD-licensed, to be as permissive as possible.
+However, there are some image processing algorithms (in the
+imglib2-algorithms package) that depend on GPL-licensed third-party
+libraries. In order to use those libraries legally, the imglib2-algorithms
+must also be GPL-licensed.
+
+Hopefully that makes sense. If not, ask and we will clarify further.
+
+Regards,
+Curtis
+
+
+On Wed, Feb 29, 2012 at 2:43 PM, Bill Mohler <wmohler at neuron.uchc.edu>wrote:
+
+>  The hash of different licenses is starting to sound a bit icky. What's
+> the justification? Why not public domain ala IJ1?
+>
+>
+>
+> On 2/29/12 3:30 p.m., Curtis Rueden wrote:
+>
+> Hi Tobias,
+>
+> I moved the net.imglib2.algorithm and net.imglib2.stats packages
+>> from the imglib2-core into the imglib2-algorithms sub-project (because
+>> thats where they should belong.)
+>>
+>
+> The problem with moving things from core to algorithms right now is that
+> implicitly, it changes the license from BSD to GPL. ImageJ2 cannot include
+> imglib2-algorithms, because of this license difference.
+>
+> So, there are a couple of potential solutions:
+>
+> 1) Keep things like net.imglib2.stats in imglib2 core, so that it can
+> remain BSD licensed.
+>
+> 2) Split imglib2-algorithms into multiple components:
+> imglib2-algorithms-bsd and imglib2-algorithms-gpl, for example. Then we can
+> include imglib2-algorithms-bsd as a dependency for ImageJ2.
+>
+> The thinking with net.imglib2.stats was that the histogram functionality
+> is so common that it belongs in the "core" library. While modularity is
+> nice, splitting things up too much runs the risk of confusing new
+> developers who do not know why there are so many different JAR files. I
+> agree with something Albert said a while back that one primary motivator
+> for multiple JARs is to discriminate dependencies. That is, if some code
+> depends on e.g. weka, and other code does not, there should be two Maven
+> modules: one with a dependency on weka that includes the relevant code, and
+> the other without such dependency that includes the rest.
+>
+> The tricky bit is, the other primary motivator for multiple JARs is, as
+> touched on above, licensing. We need to balance and reconcile those two
+> needs. The most surefire solution is to have a separate module/JAR for each
+> combination of licenses and dependencies?and hopefully that number of
+> modules remains manageable.
+>
+> Maybe it is time to split up imglib2-algorithms into multiple submodules?
+> I would be happy to do it, if we all agree.
+>
+> Regards,
+> Curtis
+>
+>
+> On Wed, Feb 29, 2012 at 1:11 PM, Tobias Pietzsch <pietzsch at mpi-cbg.de>wrote:
+>
+>> Hi all,
+>>
+>> I moved the net.imglib2.algorithm and net.imglib2.stats packages
+>> from the imglib2-core into the imglib2-algorithms sub-project (because
+>> thats where they should belong.)
+>>
+>> With regard to the interfaces and classes from the algorithm package,
+>> I think we should reconsider whether we need those at all. In particular
+>> for the MultiThreaded interface, I imagine that something similar can
+>> be accomplished using the standard java.util.concurrent package.
+>> For instance, (potentially) multi-threaded algorithms could be started
+>> with an ExecutorService argument.
+>>
+>> best regards,
+>> Tobias
+>>
+>> _______________________________________________
+>> ImageJ-devel mailing list
+>> ImageJ-devel at imagej.net
+>> http://imagej.net/mailman/listinfo/imagej-devel
+>>
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20120229/72e4a573/attachment.html>
+
+From tinevez at pasteur.fr  Wed Feb 29 14:54:05 2012
+From: tinevez at pasteur.fr (Jean-Yves Tinevez)
+Date: Wed, 29 Feb 2012 21:54:05 +0100
+Subject: [ImageJ-devel] [IMGLIB] moved algorithm and stats packages out
+ of imglib2-core
+In-Reply-To: <CADN69yme_NePuOE+2faNQ30bWYtEFgJGOPGse7+wb0pcni9-NQ@mail.gmail.com>
+References: <4F4E7874.9080606@mpi-cbg.de>
+	<CADN69yme_NePuOE+2faNQ30bWYtEFgJGOPGse7+wb0pcni9-NQ@mail.gmail.com>
+Message-ID: <4F4E906D.3050801@pasteur.fr>
+
+Hi all
+
+On 29-Feb-12 21:30, Curtis Rueden wrote:
+> Hi Tobias,
+>
+>     I moved the net.imglib2.algorithm and net.imglib2.stats packages
+>     from the imglib2-core into the imglib2-algorithms sub-project (because
+>     thats where they should belong.)
+>
+>
+> The problem with moving things from core to algorithms right now is 
+> that implicitly, it changes the license from BSD to GPL. ImageJ2 
+> cannot include imglib2-algorithms, because of this license difference.
+>
+[snip...]
+>
+> The tricky bit is, the other primary motivator for multiple JARs is, 
+> as touched on above, licensing. We need to balance and reconcile those 
+> two needs. The most surefire solution is to have a separate module/JAR 
+> for each combination of licenses and dependencies---and hopefully that 
+> number of modules remains manageable.
+>
+> Maybe it is time to split up imglib2-algorithms into multiple 
+> submodules? I would be happy to do it, if we all agree.
+
+
+So if I get the bug picture correctly and try to summarize it:
+
+- ImageJ2 is a standalone software, that only contains BSD pieces. It 
+uses as its core imglib2, and the concerned packages (core, io, nothing 
+else, right?) are all BSDs. The BSD license was chosen to facilitate 
+dissemination in other softwares, e.g. commercial ones (I am pretty sure 
+I got it wrong there).
+
+- Fiji is distribution that includes ImageJ2. It is GPL3 and as such 
+allows extra goodies, such as the imglib2 packages that are not BSD, 
+like the algorithms. imglib2 algos are GPL3 so that we constrain 
+creations based on these algos to be GPL3: then we (Fiji community) can 
+benefit.
+
+Right?
+
+
+Then the way to know what should go to core vs algorithms depend on what 
+ImageJ2 want to offer. There might be a list of target features for 
+ImageJ2: when they are all implemented, the IJ2 team know that the soft 
+has reached version 1.0.
+
+So, any part of imglib2 that is needed to complete this list of feature 
+should go to the core.
+
+In that view, Curtis said that having the ability to display histograms 
+is a IJ2 core feature, so it should go to the core. The FloydSteinberg 
+dithering is more like a plugin, so it can go to algorithms. But why 
+algorithms could not be a single large package?
+
+Does that make sense?
+
+cheers
+jy
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20120229/ebdb9524/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Wed Feb 29 15:01:35 2012
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Wed, 29 Feb 2012 15:01:35 -0600 (CST)
+Subject: [ImageJ-devel] [IMGLIB] moved algorithm and stats packages out
+ of imglib2-core
+In-Reply-To: <4F4E8E01.1010408@neuron.uchc.edu>
+References: <4F4E7874.9080606@mpi-cbg.de>
+	<CADN69yme_NePuOE+2faNQ30bWYtEFgJGOPGse7+wb0pcni9-NQ@mail.gmail.com>
+	<4F4E8E01.1010408@neuron.uchc.edu>
+Message-ID: <alpine.DEB.1.00.1202291500150.3340@s15462909.onlinehome-server.info>
+
+Hi Bill,
+
+On Wed, 29 Feb 2012, Bill Mohler wrote:
+
+> The hash of different licenses is starting to sound a bit icky. What's
+> the justification? Why not public domain ala IJ1?
+
+Public Domain is out of the question: it would allow others to claim they
+did the work.
+
+I am in favor of BSD, but we could not get all the dependencies of
+algorithms to be BSD.
+
+I have to say that Curtis is right about the licensing, I did not think of
+that, so at least .stats should *not* be in algorithms.
+
+Ciao,
+Dscho
+
+
+

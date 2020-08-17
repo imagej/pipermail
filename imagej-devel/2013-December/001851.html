@@ -1,0 +1,163 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [fiji-devel] Imglib2: using threadpools in core	algorithms
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20Imglib2%3A%20using%20threadpools%20in%20core%0A%09algorithms&In-Reply-To=%3C321A397C-0872-4513-BB62-016372139513%40mpi-cbg.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001845.html">
+   <LINK REL="Next"  HREF="001844.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [fiji-devel] Imglib2: using threadpools in core	algorithms</H1>
+    <B>Tobias Pietzsch</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20Imglib2%3A%20using%20threadpools%20in%20core%0A%09algorithms&In-Reply-To=%3C321A397C-0872-4513-BB62-016372139513%40mpi-cbg.de%3E"
+       TITLE="[ImageJ-devel] [fiji-devel] Imglib2: using threadpools in core	algorithms">pietzsch at mpi-cbg.de
+       </A><BR>
+    <I>Fri Dec  6 15:23:58 CST 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001845.html">[ImageJ-devel] [fiji-devel] Imglib2: using threadpools in core	algorithms
+</A></li>
+        <LI>Next message: <A HREF="001844.html">[ImageJ-devel] [fiji-devel] Imglib2: using threadpools in core	algorithms
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1851">[ date ]</a>
+              <a href="thread.html#1851">[ thread ]</a>
+              <a href="subject.html#1851">[ subject ]</a>
+              <a href="author.html#1851">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Curtis,
+
+&gt;<i> &gt; [SJC] is absolutely not the right thing if you are building a library in my opinion.
+</I>&gt;<i> 
+</I>&gt;<i> I strongly disagree; SJC was created to benefit SCIFIO, and it has done so tremendously. I can elaborate on this if you like, but suffice to say that even libraries have configuration and state and services that they need to provide, and a unified context is an excellent way to do this. If you instead rely on statics, you will create something that cannot be extended. We learned this from painful experience with Bio-Formats!
+</I>
+
+Yes, could you please elaborate on this!
+Maybe I should say that I have just recently (two days ago to be honest) started to seriously get into scijava-common and I like it very much so far. But I still don't see where it would benefit imglib2 core. I would like to have imglib2 be as close to purely functional as possible, no state, no side effects. As much as possible, at least.
+Could you please explain where SCIFIO benefits from being stateful and where being stateful would probably help imglib?
+
+best regards,
+Tobias
+
+On Dec 6, 2013, at 7:52 PM, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt; wrote:
+
+&gt;<i> Hi all,
+</I>&gt;<i> 
+</I>&gt;<i> After sleeping on it, I do not think SJC ThreadService is actually the way to go for providing better threading configuration of algorithms. But unlike Tobias, I do *not* think this is because SJC contexts are burdensome. Specifically, in response to Tobias's comment:
+</I>&gt;<i> 
+</I>&gt;<i> &gt; [SJC] is absolutely not the right thing if you are building a library in my opinion.
+</I>&gt;<i> 
+</I>&gt;<i> I strongly disagree; SJC was created to benefit SCIFIO, and it has done so tremendously. I can elaborate on this if you like, but suffice to say that even libraries have configuration and state and services that they need to provide, and a unified context is an excellent way to do this. If you instead rely on statics, you will create something that cannot be extended. We learned this from painful experience with Bio-Formats!
+</I>&gt;<i> 
+</I>&gt;<i> Anyway, the reason I think SJC ThreadService is wrong for this use case is due to another bullet point I mentioned earlier:
+</I>&gt;<i> 
+</I>&gt;<i> &gt; Easy to override threading behavior on a case-by-case basis
+</I>&gt;<i> &gt; (i.e., pass different ExecutorServices to different algorithms).
+</I>&gt;<i> 
+</I>&gt;<i> That is, SJC services are singletons, intended to store state for the application context. The threading configuration for running an algorithm might be different than that for another algorithm running in the same context. We need to be able to configure it individually. While ThreadService might be able to serve as a sensible default configuration (i.e., &quot;just use SJC's ExecutorService by default&quot;), it should not be forced on every algorithm.
+</I>&gt;<i> 
+</I>&gt;<i> &gt; As I pointed out, this has been done exactly right in Java 7 Fork/Join
+</I>&gt;<i> &gt; framework (by people who presumably put more thought and experience
+</I>&gt;<i> &gt; into it than we could). If the majority insists that we reimplement
+</I>&gt;<i> &gt; something similar, then at least let us use the same interfaces.
+</I>&gt;<i> 
+</I>&gt;<i> I agree that it would be great if we could use something that has been vetted by the greater Java community. However, this makes porting to non-JavaSE-7 platforms much more difficult. Tobias, I know you pointed out some java.util.concurrent leakages into ThreadService -- we weren't being overly careful about it yet -- but my point stands that SJC has the potential to make those sorts of ports easier if we put effort into it. More Jenkins builds against alternative Java implementations would be a great start toward that.
+</I>&gt;<i> 
+</I>&gt;<i> Anyway, it's not that I *want* to reimplement something similar to Java 7's Fork/Join... it's that I don't have a good alternative if we also want to support those other scenarios. One possible compromise would be design our own agnostic interface, and provide an implementation in its own module which uses Java 7's Fork/Join. That way, it will be possible to provide an alternative implementation on platforms which don't support it. This sort of interface-driven extensible design is *exactly* what SJC seeks to make possible with its plugin framework.
+</I>&gt;<i> 
+</I>&gt;<i> Regards,
+</I>&gt;<i> Curtis
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> On Fri, Dec 6, 2013 at 12:39 PM, Tobias Pietzsch &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pietzsch at mpi-cbg.de</A>&gt; wrote:
+</I>&gt;<i> Hi,
+</I>&gt;<i> 
+</I>&gt;<i> On Dec 6, 2013, at 7:28 PM, Johannes Schindelin &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">Johannes.Schindelin at gmx.de</A>&gt; wrote:
+</I>&gt;<i> 
+</I>&gt;<i> &gt; Hi Lee,
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; On Fri, 6 Dec 2013, Lee Kamentsky wrote:
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; On Fri, Dec 6, 2013 at 10:10 AM, Tobias Pietzsch &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pietzsch at mpi-cbg.de</A>&gt;wrote:
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt; Problem: Did anyone think about the possibility of deadlocks?
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; Nice catch, Tobias
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Does anybody have a different reaction than &quot;Oh well, that's right, we
+</I>&gt;<i> &gt; cannot use the ExecutorService, then, but instead need to adapt the
+</I>&gt;<i> &gt; ThreadService so it handles this one right&quot;?
+</I>&gt;<i> 
+</I>&gt;<i> Here, I have a different reaction:
+</I>&gt;<i> As I pointed out, this has been done exactly right in Java 7 Fork/Join framework (by people who presumably put more thought and experience into it than we could).
+</I>&gt;<i> If the majority insists that we reimplement something similar, then at least let us use the same interfaces.
+</I>&gt;<i> 
+</I>&gt;<i> best regards,
+</I>&gt;<i> Tobias
+</I>&gt;<i> 
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Ciao,
+</I>&gt;<i> &gt; Dscho
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; --
+</I>&gt;<i> &gt; --
+</I>&gt;<i> &gt; Please avoid top-posting, and please make sure to reply-to-all!
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Mailing list web interface: <A HREF="http://groups.google.com/group/fiji-devel">http://groups.google.com/group/fiji-devel</A>
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; ---
+</I>&gt;<i> &gt; You received this message because you are subscribed to the Google Groups &quot;Fiji-devel&quot; group.
+</I>&gt;<i> &gt; To unsubscribe from this group and stop receiving emails from it, send an email to <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">fiji-devel+unsubscribe at googlegroups.com.</A>
+</I>&gt;<i> &gt; For more options, visit <A HREF="https://groups.google.com/groups/opt_out.">https://groups.google.com/groups/opt_out.</A>
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20131206/6b396197/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20131206/6b396197/attachment.html</A>&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20131206/6b396197/attachment.pgp">http://imagej.net/pipermail/imagej-devel/attachments/20131206/6b396197/attachment.pgp</A>&gt;
+</PRE>
+
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001845.html">[ImageJ-devel] [fiji-devel] Imglib2: using threadpools in core	algorithms
+</A></li>
+	<LI>Next message: <A HREF="001844.html">[ImageJ-devel] [fiji-devel] Imglib2: using threadpools in core	algorithms
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1851">[ date ]</a>
+              <a href="thread.html#1851">[ thread ]</a>
+              <a href="subject.html#1851">[ subject ]</a>
+              <a href="author.html#1851">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

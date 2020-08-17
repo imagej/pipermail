@@ -1,0 +1,106 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] SCIFIO via Avian,	was Re:  [VIGRA] Avian VM and Bio-Formats
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20SCIFIO%20via%20Avian%2C%0A%09was%20Re%3A%20%20%5BVIGRA%5D%20Avian%20VM%20and%20Bio-Formats&In-Reply-To=%3C31F23E9A-69CE-4338-9824-5C0E2287747B%40mpi-cbg.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001823.html">
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] SCIFIO via Avian,	was Re:  [VIGRA] Avian VM and Bio-Formats</H1>
+    <B>Tobias Pietzsch</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20SCIFIO%20via%20Avian%2C%0A%09was%20Re%3A%20%20%5BVIGRA%5D%20Avian%20VM%20and%20Bio-Formats&In-Reply-To=%3C31F23E9A-69CE-4338-9824-5C0E2287747B%40mpi-cbg.de%3E"
+       TITLE="[ImageJ-devel] SCIFIO via Avian,	was Re:  [VIGRA] Avian VM and Bio-Formats">pietzsch at mpi-cbg.de
+       </A><BR>
+    <I>Fri Nov 29 17:36:35 CST 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001823.html">[ImageJ-devel] SCIFIO via Avian, was Re:  [VIGRA] Avian VM and Bio-Formats
+</A></li>
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1824">[ date ]</a>
+              <a href="thread.html#1824">[ thread ]</a>
+              <a href="subject.html#1824">[ subject ]</a>
+              <a href="author.html#1824">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Johannes and Ulli,
+
+with respect to the need to set up the paths in the pom.xml:
+This is an issue with the nar-maven-plugin, which compiles and packages the native code.
+With Johannes' help, I submitted an integration test to the nar-maven-plugin project, that illustrates this problem. So hopefully it will be fixed at some point in the future.
+Ulli, I remember that there was another issue on Windows: The dll was named differently to what the NarHelper class expects. Could you elaborate on that?
+
+With respect to what we did on the vigra-imglib2 project. I forked your project, Johannes, <A HREF="https://github.com/tpietzsch/vigra-imglib2.">https://github.com/tpietzsch/vigra-imglib2.</A>
+We worked on the &quot;buffer&quot; branch.
+This is using direct buffers as the underlying data structure for both ImgLib2's ArrayImg and VIGRA's MultiArrayView. At the moment, the direct buffer is allocated on the Java side, but as you pointed out, one can use JNI's NewDirectByteBuffer() from the C++ side. I think this is a good solution, because it leaves the option for both scenarios, Java embedded in C++ and C++ embedded in Java. The ByteBuffer is wrapped in a ImgLib2 Access (e.g. IntAccess for Imgs of IntType. It is easy to provide two constructors there, one which allocates the buffer and one which takes an existing buffer. Responsibility for freeing the memory is not a problem. Note that JNI NewDirectByteBuffer is constructed with already allocated memory. So, if C++ allocated the memory, Java may garbage-collect the ByteBuffer, but will not free the memory block. If creating the ByteBuffer form Java, Java will also free the memory.
+The good thing is that both ImgLib ArrayImgs and VIGRA MultiArrayViews were designed to wrap flat arrays, which is what is happening here.
+
+The ByteBuffer code came from the ImgLib2 branch &quot;buffer-and-unsafe&quot;, where I played with using direct buffers and sun.misc.Unsafe to back ArrayImgs instead of Java primitive arrays.
+sun.misc.Unsafe is the other viable option. In contrast to primitive arrays and direct buffers it does not suffer from the 2G size limit of Java arrays. Of course, if we put it behind an ArrayImg, we cannot make use of that fact yet. So we could have a BigArrayImg at some point in the future (which would be useful in its own right). Otherwise, same advantages as explained above.
+The benchmark that Johannes mentioned was comparing the speed of ArrayImgs backed by primitive arrays, direct buffers, and sun.misc.Unsafe, respectively. I just had a look and I couldn't find it. I'll recreate it next week.
+
+Note, that I copied the byte buffer stuff from the ImgLib2 branch &quot;buffer-and-unsafe&quot;, so that vigra-imglib2 works with the current ImgLib2 beta.
+
+But wrapping the images back and forth was only part of what we did. An important point is to make it easy to make bindings to VIGRA functions withou writing lots of boilderplate code on either side of JNI. Based on earlier VIGRA-Matlab wrapper we made some macros that allow to write on the C++ side
+
+JNIEXPORT void JNICALL Java_net_imglib2_vigra_VigraWrapper_gaussianSmoothMultiArray
+  (JNIEnv *env, jclass, jlongArray shape, jint typeId, jobject sourceData, jobject destData, jdouble sigma)
+{
+    using namespace vigra; // to get UInt8 and Int32
+    #define F(T) gaussianSmoothMultiArray&lt;T&gt;(env, shape, typeId, sourceData, destData, sigma)
+    ALLOW_TYPES(typeId, UInt8, Int32, float)
+    #undef F
+}
+
+This creates a switch statement that instantiates the VIGRA template function for the specified C++ types and dispatches to these according to the corresponding ImgLib type.
+The same is done for supported dimensionalities (because with templates we have to specify that at compile time).
+
+The plan is to directly pass in the ArrayImg jobject (and maybe even views later) and extract the type and dimension etc directly from that.
+This would mean, that on the Java side, we only have one native method for each exported VIGRA function, basically with the same signature and just replacing MultiArrayView with Img.
+
+best regards,
+Tobias
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20131130/e78185bb/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20131130/e78185bb/attachment-0001.html</A>&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20131130/e78185bb/attachment-0001.pgp">http://imagej.net/pipermail/imagej-devel/attachments/20131130/e78185bb/attachment-0001.pgp</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001823.html">[ImageJ-devel] SCIFIO via Avian, was Re:  [VIGRA] Avian VM and Bio-Formats
+</A></li>
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1824">[ date ]</a>
+              <a href="thread.html#1824">[ thread ]</a>
+              <a href="subject.html#1824">[ subject ]</a>
+              <a href="author.html#1824">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

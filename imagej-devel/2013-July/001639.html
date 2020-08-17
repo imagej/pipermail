@@ -1,0 +1,257 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] ImageJ - KNIME Integration: open questions
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImageJ%20-%20KNIME%20Integration%3A%20open%20questions&In-Reply-To=%3C51D441E9.7030707%40gmx.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001643.html">
+   <LINK REL="Next"  HREF="001694.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] ImageJ - KNIME Integration: open questions</H1>
+    <B>Michael Zinsmaier</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImageJ%20-%20KNIME%20Integration%3A%20open%20questions&In-Reply-To=%3C51D441E9.7030707%40gmx.de%3E"
+       TITLE="[ImageJ-devel] ImageJ - KNIME Integration: open questions">michael.zinsmaier at gmx.de
+       </A><BR>
+    <I>Wed Jul  3 10:23:21 CDT 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001643.html">[ImageJ-devel] GitHub for Mac, was Re: Copy Plugin directly to Plugins folder.
+</A></li>
+        <LI>Next message: <A HREF="001694.html">[ImageJ-devel] ImageJ - KNIME Integration: open questions
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1639">[ date ]</a>
+              <a href="thread.html#1639">[ thread ]</a>
+              <a href="subject.html#1639">[ subject ]</a>
+              <a href="author.html#1639">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Curtis,
+
+thanks for the reply, I just worked through the &quot;code question&quot; 
+(version, context, ...) everything  seems to work again.
+Now for the other issues
+
+@preview checkboxes
+&gt;<i> Michael wrote:
+</I>&gt;<i> &gt; Would it be possible to add a flag that surpresses previews checkboxes
+</I>&gt;<i> &gt; during dialog building?
+</I>&gt;<i>
+</I>&gt;<i> It's tricky because right now, each preview checkbox is an input 
+</I>&gt;<i> parameter to the command itself. But personally I don't like that 
+</I>&gt;<i> approach. It is not a &quot;real&quot; input to the command, but rather intended 
+</I>&gt;<i> to be toggled during input harvesting only. One option might be to 
+</I>&gt;<i> label the visibility of those parameters as ItemVisibility.INVISIBLE. 
+</I>&gt;<i> Then we could add a flag somewhere to hide INVISIBLE parameters, maybe.
+</I>&gt;<i>
+</I>&gt;<i> But really, I am leaning toward a simpler solution: just remove the 
+</I>&gt;<i> preview checkboxes, in favor of ImageJ2 *always* doing a preview (and 
+</I>&gt;<i> of course, KNIP doesn't have to). And if the previews are too slow, we 
+</I>&gt;<i> can optimize the preview() method to address it, rather than having 
+</I>&gt;<i> this hacky checkbox like ImageJ1 does.
+</I>I think the 2nd approach could be a good solution. Without a (hacky) 
+checkbox we would end up with simply not calling preview() on
+Previewable commands. Additionally we could also change this if we 
+wanted to support previews in the future.
+
+@interactive commands
+&gt;<i> Lee wrote:
+</I>&gt;<i> &gt; I hadn't looked at the interactive commands with regard to
+</I>&gt;<i> &gt; CellProfiler. It looks like &quot;buttons&quot; could be interpreted as possible
+</I>&gt;<i> &gt; headless actions that could be performed... at least in some cases.
+</I>&gt;<i>
+</I>&gt;<i> Yes, each button generally performs some action, which we should 
+</I>&gt;<i> really make sure are always exposed as standalone commands (see next 
+</I>&gt;<i> paragraph). We are going to add logic to make multiple sequential 
+</I>&gt;<i> Button widgets render as a single button bar in our UI layout. Won't 
+</I>&gt;<i> affect you though, Lee, since you do your own UI in Python.
+</I>&gt;<i>
+</I>&gt;<i> Michael wrote:
+</I>&gt;<i> &gt; Why is the threshold  plugin an interactive command?
+</I>&gt;<i>
+</I>&gt;<i> Let me explain the motivation here. Anything that extends 
+</I>&gt;<i> InteractiveCommand is not *intended* to be run in headless mode. 
+</I>&gt;<i> Rather, it is intended as a sort of &quot;meta-command&quot; that allows you to 
+</I>&gt;<i> launch other commands. It will be filled with callback methods when 
+</I>&gt;<i> various inputs change, which should, in a properly designed 
+</I>&gt;<i> InteractiveCommand, trigger real command executions that are more 
+</I>&gt;<i> well-behaved from a headless standpoint.
+</I>&gt;<i>
+</I>&gt;<i> Anything that extends InteractiveCommand should *not* be flagged with 
+</I>&gt;<i> &quot;headless = true&quot; since it is not intended for that purpose.
+</I>&gt;<i>
+</I>&gt;<i> So in the case of threshold, we need a &quot;real&quot; threshold command that 
+</I>&gt;<i> has sensible inputs and outputs. Then the command exposed in the 
+</I>&gt;<i> ImageJ UI as &quot;threshold&quot; is actually &quot;Interactive Threshold&quot; which 
+</I>&gt;<i> fires off Threshold executions.
+</I>&gt;<i>
+</I>&gt;<i> This is not all fully in place, but it is the direction we are going. 
+</I>&gt;<i> Sound reasonable?
+</I>&gt;<i>
+</I>&gt;<i> Lee wrote:
+</I>&gt;<i> &gt; For Threshold, I can see reasons for executing the callbacks for
+</I>&gt;<i> &gt; &quot;auto&quot;, &quot;apply&quot; and &quot;delete&quot; in a headless context
+</I>&gt;<i>
+</I>&gt;<i> The above would also address your comments here, Lee. The interactive 
+</I>&gt;<i> threshold command would not need to be exposed within CP because those 
+</I>&gt;<i> buttons would each have a corresponding standalone headless-friendly 
+</I>&gt;<i> command which *would* be exposed.
+</I>In our case the standalone headless commands would end up as KNIME nodes 
+and the interactive meta command would be ignored.
+Which should work fine.
+
+I have only one small concern, the headless commands should not become 
+to fine granular. Consider for example a filter command that supports 
+different neighborhood shapes. A meta command for different filters and 
+a headless command for each filter (gaussian, max, ...) is a good solution.
+But an implementation with a headless command for each filter and each 
+neighbourhood  (gaussian rectangular, gaussian circular, ...) would be 
+too much. However thats in the end up to the command implementor and 
+shouldn't be a general problem.
+
+
+@dynamic command detection =&gt; ticket filed
+&gt;<i> Michael wrote:
+</I>&gt;<i> &gt; is there a way to determine if a command is dynamic?
+</I>&gt;<i>
+</I>&gt;<i> Other than the hacky instanceof test you are doing, nope. I agree we 
+</I>&gt;<i> should add API for it to ModuleInfo. Especially because it is possible 
+</I>&gt;<i> for modules to be dynamic without extending the DynamicCommand class...
+</I>&gt;<i>
+</I>&gt;<i> Could you please file a ticket for it on the ImageJ Trac? I just made 
+</I>&gt;<i> ImageJ Trac accounts for you, Christian &amp; Martin; you should have an 
+</I>&gt;<i> automated email about it. I know Trac is not ideal (GitHub Issues is 
+</I>&gt;<i> nice) but we have all our ImageJ tickets in Trac now, migrating 
+</I>&gt;<i> everything would be very involved, and I don't really want to start 
+</I>&gt;<i> splitting between two issue trackers. Someday we might move...
+</I>
+@plugin jars
+&gt;<i> &gt; Are you planing to re-organize the plugins, e.g. such that plugins,
+</I>&gt;<i> &gt; which are interesting for any application reside in their own
+</I>&gt;<i> &gt; jar-file?
+</I>&gt;<i>
+</I>&gt;<i> This is probably a good idea. However, I agree with Lee that in some 
+</I>&gt;<i> cases it may not be totally clear-cut [1]. You think splitting 
+</I>&gt;<i> ij-commands into two JAR files is sufficient? If so, care to send a 
+</I>&gt;<i> list of plugins you feel are *not* generally useful, and I can split 
+</I>&gt;<i> them out?
+</I>We would definitly provide our help for the creation of such a list (at 
+least we could look through the plugins and mark the ones that are
+useful within KNIME) however it might be better to delay this until 
+short before the final release (final set of plugins, stable plugin system).
+
+@service order  =&gt; ticket filed
+&gt;<i> Michael wrote:
+</I>&gt;<i> &gt; we had to move ModuleService behind  MenuService in the constructor
+</I>&gt;<i> &gt; call to avoid a null pointer during initialization
+</I>&gt;<i> &gt; (onEvent(ModulesAddedEvent) was called before initialize).
+</I>&gt;<i>
+</I>&gt;<i> That is a bug, thanks for reporting. However, moving the module 
+</I>&gt;<i> service after the menu service will not work because MenuService needs 
+</I>&gt;<i> CommandService which needs ModuleService.
+</I>&gt;<i>
+</I>&gt;<i> What's weird to me is, I am not sure why we don't see this bug when 
+</I>&gt;<i> running the end-user ImageJ application...
+</I>&gt;<i>
+</I>&gt;<i> I have some service initialization changes pending on ImageJ's 
+</I>&gt;<i> startup-speed branch, which may affect this. So we should debug 
+</I>&gt;<i> further once that branch is merged. Please feel free to file a Trac 
+</I>&gt;<i> ticket for it and assign to me.
+</I>&gt;<i>
+</I>&gt;<i> Michael wrote:
+</I>&gt;<i> &gt; Is there a defined service order?
+</I>&gt;<i>
+</I>&gt;<i> The order is defined by two things:
+</I>&gt;<i> 1) If a service has an @Parameter dependency on another service, the 
+</I>&gt;<i> dependency gets initialized first.
+</I>&gt;<i> 2) Otherwise, the &quot;priority&quot; property of the @Plugin annotation is 
+</I>&gt;<i> used to order service initialization.
+</I>&gt;<i>
+</I>&gt;<i> &gt; ((So far, we have tons of ideas where we could do more things
+</I>&gt;<i> &gt; together. Thank you in advance for answering all these questions ;) ))
+</I>&gt;<i>
+</I>@dimension selection
+as discussed between christian and curtis we will open a ticket with a 
+better explenation for this issue
+
+
+
+Thanks again for awnsering our questions
+Regards
+
+Christian, Martin, Michael
+
+
+
+p.s.
+&gt;<i>
+</I>&gt;<i> [1] You know what that easter egg does, right? Don't you *want* to 
+</I>&gt;<i> generate ASCII images using KNIME??? I know I do!
+</I>(-: of course we want. But we don't support getChannelMax/Min atm. so in 
+KNIME its only for skilled programmers
+
+++++++++++++++++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++++++++++o#++++++++
++++++++++++++++++++++++++++++++++++++++O##O+++++++
++++++++++++++++++++++++++++++++++++++o#####o++++++
+++++++++++++++++++++++++++++++++++++########++++++
+++++++++++++++++++++++++++++++++++o##########+++++
++++++++++++++++++++++++++++++++++############+++++
++++++++++++++++++++++++++++++++o###########o++++++
+++++++++++++++++++++++++++++++############++++++++
++++++++++#++++++++++++++++++o###########o+++++++++
+++++++++###o+++++++++++++++############+++++++++++
++++++++O####o++++++++++++o###########o++++++++++++
+++++++o######O++++++++++############++++++++++++++
++++++o#########+++++++*###########o+++++++++++++++
+++++++##########+++++############+++++++++++++++++
++++++++##########o+*###########o++++++++++++++++++
+++++++++O#####################++++++++++++++++++++
++++++++++*##################o+++++++++++++++++++++
+++++++++++o###############O+++++++++++++++++++++++
++++++++++++o#############o++++++++++++++++++++++++
++++++++++++++##########O++++++++++++++++++++++++++
+++++++++++++++########o+++++++++++++++++++++++++++
++++++++++++++++######+++++++++++++++++++++++++++++
+++++++++++++++++###o++++++++++++++++++++++++++++++
+++++++++++++++++o#++++++++++++++++++++++++++++++++
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20130703/e9e74091/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20130703/e9e74091/attachment-0001.html</A>&gt;
+</PRE>
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001643.html">[ImageJ-devel] GitHub for Mac, was Re: Copy Plugin directly to Plugins folder.
+</A></li>
+	<LI>Next message: <A HREF="001694.html">[ImageJ-devel] ImageJ - KNIME Integration: open questions
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1639">[ date ]</a>
+              <a href="thread.html#1639">[ thread ]</a>
+              <a href="subject.html#1639">[ subject ]</a>
+              <a href="author.html#1639">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

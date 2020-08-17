@@ -1,0 +1,264 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-bugs] [Bug 1076] New: ClearVolume crashes
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%201076%5D%20New%3A%20ClearVolume%20crashes&In-Reply-To=%3Cbug-1076-19%40http.fiji.sc/bugzilla/%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001117.html">
+   <LINK REL="Next"  HREF="001119.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-bugs] [Bug 1076] New: ClearVolume crashes</H1>
+    <B>bugzilla at fiji.sc</B> 
+    <A HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%201076%5D%20New%3A%20ClearVolume%20crashes&In-Reply-To=%3Cbug-1076-19%40http.fiji.sc/bugzilla/%3E"
+       TITLE="[ImageJ-bugs] [Bug 1076] New: ClearVolume crashes">bugzilla at fiji.sc
+       </A><BR>
+    <I>Thu May 28 12:42:03 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001117.html">[ImageJ-bugs] [Bug 1075] micro-manager clutter
+</A></li>
+        <LI>Next message: <A HREF="001119.html">[ImageJ-bugs] [Bug 1076] ClearVolume crashes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1118">[ date ]</a>
+              <a href="thread.html#1118">[ thread ]</a>
+              <a href="subject.html#1118">[ subject ]</a>
+              <a href="author.html#1118">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE><A HREF="http://fiji.sc/bugzilla/show_bug.cgi?id=1076">http://fiji.sc/bugzilla/show_bug.cgi?id=1076</A>
+
+            Bug ID: 1076
+           Summary: ClearVolume crashes
+           Product: Fiji
+           Version: unspecified
+          Hardware: PC
+                OS: Linux
+            Status: NEW
+          Severity: normal
+          Priority: P4
+         Component: Plugins
+          Assignee: <A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">imagej-bugs at imagej.net</A>
+          Reporter: <A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">sapristi at gmail.com</A>
+                CC: <A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">sapristi at gmail.com</A>
+
+When opening the ClearVolume Network Client the whole JVM segfaults:
+
+#
+# A fatal error has been detected by the Java Runtime Environment:
+#
+#  SIGSEGV (0xb) at pc=0x00007f28a2d62d80, pid=27327, tid=139811869296384
+#
+# JRE version: Java(TM) SE Runtime Environment (7.0_67-b01) (build
+1.7.0_67-b01)
+# Java VM: Java HotSpot(TM) 64-Bit Server VM (24.65-b04 mixed mode linux-amd64
+compressed oops)
+# Problematic frame:
+# C  [ld-linux-x86-64.so.2+0x9d80]  _dl_rtld_di_serinfo+0x670
+#
+# Failed to write core dump. Core dumps have been disabled. To enable core
+dumping, try &quot;ulimit -c unlimited&quot; before starting Java again
+#
+# An error report file with more information is saved as:
+# /home/albert/Programming/fiji-linux64-20091014/Fiji.app/hs_err_pid27327.log
+#
+# If you would like to submit a bug report, please visit:
+#   <A HREF="http://bugreport.sun.com/bugreport/crash.jsp">http://bugreport.sun.com/bugreport/crash.jsp</A>
+#
+Aborted
+
+
+Additionally, when using the &quot;Open in ClearVolume&quot;, it fails with an exception
+if no images are open, and it throws an exception if an RGB stack is open,
+leaving the splash screen looping forever. Eventually the whole of Fiji
+freezes. The exception in the case of no images:
+
+(Fiji Is Just) ImageJ 2.0.0-rc-30/1.49s; Java 1.7.0_67 [64-bit]; Linux
+3.13.11-031311ckt16-generic; 59MB of 4096MB (1%)
+
+java.lang.RuntimeException: java.util.concurrent.ExecutionException:
+java.lang.NullPointerException
+    at
+net.imagej.legacy.LegacyService.runLegacyCompatibleCommand(LegacyService.java:271)
+    at
+net.imagej.legacy.DefaultLegacyHooks.interceptRunPlugIn(DefaultLegacyHooks.java:162)
+    at ij.IJ.runPlugIn(IJ.java)
+    at ij.Executer.runCommand(Executer.java:131)
+    at ij.Executer.run(Executer.java:64)
+    at java.lang.Thread.run(Thread.java:745)
+Caused by: java.util.concurrent.ExecutionException:
+java.lang.NullPointerException
+    at java.util.concurrent.FutureTask.report(FutureTask.java:122)
+    at java.util.concurrent.FutureTask.get(FutureTask.java:188)
+    at
+net.imagej.legacy.LegacyService.runLegacyCompatibleCommand(LegacyService.java:267)
+    ... 5 more
+Caused by: java.lang.NullPointerException
+    at
+net.imagej.legacy.translate.ImagePlusDatasetConverter.populateInputCandidates(ImagePlusDatasetConverter.java:126)
+    at
+org.scijava.convert.DefaultConvertService.getCompatibleInputs(DefaultConvertService.java:111)
+    at
+org.scijava.widget.AbstractInputHarvester.getObjects(AbstractInputHarvester.java:153)
+    at
+org.scijava.widget.AbstractInputHarvester.addInput(AbstractInputHarvester.java:128)
+    at
+org.scijava.widget.AbstractInputHarvester.buildPanel(AbstractInputHarvester.java:94)
+    at
+org.scijava.widget.AbstractInputHarvester.harvest(AbstractInputHarvester.java:75)
+    at
+org.scijava.ui.AbstractInputHarvesterPlugin.process(AbstractInputHarvesterPlugin.java:76)
+    at org.scijava.module.ModuleRunner.preProcess(ModuleRunner.java:104)
+    at org.scijava.module.ModuleRunner.run(ModuleRunner.java:156)
+    at org.scijava.module.ModuleRunner.call(ModuleRunner.java:126)
+    at org.scijava.module.ModuleRunner.call(ModuleRunner.java:65)
+    at
+org.scijava.thread.DefaultThreadService$2.call(DefaultThreadService.java:181)
+    at java.util.concurrent.FutureTask.run(FutureTask.java:262)
+    at
+java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+    at
+java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+    ... 1 more
+
+
+And the exception in the case of an RGB image stack being open:
+
+(Fiji Is Just) ImageJ 2.0.0-rc-30/1.49s; Java 1.7.0_67 [64-bit]; Linux
+3.13.11-031311ckt16-generic; 75MB of 4096MB (1%)
+
+java.lang.RuntimeException: java.util.concurrent.ExecutionException:
+java.lang.NullPointerException
+    at
+net.imagej.legacy.LegacyService.runLegacyCompatibleCommand(LegacyService.java:271)
+    at
+net.imagej.legacy.DefaultLegacyHooks.interceptRunPlugIn(DefaultLegacyHooks.java:162)
+    at ij.IJ.runPlugIn(IJ.java)
+    at ij.Executer.runCommand(Executer.java:131)
+    at ij.Executer.run(Executer.java:64)
+    at java.lang.Thread.run(Thread.java:745)
+Caused by: java.util.concurrent.ExecutionException:
+java.lang.NullPointerException
+    at java.util.concurrent.FutureTask.report(FutureTask.java:122)
+    at java.util.concurrent.FutureTask.get(FutureTask.java:188)
+    at
+net.imagej.legacy.LegacyService.runLegacyCompatibleCommand(LegacyService.java:267)
+    ... 5 more
+Caused by: java.lang.NullPointerException
+    at
+de.mpicbg.jug.clearvolume.ImgLib2ClearVolume.initClearVolumeUnsignedShortArrayImg(ImgLib2ClearVolume.java:264)
+    at
+de.mpicbg.jug.clearvolume.ImgLib2ClearVolume.initRealImgs(ImgLib2ClearVolume.java:418)
+    at
+de.mpicbg.jug.clearvolume.gui.ClearVolumeManager.run(ClearVolumeManager.java:156)
+    at
+de.mpicbg.jug.clearvolume.gui.GenericClearVolumeGui.launchClearVolumeManager(GenericClearVolumeGui.java:208)
+    at
+de.mpicbg.jug.clearvolume.gui.GenericClearVolumeGui.&lt;init&gt;(GenericClearVolumeGui.java:135)
+    at de.mpicbg.jug.plugins.ClearVolumePlugin.run(ClearVolumePlugin.java:80)
+    at org.scijava.command.CommandModule.run(CommandModule.java:201)
+    at org.scijava.module.ModuleRunner.run(ModuleRunner.java:167)
+    at org.scijava.module.ModuleRunner.call(ModuleRunner.java:126)
+    at org.scijava.module.ModuleRunner.call(ModuleRunner.java:65)
+    at
+org.scijava.thread.DefaultThreadService$2.call(DefaultThreadService.java:181)
+    at java.util.concurrent.FutureTask.run(FutureTask.java:262)
+    at
+java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+    at
+java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+
+Information about your version of Java:
+
+  os.arch =&gt; amd64
+  os.name =&gt; Linux
+  os.version =&gt; 3.13.11-031311ckt16-generic
+  java.version =&gt; 1.7.0_67
+  java.vendor =&gt; Oracle Corporation
+  java.runtime.name =&gt; Java(TM) SE Runtime Environment
+  java.runtime.version =&gt; 1.7.0_67-b01
+  java.vm.name =&gt; Java HotSpot(TM) 64-Bit Server VM
+  java.vm.version =&gt; 24.65-b04
+  java.vm.vendor =&gt; Oracle Corporation
+  java.vm.info =&gt; mixed mode
+  java.awt.graphicsenv =&gt; sun.awt.X11GraphicsEnvironment
+  java.specification.name =&gt; Java Platform API Specification
+  java.specification.version =&gt; 1.7
+  sun.cpu.endian =&gt; little
+  sun.desktop =&gt; gnome
+  file.separator =&gt; /
+
+The up-to-date check says: REMIND_LATER
+
+Information relevant to JAVA_HOME related problems:
+
+  JAVA_HOME is set to:
+/home/albert/Programming/fiji-linux64-20091014/Fiji.app/java/linux-amd64/jdk1.7.0_67//jre
+  imagej.dir =&gt; /home/albert/Programming/fiji-linux64-20091014/Fiji.app
+
+Information about the version of each plugin:
+
+Activated update sites:
+ImageJ: <A HREF="http://update.imagej.net/">http://update.imagej.net/</A> (last check:20150522062918)
+Fiji: <A HREF="http://fiji.sc/update/">http://fiji.sc/update/</A> (last check:20150528120151)
+ClearVolume: <A HREF="http://sites.imagej.net/ClearVolume/">http://sites.imagej.net/ClearVolume/</A> (last check:20150527195605)
+FFMPEG: <A HREF="http://fiji.sc/~schindelin/ffmpeg-plugins/">http://fiji.sc/~schindelin/ffmpeg-plugins/</A> (last check:20130606112449)
+MOSAIC ToolSuite:
+<A HREF="http://mosaic.mpi-cbg.de/Downloads/update/Fiji/MosaicToolsuite/">http://mosaic.mpi-cbg.de/Downloads/update/Fiji/MosaicToolsuite/</A> (last
+check:20150227140151)
+
+Files not up-to-date:
+  1581bc4d (MODIFIED) 20120131124042 Contents/MacOS/ImageJ-macosx
+  75db148f (MODIFIED) 20120131124042 Contents/MacOS/ImageJ-tiger
+  1ad3be0d (LOCAL_ONLY) 20090930112722 jars/jpedalSTD.jar
+  32a5cb57 (LOCAL_ONLY) 20090910082726 macros/StartupMacros.txt
+  dc7fce6b (LOCAL_ONLY) 20111014094119 plugins/Motion_Deblur.jar
+  32738eb1 (LOCAL_ONLY) 20120511160900
+plugins/SAT-lib-Drosophila-3rd-instar.clj
+  3335decb (LOCAL_ONLY) 20101016092738 plugins/T2-NIT.jar
+  063de9b3 (LOCAL_ONLY) 20150526100515 plugins/dynamic_vision_sensor-like.py
+  7c95e931 (LOCAL_ONLY) 20140420121925 plugins/test_haskell_splitAt.py
+  7f241f66 (LOCAL_ONLY) 20100603001850 plugins/tests/Example_Cursors.class
+  a47f6af3 (LOCAL_ONLY) 20130425143259 plugins/tests/crop-file.py
+  d3260180 (LOCAL_ONLY) 20090910082729 scripts/Record_Desktop.py
+  0ea7f8fc (LOCAL_ONLY) 20090910082729 scripts/Record_Window.py
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-bugs/attachments/20150528/b03cc8c8/attachment.html">http://imagej.net/pipermail/imagej-bugs/attachments/20150528/b03cc8c8/attachment.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001117.html">[ImageJ-bugs] [Bug 1075] micro-manager clutter
+</A></li>
+	<LI>Next message: <A HREF="001119.html">[ImageJ-bugs] [Bug 1076] ClearVolume crashes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1118">[ date ]</a>
+              <a href="thread.html#1118">[ thread ]</a>
+              <a href="subject.html#1118">[ subject ]</a>
+              <a href="author.html#1118">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-bugs">More information about the Imagej-bugs
+mailing list</a><br>
+</body></html>

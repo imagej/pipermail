@@ -1,0 +1,198 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [fiji-devel] RE: Simplifying loops?
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20RE%3A%20Simplifying%20loops%3F&In-Reply-To=%3C4C19150F.2060104%40wisc.edu%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000115.html">
+   <LINK REL="Next"  HREF="000117.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [fiji-devel] RE: Simplifying loops?</H1>
+    <B>Aivar Grislis</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20RE%3A%20Simplifying%20loops%3F&In-Reply-To=%3C4C19150F.2060104%40wisc.edu%3E"
+       TITLE="[ImageJ-devel] [fiji-devel] RE: Simplifying loops?">grislis at wisc.edu
+       </A><BR>
+    <I>Wed Jun 16 13:16:47 CDT 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000115.html">[ImageJ-devel] [fiji-devel] RE: Simplifying loops?
+</A></li>
+        <LI>Next message: <A HREF="000117.html">[ImageJ-devel] [fiji-devel] RE: Simplifying loops?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#116">[ date ]</a>
+              <a href="thread.html#116">[ thread ]</a>
+              <a href="subject.html#116">[ subject ]</a>
+              <a href="author.html#116">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Cursor&lt;T&gt;  c;
+try {
+     for (;;c.fwd()){
+         // meat of the loop
+}
+catch (Exception e){}
+
+Using Exceptions for normal program flow might be considered bad Java form, also lumping together IndexOutOfBounds and NoSuchElementException by just catching the general Exception (because it could actually be some other kind of Exception happening).
+
+Cursor.getType() could return null when out of bounds (a possibility Brian mentioned).  Cursor.next() would return null also, since you're deprecating the idea of Cursor being an Iterator, it doesn't have to throw that NoSuchElementException.
+
+(You could check for the null to break out of the loop or the code above would still work, at the expense of having two exceptions: e.g. IndexOutOfBounds caught within Cursor and NullPointerException caught here).
+
+Aivar
+
+
+On 6/16/10 4:29 AM, Stephan Saalfeld wrote:
+&gt;<i> <A HREF="http://pacific.mpi-cbg.de/cgi-bin/gitweb.cgi?p=imglib.git;a=blob;f=mpicbg/imglib/cursor/CursorImpl.java;h=6bafb73226e2b0cb90289a382d4d4769c510d62b;hb=master#l81">http://pacific.mpi-cbg.de/cgi-bin/gitweb.cgi?p=imglib.git;a=blob;f=mpicbg/imglib/cursor/CursorImpl.java;h=6bafb73226e2b0cb90289a382d4d4769c510d62b;hb=master#l81</A>
+</I>&gt;<i>
+</I>&gt;<i> public T next(){ fwd(); return getType(); }
+</I>&gt;<i>
+</I>&gt;<i> That is, next() is fwd() + getType(), whereas getType() might be
+</I>&gt;<i> computationally expensive.  Sometimes, not for each move, you want to
+</I>&gt;<i> get the value, then next() would slow things down.
+</I>&gt;<i>
+</I>&gt;<i> Best,
+</I>&gt;<i> Stephan
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On Tue, 2010-06-15 at 08:22 -0500, Brian Selinsky wrote:
+</I>&gt;<i>    
+</I>&gt;&gt;<i> so what is the difference between fwd() and next()?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> if the same I would prefer next() (for consistency) and previous()
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> On 06/14/10, Stephan Saalfeld&lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">saalfeld at mpi-cbg.de</A>&gt;  wrote:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>      
+</I>&gt;&gt;&gt;<i> Self-correction:
+</I>&gt;&gt;&gt;<i> fwd() and bck() will not return boolean because I do not want them to
+</I>&gt;&gt;&gt;<i> check anything by default.  In the following example, all pixels are
+</I>&gt;&gt;&gt;<i> iterated until an exception (e.g. IndexOutOfBounds on type() call)
+</I>&gt;&gt;&gt;<i> occurs:
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Cursor&lt;T&gt;  c;
+</I>&gt;&gt;&gt;<i> try {
+</I>&gt;&gt;&gt;<i>      for (;;c.fwd()){
+</I>&gt;&gt;&gt;<i>          // meat of the loop
+</I>&gt;&gt;&gt;<i> }
+</I>&gt;&gt;&gt;<i> catch (Exception e){}
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> I assume that this is the fastest way to iterate over all pixels
+</I>&gt;&gt;&gt;<i> assuming that something at the basic language level is throwing an
+</I>&gt;&gt;&gt;<i> appropriate Exception.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Best,
+</I>&gt;&gt;&gt;<i> Stephan
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> On Mon, 2010-06-14 at 20:06 +0200, Stephan Saalfeld wrote:
+</I>&gt;&gt;&gt;<i>        
+</I>&gt;&gt;&gt;&gt;<i> Hi,
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> we implement java.lang.Iterator&lt;T extends Type&lt;T&gt;&gt;  where next() returns
+</I>&gt;&gt;&gt;&gt;<i> T, so no, next() cannot return boolean, fwd() and back() might do that.
+</I>&gt;&gt;&gt;&gt;<i> In the coming changes, Image&lt;T&gt;  implements java.lang.Iterable&lt;T&gt;, such
+</I>&gt;&gt;&gt;&gt;<i> that the Java language shortcut works:
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> Image&lt;  T&gt;  image;
+</I>&gt;&gt;&gt;&gt;<i> for ( final T : image ) {
+</I>&gt;&gt;&gt;&gt;<i>      // meat of the loop
+</I>&gt;&gt;&gt;&gt;<i> }
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> How's that?
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> Currently, Cursor&lt;T&gt;  implements Iterable&lt;T&gt;  such that you can do:
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> Cursor&lt;T&gt;  cursor;
+</I>&gt;&gt;&gt;&gt;<i> for (final T : cursor ) ...
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> instead,  but that's less sensible and will not stay.
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> Best,
+</I>&gt;&gt;&gt;&gt;<i> Stephan
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> On Mon, 2010-06-14 at 18:54 +0200, Johannes Schindelin wrote:
+</I>&gt;&gt;&gt;&gt;<i>          
+</I>&gt;&gt;&gt;&gt;&gt;<i> Hi,
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i> On Mon, 14 Jun 2010, Stephan Preibisch wrote:
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i>            
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> This is definitely something we could do as far as the linked iterators
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> work. Right now we did not do that because it is quite often extra work,
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> e.g. if you copy an image you need only one check instead of two:
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> cursor1, cursor2;
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> while ( cursor1.hasNext() )
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> {
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 	cursor1.fwd();
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 	cursor2.fwd();
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 	// meat of the loop
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> }
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>              
+</I>&gt;&gt;&gt;&gt;&gt;<i> Ah, I see. Maybe just a shortcut
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	public boolean next() {
+</I>&gt;&gt;&gt;&gt;&gt;<i>          	if (!hasNext())
+</I>&gt;&gt;&gt;&gt;&gt;<i>                  	return false;
+</I>&gt;&gt;&gt;&gt;&gt;<i>          	fwd();
+</I>&gt;&gt;&gt;&gt;&gt;<i>          	return true;
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	}
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i> to optimize for the common case?
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i> Ciao,
+</I>&gt;&gt;&gt;&gt;&gt;<i> Dscho
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i>            
+</I>&gt;&gt;&gt;&gt;<i>          
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagejdev.org</A>
+</I>&gt;&gt;&gt;<i> <A HREF="http://imagejdev.org/mailman/listinfo/imagej-devel">http://imagejdev.org/mailman/listinfo/imagej-devel</A>
+</I>&gt;&gt;&gt;<i>        
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagejdev.org</A>
+</I>&gt;<i> <A HREF="http://imagejdev.org/mailman/listinfo/imagej-devel">http://imagejdev.org/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>    
+</I>
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000115.html">[ImageJ-devel] [fiji-devel] RE: Simplifying loops?
+</A></li>
+	<LI>Next message: <A HREF="000117.html">[ImageJ-devel] [fiji-devel] RE: Simplifying loops?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#116">[ date ]</a>
+              <a href="thread.html#116">[ thread ]</a>
+              <a href="subject.html#116">[ subject ]</a>
+              <a href="author.html#116">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

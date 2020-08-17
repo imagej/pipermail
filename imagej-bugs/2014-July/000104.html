@@ -1,0 +1,176 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-bugs] [Bug 827] Fiji and macro never really ended
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%20827%5D%20Fiji%20and%20macro%20never%20really%20ended&In-Reply-To=%3Cbug-827-19-32IhVUOaNK%40http.fiji.sc/bugzilla/%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000103.html">
+   <LINK REL="Next"  HREF="000105.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-bugs] [Bug 827] Fiji and macro never really ended</H1>
+    <B>bugzilla at fiji.sc</B> 
+    <A HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%20827%5D%20Fiji%20and%20macro%20never%20really%20ended&In-Reply-To=%3Cbug-827-19-32IhVUOaNK%40http.fiji.sc/bugzilla/%3E"
+       TITLE="[ImageJ-bugs] [Bug 827] Fiji and macro never really ended">bugzilla at fiji.sc
+       </A><BR>
+    <I>Mon Jul 28 09:38:12 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000103.html">[ImageJ-bugs] [Bug 869] SCIFIO does not populate Image &gt; Properties &gt; Frame Interval
+</A></li>
+        <LI>Next message: <A HREF="000105.html">[ImageJ-bugs] [Bug 827] Fiji and macro never really ended
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#104">[ date ]</a>
+              <a href="thread.html#104">[ thread ]</a>
+              <a href="subject.html#104">[ subject ]</a>
+              <a href="author.html#104">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE><A HREF="http://fiji.sc/bugzilla/show_bug.cgi?id=827">http://fiji.sc/bugzilla/show_bug.cgi?id=827</A>
+
+--- Comment #6 from Quentin &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">quentinlerouzic at hotmail.fr</A>&gt; ---
+My entire project uses two macro. The first was running perfectly smoothly and
+continuously. The second was blocking and now execute perfectly.
+
+MACRO 1:
+
+dossierOut_2 = getDirectory(&quot;Dossier pour les images avec les segmentations&quot;);
+//Dossier enregistrement de la segmentations
+
+setBatchMode(true);
+x=1
+
+        //chemin d'access
+        path = &quot;C:\\Users\\Quentin\\Desktop\\Images Zeiss + macros\\dossier 1_
+stock image\\J2 1Fe 3x3 20x R1P2.zvi&quot;;
+                for (i=50; i&gt;=5; i-=5)
+                {
+                    for (j=200; j&gt;=0; j-=10)
+                    {
+                        for (k=200; k&gt;=0; k-=10)
+                        {    
+                        //importation des fichiers ZIV, s&#233;paration des tuilles
+                        run(&quot;Bio-Formats Importer&quot;, 
+                        &quot;open=path autoscale color_mode=Default view=Hyperstack
+stack_order=XYCZT series_2&quot;);
+                        NOMx=getTitle();
+
+                        //duplicat
+                        run(&quot;Duplicate...&quot;, &quot;title=&quot;+NOMx+&quot;_&quot;+i+&quot; duplicate
+range=1-7&quot;);
+                        NOMx_1= getTitle();
+
+                        //stack focuser (EFI)
+                        run(&quot;Stack Focuser &quot;, &quot;enter=&quot;+i);
+
+                        //run(&quot;Brightness/Contrast...&quot;);            
+                        setMinAndMax(j, 4095);
+                        run(&quot;8-bit&quot;);
+
+
+                        //treshold pour la segmentation
+                        setAutoThreshold(&quot;Yen dark&quot;);
+                        setThreshold(k, 4095);
+                        run(&quot;Convert to Mask&quot;);
+
+                        saveAs(&quot;Tiff&quot;,
+dossierOut_2+NOMx_1+&quot;_&quot;+i+&quot;_&quot;+j+&quot;_&quot;+k+&quot;.tif&quot;);
+                        close();
+                        close();
+                        close();
+
+                        //Fenetre_m&#233;moire
+                        print(&quot;traitement &quot;,x,&quot;sur 4410  &quot;,IJ.freeMemory());
+                        x=x+1;
+
+                        }            
+
+                    }
+                }
+
+        print(&quot;...&quot;);
+        print(&quot;traitement accompli&quot;);
+        print(&quot;...&quot;);
+
+................................................................................
+................................................................................
+
+MACRO 2:
+
+dossierIn = getDirectory(&quot;Images&quot;); //Dossier dans lequel les photos sont
+dossierOut = getDirectory(&quot;Excel&quot;); //Dossier dans lequel les donn&#233;es sont
+enregistr&#233;es
+fichiers = getFileList(dossierIn);
+setBatchMode(true);
+
+    for (Z=0; Z&lt;fichiers.length; Z++)
+    {
+
+        open(dossierIn+fichiers[Z]);
+        run(&quot;Analyze Particles...&quot;, &quot;size=40-Infinity display exclude&quot;);
+
+            if (isOpen(&quot;Results&quot;)) 
+            { 
+               selectWindow(&quot;Results&quot;);
+               saveAs(&quot;Results&quot;, dossierOut+fichiers[Z]+&quot;_Results.txt&quot;);
+               run(&quot;Clear Results&quot;);
+               run(&quot;Close&quot;); 
+              }
+
+              if (isOpen(&quot;ROI Manager&quot;)) 
+            { 
+               selectWindow(&quot;ROI Manager&quot;);
+               run(&quot;Close&quot;); 
+              }
+
+        close();
+        //Fenetre_d'avancement
+        print(Z+1 +&quot;/&quot;+fichiers.length+&quot;     &quot;+IJ.freeMemory());
+    }
+        print(&quot;...&quot;);
+        print(&quot;traitement accompli&quot;);
+        print(&quot;...&quot;);
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-bugs/attachments/20140728/21d6ddb3/attachment.html">http://imagej.net/pipermail/imagej-bugs/attachments/20140728/21d6ddb3/attachment.html</A>&gt;
+</PRE>
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000103.html">[ImageJ-bugs] [Bug 869] SCIFIO does not populate Image &gt; Properties &gt; Frame Interval
+</A></li>
+	<LI>Next message: <A HREF="000105.html">[ImageJ-bugs] [Bug 827] Fiji and macro never really ended
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#104">[ date ]</a>
+              <a href="thread.html#104">[ thread ]</a>
+              <a href="subject.html#104">[ subject ]</a>
+              <a href="author.html#104">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-bugs">More information about the Imagej-bugs
+mailing list</a><br>
+</body></html>

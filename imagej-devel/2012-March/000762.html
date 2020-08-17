@@ -1,0 +1,277 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Regarding Target Java 1.5 for imglib2 core
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Regarding%20Target%20Java%201.5%20for%20imglib2%20core&In-Reply-To=%3CCADN69ynae0E53arjun6tx4MqiO8VR0j_Ps0DcnPqA7d4rbv7Cw%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000760.html">
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Regarding Target Java 1.5 for imglib2 core</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Regarding%20Target%20Java%201.5%20for%20imglib2%20core&In-Reply-To=%3CCADN69ynae0E53arjun6tx4MqiO8VR0j_Ps0DcnPqA7d4rbv7Cw%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Regarding Target Java 1.5 for imglib2 core">ctrueden at wisc.edu
+       </A><BR>
+    <I>Sat Mar 31 22:29:19 CDT 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000760.html">[ImageJ-devel] Regarding Target Java 1.5 for imglib2 core
+</A></li>
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#762">[ date ]</a>
+              <a href="thread.html#762">[ thread ]</a>
+              <a href="subject.html#762">[ subject ]</a>
+              <a href="author.html#762">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Tobias &amp; everyone,
+
+This has all been happening a bit too fast for me and I'm kind of lost
+&gt;<i> right now about what exactly is going on here.  So could someone please
+</I>&gt;<i> explain what happened?
+</I>&gt;<i>
+</I>
+Yes, I am sorry I could not send a mail explaining the situation earlier,
+but we were fully occupied just fixing all the build problems that had
+accumulated over the past few days.
+
+Your confusion is understandable, because there were several unrelated
+issues that required solving.
+
+
+*== 1) TrakEM2 precompiled was out of date ==
+*
+Probably the least significant problem was that building Fiji without
+having modules/TrakEM2 initialized caused compile errors, due to the
+precompiled TrakEM2 jar not matching the rest of the codebase. Fixing this
+required rebuilding TrakEM2 from source and committing the new jar (
+<A HREF="https://github.com/fiji/fiji/commit/34ae3188">https://github.com/fiji/fiji/commit/34ae3188</A>). Doing so was complicated
+only by the fact that the Fiji build system needed a little TLC first (see
+#2 next).
+
+
+*== 2) Bugs in the Fiji build system and ImageJ launcher ==
+*
+Johannes has been working very hard on the ImageJ launcher, in preparation
+for inclusion with ImageJ2. Initially, much of that work was done in
+fiji.git on ImageJ.c. The code has been steadily improving, but as with all
+such changes, new bugs can be introduced or brought to light as a result:
+
+A) Dscho &amp; I tracked down a bug with the launcher on OS X, noticed by
+Steffi: <A HREF="https://github.com/fiji/fiji/commit/a7d90f38">https://github.com/fiji/fiji/commit/a7d90f38</A>
+
+B) Dscho fixed another bug specific to OS X:
+<A HREF="https://github.com/fiji/fiji/commit/25e58077">https://github.com/fiji/fiji/commit/25e58077</A>
+
+C) Steffi fixed a problem with Fiji build on Windows:
+<A HREF="https://github.com/fiji/fiji/commit/a85acab1">https://github.com/fiji/fiji/commit/a85acab1</A>
+
+Once those problems were fixed, we were able to finish solving the tougher
+issues, below.
+
+
+*== 3) The OpenJDK6 Javac bug ==
+*
+The OpenJDK6 problem has nothing to do with Java5. There are several usages
+of generics in ImgLib that Fiji's OpenJDK6 compiler failed to handle
+properly. To resolve it, Johannes upgraded Fiji's version of OpenJDK6 to
+the latest available (<A HREF="https://github.com/fiji/fiji/commit/402dce11">https://github.com/fiji/fiji/commit/402dce11</A>).
+However, this latest version introduced some new problems when compiling
+SPIM registration, so Johannes partially reverted it (
+<A HREF="https://github.com/fiji/fiji/commit/82bd2950">https://github.com/fiji/fiji/commit/82bd2950</A>). But still a few bugs
+remained when compiling ImgLib. To work around them, I introduced the ugly
+&quot;HACK&quot; changes (<A HREF="https://github.com/imagej/imglib/commit/5748a1be">https://github.com/imagej/imglib/commit/5748a1be</A>).
+
+I know these HACKs are unpleasant, but the fact is that we are targeting
+three different compilers: Oracle's Java6, OpenJDK6, and Eclipse's JDT
+compiler. If ImgLib fails to compile with any of them, then our current
+workflows have problems.
+
+In the future, as OpenJDK7 becomes the gold standard for compilation, and
+Java7 is more easily available for all major platforms, the dichotomy
+between compilation with Fiji build (which uses OpenJDK6) and Maven on the
+command line (which uses your installed Java, often Oracle's Java6,
+depending on your platform) should disappear. We will likely need to remain
+cautious indefinitely with respect to Eclipse's JDT compiler, though.
+
+
+
+&gt;<i> Is there anything I have to be careful about now, so that I don't break
+</I>&gt;<i> anything?
+</I>
+
+As always, just because something works in Eclipse does not mean it will
+work with Oracle's Java6, or with OpenJDK6. In a perfect world, we would
+all test our changes with all three compilers (on all three OSes too!), but
+personally I think asking everyone to always do that is unrealistic. That's
+what Jenkins is for. Just don't be surprised if sometimes the build breaks
+even though Eclipse had no problems. And if you see that one of your
+changes broke the build, it is extremely helpful if you can find a
+fix/workaround, rather than waiting for Dscho or me to fix it. J-Y asked in
+another thread (&quot;Fiji does not compile anymore under Mac and Windows&quot;)
+about the best way to test compilation in Fiji build, etc.&#8212;on Monday I will
+reply there with more details, and create a new page on the Fiji wiki about
+it.
+
+As a side note, it can happen the other way too: yesterday Johannes merged
+the ImageJ launcher to ImageJ2, and it is all working fine from the command
+line, but not from Eclipse. ;-) The reality is that it takes work to keep
+everything running smoothly across the different paradigms.
+
+
+*== 4) The Java5 compatibility snafu ==
+*
+Recently, I asked whether we should migrate the imglib2-io project into
+SCIFIO (a.k.a. Bio-Formats), and people responded favorably. So Mark Hiner
+&amp; I did it on a topic branch, and when Melissa Linkert visited last week,
+we merged the changes (<A HREF="https://github.com/openmicroscopy/bioformats/pull/39,">https://github.com/openmicroscopy/bioformats/pull/39,</A>
+). However, we forgot one important detail: SCIFIO still uses a Java5
+compiler to build. (Actually, the entire OME software stack does.) So the
+OME Jenkins failed to build SCIFIO with the new ImgLib I/O classes, and we
+scrambled to find a solution. We created a temporary Java5 version of
+imglib2.jar that we could use, and fixed a couple of other oversights (
+<A HREF="https://github.com/openmicroscopy/bioformats/pull/45">https://github.com/openmicroscopy/bioformats/pull/45</A>).
+
+That fixed the build problems, but Dscho &amp; I wanted to find a more
+permanent solution to the build compatibility problem between SCIFIO and
+ImgLib2. I had an idea for a compromise&#8212;target Java 1.5 for the core
+imglib2 project&#8212;which I implemented on Thursday (
+<A HREF="https://github.com/imagej/imglib/commit/c66f26e6">https://github.com/imagej/imglib/commit/c66f26e6</A>). I did not know that
+Eclipse would misbehave when importing the project until afterwards&#8212;but
+that problem is now fixed (see below).
+
+As an aside, I would like to point out that compiling ImgLib to target
+Java5 is nothing new. Fiji build has done this from the beginning, and not
+just for imglib2 core, but for *all* of ImgLib (
+<A HREF="https://github.com/fiji/fiji/commit/702c921b">https://github.com/fiji/fiji/commit/702c921b</A>). You'll notice the line
+&quot;javaVersion=1.5&quot; which tells Fiji build to compile the code to class
+version 49.0 (Java 1.5). So those of you building ImgLib via Fiji build are
+already using class version 49.0.
+
+
+Are there plans to figure out the performance implications of using the old
+&gt;<i> class format?
+</I>
+
+As Dscho says, we have no plans to test it ourselves. However, it would be
+very easy to run the ImgLib2 benchmarks (
+<A HREF="https://github.com/imagej/imglib/blob/master/imglib2/ij/src/test/scripts/benchmark.sh">https://github.com/imagej/imglib/blob/master/imglib2/ij/src/test/scripts/benchmark.sh</A>)
+with a Java5 jar vs. a Java6 one.
+
+I have absolutely no idea if performance is impacted by using a
+Java5-compatible jar. Personally, I doubt it. However, Johannes mentioned
+offhand that it might be a possibility, and I agreed, so I mentioned it in
+the commit message. But it is pure speculation. ImgLib has proven to be
+extremely sensitive to small changes (because the JIT is sensitive), so we
+thought it worth mentioning. But I did not mean to suggest that such
+performance problems were necessarily likely&#8212;merely conceivable.
+
+
+Can I (locally) just remove the maven-compiler-plugin section from the pom
+&gt;<i> and have everything working as before?
+</I>&gt;<i>
+</I>
+The question is now moot, because in a commit earlier today, I disabled the
+Java5 targeting by default (<A HREF="https://github.com/imagej/imglib/commit/b67f246f">https://github.com/imagej/imglib/commit/b67f246f</A>).
+It must now be enabled explicitly using a profile. Things should now work
+in Eclipse again, exactly as before. Jenkins now turns on the Java5
+targeting when it builds, so that the imglib2.jar deployed to the Maven
+repository (which SCIFIO builds against) will remain Java5 compatible. But
+those of us using Eclipse will not suffer any inconvenience.
+
+Regarding making local changes to a POM: in general I would discourage it.
+If you find yourself needing to do so, we should discuss what problem you
+are trying to solve, and what an easier and more effective solution might
+be.
+
+
+*== 5) Continuing changes to ImgLib2 I/O classes ==
+*
+We have been testing ImageJ2's I/O plugins, which use the ImgLib2 ImgOpener
+and ImgSaver classes. The ImgSaver in particular is very new, and still
+under active development. Unfortunately, the turnaround time to merge
+changes into SCIFIO, and make them available from ImageJ's Maven
+repository, is days to weeks. So while there is another pull request
+pending to update the ImgLib I/O code in SCIFIO (
+<A HREF="https://github.com/openmicroscopy/bioformats/pull/49">https://github.com/openmicroscopy/bioformats/pull/49</A>), for the impending
+ImageJ2 beta we needed a solution more rapidly.
+
+So what we did is to commit the latest version back to the imglib2-io
+project of imglib.git as well. Now, the code lives in both projects, with
+two different package names (net.imglib2.io, and ome.scifio.img). At the
+moment, the code is in sync. The long term plan is still to remove the
+imglib2-io project in favor of it being part of SCIFIO, but it will have to
+wait until we can achieve the speed of integrated multi-project development
+we are accustomed to with Fiji. The good news is that there is now a
+working ImgSaver available for use (feedback welcome!).
+
+
+Hopefully this clarifies the recent changes to Fiji and ImgLib. Please let
+us know if anything else is unclear.
+
+Regards,
+Curtis
+
+
+On Sat, Mar 31, 2012 at 5:10 AM, Tobias Pietzsch &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pietzsch at mpi-cbg.de</A>&gt;wrote:
+
+&gt;<i> Hi guys,
+</I>&gt;<i>
+</I>&gt;<i> This has all been happening a bit too fast for me and I'm kind of lost
+</I>&gt;<i> right now about what exactly is going on here.  So could someone please
+</I>&gt;<i> explain what happened?
+</I>&gt;<i>
+</I>&gt;<i> There have been ugly &quot;HACK&quot;s introduced like the following:
+</I>&gt;<i>
+</I>&gt;<i> -final T buffer = Util.getTypeFromInterval( fftImage ).createVariable();
+</I>&gt;<i> +// HACK: Explicit assignment is needed for OpenJDK javac.
+</I>&gt;<i> +final T fftImageType = Util.getTypeFromInterval( fftImage );
+</I>&gt;<i> +final T buffer = fftImageType.createVariable();
+</I>&gt;<i>
+</I>&gt;<i> It seems, that this has been limited (fortunately!!!) to
+</I>&gt;<i> imglib2-algorithms-gpl.  But why? Surely, there are similar constructs in
+</I>&gt;<i> other parts of imglib. Why are they not affected?
+</I>&gt;<i>
+</I>&gt;<i> Are there plans to figure out the performance implications of using the
+</I>&gt;<i> old class format?  Is there anything I have to be careful about now, so
+</I>&gt;<i> that I don't break anything?  Can I (locally) just remove the
+</I>&gt;<i> maven-compiler-plugin section from the pom and have everything working as
+</I>&gt;<i> before?
+</I>&gt;<i>
+</I>&gt;<i> And honestly, I don't like that this was done without any advance warning
+</I>&gt;<i> or discussion. This seems to be a big thing with potential
+</I>&gt;<i> performance implications.
+</I>&gt;<i>
+</I>&gt;<i> best regards,
+</I>&gt;<i> Tobias
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20120331/38b5070b/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20120331/38b5070b/attachment-0001.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000760.html">[ImageJ-devel] Regarding Target Java 1.5 for imglib2 core
+</A></li>
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#762">[ date ]</a>
+              <a href="thread.html#762">[ thread ]</a>
+              <a href="subject.html#762">[ subject ]</a>
+              <a href="author.html#762">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,344 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Status and API of ROIs in ImageJ2 ?
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Status%20and%20API%20of%20ROIs%20in%20ImageJ2%20%3F&In-Reply-To=%3CCADN69ymvzGSZqFs%3DJShxA%2B3iD%3DFYCk%2BV38MeTqaLqpf8ybawKw%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002670.html">
+   <LINK REL="Next"  HREF="002684.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Status and API of ROIs in ImageJ2 ?</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Status%20and%20API%20of%20ROIs%20in%20ImageJ2%20%3F&In-Reply-To=%3CCADN69ymvzGSZqFs%3DJShxA%2B3iD%3DFYCk%2BV38MeTqaLqpf8ybawKw%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Status and API of ROIs in ImageJ2 ?">ctrueden at wisc.edu
+       </A><BR>
+    <I>Mon Aug 24 16:22:15 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002670.html">[ImageJ-devel] Status and API of ROIs in ImageJ2 ?
+</A></li>
+        <LI>Next message: <A HREF="002684.html">[ImageJ-devel] Status and API of ROIs in ImageJ2 ?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2678">[ date ]</a>
+              <a href="thread.html#2678">[ thread ]</a>
+              <a href="subject.html#2678">[ subject ]</a>
+              <a href="author.html#2678">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Adrian,
+
+Glad to hear you found a working solution!
+
+The short answer about ROIs is that they have not been a focus of ImageJ2
+or ImgLib2 development in recent years. Support for labelings (highly
+related to ROIs) was rewritten this January [1], but a rewrite of the core
+ImgLib2 ROI library [2] is still pending. And there is a substantial
+pending redesign of the ImageJ Common data model planned as well -- though
+it is unlikely anyone will work on it this year.
+
+At this juncture, the most effective balance for most plugin developers is
+probably to use parameterized commands and/or scripts, but with the ImageJ1
+data structures (ij.ImagePlus, etc.) -- unless you need access to a new
+capability that ImageJ2 + ImgLib2 make possible (&gt;5D images, very large
+image planes, very large numbers of image planes, dynamically generated
+images, images stored in places besides disk, cell-based image caching,
+image types beyond uint8/uint16/float32, etc.).
+
+That said, your feedback is very much appreciated.
+
+And some issues will be ironed out in the next couple of weeks as we revamp
+the tutorials for the upcoming ImageJ conference.
+
+&gt;<i> The easiest way to give a plugin a (rectangular) roi is to ... just
+</I>&gt;<i> declare a net.imagej.overlay.RectangularOverlay as an input parameter.
+</I>&gt;<i> It is properly populated by the origin and extent of a rectangular
+</I>&gt;<i> selection drawn on the active image.
+</I>
+If all you care about is the bounding box of the active selection, you can
+just do it the same way as the ImageJ2 CropImageJ command: by calling
+OverlayService.getSelectionBounds [3]. Then you would avoid some of the
+current weirdness associated with Overlay parameters.
+
+&gt;<i> If I launch the default UI, then the ROI will not show, but the plugin
+</I>&gt;<i> can launch. If on the other hand I launch the &quot;swing&quot; UI as in the
+</I>&gt;<i> tutorial, I do see the ROI
+</I>
+Yes, that tutorial was written when the ImageJ2 Swing UI was still the
+default. It is not tested/working with the Legacy UI (which is now the
+default). I will try to remedy that very soon.
+
+&gt;<i> (not until I call Image&gt;Adjust&gt;Brightness/Contrast..., but that's a
+</I>&gt;<i> minor detail),
+</I>
+Yes, that annoying bug has been around for quite a while. Many things that
+refresh the display will do, such as pressing + then - to zoom in/out.
+
+&gt;<i> but now the invocation of the plugin at the end of main() will throw a
+</I>&gt;<i> MethodCallException with the stackTrace pasted below. How can the
+</I>&gt;<i> choice of a UI make the plugin execution fail ?
+</I>...
+&gt;<i> Caused by: java.lang.NullPointerException
+</I>&gt;<i>         at Goutte_pendante.initTitle(Goutte_pendante.java:94)
+</I>
+In 2014, we made a conscious decision to support the ImageJ 1.x classes
+_only_ from the legacy UI. You cannot use them from the Swing UI. In your
+case: the ActiveImagePlusPreprocessor cannot set the active ImagePlus
+because WindowManager.getCurrentImage() returns null [4], because no ImageJ
+1.x user interface exists. So it stays null and then your initializer
+throws the NPE.
+
+Regards,
+Curtis
+
+[1]
+<A HREF="https://github.com/imglib/imglib2-roi/tree/imglib2-roi-0.3.2/src/main/java/net/imglib2/labeling">https://github.com/imglib/imglib2-roi/tree/imglib2-roi-0.3.2/src/main/java/net/imglib2/labeling</A>
+
+[2] <A HREF="https://github.com/imglib/imglib2-roi">https://github.com/imglib/imglib2-roi</A>
+
+[3]
+<A HREF="https://github.com/imagej/imagej-plugins-commands/blob/imagej-plugins-commands-0.5.1/src/main/java/net/imagej/plugins/commands/imglib/CropImage.java#L104">https://github.com/imagej/imagej-plugins-commands/blob/imagej-plugins-commands-0.5.1/src/main/java/net/imagej/plugins/commands/imglib/CropImage.java#L104</A>
+
+[4]
+<A HREF="https://github.com/imagej/imagej-legacy/blob/imagej-legacy-0.17.1/src/main/java/net/imagej/legacy/plugin/ActiveImagePlusPreprocessor.java#L49-L52">https://github.com/imagej/imagej-legacy/blob/imagej-legacy-0.17.1/src/main/java/net/imagej/legacy/plugin/ActiveImagePlusPreprocessor.java#L49-L52</A>
+
+
+On Sun, Aug 23, 2015 at 6:30 AM, Adrian Daerr &lt;
+<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">adrian.daerr at univ-paris-diderot.fr</A>&gt; wrote:
+
+&gt;<i> Hello,
+</I>&gt;<i>
+</I>&gt;<i> While I am still interested in answers concerning the status/API/roadmap
+</I>&gt;<i> for ROIs and overlays beyond what's on <A HREF="http://imagej.net/ROIs,">http://imagej.net/ROIs,</A> I have
+</I>&gt;<i> solved the problem at hand which was keeping me from making progress, so I
+</I>&gt;<i> post the (rather obvious, once I found the net.imagej.overlay package)
+</I>&gt;<i> solution here for the record and to close this thread.
+</I>&gt;<i>
+</I>&gt;<i> The easiest way to give a plugin a (rectangular) roi is to ...
+</I>&gt;<i> just declare a net.imagej.overlay.RectangularOverlay as an input
+</I>&gt;<i> parameter. It is properly populated by the origin and extent of a
+</I>&gt;<i> rectangular selection drawn on the active image.
+</I>&gt;<i>
+</I>&gt;<i> cheers,
+</I>&gt;<i> Adrian
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On Wed, 19 Aug 2015 17:10:06 +0200
+</I>&gt;<i>
+</I>&gt;<i>  &quot;Adrian Daerr&quot; &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">adrian.daerr at univ-paris-diderot.fr</A>&gt; wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Dear ImageJ developers,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I have included code from the AddROIs tutorial into the main()
+</I>&gt;&gt;<i> method of my plugin (for the moment essentially one of Curtis'
+</I>&gt;&gt;<i> commands-with-preview example), to select a Rectangle before
+</I>&gt;&gt;<i> calling the plugin. The source is available here:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> <A HREF="https://gitlab.com/pendant-drop/pendant-drop">https://gitlab.com/pendant-drop/pendant-drop</A>
+</I>&gt;&gt;<i> (in Goutte_pendante.java)
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> If I launch the default UI, then the ROI will not show, but the
+</I>&gt;&gt;<i> plugin can launch. If on the other hand I launch the &quot;swing&quot; UI
+</I>&gt;&gt;<i> as in the tutorial, I do see the ROI (not until I call
+</I>&gt;&gt;<i> Image&gt;Adjust&gt;Brightness/Contrast..., but that's a minor detail),
+</I>&gt;&gt;<i> but now the invocation of the plugin at the end of main() will
+</I>&gt;&gt;<i> throw a MethodCallException with the stackTrace pasted below. How
+</I>&gt;&gt;<i> can the choice of a UI make the plugin execution fail ?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Is there any other way that main can set a ROI on a loaded image
+</I>&gt;&gt;<i> that the plugin, which still uses an ImagePlus as input
+</I>&gt;&gt;<i> parameter, will see when calling imp.getProcessor().getRoi() ?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> TIA
+</I>&gt;&gt;<i> Adrian
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> $&gt; mvn package
+</I>&gt;&gt;<i> $&gt; fiji --class-path target/pendant_drop-2.0.0-SNAPSHOT.jar
+</I>&gt;&gt;<i> Goutte_pendante.class
+</I>&gt;&gt;<i> [INFO] Overriding About Pendant Drop; identifier:
+</I>&gt;&gt;<i> command:About_Pendant_Drop; jar:
+</I>&gt;&gt;<i> file:/home/adrian/Programmes/plugins_ImageJ_src/Traitement_Gouttes/target/pendant_drop-2.0.0-SNAPSHOT.jar
+</I>&gt;&gt;<i> [INFO] Overriding Pendant Drop; identifier: command:Goutte_pendante; jar:
+</I>&gt;&gt;<i> file:/home/adrian/Programmes/plugins_ImageJ_src/Traitement_Gouttes/target/pendant_drop-2.0.0-SNAPSHOT.jar
+</I>&gt;&gt;<i> [INFO] Populating metadata
+</I>&gt;&gt;<i> [INFO] Populating metadata
+</I>&gt;&gt;<i> [INFO] Found 10 JHotDraw adapters.
+</I>&gt;&gt;<i> org.scijava.module.MethodCallException: Error executing method:
+</I>&gt;&gt;<i> Goutte_pendante#initTitle
+</I>&gt;&gt;<i>         at org.scijava.module.MethodRef.execute(MethodRef.java:73)
+</I>&gt;&gt;<i>         at
+</I>&gt;&gt;<i> org.scijava.module.AbstractModuleItem.initialize(AbstractModuleItem.java:199)
+</I>&gt;&gt;<i>         at
+</I>&gt;&gt;<i> org.scijava.module.AbstractModule.initialize(AbstractModule.java:86)
+</I>&gt;&gt;<i>         at
+</I>&gt;&gt;<i> org.scijava.command.CommandModule.initialize(CommandModule.java:147)
+</I>&gt;&gt;<i>         at
+</I>&gt;&gt;<i> org.scijava.module.process.InitPreprocessor.process(InitPreprocessor.java:60)
+</I>&gt;&gt;<i>         at
+</I>&gt;&gt;<i> org.scijava.module.ModuleRunner.preProcess(ModuleRunner.java:104)
+</I>&gt;&gt;<i>         at org.scijava.module.ModuleRunner.run(ModuleRunner.java:156)
+</I>&gt;&gt;<i>         at org.scijava.module.ModuleRunner.call(ModuleRunner.java:126)
+</I>&gt;&gt;<i>         at org.scijava.module.ModuleRunner.call(ModuleRunner.java:65)
+</I>&gt;&gt;<i>         at
+</I>&gt;&gt;<i> org.scijava.thread.DefaultThreadService$2.call(DefaultThreadService.java:191)
+</I>&gt;&gt;<i>         at
+</I>&gt;&gt;<i> java.util.concurrent.FutureTask$Sync.innerRun(FutureTask.java:303)
+</I>&gt;&gt;<i>         at java.util.concurrent.FutureTask.run(FutureTask.java:138)
+</I>&gt;&gt;<i>         at
+</I>&gt;&gt;<i> java.util.concurrent.ThreadPoolExecutor$Worker.runTask(ThreadPoolExecutor.java:886)
+</I>&gt;&gt;<i>         at
+</I>&gt;&gt;<i> java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:908)
+</I>&gt;&gt;<i>         at java.lang.Thread.run(Thread.java:662)
+</I>&gt;&gt;<i> Caused by: java.lang.reflect.InvocationTargetException
+</I>&gt;&gt;<i>         at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+</I>&gt;&gt;<i>         at
+</I>&gt;&gt;<i> sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:39)
+</I>&gt;&gt;<i>         at
+</I>&gt;&gt;<i> sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:25)
+</I>&gt;&gt;<i>         at java.lang.reflect.Method.invoke(Method.java:597)
+</I>&gt;&gt;<i>         at org.scijava.module.MethodRef.execute(MethodRef.java:69)
+</I>&gt;&gt;<i>         ... 14 more
+</I>&gt;&gt;<i> Caused by: java.lang.NullPointerException
+</I>&gt;&gt;<i>         at Goutte_pendante.initTitle(Goutte_pendante.java:94)
+</I>&gt;&gt;<i>         ... 19 more
+</I>&gt;&gt;<i> [ERROR] Module threw exception
+</I>&gt;&gt;<i> java.lang.NullPointerException
+</I>&gt;&gt;<i>         at Goutte_pendante.cancel(Goutte_pendante.java:87)
+</I>&gt;&gt;<i>         at
+</I>&gt;&gt;<i> org.scijava.command.CommandModule.cancel(CommandModule.java:140)
+</I>&gt;&gt;<i>         at
+</I>&gt;&gt;<i> org.scijava.module.ModuleRunner.cleanupAndBroadcastCancelation(ModuleRunner.java:189)
+</I>&gt;&gt;<i>         at org.scijava.module.ModuleRunner.run(ModuleRunner.java:161)
+</I>&gt;&gt;<i>         at org.scijava.module.ModuleRunner.call(ModuleRunner.java:126)
+</I>&gt;&gt;<i>         at org.scijava.module.ModuleRunner.call(ModuleRunner.java:65)
+</I>&gt;&gt;<i>         at
+</I>&gt;&gt;<i> org.scijava.thread.DefaultThreadService$2.call(DefaultThreadService.java:191)
+</I>&gt;&gt;<i>         at
+</I>&gt;&gt;<i> java.util.concurrent.FutureTask$Sync.innerRun(FutureTask.java:303)
+</I>&gt;&gt;<i>         at java.util.concurrent.FutureTask.run(FutureTask.java:138)
+</I>&gt;&gt;<i>         at
+</I>&gt;&gt;<i> java.util.concurrent.ThreadPoolExecutor$Worker.runTask(ThreadPoolExecutor.java:886)
+</I>&gt;&gt;<i>         at
+</I>&gt;&gt;<i> java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:908)
+</I>&gt;&gt;<i>         at java.lang.Thread.run(Thread.java:662)
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> On Sat, 15 Aug 2015 13:14:13 +0200
+</I>&gt;&gt;<i>  Adrian Daerr &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">adrian.daerr at univ-paris-diderot.fr</A>&gt; wrote:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Hello,
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> I am seizing a major rewrite of a plugin as an opportunity to switch
+</I>&gt;&gt;&gt;<i> from ImageJ1 to ImageJ2, also to avoid concurrency issues[*], and now
+</I>&gt;&gt;&gt;<i> lots of questions come up. Some concern the way ROIs are handled. What
+</I>&gt;&gt;&gt;<i> has happened in this regard since
+</I>&gt;&gt;&gt;<i>   <A HREF="http://imagej.net/ROIs">http://imagej.net/ROIs</A>
+</I>&gt;&gt;&gt;<i> was last updated ?
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> [*] cf discussion on the ImageJ list archived at
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> <A HREF="http://imagej.1557.x6.nabble.com/ExtendedPlugInFilter-GenericDialog-and-synchronization-td5013333.html">http://imagej.1557.x6.nabble.com/ExtendedPlugInFilter-GenericDialog-and-synchronization-td5013333.html</A>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Here are two concrete questions:
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> 1) My plugin relies on a rectangular ROI being drawn on the image to
+</I>&gt;&gt;&gt;<i> know which area to include in the computation. How do I draw this ROI
+</I>&gt;&gt;&gt;<i> once I have loaded the image as a dataset in the main() method that is
+</I>&gt;&gt;&gt;<i> used for testing purposes ?
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> public static void main(final String... args) throws Exception {
+</I>&gt;&gt;&gt;<i>     final String testImagePath = &quot;testImage.jpg&quot;;
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>     // Launch ImageJ as usual.
+</I>&gt;&gt;&gt;<i>     final ImageJ ij = net.imagej.Main.launch(args);
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>     // Open test image.
+</I>&gt;&gt;&gt;<i>     final Dataset dataset = ij.dataset().open(testImagePath);
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>     // display the dataset
+</I>&gt;&gt;&gt;<i>     ij.ui().show(dataset);
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>     // create rectangular ROI
+</I>&gt;&gt;&gt;<i>     //imp.setRoi(120,60,340,420);// How to do this on a dataset ?
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>     // Launch the &quot;Foo_Bar&quot; command.
+</I>&gt;&gt;&gt;<i>     ij.command().run(Foo_Bar.class, true);
+</I>&gt;&gt;&gt;<i> }
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> (alternatively, how would I generate a new dataset, or I guess something
+</I>&gt;&gt;&gt;<i> like a &quot;View&quot; in ImageJ2 terminology, of the ROI sub-image of the original
+</I>&gt;&gt;&gt;<i> dataset ? I could then substitute the original dataset with this sub-image
+</I>&gt;&gt;&gt;<i> and have the plugin operate on the whole image by default)
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> 2) The plugin preview generates overlays using java.awt.geom.Path2D,
+</I>&gt;&gt;&gt;<i> java.awt.geom.Area and java.awt.Shape, which are then converted via
+</I>&gt;&gt;&gt;<i> ij.gui.ShapeRoi() and ij.gui.Overlay(), assembled with overlay.add(),
+</I>&gt;&gt;&gt;<i> and drawn using imp.setOverlay(). Is there a new IJ2-way to do this
+</I>&gt;&gt;&gt;<i> (especially since the cited web page (rightly) insists on separation
+</I>&gt;&gt;&gt;<i> of selection and visualisation shapes) ?
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> TIA,
+</I>&gt;&gt;&gt;<i> Adrian
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> --
+</I>&gt;&gt;<i> <A HREF="http://www.msc.univ-paris-diderot.fr/~daerr/">http://www.msc.univ-paris-diderot.fr/~daerr/</A>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> --
+</I>&gt;<i> <A HREF="http://www.msc.univ-paris-diderot.fr/~daerr/">http://www.msc.univ-paris-diderot.fr/~daerr/</A>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20150824/b5aa5379/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20150824/b5aa5379/attachment.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002670.html">[ImageJ-devel] Status and API of ROIs in ImageJ2 ?
+</A></li>
+	<LI>Next message: <A HREF="002684.html">[ImageJ-devel] Status and API of ROIs in ImageJ2 ?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2678">[ date ]</a>
+              <a href="thread.html#2678">[ thread ]</a>
+              <a href="subject.html#2678">[ subject ]</a>
+              <a href="author.html#2678">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

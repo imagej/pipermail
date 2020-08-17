@@ -1,0 +1,1337 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Save/write image with SCIFIO/BF in python script
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Save/write%20image%20with%20SCIFIO/BF%20in%20python%20script&In-Reply-To=%3CCAEpSnnb32Oz54D3cUnNzAtTQEkL21afBctA%3Dm%2BBM7du6ij1tjg%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002432.html">
+   <LINK REL="Next"  HREF="002435.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Save/write image with SCIFIO/BF in python script</H1>
+    <B>Hadrien Mary</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Save/write%20image%20with%20SCIFIO/BF%20in%20python%20script&In-Reply-To=%3CCAEpSnnb32Oz54D3cUnNzAtTQEkL21afBctA%3Dm%2BBM7du6ij1tjg%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Save/write image with SCIFIO/BF in python script">hadrien.mary at gmail.com
+       </A><BR>
+    <I>Mon Jan 26 09:37:39 CST 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002432.html">[ImageJ-devel] Save/write image with SCIFIO/BF in python script
+</A></li>
+        <LI>Next message: <A HREF="002435.html">[ImageJ-devel] Save/write image with SCIFIO/BF in python script
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2434">[ date ]</a>
+              <a href="thread.html#2434">[ thread ]</a>
+              <a href="subject.html#2434">[ subject ]</a>
+              <a href="author.html#2434">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>It appears that I have the same behaviour using 'ij.op().crop()'.
+
+So in short, my script works well for croping but saving the cropped
+image on disk totally failed. In appearence it works but if you try to
+open the image, axes (other than X and Y) are merged and it seems that
+only the first image has been saved because all other frames from the
+stack are the same.
+
+Looking at the OME XML string of the cropped image, it appears that
+attributes of Pixel tag has been all set to 1.0.
+
+Best,
+
+--
+Hadrien Mary
+
+Ph.D student in Biology
+Tournier-Gachet Team
+CNRS - LBCMCP - UMR 5088
+
+Universit&#233; de Toulouse - B&#226;t. 4R3B1
+118, route de Narbonne - 31062 Toulouse
+
+
+On Sun, Jan 25, 2015 at 10:22 PM, Hadrien Mary &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">hadrien.mary at gmail.com</A>&gt; wrote:
+&gt;<i> I am now using 'ij.op().crop()' which works well.
+</I>&gt;<i>
+</I>&gt;<i> I also test fix-cell branch with my previous code (using SCIFIOConfig
+</I>&gt;<i> and ImageRegion) which fix the save issue (both with ImgSaver and
+</I>&gt;<i> DatasetService). However cropped image histogram is very different
+</I>&gt;<i> from the original.
+</I>&gt;<i>
+</I>&gt;<i> This issue appears only with my dataset (it works well with Samples &gt;
+</I>&gt;<i> Track for Trackmate for example).
+</I>&gt;<i>
+</I>&gt;<i> Please try the following script with this file :
+</I>&gt;<i> <A HREF="https://arwen.hadim.fr/public.php?service=files&amp;t=0d6a774bdfaeed521156ec8a8f9ccdcf">https://arwen.hadim.fr/public.php?service=files&amp;t=0d6a774bdfaeed521156ec8a8f9ccdcf</A>
+</I>&gt;<i>
+</I>&gt;<i> ----------------------------------------------
+</I>&gt;<i> # @DatasetService data
+</I>&gt;<i>
+</I>&gt;<i> from ij import IJ
+</I>&gt;<i> from ij.plugin.frame import RoiManager
+</I>&gt;<i>
+</I>&gt;<i> from io.scif.config import SCIFIOConfig
+</I>&gt;<i> from io.scif.img import ImageRegion
+</I>&gt;<i> from io.scif.img import ImgOpener
+</I>&gt;<i> from io.scif.img import ImgSaver
+</I>&gt;<i> from net.imagej.axis import Axes
+</I>&gt;<i>
+</I>&gt;<i> import os
+</I>&gt;<i>
+</I>&gt;<i> # Get current image filename
+</I>&gt;<i> imp = IJ.getImage()
+</I>&gt;<i> f = imp.getOriginalFileInfo()
+</I>&gt;<i> fname = os.path.join(f.directory, f.fileName)
+</I>&gt;<i>
+</I>&gt;<i> IJ.log('Image filename is %s' % fname)
+</I>&gt;<i>
+</I>&gt;<i> # Iterate over all ROIs from ROI Manager
+</I>&gt;<i> rois = RoiManager.getInstance().getRoisAsArray()
+</I>&gt;<i> for i, roi in enumerate(rois):
+</I>&gt;<i>
+</I>&gt;<i>     crop_id = i +1
+</I>&gt;<i>     IJ.log(&quot;Opening crop %i / %i&quot; % (crop_id, len(rois)))
+</I>&gt;<i>
+</I>&gt;<i>     # Get ROI bounds
+</I>&gt;<i>     bounds = roi.getBounds()
+</I>&gt;<i>     x = bounds.x
+</I>&gt;<i>     y = bounds.y
+</I>&gt;<i>     w = bounds.width
+</I>&gt;<i>     h = bounds.height
+</I>&gt;<i>
+</I>&gt;<i>     # Import only cropped region of the image
+</I>&gt;<i>     axes = [Axes.X, Axes.Y]
+</I>&gt;<i>     ranges = [&quot;%i-%i&quot; % (x, x+w), &quot;%i-%i&quot; % (y, y+h)]
+</I>&gt;<i>     config = SCIFIOConfig()
+</I>&gt;<i>     config.imgOpenerSetRegion(ImageRegion(axes, ranges))
+</I>&gt;<i>
+</I>&gt;<i>     opener = ImgOpener()
+</I>&gt;<i>     imps = opener.openImgs(fname, config)
+</I>&gt;<i>     imp = imps[0]
+</I>&gt;<i>
+</I>&gt;<i>     # Get filename and basename of the current cropped image
+</I>&gt;<i>     crop_basename = &quot;crop%i_%s&quot; % (crop_id, f.fileName)
+</I>&gt;<i>     crop_fname = os.path.join(f.directory, crop_basename)
+</I>&gt;<i>     IJ.log(&quot;Saving crop to %s&quot; % crop_fname)
+</I>&gt;<i>
+</I>&gt;<i>     # Create dataset
+</I>&gt;<i>     ds = data.create(imp)
+</I>&gt;<i>
+</I>&gt;<i>     # Save cropped image
+</I>&gt;<i>     data.save(ds, crop_fname)
+</I>&gt;<i>
+</I>&gt;<i> IJ.log('Done')
+</I>&gt;<i> ------------------------------------------------------------------------
+</I>&gt;<i>
+</I>&gt;<i> --
+</I>&gt;<i> Hadrien Mary
+</I>&gt;<i>
+</I>&gt;<i> Ph.D student in Biology
+</I>&gt;<i> Tournier-Gachet Team
+</I>&gt;<i> CNRS - LBCMCP - UMR 5088
+</I>&gt;<i>
+</I>&gt;<i> Universit&#233; de Toulouse - B&#226;t. 4R3B1
+</I>&gt;<i> 118, route de Narbonne - 31062 Toulouse
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On Sun, Jan 25, 2015 at 9:42 PM, Mark Hiner &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">hiner at wisc.edu</A>&gt; wrote:
+</I>&gt;&gt;<i> Hi Hadrien,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>I tried to use another method to save cropped images using DatasetService:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I couldn't reproduce this failure.. it works for me using the
+</I>&gt;&gt;<i> DatasetService. Do you have any local changes? Did you update your Fiji to
+</I>&gt;&gt;<i> the latest version? If you're still having problems, you could also copy and
+</I>&gt;&gt;<i> paste the &quot;Useful information about your system&quot; contents generated by Help
+</I>&gt;&gt;&gt;<i> Report a Bug.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>    saver.saveImg(crop_fname, imp)
+</I>&gt;&gt;&gt;<i> at
+</I>&gt;&gt;&gt;<i> io.scif.img.cell.loaders.AbstractArrayLoader.loadArray(AbstractArrayLoader.java:156)
+</I>&gt;&gt;&gt;<i> java.lang.NullPointerException: java.lang.NullPointerException
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Yes! This was definitely a bug - thank you for finding it. I think I have a
+</I>&gt;&gt;<i> fix here: <A HREF="https://github.com/scifio/scifio/commits/fix-cell">https://github.com/scifio/scifio/commits/fix-cell</A>
+</I>&gt;&gt;<i> Would you mind giving it a try locally in your workflow?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Thank you!
+</I>&gt;&gt;<i> - Mark
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> On Sat, Jan 24, 2015 at 3:01 PM, Hadrien Mary &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">hadrien.mary at gmail.com</A>&gt;
+</I>&gt;&gt;<i> wrote:
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Quick update:
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> I tried to use another method to save cropped images using DatasetService:
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> ---------------------------
+</I>&gt;&gt;&gt;<i> # Create dataset
+</I>&gt;&gt;&gt;<i> ds = data.create(imp)
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> # Save cropped image
+</I>&gt;&gt;&gt;<i> data.save(ds, crop_fname)
+</I>&gt;&gt;&gt;<i> -------------------------
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> And the error is exactly the same as before.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> --
+</I>&gt;&gt;&gt;<i> Hadrien Mary
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Ph.D student in Biology
+</I>&gt;&gt;&gt;<i> Tournier-Gachet Team
+</I>&gt;&gt;&gt;<i> CNRS - LBCMCP - UMR 5088
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Universit&#233; de Toulouse - B&#226;t. 4R3B1
+</I>&gt;&gt;&gt;<i> 118, route de Narbonne - 31062 Toulouse
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> On Tue, Jan 20, 2015 at 10:17 AM, Hadrien Mary &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">hadrien.mary at gmail.com</A>&gt;
+</I>&gt;&gt;&gt;<i> wrote:
+</I>&gt;&gt;&gt;<i> &gt; Another thing I noticed, it's that histogram is different when
+</I>&gt;&gt;&gt;<i> &gt; cropping manually inside Fiji (select area and do &quot;Duplicate&quot;) or when
+</I>&gt;&gt;&gt;<i> &gt; it has been cropped with the python script (SCIFIO crop).
+</I>&gt;&gt;&gt;<i> &gt;
+</I>&gt;&gt;&gt;<i> &gt; See screenshot attachment.
+</I>&gt;&gt;&gt;<i> &gt;
+</I>&gt;&gt;&gt;<i> &gt;
+</I>&gt;&gt;&gt;<i> &gt;
+</I>&gt;&gt;&gt;<i> &gt; --
+</I>&gt;&gt;&gt;<i> &gt; Hadrien Mary
+</I>&gt;&gt;&gt;<i> &gt;
+</I>&gt;&gt;&gt;<i> &gt; Ph.D student in Biology
+</I>&gt;&gt;&gt;<i> &gt; Tournier-Gachet Team
+</I>&gt;&gt;&gt;<i> &gt; CNRS - LBCMCP - UMR 5088
+</I>&gt;&gt;&gt;<i> &gt;
+</I>&gt;&gt;&gt;<i> &gt; Universit&#233; de Toulouse - B&#226;t. 4R3B1
+</I>&gt;&gt;&gt;<i> &gt; 118, route de Narbonne - 31062 Toulouse
+</I>&gt;&gt;&gt;<i> &gt;
+</I>&gt;&gt;&gt;<i> &gt;
+</I>&gt;&gt;&gt;<i> &gt; On Mon, Jan 19, 2015 at 10:29 AM, Hadrien Mary &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">hadrien.mary at gmail.com</A>&gt;
+</I>&gt;&gt;&gt;<i> &gt; wrote:
+</I>&gt;&gt;&gt;<i> &gt;&gt; Hi again,
+</I>&gt;&gt;&gt;<i> &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt; The script works well for small images (OME Tiff or normal Tiff) with
+</I>&gt;&gt;&gt;<i> &gt;&gt; the recent Fiji update. However when I run it on large movies (13GB),
+</I>&gt;&gt;&gt;<i> &gt;&gt; I have the following error.
+</I>&gt;&gt;&gt;<i> &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt; ----------------------------------------------------------
+</I>&gt;&gt;&gt;<i> &gt;&gt; -- Classpath of ClassLoader --
+</I>&gt;&gt;&gt;<i> &gt;&gt; /home/hadim/local/Fiji.app/plugins/
+</I>&gt;&gt;&gt;<i> &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt; at org.scijava.Context.inject(Context.java:431)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at org.scijava.Context.inject(Context.java:363)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt; org.scijava.plugin.DefaultPluginService.createInstance(DefaultPluginService.java:237)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt; org.scijava.ui.DefaultUIService.discoverUIs(DefaultUIService.java:500)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at org.scijava.ui.DefaultUIService.uiList(DefaultUIService.java:479)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt; org.scijava.ui.DefaultUIService.getAvailableUIs(DefaultUIService.java:231)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at org.scijava.ui.DefaultUIService.onEvent(DefaultUIService.java:457)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at sun.reflect.GeneratedMethodAccessor5.invoke(Unknown Source)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt; sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at java.lang.reflect.Method.invoke(Method.java:606)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt; org.scijava.event.DefaultEventService$ProxySubscriber.onEvent(DefaultEventService.java:280)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt; org.scijava.event.DefaultEventService$ProxySubscriber.onEvent(DefaultEventService.java:254)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt; org.bushe.swing.event.ThreadSafeEventService.publish(ThreadSafeEventService.java:971)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt; org.scijava.event.DefaultEventBus.access$201(DefaultEventBus.java:56)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at org.scijava.event.DefaultEventBus$2.run(DefaultEventBus.java:223)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt; org.scijava.thread.DefaultThreadService$1.run(DefaultThreadService.java:147)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt; java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:471)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at java.util.concurrent.FutureTask.run(FutureTask.java:262)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt; java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt; java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at java.lang.Thread.run(Thread.java:745)
+</I>&gt;&gt;&gt;<i> &gt;&gt; Traceback (most recent call last):
+</I>&gt;&gt;&gt;<i> &gt;&gt;   File
+</I>&gt;&gt;&gt;<i> &gt;&gt; &quot;/home/hadim/local/Fiji.app/plugins/Scripts/Plugins/Crop_Multi_Roi.py&quot;,
+</I>&gt;&gt;&gt;<i> &gt;&gt; line 50, in &lt;module&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;     saver.saveImg(crop_fname, imp)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt; io.scif.img.cell.loaders.AbstractArrayLoader.loadArray(AbstractArrayLoader.java:156)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at io.scif.img.cell.SCIFIOCellCache.load(SCIFIOCellCache.java:144)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt; io.scif.img.cell.SCIFIOImgCells$CachedCells.get(SCIFIOImgCells.java:122)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt; io.scif.img.cell.SCIFIOImgCells$CachedCells.get(SCIFIOImgCells.java:101)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at net.imglib2.img.list.ListCursor.get(ListCursor.java:80)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at net.imglib2.img.cell.CellCursor.getCell(CellCursor.java:92)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at net.imglib2.img.cell.CellCursor.moveToNextCell(CellCursor.java:180)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at net.imglib2.img.cell.CellCursor.reset(CellCursor.java:150)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at net.imglib2.img.cell.CellCursor.&lt;init&gt;(CellCursor.java:86)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt; net.imglib2.img.cell.AbstractCellImg.cursor(AbstractCellImg.java:113)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at net.imglib2.img.cell.AbstractCellImg.cursor(AbstractCellImg.java:47)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at net.imglib2.img.AbstractImg.firstElement(AbstractImg.java:81)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at net.imagej.ImgPlus.firstElement(ImgPlus.java:261)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at io.scif.img.ImgSaver.populateMeta(ImgSaver.java:894)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at io.scif.img.ImgSaver.writeImg(ImgSaver.java:514)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at io.scif.img.ImgSaver.writeImg(ImgSaver.java:495)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at io.scif.img.ImgSaver.writeImg(ImgSaver.java:457)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at io.scif.img.ImgSaver.saveImg(ImgSaver.java:174)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at io.scif.img.ImgSaver.saveImg(ImgSaver.java:158)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at io.scif.img.ImgSaver.saveImg(ImgSaver.java:128)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt; sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt; sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+</I>&gt;&gt;&gt;<i> &gt;&gt; at java.lang.reflect.Method.invoke(Method.java:606)
+</I>&gt;&gt;&gt;<i> &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt; java.lang.NullPointerException: java.lang.NullPointerException
+</I>&gt;&gt;&gt;<i> &gt;&gt; -------------------------------------------------------------------
+</I>&gt;&gt;&gt;<i> &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt; The associated script is below.
+</I>&gt;&gt;&gt;<i> &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt; ------------------------------------------------------------------------
+</I>&gt;&gt;&gt;<i> &gt;&gt; from ij import IJ
+</I>&gt;&gt;&gt;<i> &gt;&gt; from ij.plugin.frame import RoiManager
+</I>&gt;&gt;&gt;<i> &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt; from io.scif.config import SCIFIOConfig
+</I>&gt;&gt;&gt;<i> &gt;&gt; from io.scif.img import ImageRegion
+</I>&gt;&gt;&gt;<i> &gt;&gt; from io.scif.img import ImgOpener
+</I>&gt;&gt;&gt;<i> &gt;&gt; from io.scif.img import ImgSaver
+</I>&gt;&gt;&gt;<i> &gt;&gt; from net.imagej.axis import Axes
+</I>&gt;&gt;&gt;<i> &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt; import os
+</I>&gt;&gt;&gt;<i> &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt; # Get current image filename
+</I>&gt;&gt;&gt;<i> &gt;&gt; imp = IJ.getImage()
+</I>&gt;&gt;&gt;<i> &gt;&gt; f = imp.getOriginalFileInfo()
+</I>&gt;&gt;&gt;<i> &gt;&gt; fname = os.path.join(f.directory, f.fileName)
+</I>&gt;&gt;&gt;<i> &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt; IJ.log('Image filename is %s' % fname)
+</I>&gt;&gt;&gt;<i> &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt; # Iterate over all ROIs from ROI Manager
+</I>&gt;&gt;&gt;<i> &gt;&gt; rois = RoiManager.getInstance().getRoisAsArray()
+</I>&gt;&gt;&gt;<i> &gt;&gt; for i, roi in enumerate(rois):
+</I>&gt;&gt;&gt;<i> &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;     crop_id = i +1
+</I>&gt;&gt;&gt;<i> &gt;&gt;     IJ.log(&quot;Opening crop %i / %i&quot; % (crop_id, len(rois)))
+</I>&gt;&gt;&gt;<i> &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;     # Get ROI bounds
+</I>&gt;&gt;&gt;<i> &gt;&gt;     bounds = roi.getBounds()
+</I>&gt;&gt;&gt;<i> &gt;&gt;     x = bounds.x
+</I>&gt;&gt;&gt;<i> &gt;&gt;     y = bounds.y
+</I>&gt;&gt;&gt;<i> &gt;&gt;     w = bounds.width
+</I>&gt;&gt;&gt;<i> &gt;&gt;     h = bounds.height
+</I>&gt;&gt;&gt;<i> &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;     # Import only cropped region of the image
+</I>&gt;&gt;&gt;<i> &gt;&gt;     axes = [Axes.X, Axes.Y]
+</I>&gt;&gt;&gt;<i> &gt;&gt;     ranges = [&quot;%i-%i&quot; % (x, x+w), &quot;%i-%i&quot; % (y, y+h)]
+</I>&gt;&gt;&gt;<i> &gt;&gt;     config = SCIFIOConfig()
+</I>&gt;&gt;&gt;<i> &gt;&gt;     config.imgOpenerSetRegion(ImageRegion(axes, ranges))
+</I>&gt;&gt;&gt;<i> &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;     opener = ImgOpener()
+</I>&gt;&gt;&gt;<i> &gt;&gt;     imps = opener.openImgs(fname, config)
+</I>&gt;&gt;&gt;<i> &gt;&gt;     imp = imps[0]
+</I>&gt;&gt;&gt;<i> &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;     # Get filename and basename of the current cropped image
+</I>&gt;&gt;&gt;<i> &gt;&gt;     crop_basename = &quot;crop%i_%s&quot; % (crop_id, f.fileName)
+</I>&gt;&gt;&gt;<i> &gt;&gt;     crop_fname = os.path.join(f.directory, crop_basename)
+</I>&gt;&gt;&gt;<i> &gt;&gt;     IJ.log(&quot;Saving crop to %s&quot; % crop_fname)
+</I>&gt;&gt;&gt;<i> &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;     # Save cropped image
+</I>&gt;&gt;&gt;<i> &gt;&gt;     saver = ImgSaver()
+</I>&gt;&gt;&gt;<i> &gt;&gt;     saver.saveImg(crop_fname, imp)
+</I>&gt;&gt;&gt;<i> &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt; IJ.log('Done')
+</I>&gt;&gt;&gt;<i> &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt; ----------------------------------------------------------------------------
+</I>&gt;&gt;&gt;<i> &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt; Does opener.openImgs() wait for the image to open ? If it does not I
+</I>&gt;&gt;&gt;<i> &gt;&gt; guess that saver.saveImg() is called on an image that does not exist
+</I>&gt;&gt;&gt;<i> &gt;&gt; in memory.
+</I>&gt;&gt;&gt;<i> &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt; Thanks
+</I>&gt;&gt;&gt;<i> &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt; --
+</I>&gt;&gt;&gt;<i> &gt;&gt; Hadrien Mary
+</I>&gt;&gt;&gt;<i> &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt; Ph.D student in Biology
+</I>&gt;&gt;&gt;<i> &gt;&gt; Tournier-Gachet Team
+</I>&gt;&gt;&gt;<i> &gt;&gt; CNRS - LBCMCP - UMR 5088
+</I>&gt;&gt;&gt;<i> &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt; Universit&#233; de Toulouse - B&#226;t. 4R3B1
+</I>&gt;&gt;&gt;<i> &gt;&gt; 118, route de Narbonne - 31062 Toulouse
+</I>&gt;&gt;&gt;<i> &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt; On Wed, Jan 14, 2015 at 4:35 PM, Hadrien Mary &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">hadrien.mary at gmail.com</A>&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt; wrote:
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt; I confirm it works !
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt; Thanks again
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt; --
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt; Hadrien Mary
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt; Ph.D student in Biology
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt; Tournier-Gachet Team
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt; CNRS - LBCMCP - UMR 5088
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt; Universit&#233; de Toulouse - B&#226;t. 4R3B1
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt; 118, route de Narbonne - 31062 Toulouse
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt; On Wed, Jan 14, 2015 at 3:32 PM, Mark Hiner &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">hiner at wisc.edu</A>&gt; wrote:
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt; Hi Hadrien,
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt;Exception in thread &quot;DrawAndDrop&quot; java.lang.NoSuchMethodError:
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt;io.scif.ImageMetadata.setAxisLength(Lnet/imglib2/meta/AxisType;J)V
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt; Ah sorry - my fault again for responding too quickly. ImageJ.git
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt; doesn't
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt; have a dependency on scifio-ome-xml; it's a dependency in Fiji
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt; itself[1]. So
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt; when you installed ImageJ into your Fiji, it updated all the
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt; dependencies
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt; but didn't actually update scifio-ome-xml.
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt; You can either manually copy scifio-ome-xml[2] over, or try
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt; installing from
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt; the latest Fiji master[3] which I just updated to have the latest
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt; dependencies.
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt; [1]
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt; <A HREF="https://github.com/fiji/fiji/blob/2bc6266ff5ad5dfa155db9c0631db9baae396062/pom.xml#L608-612">https://github.com/fiji/fiji/blob/2bc6266ff5ad5dfa155db9c0631db9baae396062/pom.xml#L608-612</A>
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt; [2]
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt; <A HREF="https://github.com/scifio/scifio-ome-xml/releases/tag/scifio-ome-xml-0.12.0">https://github.com/scifio/scifio-ome-xml/releases/tag/scifio-ome-xml-0.12.0</A>
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt; [3]
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt; <A HREF="https://github.com/fiji/fiji/commit/2bc6266ff5ad5dfa155db9c0631db9baae396062">https://github.com/fiji/fiji/commit/2bc6266ff5ad5dfa155db9c0631db9baae396062</A>
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt; On Wed, Jan 14, 2015 at 7:05 AM, Hadrien Mary
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt; &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">hadrien.mary at gmail.com</A>&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt; wrote:
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; Ok it makes sense now !
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; So I did what you told me about cloning imagej repo, building and
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; install it with maven inside my local Fiji.app/. I don't know if
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; it's
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; a bug or a missing dependency but I am now unable to open OME Tiff
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; files (other kind of file works well) wether it is by drag and drop
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; or
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; with my script. The error is the following:
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; -------------------------------------------------
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; Exception in thread &quot;DrawAndDrop&quot; java.lang.NoSuchMethodError:
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; io.scif.ImageMetadata.setAxisLength(Lnet/imglib2/meta/AxisType;J)V
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; io.scif.ome.formats.OMETIFFFormat$Metadata.populateImageMetadata(OMETIFFFormat.java:273)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; at io.scif.AbstractParser.parse(AbstractParser.java:254)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; io.scif.ome.formats.OMETIFFFormat$Parser.parse(OMETIFFFormat.java:609)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; io.scif.ome.formats.OMETIFFFormat$Parser.parse(OMETIFFFormat.java:552)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; at io.scif.AbstractParser.parse(AbstractParser.java:335)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; at io.scif.AbstractParser.parse(AbstractParser.java:52)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; at io.scif.AbstractReader.setSource(AbstractReader.java:270)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; io.scif.services.DefaultInitializeService.initializeReader(DefaultInitializeService.java:90)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; at io.scif.img.ImgOpener.createReader(ImgOpener.java:542)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; at io.scif.img.ImgOpener.openImgs(ImgOpener.java:144)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; at io.scif.io.DatasetIOPlugin.open(DatasetIOPlugin.java:133)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; at io.scif.io.DatasetIOPlugin.open(DatasetIOPlugin.java:109)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; at io.scif.io.DatasetIOPlugin.open(DatasetIOPlugin.java:63)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; net.imagej.legacy.plugin.DefaultLegacyOpener.open(DefaultLegacyOpener.java:134)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; net.imagej.legacy.DefaultLegacyHooks.interceptDragAndDropFile(DefaultLegacyHooks.java:358)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; at ij.plugin.DragAndDrop.openFile(DragAndDrop.java)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; at ij.plugin.DragAndDrop.run(DragAndDrop.java:152)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; at java.lang.Thread.run(Thread.java:745)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; -----------------------------------------------
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; I guess something in scifio has not been updated to use the new
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; net.imagej.axis or maybe the update is not built/downloaded when I
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; run
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; maven on my imagej clone.
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; --
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; Hadrien Mary
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; Ph.D student in Biology
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; Tournier-Gachet Team
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; CNRS - LBCMCP - UMR 5088
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; Universit&#233; de Toulouse - B&#226;t. 4R3B1
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; 118, route de Narbonne - 31062 Toulouse
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; On Wed, Jan 14, 2015 at 12:58 PM, Mark Hiner &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">hiner at wisc.edu</A>&gt; wrote:
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt; Hi Hadrien,
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt;Sorry if it's off topic but I tried to run my script and I got a
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; python
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; error
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt; Oh no! This is totally my fault. I had to update your script for
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt; the new
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt; dependencies I mentioned and forgot to paste the new version in my
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt; response
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt; yesterday:
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt;from net.imglib2.meta import Axes
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt; This import needs to change to:
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt; from net.imagej.axis import Axes
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt; Sorry about that!
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt; Best,
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt; Mark
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt; On Tue, Jan 13, 2015 at 3:59 PM, Hadrien Mary
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt; &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">hadrien.mary at gmail.com</A>&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt; wrote:
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; Thank you Mark !
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; Sorry if it's off topic but I tried to run my script and I got a
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; python error probably related to type difference between python
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; and
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; java. It's not the first time I saw this kind of message and I'd
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; like
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; to know how to resolve it. Note that for python script I mainly
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; use
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; javadoc as documentation.
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; The error is below coming from almost the same script as before
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; in this
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; thread.
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; ********************************
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; Started test_open_save.py at Tue Jan 13 22:54:36 CET 2015
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; Traceback (most recent call last):
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt;   File
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &quot;/home/hadim/Documents/phd/dev/scripts/imagej_scripts/test_open_save.py&quot;,
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; line 17, in &lt;module&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt;     config.imgOpenerSetRegion(ImageRegion(axes, ranges))
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; TypeError: io.scif.img.ImageRegion(): 1st arg can't be coerced to
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; net.imagej.axis.AxisType[]
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; at org.python.core.Py.TypeError(Py.java:235)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; org.python.core.PyReflectedFunction.throwError(PyReflectedFunction.java:209)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; org.python.core.PyReflectedFunction.throwBadArgError(PyReflectedFunction.java:312)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; org.python.core.PyReflectedFunction.throwError(PyReflectedFunction.java:321)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; org.python.core.PyReflectedConstructor.__call__(PyReflectedConstructor.java:176)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; at org.python.core.PyObject.__call__(PyObject.java:345)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; org.python.core.PyMethod.instancemethod___call__(PyMethod.java:220)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; at org.python.core.PyMethod.__call__(PyMethod.java:211)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; at org.python.core.PyMethod.__call__(PyMethod.java:206)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; at org.python.core.Deriveds.dispatch__init__(Deriveds.java:19)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; org.python.core.PyObjectDerived.dispatch__init__(PyObjectDerived.java:1057)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; at org.python.core.PyType.type___call__(PyType.java:1565)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; at org.python.core.PyType.__call__(PyType.java:1548)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; at org.python.core.PyObject.__call__(PyObject.java:404)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; at org.python.core.PyObject.__call__(PyObject.java:408)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; org.python.pycode._pyx0.f$0(/home/hadim/Documents/phd/dev/scripts/imagej_scripts/test_open_save.py:26)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; org.python.pycode._pyx0.call_function(/home/hadim/Documents/phd/dev/scripts/imagej_scripts/test_open_save.py)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; at org.python.core.PyTableCode.call(PyTableCode.java:165)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; at org.python.core.PyCode.call(PyCode.java:18)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; at org.python.core.Py.runCode(Py.java:1275)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; org.scijava.plugins.scripting.jython.JythonScriptEngine.eval(JythonScriptEngine.java:76)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; at org.scijava.script.ScriptModule.run(ScriptModule.java:175)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; at org.scijava.module.ModuleRunner.run(ModuleRunner.java:167)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; at org.scijava.module.ModuleRunner.call(ModuleRunner.java:126)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; at org.scijava.module.ModuleRunner.call(ModuleRunner.java:65)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; org.scijava.thread.DefaultThreadService$2.call(DefaultThreadService.java:164)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; at java.util.concurrent.FutureTask.run(FutureTask.java:262)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; at java.lang.Thread.run(Thread.java:745)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; ************************************
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; --
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; Hadrien Mary
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; Ph.D student in Biology
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; Tournier-Gachet Team
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; CNRS - LBCMCP - UMR 5088
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; Universit&#233; de Toulouse - B&#226;t. 4R3B1
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; 118, route de Narbonne - 31062 Toulouse
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; On Tue, Jan 13, 2015 at 10:20 PM, Mark Hiner &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">hiner at wisc.edu</A>&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; wrote:
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt; Hi Hadrien,
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;  Unsurprisingly, cropping and writing OME-TIFFs was quite
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt; broken.
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;  It's working for me now, as of the latest SCIFIO[1] and
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt; SCIFIO-OME-XML[2].
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt; Note that these libraries have updated dependencies compared to
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt; what's
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt; currently on Fiji, so you can't just drop these .jars into your
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt; Fiji
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt; installation if you want to test locally; you need to update
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt; the
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt; dependencies as well. The easiest way to do this would be to
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt; just
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt; clone
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt; Imagej.git[3] and install it into your Fiji.app directory by
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt; running:
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt; mvn -Dimagej.app.directory=/path/to/Fiji.app/
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt; -Ddelete.other.versions=true
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt; We'll push these changes up to Fiji this week, and I will find
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt; or
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt; write
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt; better instructions for local testing.
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt; Hope this helps. Let us know if you have any
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt; questions/problems.
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt; Thanks
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt; again for finding this issue!
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt; Best,
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt; - Mark
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt; [1] <A HREF="https://github.com/scifio/scifio/releases/tag/scifio-0.19.0">https://github.com/scifio/scifio/releases/tag/scifio-0.19.0</A>
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt; [2]
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt; <A HREF="https://github.com/scifio/scifio-ome-xml/releases/tag/scifio-ome-xml-0.12.0">https://github.com/scifio/scifio-ome-xml/releases/tag/scifio-ome-xml-0.12.0</A>
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt; [3] <A HREF="https://github.com/imagej/imagej">https://github.com/imagej/imagej</A>
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt; On Sat, Jan 10, 2015 at 5:13 AM, Hadrien Mary
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt; &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">hadrien.mary at gmail.com</A>&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt; wrote:
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; Ok. Let me know when you want me to test your changes. I also
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; tested
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; fix-writing branch and I didn't notice any changes.
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; --
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; Hadrien Mary
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; Ph.D student in Biology
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; Tournier-Gachet Team
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; CNRS - LBCMCP - UMR 5088
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; Universit&#233; de Toulouse - B&#226;t. 4R3B1
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; 118, route de Narbonne - 31062 Toulouse
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; On Fri, Jan 9, 2015 at 10:14 PM, Mark Hiner &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">hiner at wisc.edu</A>&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; wrote:
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt; Hi Hadrien,
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt; I've identified at least two bugs that could be affecting
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt; you
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt; here.
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt; First of all, there was a bug in the OME-TIFF format writing
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt; out
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt; multi-dimensional images. That's fixed on a branch but not
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt; uploaded
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt; to
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt; Fiji
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt; yet [1].
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt; Second, it seems like cropping is restricting pixel reads to
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt; the
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt; correct
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt; region but then doesn't change the image size.
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt; I'm hoping when I fix the second issue writing cropped
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt; regions
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt; will
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt; be
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt; fixed.
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt; Thanks for the great feedback!
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt; - Mark
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt; [1]
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt; <A HREF="https://github.com/scifio/scifio-ome-xml/tree/fix-writing">https://github.com/scifio/scifio-ome-xml/tree/fix-writing</A>
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt; On Fri, Jan 9, 2015 at 11:49 AM, Hadrien Mary
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt; &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">hadrien.mary at gmail.com</A>&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt; wrote:
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; I also confirm the same behaviour when replacing original
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; file by
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; OME
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; sample data :
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; <A HREF="http://www.openmicroscopy.org/Schemas/Samples/2013-06/bioformats-artificial/multi-channel-4D-series.ome.tif.zip.">http://www.openmicroscopy.org/Schemas/Samples/2013-06/bioformats-artificial/multi-channel-4D-series.ome.tif.zip.</A>
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; --
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; Hadrien Mary
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; Ph.D student in Biology
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; Tournier-Gachet Team
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; CNRS - LBCMCP - UMR 5088
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; Universit&#233; de Toulouse - B&#226;t. 4R3B1
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; 118, route de Narbonne - 31062 Toulouse
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; On Fri, Jan 9, 2015 at 6:46 PM, Hadrien Mary
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">hadrien.mary at gmail.com</A>&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; wrote:
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; After some investigations I think there is a bug with
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; ImgSaver.
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; In
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; the
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; following script, X, Y crop is fine but axes informations
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; (T
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; and
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; Z)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; are lost and all frames appears on the same axes. Now if
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; I
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; replace
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; &quot;target = &quot;/home/hadim/cropped.tif&quot; by &quot;target =
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; &quot;/home/hadim/cropped.ome.tif&quot; on line 9. X, Y crop fails,
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; cropped
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; image has the same dimensions than original however axes
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; informations
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; (T and Z) are ok. Note that in cropped.ome.tif, pixel
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; values
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; are
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; totally incoherent which is not the case in cropped.tif.
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; Files can be found here :
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; <A HREF="https://arwen.hadim.fr/public.php?service=files&amp;t=71aa17336dcccb3437d9a3dff789d2c0">https://arwen.hadim.fr/public.php?service=files&amp;t=71aa17336dcccb3437d9a3dff789d2c0</A>
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; Archive contains cropped.tif, cropped.ome.tif and
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; original.ome.tif.
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; The script:
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; ---------------------------------------------------
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; from io.scif import SCIFIO
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; from io.scif.config import SCIFIOConfig
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; from io.scif.img import ImageRegion
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; from io.scif.img import ImgOpener
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; from io.scif.img import ImgSaver
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; from net.imglib2.meta import Axes
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; fname = &quot;/home/hadim/original.ome.tif&quot;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; target = &quot;/home/hadim/cropped.tif&quot;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; axes = [Axes.X, Axes.Y]
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; ranges = [&quot;%i-%i&quot; % (0, 15), &quot;%i-%i&quot; % (0, 25)]
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; config = SCIFIOConfig()
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; config.imgOpenerSetRegion(ImageRegion(axes, ranges))
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; opener = ImgOpener()
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; imps = opener.openImgs(fname, config)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; imp = imps[0]
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; saver = ImgSaver()
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; saver.saveImg(target, imp)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; print('Done')
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; ---------------------------------------------------
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; --
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; Hadrien Mary
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; On Fri, Jan 9, 2015 at 12:25 AM, Hadrien Mary
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">hadrien.mary at gmail.com</A>&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt; wrote:
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; Thanks for the tip (reminder to me: always look for
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; example in
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; tests!).
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; Unfortunately crop does not work... I will try to do
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; more
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; tests
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; tomorrow or wait for you or someone else to have a look.
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; Updated code:
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; from ij import IJ
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; from ij import ImagePlus
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; from io.scif import SCIFIO
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; from io.scif.config import SCIFIOConfig
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; from io.scif.img import ImageRegion
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; from io.scif.img import ImgOpener
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; from io.scif.img import ImgSaver
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; from net.imglib2.meta import Axes
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; fname = &quot;/home/hadim/original.ome.tif&quot;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; target = &quot;/home/hadim/cropped.ome.tif&quot;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; axes = [Axes.X, Axes.Y]
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; ranges = [&quot;%i-%i&quot; % (2, 15), &quot;%i-%i&quot; % (2, 25)]
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; config = SCIFIOConfig()
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; config.imgOpenerSetRegion(ImageRegion(axes, ranges))
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; opener = ImgOpener()
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; imps = opener.openImgs(fname, config)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; imp = imps[0]
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; saver = ImgSaver()
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; saver.saveImg(target, imp)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; print('Done')
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; --
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; Hadrien Mary
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; On Fri, Jan 9, 2015 at 12:09 AM, Curtis Rueden
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; wrote:
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt; Hi Hadrien,
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; I would like to be able to crop a region in X and Y
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; while
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; keeping any other dimensions which could exist (C, Z,
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; T).
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt; Here's some Java:
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;     int minX = 128, maxX = 255, minY = 128, minY = 255;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;     AxisType[] axes = { Axes.X, Axes.Y };
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;     String[] ranges = { minX + &quot;-&quot; + maxX, minY + &quot;-&quot; +
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt; maxY
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt; };
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;     config.imgOpenerSetRegion(new ImageRegion(axes,
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt; ranges));
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt; Adapted from here:
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt; <A HREF="https://github.com/scifio/scifio/blob/scifio-0.18.0/src/test/java/io/scif/img/utests/ImgOpenerTest.java#L189-L191">https://github.com/scifio/scifio/blob/scifio-0.18.0/src/test/java/io/scif/img/utests/ImgOpenerTest.java#L189-L191</A>
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt; And untested.
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt; HTH,
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt; Curtis
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt; On Thu, Jan 8, 2015 at 4:47 PM, Hadrien Mary
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt; &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">hadrien.mary at gmail.com</A>&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt; wrote:
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; After some investigations, I'm pretty sure I don't
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; instanciate
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; ImageRegion correctly. Doc and source code didn't help
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; me...
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; I
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; would
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; like to be able to crop a region in X and Y while
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; keeping
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; any
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; other
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; dimensions which could exist (C, Z, T).
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; --
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; Hadrien Mary
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; On Thu, Jan 8, 2015 at 10:22 PM, Hadrien Mary
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">hadrien.mary at gmail.com</A>&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; wrote:
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; Thank you Curtis for the answer.
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; I tried to apply what you told me and the code now
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; works
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; without
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; error. However the saved cropped image is not
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; cropped
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; (same
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; size
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; as
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; original) and pixel values are modified).
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; Script:
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; from io.scif.config import SCIFIOConfig
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; from io.scif.img import ImageRegion
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; from io.scif.img import ImgOpener
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; from io.scif.img import ImgSaver
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; fname = &quot;/home/hadim/original.ome.tif&quot;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; target = &quot;/home/hadim/cropped.ome.tif&quot;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; config = SCIFIOConfig()
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; region = ImageRegion(dict(x=2, y=2, width=10,
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; height=10))
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; config.imgOpenerSetRegion(region)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; opener = ImgOpener()
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; imps = opener.openImgs(fname, config)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; imp = imps[0]
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; print(imps)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; saver = ImgSaver()
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; saver.saveImg(target, imp)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; Thanks again for your time. Don't be sorry if you
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; don't
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; have
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; time
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; to
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; write an example.
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; I will be happy to provide some python/scifio
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; examples
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; scripts.
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; --
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; Hadrien Mary
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; Ph.D student in Biology
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; Tournier-Gachet Team
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; CNRS - LBCMCP - UMR 5088
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; Universit&#233; de Toulouse - B&#226;t. 4R3B1
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; 118, route de Narbonne - 31062 Toulouse
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; On Thu, Jan 8, 2015 at 9:56 PM, Curtis Rueden
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt; wrote:
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; Hi Hadrien,
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; I tried to use SCIFIO to write cropped image on
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; disk but
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; it
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; doesn
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; not
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; work.
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; The error you see is because SCIFIO operates on
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; ImgLib2
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; data
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; structures, not
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; ImagePlus objects.
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; Is there is any &#8220;easy&#8221; alternative to BF
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; setCropRegion
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; function
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; in
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; SCIFIO ?
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; Yes: you create a SCIFIOConfig, calling
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; imgOpenerSetRegion
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; [1]
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; on
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; it,
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; then
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; pass it as an argument to the ImgOpener. You'll get
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; back
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; an
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; ImgLib2
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; data
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; object which can then be fed to the SCIFIO
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; ImgSaver.
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; I'm sorry that I don't have time to whip up an
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; example
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; for
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; you
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; right
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; now. It
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; would be great to add more SCIFIO tutorials [2]
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; that use
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; the
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; ImgOpener
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; and
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; ImgSaver, since they are much higher level APIs
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; akin to
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; the
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; Bio-Formats
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; &quot;BF&quot;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; functionality... please feel welcome to contribute
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; some!
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; Regards,
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; Curtis
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; [1]
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; <A HREF="http://javadoc.imagej.net/SCIFIO/io/scif/config/SCIFIOConfig.html#imgOpenerSetRegion(io.scif.img.ImageRegion">http://javadoc.imagej.net/SCIFIO/io/scif/config/SCIFIOConfig.html#imgOpenerSetRegion(io.scif.img.ImageRegion</A>)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; [2] <A HREF="https://github.com/scifio/scifio-tutorials">https://github.com/scifio/scifio-tutorials</A>
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; On Thu, Jan 8, 2015 at 2:18 PM, Hadrien Mary
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">hadrien.mary at gmail.com</A>&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt; wrote:
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; Hi,
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; I am writing a python macro which iterate over all
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; rois
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; in
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; ROI
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; Manager
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; and then use setCropRegion function from bioformat
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; plugin
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; to
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; open
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; a
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; cropped region of an image.
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; I tried to use SCIFIO to write cropped image on
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; disk but
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; it
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; doesn
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; not
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; work.
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; (I am using an updated version of Fiji.)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; Here is my script:
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; from ij.plugin.frame import RoiManager
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; from ij import IJ
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; from io.scif.img import ImgSaver
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; from loci.plugins import BF
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; from loci.plugins.in import ImporterOptions
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; from loci.common import Region
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; import os
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; # Get current image filename
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; imp = IJ.getImage()
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; f = imp.getOriginalFileInfo()
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; fname = os.path.join(f.directory, f.fileName)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; IJ.log('Image filename is %s' % fname)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; # Iterate over all ROIs from ROI Manager
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; rois = RoiManager.getInstance().getRoisAsArray()
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; for i, roi in enumerate(rois):
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;     crop_id = i +1
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;     IJ.log(&quot;Opening crop %i / %i&quot; % (crop_id,
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; len(rois)))
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;     bounds = roi.getBounds()
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;     x = bounds.x
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;     y = bounds.y
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;     w = bounds.width
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;     h = bounds.height
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;     # Import only cropped region of the image
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;     options = ImporterOptions()
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;     options.setCrop(True)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;     options.setCropRegion(0, Region(x, y, w, h))
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;     options.setId(fname)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;     imps = BF.openImagePlus(options)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;     imp = imps[0]
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;     imp.show()
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;     crop_basename = &quot;crop%i_%s&quot; % (crop_id,
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; f.fileName)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;     crop_fname = os.path.join(f.directory,
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; crop_basename)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;     imp.setTitle(crop_basename)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;     # Save image
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;     IJ.log(&quot;Saving crop to %s&quot; % crop_fname)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;     saver = ImgSaver()
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;     saver.saveImg(crop_basename, imp)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; IJ.log('Done')
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; It fails with this error:
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; Traceback (most recent call last):
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;   File
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; &quot;/home/hadim/local/Fiji.app/plugins/Crop_Multi_Roi.py&quot;,
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; line
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; 49, in &lt;module&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;     saver.saveImg(crop_basename, imp)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; TypeError: saveImg(): 1st arg can't be coerced to
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; io.scif.Writer,
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; String
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; at org.python.core.Py.TypeError(Py.java:235)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; org.python.core.PyReflectedFunction.throwError(PyReflectedFunction.java:209)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; org.python.core.PyReflectedFunction.throwBadArgError(PyReflectedFunction.java:312)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; org.python.core.PyReflectedFunction.throwError(PyReflectedFunction.java:321)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; org.python.core.PyReflectedFunction.__call__(PyReflectedFunction.java:167)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; org.python.core.PyReflectedFunction.__call__(PyReflectedFunction.java:204)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; org.python.core.PyObject.__call__(PyObject.java:422)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; org.python.core.PyObject.__call__(PyObject.java:426)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; org.python.core.PyMethod.__call__(PyMethod.java:139)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; org.python.pycode._pyx7.f$0(/home/hadim/local/Fiji.app/plugins/Crop_Multi_Roi.py:51)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; org.python.pycode._pyx7.call_function(/home/hadim/local/Fiji.app/plugins/Crop_Multi_Roi.py)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; org.python.core.PyTableCode.call(PyTableCode.java:165)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; at org.python.core.PyCode.call(PyCode.java:18)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; at org.python.core.Py.runCode(Py.java:1275)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; org.scijava.plugins.scripting.jython.JythonScriptEngine.eval(JythonScriptEngine.java:76)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; org.scijava.script.ScriptModule.run(ScriptModule.java:175)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; org.scijava.module.ModuleRunner.run(ModuleRunner.java:167)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; org.scijava.module.ModuleRunner.call(ModuleRunner.java:126)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; org.scijava.module.ModuleRunner.call(ModuleRunner.java:65)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; org.scijava.thread.DefaultThreadService$2.call(DefaultThreadService.java:164)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; java.util.concurrent.FutureTask.run(FutureTask.java:262)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; at
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; at java.lang.Thread.run(Thread.java:745)
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; Three questions:
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; how can I write cropped image (I need to write
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; them as
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; OME
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; Tiff
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; so I
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; need BF or SCIFIO).
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; Is there is any &#8220;easy&#8221; alternative to BF
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; setCropRegion
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; function
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; in
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; SCIFIO
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; ?
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; I am currently using
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; RoiManager.getInstance().getRoisAsArray()
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; to
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; retrieve all rois. How can I directly get a
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; ROIManager
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; instance
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; from
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; RoiSet.zip file ?
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; Any help would be very appreciated.
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; Thanks !
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; &#8212;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; Hadrien Mary
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; _______________________________________________
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; ImageJ-devel mailing list
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;&gt; <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; _______________________________________________
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; ImageJ-devel mailing list
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;&gt; <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;&gt; &gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;
+</I>&gt;&gt;&gt;<i> &gt;&gt;&gt;&gt;
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002432.html">[ImageJ-devel] Save/write image with SCIFIO/BF in python script
+</A></li>
+	<LI>Next message: <A HREF="002435.html">[ImageJ-devel] Save/write image with SCIFIO/BF in python script
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2434">[ date ]</a>
+              <a href="thread.html#2434">[ thread ]</a>
+              <a href="subject.html#2434">[ subject ]</a>
+              <a href="author.html#2434">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

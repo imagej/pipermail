@@ -1,0 +1,136 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] manual threshold op
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20manual%20threshold%20op&In-Reply-To=%3CCADN69ymYK-o38GpkpGE9xzAPJ8yec8v4X4zGHHA16TVmTPS8XQ%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002220.html">
+   <LINK REL="Next"  HREF="002223.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] manual threshold op</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20manual%20threshold%20op&In-Reply-To=%3CCADN69ymYK-o38GpkpGE9xzAPJ8yec8v4X4zGHHA16TVmTPS8XQ%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] manual threshold op">ctrueden at wisc.edu
+       </A><BR>
+    <I>Tue Sep  9 11:03:27 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002220.html">[ImageJ-devel] Using ImgLib2 with JavaFX and other questions.
+</A></li>
+        <LI>Next message: <A HREF="002223.html">[ImageJ-devel] manual threshold op
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2221">[ date ]</a>
+              <a href="thread.html#2221">[ thread ]</a>
+              <a href="subject.html#2221">[ subject ]</a>
+              <a href="author.html#2221">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Brian,
+
+&gt;<i> I was using the threshold ops and I have a couple of questions about
+</I>&gt;<i> the manualthreshold op.
+</I>
+Let's go over these issues during next week's hackathon, if that works for
+you. Looking very briefly at the OPS thresholding code, I see a few
+problems we'll need to fix.
+
+In general, I think all of the thresholding code would benefit from
+unification under ImageJ OPS. Right now, ImageJ Common has its own
+threshold package (
+<A HREF="https://github.com/imagej/imagej-common/tree/master/src/main/java/net/imagej/threshold">https://github.com/imagej/imagej-common/tree/master/src/main/java/net/imagej/threshold</A>)
+with its own ThresholdMethod plugin. It would be better to provide that
+functionality in OPS. A potential hackathon project for next week?
+
+Regards,
+Curtis
+
+On Thu, Aug 28, 2014 at 4:33 PM, Brian Northan &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">bnorthan at gmail.com</A>&gt; wrote:
+
+&gt;<i>
+</I>&gt;<i> I was using the threshold ops and I have a couple of questions about the
+</I>&gt;<i> manualthreshold
+</I>&gt;<i> &lt;<A HREF="https://github.com/imagej/imagej-ops/blob/master/src/main/java/net/imagej/ops/threshold/Manual.java">https://github.com/imagej/imagej-ops/blob/master/src/main/java/net/imagej/ops/threshold/Manual.java</A>&gt;
+</I>&gt;<i> op.
+</I>&gt;<i>
+</I>&gt;<i> 1.  It has a variable &quot;threshold&quot;.  The parent class,
+</I>&gt;<i> GlobalThresholdMethod
+</I>&gt;<i> &lt;<A HREF="https://github.com/imagej/imagej-ops/blob/master/src/main/java/net/imagej/ops/threshold/GlobalThresholdMethod.java">https://github.com/imagej/imagej-ops/blob/master/src/main/java/net/imagej/ops/threshold/GlobalThresholdMethod.java</A>&gt;
+</I>&gt;<i> also has a private variable threshold.  The code compiles but would the
+</I>&gt;<i> OpService get confused when it tries to create the op??  I get a
+</I>&gt;<i> illegalargument exception when trying to create it.  But if I rename the
+</I>&gt;<i> duplicate 'threshold' variable I can then create the op with the op
+</I>&gt;<i> service.
+</I>&gt;<i>
+</I>&gt;<i> 2.  I can't figure out how to create the manualthreshold op, set the
+</I>&gt;<i> manual threshold parameter and then pass the manualthreshold op to the
+</I>&gt;<i> GlobalThreshold
+</I>&gt;<i> &lt;<A HREF="https://github.com/imagej/imagej-ops/blob/master/src/main/java/net/imagej/ops/threshold/GlobalThreshold.java">https://github.com/imagej/imagej-ops/blob/master/src/main/java/net/imagej/ops/threshold/GlobalThreshold.java</A>&gt;
+</I>&gt;<i> op.
+</I>&gt;<i>
+</I>&gt;<i> For Otsu I just do it like this
+</I>&gt;<i>
+</I>&gt;<i> ops.run(&quot;threshold&quot;, otsu, in, new Otsu());
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> But for manual I need to set the threshold parameter somehow.  I tried
+</I>&gt;<i> this.
+</I>&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Op manualOp=ops.op(&quot;manualthreshold&quot;, in, manualthreshold);
+</I>&gt;&gt;<i> ops.run(&quot;threshold&quot;, manual, in, manualOp);
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> But it doesn't totally make sense to me to do it that way and it throws an
+</I>&gt;<i> exception anyway.  Parameters get injected twice (again when
+</I>&gt;<i> GlobalThreshold attempts to run &quot;manualOp&quot; to get the threshold).
+</I>&gt;<i>
+</I>&gt;<i> Any suggestions??
+</I>&gt;<i>
+</I>&gt;<i> Thanks
+</I>&gt;<i>
+</I>&gt;<i> Brian
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140909/2e51c549/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20140909/2e51c549/attachment.html</A>&gt;
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002220.html">[ImageJ-devel] Using ImgLib2 with JavaFX and other questions.
+</A></li>
+	<LI>Next message: <A HREF="002223.html">[ImageJ-devel] manual threshold op
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2221">[ date ]</a>
+              <a href="thread.html#2221">[ thread ]</a>
+              <a href="subject.html#2221">[ subject ]</a>
+              <a href="author.html#2221">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

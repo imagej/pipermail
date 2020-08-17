@@ -1,0 +1,113 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [ImgLib2] new Gauss implementation
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5BImgLib2%5D%20new%20Gauss%20implementation&In-Reply-To=%3C5044A6BA.3060609%40inf.tu-dresden.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="001214.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [ImgLib2] new Gauss implementation</H1>
+    <B>Tobias Pietzsch</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5BImgLib2%5D%20new%20Gauss%20implementation&In-Reply-To=%3C5044A6BA.3060609%40inf.tu-dresden.de%3E"
+       TITLE="[ImageJ-devel] [ImgLib2] new Gauss implementation">tobias.pietzsch at inf.tu-dresden.de
+       </A><BR>
+    <I>Mon Sep  3 07:46:50 CDT 2012</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="001214.html">[ImageJ-devel] [ImgLib2] new Gauss implementation
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1213">[ date ]</a>
+              <a href="thread.html#1213">[ thread ]</a>
+              <a href="subject.html#1213">[ subject ]</a>
+              <a href="author.html#1213">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi all,
+
+a while ago I did an alternative implementation of Gaussian smoothing
+(started out as trying to see whether the old one could be made faster).
+The basic idea is the same: separate and do 1D line convolutions.
+The details differ quite a bit. Instead of handling special cases at
+the start/end of lines, images that are smaller than the kernel, etc.
+this new implementation simply does a bit of unnecessary extra work,
+which makes the code shorter and apparently better suited to the JIT.
+
+Currently the &quot;Gauss3&quot; can be found in the branch &quot;gauss3&quot;. I'd like to
+merge to master soon. Gauss3 can bring quite a bit of speed-up, e.g. on
+my laptop
+
+40ms vs.  70ms  for a 1000 x 1000 FloatType image, or
+78ms vs. 136ms  for a 100 x 100 x 100 FloatType image (sigma=3.0).
+
+I also tried it together with the new neighborhood design in
+the DogDetection algorithm (algorithms-legacy).
+There I had a speed-up on a 953 x 451 x 48 SPIM image of
+3349ms vs. 6036ms so almost twice as fast. (This can be found in
+the &quot;tobias-neighborhood-experiments&quot; branch).
+
+
+Instead of the many static methods of Gauss, the interface of
+Gauss3 is deliberately simple. There is one static method, basically:
+
+Gauss3.gauss( final double[] sigma,
+               final RandomAccessible&lt; S &gt; source,
+               final RandomAccessibleInterval&lt; T &gt; target )
+
+S and T both extend NumericType, but not necessarily the same, so
+your source can be UnsignedByteType and your Result DoubleType for
+example. You need to out-of-bounds extend the source yourself, if
+there is not enough data beyond the borders (of the target interval).
+
+It figures out which temporary type to use for the calculation on
+it's own. If the target type T is DoubleType, all calculations are done
+in double precision. For all other target RealTypes, float precision is
+used. General NumericTypes are computed in their own arithmetic.
+The source type S and target type T must be either both RealTypes or
+both the same type.
+
+See net.imglib2.algorithm.gauss3.Gauss3Example (in imglib2-tests package
+for how to use it).
+
+Doumentation of the internals is still rather sparse. I hope I'll find
+some time to improve that soon. I'll try to merge to master next week,
+maybe I'll need some hand-holding then to make it play nice with the 
+fiji javac...
+
+best regards,
+Tobias
+
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="001214.html">[ImageJ-devel] [ImgLib2] new Gauss implementation
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1213">[ date ]</a>
+              <a href="thread.html#1213">[ thread ]</a>
+              <a href="subject.html#1213">[ subject ]</a>
+              <a href="author.html#1213">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

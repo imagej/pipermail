@@ -1,0 +1,158 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] ImgLib2 Release Announcement
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImgLib2%20Release%20Announcement&In-Reply-To=%3CC235AB53-6BFB-4C24-ADA5-D904CA332109%40mpi-cbg.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002377.html">
+   <LINK REL="Next"  HREF="002367.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] ImgLib2 Release Announcement</H1>
+    <B>Tobias Pietzsch</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImgLib2%20Release%20Announcement&In-Reply-To=%3CC235AB53-6BFB-4C24-ADA5-D904CA332109%40mpi-cbg.de%3E"
+       TITLE="[ImageJ-devel] ImgLib2 Release Announcement">pietzsch at mpi-cbg.de
+       </A><BR>
+    <I>Tue Dec 16 08:12:39 CST 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002377.html">[ImageJ-devel] releaseVersion.sh script failed -- how to recover
+</A></li>
+        <LI>Next message: <A HREF="002367.html">[ImageJ-devel] latest LoadAndDisplayDataset()
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2365">[ date ]</a>
+              <a href="thread.html#2365">[ thread ]</a>
+              <a href="subject.html#2365">[ subject ]</a>
+              <a href="author.html#2365">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi everyone,
+
+We are happy to announce the first stable release version of the ImgLib2 core library!
+
+This release was a central goal of the recent hackathon at LOCI in Madison, during the week of October 13 - 17.
+
+The ImgLib2 core library is now available on Maven Central [1], and the source code for all ImgLib2 projects is accessible on GitHub [2].
+
+Like the SciJava and ImageJ2 projects, ImgLib2 releases now follow the &#8220;semantic versioning&#8221; scheme [3]. Also, the project and git repository structure has changed. The main imglib repository has been split into multiple repositories, named consistently with the artifact names and java package prefixes [4]. Projects are now coupled using non-SNAPSHOT versions, in order to achieve reproducible builds [5].
+
+For further technical details on project structure, see <A HREF="http://imagej.net/Architecture">http://imagej.net/Architecture</A>
+
+Before coming out of beta, we have made several last-minute changes to the
+code:
+  &#8226; All @Deprecated methods and classes have been removed.
+  &#8226; All metadata handling (formerly imglib2-meta subproject) is being moved
+    into imagej-common. From ImgLib2 core, the classes AnnotatedSpace,
+    AbstractAnnotatedSpace, and Axis where moved to imagej-common.
+  &#8226; The current ROI representation wss not considered stable enough to be
+    included in a release. The net.imglib2.roi and net.imglib2.labeling
+    packages where moved to the new imglib2-roi subproject which will remain
+    in beta for now.
+  &#8226; The net.imglib2.multithreading package was moved to imglib2-algorithm and
+    deprecated.
+  &#8226; We merged work by Albert Cardona and Stephan Preibisch on &quot;fractional&quot;
+    types. ImgLib2 NativeTypes map pixels into primitive arrays, where often
+    the mapping is one-to-one. For example, a UnsignedByteType pixel maps into
+    one byte of a primitive byte[] array. With fractional types this mapping
+    maybe non-integral, for example Unsigned12BitType maps pixels into a long[]
+    array, where each pixel occupies 12/64 longs.
+  &#8226; Superfluous generic parameters were removed from Projector&lt;A,B&gt; interface
+    which is now only Projector. Projector implementations were fixed
+    accordingly.
+  &#8226; Several classes were renamed or moved to more suitable places:
+     &#9702; Extended[Real]RandomAccessibleInterval moved to the net.imglib2.view
+       package.
+     &#9702; RandomAccessibleOnRealRandomAccessible moved to the net.imglib2.view
+       package.
+     &#9702; Binning moved to the net.imglib2.util package.
+     &#9702; The contents of package net.imglib2.collection (KDTree etc) moved to the
+       net.imglib2 package.
+     &#9702; net.imglib2.concatenate.Util was renamed to
+       net.imglib2.concatenate.ConcatenateUtils.
+     &#9702; Bounded moved to the net.imglib2.outofbounds package.
+     &#9702; The class NearestNeighborInterpolator from package
+       net.imglib2.interpolation.neighborsearch was renamed to
+       NearestNeighborSearchInterpolator (to avoid confusion with the
+       net.imglib2.interpolation.randomaccess.NearestNeighborInterpolator
+       class).
+     &#9702; The Pair interface moved to the net.imglib2.util package.
+  &#8226; The net.imglib2.util.Util class was cleaned up:
+     &#9702; Methods getTypeFromRandomAccess() and getTypeFromRealRandomAccess() were
+       removed. We considered them too dangerous because the RandomAccess may
+       be pointing to invalid position.
+     &#9702; Unused methods setCoordinateRecursive() and getRecursiveCoordinates()
+       were removed.
+     &#9702; Some variants of computeLength() and computeDistance() were removed. Use
+       methods distance() and length() from net.imglib2.util.LinAlgHelpers
+       instead.
+     &#9702; Methods computeMedian(), computeAverage(), etc. were renamed to
+       median(), average(), etc.
+  &#8226; These unused classes were removed:
+     &#9702; IterableIntervalSubsetT
+     &#9702; Triple
+     &#9702; RealPositionableFloorPositionable
+     &#9702; RealPositionableRoundPositionable
+     &#9702; ImgTranslationAdapter
+  &#8226; Packages net.imglib2.img.constant and net.imglib2.sampler.special were
+    removed (ConstantImg, ConstantRandomAccessible, etc). Similar functionality
+    can now be achieved through the net.imglib2.util.ConstantUtils class and
+    Views.
+
+All ImgLib2 subprojects have been adapted to these changes and released (in some cases as new beta versions).
+
+One thing still pending is to upload these new ImgLib2 releases to the ImageJ and Fiji update sites, making them available to users of ImageJ and Fiji. This change has been rather involved, since there is a lot of downstream code affected by the API changes. But we expect to make the new ImgLib2 available to users before the end of the calendar year. Stay tuned for further announcements!
+
+Best regards from the ImgLib2 release team,
+Tobias Pietzsch
+Stephan Saalfeld
+Stephan Preibisch
+Curtis Rueden
+Johannes Schindelin
+Mark Hiner
+
+[1] <A HREF="http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22net.imglib2%22">http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22net.imglib2%22</A>
+[2] <A HREF="https://github.com/imglib">https://github.com/imglib</A>
+[3] <A HREF="http://imagej.net/Architecture#Versioning">http://imagej.net/Architecture#Versioning</A>
+[4] <A HREF="http://imagej.net/Architecture#Git_repositories">http://imagej.net/Architecture#Git_repositories</A>
+[5] <A HREF="http://imagej.net/Architecture#Reproducible_builds">http://imagej.net/Architecture#Reproducible_builds</A>
+
+
+</PRE>
+
+
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002377.html">[ImageJ-devel] releaseVersion.sh script failed -- how to recover
+</A></li>
+	<LI>Next message: <A HREF="002367.html">[ImageJ-devel] latest LoadAndDisplayDataset()
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2365">[ date ]</a>
+              <a href="thread.html#2365">[ thread ]</a>
+              <a href="subject.html#2365">[ subject ]</a>
+              <a href="author.html#2365">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

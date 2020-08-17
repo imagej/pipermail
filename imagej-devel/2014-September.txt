@@ -1,0 +1,3018 @@
+From pietzsch at mpi-cbg.de  Tue Sep  2 06:59:10 2014
+From: pietzsch at mpi-cbg.de (Tobias Pietzsch)
+Date: Tue, 2 Sep 2014 13:59:10 +0200
+Subject: [ImageJ-devel] Using ImgLib2 with JavaFX and other questions.
+In-Reply-To: <BCF5FE94-7D4C-40CB-8ABA-333C63CE36EF@dsuk.biz>
+References: <BCF5FE94-7D4C-40CB-8ABA-333C63CE36EF@dsuk.biz>
+Message-ID: <43743BEC-655D-41D4-B051-5A8602D6617A@mpi-cbg.de>
+
+Hi Michael,
+
+On 29 Aug 2014, at 13:09, Michael Ellis <michael.ellis at dsuk.biz> wrote:
+
+> I am trying to learn about ImgLib2
+> 
+> In particular I could do with help for the following:
+> 
+> All my images will be 2D byte images typically of size 1300x1000.
+> 
+> How do I get an Img into a format compatible for displaying within JavaFX (rather than using ImageJFunctions.show() )?
+> Assuming there is no explicit JavaFX support in ImgLib2, I think this boils down to producing and 24 bit RGB or 32bit ARGB image where I can access the data. But how do I do this?
+
+Have a look at ARGBScreenImage which extends ArrayImg< ARGBType, IntArray >.
+This s a 2D image intended for displaying on screen. You can get to the underlying 32bit ARGB int[] array by
+	public int[] getData()
+or get it wrapped in a AWT BufferedImage by
+	public BufferedImage image()
+
+> 
+> How would I combine multiple 2D 8 bit image planes (up to 7 planes, each with own colour table) and combine them under programatic control into a single RGB image where every pixel in the destination image dest[x, y] is a function of the pixels at src[plane, x, y]?
+
+See
+net.imglib2.display.projector.composite.CompositeXYProjector
+or 
+net.imglib2.display.projector.composite.CompositeXYRandomAccessibleProjector
+They should do exactly what you need. Note, that they expect that [x, y] of your image to composite are the first two dimensions. So it would work with [x, y, ?, plane, ?].
+If you really have [plane, x, y], you can use Views.permute(...) to get a virtual view into your data as [x, y, plane].
+
+> 
+> How would I  threshold a 2D Img producing a 1 bit Img?
+
+You could simply do this by implementing a Converter< __YourImageType__, BitType > and then using Converters.convert(...) to get a virtual view into your data as a thresholded  1 bit image.
+
+> How would I fill holes in the binary thresholded Img?
+
+Have a look through imglib2-algorithms, imglib2-algorithms, and imglib2-ops. There should be something there.
+
+> How could I identify and label objects in the binary thresholded Img and extract a concise description of the object boundaries (e.g. polygon, or chain code descriptions)?
+
+To identify objects you could use
+net.imglib2.algorithm.labeling.AllConnectedComponents
+About the object descriptions, I don?t think we have anything for that, but I?m not sure. Maybe someone familiar with imglib2-ops can comment?
+
+best regards,
+Tobias
+
+> 
+> How can I register a multiple  Imgs using cross correlation image registration?
+> 
+> Any help would be appreciated. I?m not looking for complete solutions to this and whilst this work is intended for a commercial product, I am happy to contribute all the source code examples I generate by way of investigating any of the above.
+> 
+> ? Michael Ellis
+> Digital Scientific UK Ltd.
+> 
+> 
+> 
+> 
+> 
+> 
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140902/01e96471/attachment.html>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140902/01e96471/attachment.pgp>
+
+From ctrueden at wisc.edu  Tue Sep  9 11:03:27 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Tue, 9 Sep 2014 11:03:27 -0500
+Subject: [ImageJ-devel] manual threshold op
+In-Reply-To: <CAMWa8i3X09TXi=vaA8JVWoCGzhzXaOHuhRH9hiR4Xtn32bx_EQ@mail.gmail.com>
+References: <CAMWa8i3X09TXi=vaA8JVWoCGzhzXaOHuhRH9hiR4Xtn32bx_EQ@mail.gmail.com>
+Message-ID: <CADN69ymYK-o38GpkpGE9xzAPJ8yec8v4X4zGHHA16TVmTPS8XQ@mail.gmail.com>
+
+Hi Brian,
+
+> I was using the threshold ops and I have a couple of questions about
+> the manualthreshold op.
+
+Let's go over these issues during next week's hackathon, if that works for
+you. Looking very briefly at the OPS thresholding code, I see a few
+problems we'll need to fix.
+
+In general, I think all of the thresholding code would benefit from
+unification under ImageJ OPS. Right now, ImageJ Common has its own
+threshold package (
+https://github.com/imagej/imagej-common/tree/master/src/main/java/net/imagej/threshold)
+with its own ThresholdMethod plugin. It would be better to provide that
+functionality in OPS. A potential hackathon project for next week?
+
+Regards,
+Curtis
+
+On Thu, Aug 28, 2014 at 4:33 PM, Brian Northan <bnorthan at gmail.com> wrote:
+
+>
+> I was using the threshold ops and I have a couple of questions about the
+> manualthreshold
+> <https://github.com/imagej/imagej-ops/blob/master/src/main/java/net/imagej/ops/threshold/Manual.java>
+> op.
+>
+> 1.  It has a variable "threshold".  The parent class,
+> GlobalThresholdMethod
+> <https://github.com/imagej/imagej-ops/blob/master/src/main/java/net/imagej/ops/threshold/GlobalThresholdMethod.java>
+> also has a private variable threshold.  The code compiles but would the
+> OpService get confused when it tries to create the op??  I get a
+> illegalargument exception when trying to create it.  But if I rename the
+> duplicate 'threshold' variable I can then create the op with the op
+> service.
+>
+> 2.  I can't figure out how to create the manualthreshold op, set the
+> manual threshold parameter and then pass the manualthreshold op to the
+> GlobalThreshold
+> <https://github.com/imagej/imagej-ops/blob/master/src/main/java/net/imagej/ops/threshold/GlobalThreshold.java>
+> op.
+>
+> For Otsu I just do it like this
+>
+> ops.run("threshold", otsu, in, new Otsu());
+>>
+>
+> But for manual I need to set the threshold parameter somehow.  I tried
+> this.
+>
+>>
+>> Op manualOp=ops.op("manualthreshold", in, manualthreshold);
+>> ops.run("threshold", manual, in, manualOp);
+>>
+>
+> But it doesn't totally make sense to me to do it that way and it throws an
+> exception anyway.  Parameters get injected twice (again when
+> GlobalThreshold attempts to run "manualOp" to get the threshold).
+>
+> Any suggestions??
+>
+> Thanks
+>
+> Brian
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140909/2e51c549/attachment.html>
+
+From ctrueden at wisc.edu  Tue Sep  9 11:14:06 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Tue, 9 Sep 2014 11:14:06 -0500
+Subject: [ImageJ-devel] [fiji-devel] Opening file fails in ij2 mode from
+ the command line
+In-Reply-To: <53FC54DD.5010906@gmail.com>
+References: <53FC54DD.5010906@gmail.com>
+Message-ID: <CADN69y=W4osz2Mk6aPKGZELU84jUnXSfke4BO2Z9H4sn7xax4g@mail.gmail.com>
+
+Hi Pawel,
+
+> the following two commands open ImageJ in ij2 mode, but fail to open
+> the image:
+> ImageJ-win32.exe c:\temp\test.tif
+> ImageJ-win32.exe --ij2 c:\temp\test.tif
+...
+> Am I missing something or is this a bug?
+
+It is a bug. The same one later reported by Thorsten Wagner:
+
+    https://github.com/imagej/imagej-legacy/issues/89
+
+Regards,
+Curtis
+
+On Tue, Aug 26, 2014 at 4:35 AM, Pawel Niewiadomski <
+pawelthebiologist at gmail.com> wrote:
+
+> Hi,
+>
+> I am trying to open a file in ImageJ from the command line in Windows. The
+> following command works:
+> ImageJ-win32.exe --ij1 c:\temp\test.tif
+> but the following two commands open ImageJ in ij2 mode, but fail to open
+> the image:
+> ImageJ-win32.exe c:\temp\test.tif
+> ImageJ-win32.exe --ij2 c:\temp\test.tif
+> This also means that setting imagej as the default program to open tif
+> files in Windows fails - ImageJ is launched but does not open the file.
+> Am I missing something or is this a bug?
+>
+> Pawel
+>
+> --
+> Pawe? Niewiadomski
+> e-mail: pawelthebiologist at gmail.com
+> website: www.pawelthebiologist.com
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140909/b60ca5fd/attachment.html>
+
+From bnorthan at gmail.com  Tue Sep  9 14:52:26 2014
+From: bnorthan at gmail.com (Brian Northan)
+Date: Tue, 9 Sep 2014 15:52:26 -0400
+Subject: [ImageJ-devel] manual threshold op
+In-Reply-To: <CADN69ymYK-o38GpkpGE9xzAPJ8yec8v4X4zGHHA16TVmTPS8XQ@mail.gmail.com>
+References: <CAMWa8i3X09TXi=vaA8JVWoCGzhzXaOHuhRH9hiR4Xtn32bx_EQ@mail.gmail.com>
+	<CADN69ymYK-o38GpkpGE9xzAPJ8yec8v4X4zGHHA16TVmTPS8XQ@mail.gmail.com>
+Message-ID: <CAMWa8i3on7B=5Kq__mZwgH4SVm27OxoHCYEeRNL=AjeEkBquzg@mail.gmail.com>
+
+Hi Curtis
+
+That would be perfect.  It would be great to have all the thresholding
+methods available in IJ1 accessible from Ops.
+
+Brian
+
+On Tue, Sep 9, 2014 at 12:03 PM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+
+> Hi Brian,
+>
+> > I was using the threshold ops and I have a couple of questions about
+> > the manualthreshold op.
+>
+> Let's go over these issues during next week's hackathon, if that works for
+> you. Looking very briefly at the OPS thresholding code, I see a few
+> problems we'll need to fix.
+>
+> In general, I think all of the thresholding code would benefit from
+> unification under ImageJ OPS. Right now, ImageJ Common has its own
+> threshold package (
+> https://github.com/imagej/imagej-common/tree/master/src/main/java/net/imagej/threshold)
+> with its own ThresholdMethod plugin. It would be better to provide that
+> functionality in OPS. A potential hackathon project for next week?
+>
+> Regards,
+> Curtis
+>
+> On Thu, Aug 28, 2014 at 4:33 PM, Brian Northan <bnorthan at gmail.com> wrote:
+>
+>>
+>> I was using the threshold ops and I have a couple of questions about the
+>> manualthreshold
+>> <https://github.com/imagej/imagej-ops/blob/master/src/main/java/net/imagej/ops/threshold/Manual.java>
+>> op.
+>>
+>> 1.  It has a variable "threshold".  The parent class,
+>> GlobalThresholdMethod
+>> <https://github.com/imagej/imagej-ops/blob/master/src/main/java/net/imagej/ops/threshold/GlobalThresholdMethod.java>
+>> also has a private variable threshold.  The code compiles but would the
+>> OpService get confused when it tries to create the op??  I get a
+>> illegalargument exception when trying to create it.  But if I rename the
+>> duplicate 'threshold' variable I can then create the op with the op
+>> service.
+>>
+>> 2.  I can't figure out how to create the manualthreshold op, set the
+>> manual threshold parameter and then pass the manualthreshold op to the
+>> GlobalThreshold
+>> <https://github.com/imagej/imagej-ops/blob/master/src/main/java/net/imagej/ops/threshold/GlobalThreshold.java>
+>> op.
+>>
+>> For Otsu I just do it like this
+>>
+>> ops.run("threshold", otsu, in, new Otsu());
+>>>
+>>
+>> But for manual I need to set the threshold parameter somehow.  I tried
+>> this.
+>>
+>>>
+>>> Op manualOp=ops.op("manualthreshold", in, manualthreshold);
+>>> ops.run("threshold", manual, in, manualOp);
+>>>
+>>
+>> But it doesn't totally make sense to me to do it that way and it throws
+>> an exception anyway.  Parameters get injected twice (again when
+>> GlobalThreshold attempts to run "manualOp" to get the threshold).
+>>
+>> Any suggestions??
+>>
+>> Thanks
+>>
+>> Brian
+>>
+>> _______________________________________________
+>> ImageJ-devel mailing list
+>> ImageJ-devel at imagej.net
+>> http://imagej.net/mailman/listinfo/imagej-devel
+>>
+>>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140909/ffd8ef66/attachment.html>
+
+From gaetano at impoco.it  Fri Sep 12 06:05:38 2014
+From: gaetano at impoco.it (Gaetano Impoco)
+Date: Fri, 12 Sep 2014 13:05:38 +0200
+Subject: [ImageJ-devel] importing custom "uncompressed" libraries (i.e.,
+	no JAR)
+Message-ID: <1410519938.5412d3820b67d@cp.tophost.it>
+
+Dear all,
+I developed a custom library for my own convenience that used to work in
+ImageJ1.x. In my old IJ1 installation I used to add the library root directory
+to the Java CLASSPATH (using a simple bash script).
+In my brand new Fiji installation, I can import my library only if I archive all
+.class files into a JAR file. I would like to use JARs only for deployment. Is
+there any way to include the "uncompressed" (development version) library?
+
+Thank you
+Gaetano
+
+
+
+
+From ctrueden at wisc.edu  Fri Sep 12 12:19:24 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Fri, 12 Sep 2014 12:19:24 -0500
+Subject: [ImageJ-devel] importing custom "uncompressed" libraries (i.e.,
+ no JAR)
+In-Reply-To: <1410519938.5412d3820b67d@cp.tophost.it>
+References: <1410519938.5412d3820b67d@cp.tophost.it>
+Message-ID: <CADN69ynmDHTrvP2cHd4QvY3_hm2t==H6CigvhsdBmATq0jRT5Q@mail.gmail.com>
+
+Hi Gaetano,
+
+> In my brand new Fiji installation, I can import my library only if I
+> archive all .class files into a JAR file.
+
+IIUC, what you describe is still supposed to work.
+
+Could you please provide a minimal, complete, verifiable example
+demonstrating the issue?
+
+http://imagej.net/Bug_reporting_best_practices
+
+Regards,
+Curtis
+
+On Fri, Sep 12, 2014 at 6:05 AM, Gaetano Impoco <gaetano at impoco.it> wrote:
+
+> Dear all,
+> I developed a custom library for my own convenience that used to work in
+> ImageJ1.x. In my old IJ1 installation I used to add the library root
+> directory
+> to the Java CLASSPATH (using a simple bash script).
+> In my brand new Fiji installation, I can import my library only if I
+> archive all
+> .class files into a JAR file. I would like to use JARs only for
+> deployment. Is
+> there any way to include the "uncompressed" (development version) library?
+>
+> Thank you
+> Gaetano
+>
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140912/310c833b/attachment.html>
+
+From jay.w.warrick at gmail.com  Sat Sep 13 06:44:12 2014
+From: jay.w.warrick at gmail.com (Jay Warrick)
+Date: Sat, 13 Sep 2014 06:44:12 -0500
+Subject: [ImageJ-devel] Maven TrackMate Dependency Question
+Message-ID: <5C275889-D156-47A9-B3D7-205FD74AE089@gmail.com>
+
+Hi All,
+
+I was hoping someone on the list might have a suggestion for the following 2 problems I'm having. First, I'm trying to use TrackMate in my program. I updated my pom to use the new TrackMate version 2.5 instead of version 2.3. I've also checked all the dependency hierarchies of my project modules in Eclipse for dependencies on the old version and only find a dependency on v 2.5.
+
+		<dependency>
+			<groupId>sc.fiji</groupId>
+			<artifactId>TrackMate_</artifactId>
+			<version>2.5.0</version>
+		</dependency>
+
+However, it seems maven still thinks I'm using v 2.3 according to the following error message.
+
+%%%%%%%%%%%%%%%
+
+[WARNING] The POM for sc.fiji:TrackMate_:jar:2.3.0 is invalid, transitive dependencies (if any) will not be available: 1 problem was encountered while building the effective model for sc.fiji:TrackMate_:2.3.0
+[ERROR] 'dependencies.dependency.groupId' for ${jama.groupId}:jama:jar with value '${jama.groupId}' does not match a valid id pattern. @ 
+
+%%%%%%%%%%%%%%%
+
+This brings me to the second problem... how can I resolve this above warning/error message? Is there something I should be doing differently in general when I want to specifically depend on similar FIJI plugin? This issue appears to be preventing the inclusion of my own "wrapper plugin" which depends on this jar/plugin as all my wrapper plugins are listed in my application when run except for the wrapper plugin that depends on the TrackMate jar.
+
+Here's what I've tried... I forced update of snapshots and releases from within Eclipse for all modules of my project. I turned off "Build Automatically" within Eclipse and went to the command line and ran 'mvn -e -U clean install'. I even deleted my ~/.m2/repository contents as a last ditch effort. 
+
+As background information, my parent pom is scijava
+
+	<parent>
+		<groupId>org.scijava</groupId>
+		<artifactId>pom-scijava</artifactId>
+		<version>3.4</version>
+	</parent>
+
+ but I depend on imagej with the following...
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>net.imagej</groupId>
+				<artifactId>pom-imagej</artifactId>
+				<version>2.49</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+Any suggestions?
+
+Thanks!!!
+
+Jay
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140913/183311a7/attachment.html>
+
+From tinevez at pasteur.fr  Sat Sep 13 07:27:11 2014
+From: tinevez at pasteur.fr (Jean-Yves Tinevez)
+Date: Sat, 13 Sep 2014 14:27:11 +0200
+Subject: [ImageJ-devel] Maven TrackMate Dependency Question
+In-Reply-To: <5C275889-D156-47A9-B3D7-205FD74AE089@gmail.com>
+References: <5C275889-D156-47A9-B3D7-205FD74AE089@gmail.com>
+Message-ID: <5414381F.8010101@pasteur.fr>
+
+On 13-Sep-14 13:44, Jay Warrick wrote:
+> Hi All,
+>
+> I was hoping someone on the list might have a suggestion for the 
+> following 2 problems I'm having. First, I'm trying to use TrackMate in 
+> my program. I updated my pom to use the new TrackMate version 2.5 
+> instead of version 2.3. I've also checked all the dependency 
+> hierarchies of my project modules in Eclipse for dependencies on the 
+> old version and only find a dependency on v 2.5.
+>
+> <dependency>
+> <groupId>sc.fiji</groupId>
+> <artifactId>TrackMate_</artifactId>
+> <version>2.5.0</version>
+> </dependency>
+>
+> However, it seems maven still thinks I'm using v 2.3 according to the 
+> following error message.
+>
+> %%%%%%%%%%%%%%%
+>
+> [WARNING] The POM for sc.fiji:TrackMate_:jar:2.3.0 is invalid, 
+> transitive dependencies (if any) will not be available: 1 problem was 
+> encountered while building the effective model for 
+> sc.fiji:TrackMate_:2.3.0
+
+Hi Jay
+
+Ok, that's very odd. The TrackMate-example depends on TrackMate this way 
+and it works:
+https://github.com/fiji/MaMuT/blob/master/pom.xmlhttps://github.com/fiji/MaMuT/blob/master/pom.xml
+
+Could you post the whole pom.xml to let us see through it?
+best
+jy
+
+
+---
+This email is free from viruses and malware because avast! Antivirus protection is active.
+http://www.avast.com
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140913/04185ece/attachment.html>
+
+From jay.w.warrick at gmail.com  Sat Sep 13 09:01:39 2014
+From: jay.w.warrick at gmail.com (Jay Warrick)
+Date: Sat, 13 Sep 2014 09:01:39 -0500
+Subject: [ImageJ-devel] Maven TrackMate Dependency Question
+In-Reply-To: <5414381F.8010101@pasteur.fr>
+References: <5C275889-D156-47A9-B3D7-205FD74AE089@gmail.com>
+	<5414381F.8010101@pasteur.fr>
+Message-ID: <C10C3E67-8D09-42BC-946D-9A85C711B86C@gmail.com>
+
+Hi Jean-Yves,
+
+Thanks for the quick reply! Here are the poms for my multi module project. I added to the default "pom.xml" names to make things easier to follow. The Master pom is the parent pom for each of my project modules. The parent of Master is scijava. The JEX module has essentially one class, Main which calls the main class in Core. Core contains essentially the whole program including the dependency on TrackMate. Broken contains broken code for one reason or another but doesn't really come into play as the Broken module is not part of the build process. It is "disabled" using a profile within the JEX module. Despite this, I still confirmed it didn't depend on TrackMate 2.3 using the Eclipse dependency hierarchy viewer, just in case.
+
+
+
+Likewise, if it is easier, my git repo for this project is https://github.com/jaywarrick/JEX.
+
+Thanks so much for helping me with this.
+
+Regards,
+
+Jay
+
+On Sep 13, 2014, at 7:27 AM, Jean-Yves Tinevez <tinevez at pasteur.fr> wrote:
+
+> On 13-Sep-14 13:44, Jay Warrick wrote:
+>> Hi All,
+>> 
+>> I was hoping someone on the list might have a suggestion for the following 2 problems I'm having. First, I'm trying to use TrackMate in my program. I updated my pom to use the new TrackMate version 2.5 instead of version 2.3. I've also checked all the dependency hierarchies of my project modules in Eclipse for dependencies on the old version and only find a dependency on v 2.5.
+>> 
+>> 
+>>             <dependency>
+>>  <groupId>sc.fiji</groupId>
+>>  <artifactId>TrackMate_</artifactId>
+>>  <version>2.5.0</version>
+>>  </dependency>
+>> 
+>> However, it seems maven still thinks I'm using v 2.3 according to the following error message.
+>> 
+>> %%%%%%%%%%%%%%%
+>> 
+>> [WARNING] The POM for sc.fiji:TrackMate_:jar:2.3.0 is invalid, transitive dependencies (if any) will not be available: 1 problem was encountered while building the effective model for sc.fiji:TrackMate_:2.3.0
+> 
+> Hi Jay
+> 
+> Ok, that's very odd. The TrackMate-example depends on TrackMate this way and it works:
+> https://github.com/fiji/MaMuT/blob/master/pom.xmlhttps://github.com/fiji/MaMuT/blob/master/pom.xml
+> 
+> Could you post the whole pom.xml to let us see through it?
+> best
+> jy
+> 
+> 
+>  	
+> This email is free from viruses and malware because avast! Antivirus protection is active.
+> 
+> 
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140913/9bb8b667/attachment-0005.html>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140913/9bb8b667/attachment-0006.html>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: Broken_Module_pom.xml
+Type: application/xml
+Size: 3862 bytes
+Desc: not available
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140913/9bb8b667/attachment-0002.xml>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140913/9bb8b667/attachment-0007.html>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140913/9bb8b667/attachment-0008.html>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: Master_pom.xml
+Type: application/xml
+Size: 1711 bytes
+Desc: not available
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140913/9bb8b667/attachment-0003.xml>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140913/9bb8b667/attachment-0009.html>
+
+From tinevez at pasteur.fr  Sat Sep 13 09:20:19 2014
+From: tinevez at pasteur.fr (Jean-Yves Tinevez)
+Date: Sat, 13 Sep 2014 16:20:19 +0200
+Subject: [ImageJ-devel] Maven TrackMate Dependency Question
+In-Reply-To: <C10C3E67-8D09-42BC-946D-9A85C711B86C@gmail.com>
+References: <5C275889-D156-47A9-B3D7-205FD74AE089@gmail.com>
+	<5414381F.8010101@pasteur.fr>
+	<C10C3E67-8D09-42BC-946D-9A85C711B86C@gmail.com>
+Message-ID: <541452A3.6050305@pasteur.fr>
+
+On 13-Sep-14 16:01, Jay Warrick wrote:
+> Hi Jean-Yves,
+>
+> Thanks for the quick reply! Here are the poms for my multi module 
+> project. I added to the default "pom.xml" names to make things easier 
+> to follow. The Master pom is the parent pom for each of my project 
+> modules. The parent of Master is scijava. The JEX module has 
+> essentially one class, Main which calls the main class in Core. Core 
+> contains essentially the whole program including the dependency on 
+> TrackMate. Broken contains broken code for one reason or another but 
+> doesn't really come into play as the Broken module is not part of the 
+> build process. It is "disabled" using a profile within the JEX module. 
+> Despite this, I still confirmed it didn't depend on TrackMate 2.3 
+> using the Eclipse dependency hierarchy viewer, just in case.
+
+Ok thank you for the crystal clear report.
+We are on the verge of what I know of maven. However I remember having a 
+similar issue that was fixed by making the parent of the master pom the 
+fiji plugin pom, like for TrackMate pom.
+
+Any chance you could just try that first?
+jy
+
+
+---
+This email is free from viruses and malware because avast! Antivirus protection is active.
+http://www.avast.com
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140913/451500f3/attachment.html>
+
+From jay.w.warrick at gmail.com  Sat Sep 13 11:14:12 2014
+From: jay.w.warrick at gmail.com (Jay Warrick)
+Date: Sat, 13 Sep 2014 11:14:12 -0500
+Subject: [ImageJ-devel] Maven TrackMate Dependency Question
+In-Reply-To: <541452A3.6050305@pasteur.fr>
+References: <5C275889-D156-47A9-B3D7-205FD74AE089@gmail.com>
+	<5414381F.8010101@pasteur.fr>
+	<C10C3E67-8D09-42BC-946D-9A85C711B86C@gmail.com>
+	<541452A3.6050305@pasteur.fr>
+Message-ID: <11E9D6C7-1669-4737-9C7A-ED51D62F64C4@gmail.com>
+
+I can certainly try it. That will at least give us an indication of things. Long term, I'm not sure how that will go but we can at least try this for now. I'll follow up on your suggestion when I can next work on it. Thanks again so much.
+
+Dscho - would you have any other suggestions. The error message references '${jama.groupId}' property. Do you know where this is likely defined? I poked around some poms but didn't see it. Can I just define it and it will work? I suppose I'll try that as well.
+
+Cheers,
+
+Jay
+
+On Sep 13, 2014, at 9:20 AM, Jean-Yves Tinevez <tinevez at pasteur.fr> wrote:
+
+> On 13-Sep-14 16:01, Jay Warrick wrote:
+>> Hi Jean-Yves,
+>> 
+>> Thanks for the quick reply! Here are the poms for my multi module project. I added to the default "pom.xml" names to make things easier to follow. The Master pom is the parent pom for each of my project modules. The parent of Master is scijava. The JEX module has essentially one class, Main which calls the main class in Core. Core contains essentially the whole program including the dependency on TrackMate. Broken contains broken code for one reason or another but doesn't really come into play as the Broken module is not part of the build process. It is "disabled" using a profile within the JEX module. Despite this, I still confirmed it didn't depend on TrackMate 2.3 using the Eclipse dependency hierarchy viewer, just in case.
+> 
+> Ok thank you for the crystal clear report. 
+> We are on the verge of what I know of maven. However I remember having a similar issue that was fixed by making the parent of the master pom the fiji plugin pom, like for TrackMate pom.
+> 
+> Any chance you could just try that first?
+> jy
+> 
+> 
+>  	
+> This email is free from viruses and malware because avast! Antivirus protection is active.
+> 
+> 
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140913/60a25b71/attachment.html>
+
+From jay.w.warrick at gmail.com  Sun Sep 14 06:11:41 2014
+From: jay.w.warrick at gmail.com (Jay Warrick)
+Date: Sun, 14 Sep 2014 06:11:41 -0500
+Subject: [ImageJ-devel] Maven TrackMate Dependency Question
+In-Reply-To: <541452A3.6050305@pasteur.fr>
+References: <5C275889-D156-47A9-B3D7-205FD74AE089@gmail.com>
+	<5414381F.8010101@pasteur.fr>
+	<C10C3E67-8D09-42BC-946D-9A85C711B86C@gmail.com>
+	<541452A3.6050305@pasteur.fr>
+Message-ID: <0EE0E1BA-83F3-4BEB-9457-3FA62F3920BA@gmail.com>
+
+Hi JY,
+
+Could it be a problem with the TrackMate groupId? Searching the internet with the error string brought up this past issue with jama and SPIM...
+
+https://groups.google.com/forum/#!topic/fiji-devel/zEhBIf1bZEA
+
+When I look at the TrackMate pom, I don't think I see a "groupId" defined for the TrackMate plugin. Hard for me to completely decipher in the issue discussion if this would cause the problem I'm seeing or if it would merely prevent the imageJ/Fiji folks from "seeing" that such a problem exists.
+
+Stephan Preibisch, Curtis, and Dscho - Does that sound like the right track? Thoughts?
+
+Thanks,
+
+Jay
+
+On Sep 13, 2014, at 9:20 AM, Jean-Yves Tinevez <tinevez at pasteur.fr> wrote:
+
+> On 13-Sep-14 16:01, Jay Warrick wrote:
+>> Hi Jean-Yves,
+>> 
+>> Thanks for the quick reply! Here are the poms for my multi module project. I added to the default "pom.xml" names to make things easier to follow. The Master pom is the parent pom for each of my project modules. The parent of Master is scijava. The JEX module has essentially one class, Main which calls the main class in Core. Core contains essentially the whole program including the dependency on TrackMate. Broken contains broken code for one reason or another but doesn't really come into play as the Broken module is not part of the build process. It is "disabled" using a profile within the JEX module. Despite this, I still confirmed it didn't depend on TrackMate 2.3 using the Eclipse dependency hierarchy viewer, just in case.
+> 
+> Ok thank you for the crystal clear report. 
+> We are on the verge of what I know of maven. However I remember having a similar issue that was fixed by making the parent of the master pom the fiji plugin pom, like for TrackMate pom.
+> 
+> Any chance you could just try that first?
+> jy
+> 
+> 
+>  	
+> This email is free from viruses and malware because avast! Antivirus protection is active.
+> 
+> 
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140914/d161f5dc/attachment.html>
+
+From jay.w.warrick at gmail.com  Sun Sep 14 06:15:18 2014
+From: jay.w.warrick at gmail.com (Jay Warrick)
+Date: Sun, 14 Sep 2014 06:15:18 -0500
+Subject: [ImageJ-devel] Maven TrackMate Dependency Question
+In-Reply-To: <0EE0E1BA-83F3-4BEB-9457-3FA62F3920BA@gmail.com>
+References: <5C275889-D156-47A9-B3D7-205FD74AE089@gmail.com>
+	<5414381F.8010101@pasteur.fr>
+	<C10C3E67-8D09-42BC-946D-9A85C711B86C@gmail.com>
+	<541452A3.6050305@pasteur.fr>
+	<0EE0E1BA-83F3-4BEB-9457-3FA62F3920BA@gmail.com>
+Message-ID: <4472093D-D0E8-4BDF-A24E-F667FFB6BB5E@gmail.com>
+
+If this might be on the right track, is there any way to test this on my end? Use offline mode and go into my .m2 repository and muck with poms or something?
+On Sep 14, 2014, at 6:11 AM, Jay Warrick <jay.w.warrick at gmail.com> wrote:
+
+> Hi JY,
+> 
+> Could it be a problem with the TrackMate groupId? Searching the internet with the error string brought up this past issue with jama and SPIM...
+> 
+> https://groups.google.com/forum/#!topic/fiji-devel/zEhBIf1bZEA
+> 
+> When I look at the TrackMate pom, I don't think I see a "groupId" defined for the TrackMate plugin. Hard for me to completely decipher in the issue discussion if this would cause the problem I'm seeing or if it would merely prevent the imageJ/Fiji folks from "seeing" that such a problem exists.
+> 
+> Stephan Preibisch, Curtis, and Dscho - Does that sound like the right track? Thoughts?
+> 
+> Thanks,
+> 
+> Jay
+> 
+> On Sep 13, 2014, at 9:20 AM, Jean-Yves Tinevez <tinevez at pasteur.fr> wrote:
+> 
+>> On 13-Sep-14 16:01, Jay Warrick wrote:
+>>> Hi Jean-Yves,
+>>> 
+>>> Thanks for the quick reply! Here are the poms for my multi module project. I added to the default "pom.xml" names to make things easier to follow. The Master pom is the parent pom for each of my project modules. The parent of Master is scijava. The JEX module has essentially one class, Main which calls the main class in Core. Core contains essentially the whole program including the dependency on TrackMate. Broken contains broken code for one reason or another but doesn't really come into play as the Broken module is not part of the build process. It is "disabled" using a profile within the JEX module. Despite this, I still confirmed it didn't depend on TrackMate 2.3 using the Eclipse dependency hierarchy viewer, just in case.
+>> 
+>> Ok thank you for the crystal clear report. 
+>> We are on the verge of what I know of maven. However I remember having a similar issue that was fixed by making the parent of the master pom the fiji plugin pom, like for TrackMate pom.
+>> 
+>> Any chance you could just try that first?
+>> jy
+>> 
+>> 
+>>  	
+>> This email is free from viruses and malware because avast! Antivirus protection is active.
+>> 
+>> 
+>> _______________________________________________
+>> ImageJ-devel mailing list
+>> ImageJ-devel at imagej.net
+>> http://imagej.net/mailman/listinfo/imagej-devel
+> 
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140914/83c7c643/attachment.html>
+
+From jay.w.warrick at gmail.com  Sun Sep 14 06:45:59 2014
+From: jay.w.warrick at gmail.com (Jay Warrick)
+Date: Sun, 14 Sep 2014 06:45:59 -0500
+Subject: [ImageJ-devel] Maven TrackMate Dependency Question
+In-Reply-To: <4472093D-D0E8-4BDF-A24E-F667FFB6BB5E@gmail.com>
+References: <5C275889-D156-47A9-B3D7-205FD74AE089@gmail.com>
+	<5414381F.8010101@pasteur.fr>
+	<C10C3E67-8D09-42BC-946D-9A85C711B86C@gmail.com>
+	<541452A3.6050305@pasteur.fr>
+	<0EE0E1BA-83F3-4BEB-9457-3FA62F3920BA@gmail.com>
+	<4472093D-D0E8-4BDF-A24E-F667FFB6BB5E@gmail.com>
+Message-ID: <FB2E708E-74E8-4BC0-9AEF-7A1C2621B564@gmail.com>
+
+I think never mind. Still learning about Maven, but it looks like the groupID is assumed the same as the parent so you TrackMate doesn't need to define it. Should have guessed this based on how everything else seems to work in Maven.
+
+On Sep 14, 2014, at 6:15 AM, Jay Warrick <jay.w.warrick at gmail.com> wrote:
+
+> If this might be on the right track, is there any way to test this on my end? Use offline mode and go into my .m2 repository and muck with poms or something?
+> On Sep 14, 2014, at 6:11 AM, Jay Warrick <jay.w.warrick at gmail.com> wrote:
+> 
+>> Hi JY,
+>> 
+>> Could it be a problem with the TrackMate groupId? Searching the internet with the error string brought up this past issue with jama and SPIM...
+>> 
+>> https://groups.google.com/forum/#!topic/fiji-devel/zEhBIf1bZEA
+>> 
+>> When I look at the TrackMate pom, I don't think I see a "groupId" defined for the TrackMate plugin. Hard for me to completely decipher in the issue discussion if this would cause the problem I'm seeing or if it would merely prevent the imageJ/Fiji folks from "seeing" that such a problem exists.
+>> 
+>> Stephan Preibisch, Curtis, and Dscho - Does that sound like the right track? Thoughts?
+>> 
+>> Thanks,
+>> 
+>> Jay
+>> 
+>> On Sep 13, 2014, at 9:20 AM, Jean-Yves Tinevez <tinevez at pasteur.fr> wrote:
+>> 
+>>> On 13-Sep-14 16:01, Jay Warrick wrote:
+>>>> Hi Jean-Yves,
+>>>> 
+>>>> Thanks for the quick reply! Here are the poms for my multi module project. I added to the default "pom.xml" names to make things easier to follow. The Master pom is the parent pom for each of my project modules. The parent of Master is scijava. The JEX module has essentially one class, Main which calls the main class in Core. Core contains essentially the whole program including the dependency on TrackMate. Broken contains broken code for one reason or another but doesn't really come into play as the Broken module is not part of the build process. It is "disabled" using a profile within the JEX module. Despite this, I still confirmed it didn't depend on TrackMate 2.3 using the Eclipse dependency hierarchy viewer, just in case.
+>>> 
+>>> Ok thank you for the crystal clear report. 
+>>> We are on the verge of what I know of maven. However I remember having a similar issue that was fixed by making the parent of the master pom the fiji plugin pom, like for TrackMate pom.
+>>> 
+>>> Any chance you could just try that first?
+>>> jy
+>>> 
+>>> 
+>>>  	
+>>> This email is free from viruses and malware because avast! Antivirus protection is active.
+>>> 
+>>> 
+>>> _______________________________________________
+>>> ImageJ-devel mailing list
+>>> ImageJ-devel at imagej.net
+>>> http://imagej.net/mailman/listinfo/imagej-devel
+>> 
+>> _______________________________________________
+>> ImageJ-devel mailing list
+>> ImageJ-devel at imagej.net
+>> http://imagej.net/mailman/listinfo/imagej-devel
+> 
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140914/fba2cc79/attachment-0001.html>
+
+From jay.w.warrick at gmail.com  Sun Sep 14 06:51:46 2014
+From: jay.w.warrick at gmail.com (Jay Warrick)
+Date: Sun, 14 Sep 2014 06:51:46 -0500
+Subject: [ImageJ-devel] Maven TrackMate Dependency Question
+In-Reply-To: <FB2E708E-74E8-4BC0-9AEF-7A1C2621B564@gmail.com>
+References: <5C275889-D156-47A9-B3D7-205FD74AE089@gmail.com>
+	<5414381F.8010101@pasteur.fr>
+	<C10C3E67-8D09-42BC-946D-9A85C711B86C@gmail.com>
+	<541452A3.6050305@pasteur.fr>
+	<0EE0E1BA-83F3-4BEB-9457-3FA62F3920BA@gmail.com>
+	<4472093D-D0E8-4BDF-A24E-F667FFB6BB5E@gmail.com>
+	<FB2E708E-74E8-4BC0-9AEF-7A1C2621B564@gmail.com>
+Message-ID: <708EEE79-789F-4A5C-A4D6-FBA01DCF8E74@gmail.com>
+
+Ok. So this makes more sense...  TrackMate v 2.3 uses the <groupId>${jama.groupId}</groupId> which causes the error, which was fixed by TrackMate v2.5 which uses <groupId>gov.nist.math</groupId>.
+
+So the whole issue boils down to, "Why is maven trying to do ANYTHING with v 2.3 when I can't find a single dependency on this version? If I can get Maven to stop looking for v 2.3 my issue will be solved.
+
+Thoughts on where to search for hidden/residual links to v 2.3 given what I've checked already?
+
+Thanks,
+
+Jay
+
+On Sep 14, 2014, at 6:45 AM, Jay Warrick <jay.w.warrick at gmail.com> wrote:
+
+> I think never mind. Still learning about Maven, but it looks like the groupID is assumed the same as the parent so you TrackMate doesn't need to define it. Should have guessed this based on how everything else seems to work in Maven.
+> 
+> On Sep 14, 2014, at 6:15 AM, Jay Warrick <jay.w.warrick at gmail.com> wrote:
+> 
+>> If this might be on the right track, is there any way to test this on my end? Use offline mode and go into my .m2 repository and muck with poms or something?
+>> On Sep 14, 2014, at 6:11 AM, Jay Warrick <jay.w.warrick at gmail.com> wrote:
+>> 
+>>> Hi JY,
+>>> 
+>>> Could it be a problem with the TrackMate groupId? Searching the internet with the error string brought up this past issue with jama and SPIM...
+>>> 
+>>> https://groups.google.com/forum/#!topic/fiji-devel/zEhBIf1bZEA
+>>> 
+>>> When I look at the TrackMate pom, I don't think I see a "groupId" defined for the TrackMate plugin. Hard for me to completely decipher in the issue discussion if this would cause the problem I'm seeing or if it would merely prevent the imageJ/Fiji folks from "seeing" that such a problem exists.
+>>> 
+>>> Stephan Preibisch, Curtis, and Dscho - Does that sound like the right track? Thoughts?
+>>> 
+>>> Thanks,
+>>> 
+>>> Jay
+>>> 
+>>> On Sep 13, 2014, at 9:20 AM, Jean-Yves Tinevez <tinevez at pasteur.fr> wrote:
+>>> 
+>>>> On 13-Sep-14 16:01, Jay Warrick wrote:
+>>>>> Hi Jean-Yves,
+>>>>> 
+>>>>> Thanks for the quick reply! Here are the poms for my multi module project. I added to the default "pom.xml" names to make things easier to follow. The Master pom is the parent pom for each of my project modules. The parent of Master is scijava. The JEX module has essentially one class, Main which calls the main class in Core. Core contains essentially the whole program including the dependency on TrackMate. Broken contains broken code for one reason or another but doesn't really come into play as the Broken module is not part of the build process. It is "disabled" using a profile within the JEX module. Despite this, I still confirmed it didn't depend on TrackMate 2.3 using the Eclipse dependency hierarchy viewer, just in case.
+>>>> 
+>>>> Ok thank you for the crystal clear report. 
+>>>> We are on the verge of what I know of maven. However I remember having a similar issue that was fixed by making the parent of the master pom the fiji plugin pom, like for TrackMate pom.
+>>>> 
+>>>> Any chance you could just try that first?
+>>>> jy
+>>>> 
+>>>> 
+>>>>  	
+>>>> This email is free from viruses and malware because avast! Antivirus protection is active.
+>>>> 
+>>>> 
+>>>> _______________________________________________
+>>>> ImageJ-devel mailing list
+>>>> ImageJ-devel at imagej.net
+>>>> http://imagej.net/mailman/listinfo/imagej-devel
+>>> 
+>>> _______________________________________________
+>>> ImageJ-devel mailing list
+>>> ImageJ-devel at imagej.net
+>>> http://imagej.net/mailman/listinfo/imagej-devel
+>> 
+>> _______________________________________________
+>> ImageJ-devel mailing list
+>> ImageJ-devel at imagej.net
+>> http://imagej.net/mailman/listinfo/imagej-devel
+> 
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140914/e178b7e6/attachment.html>
+
+From jay.w.warrick at gmail.com  Sun Sep 14 07:40:07 2014
+From: jay.w.warrick at gmail.com (Jay Warrick)
+Date: Sun, 14 Sep 2014 07:40:07 -0500
+Subject: [ImageJ-devel] pom-fiji TrackMate update?
+In-Reply-To: <708EEE79-789F-4A5C-A4D6-FBA01DCF8E74@gmail.com>
+References: <5C275889-D156-47A9-B3D7-205FD74AE089@gmail.com>
+	<5414381F.8010101@pasteur.fr>
+	<C10C3E67-8D09-42BC-946D-9A85C711B86C@gmail.com>
+	<541452A3.6050305@pasteur.fr>
+	<0EE0E1BA-83F3-4BEB-9457-3FA62F3920BA@gmail.com>
+	<4472093D-D0E8-4BDF-A24E-F667FFB6BB5E@gmail.com>
+	<FB2E708E-74E8-4BC0-9AEF-7A1C2621B564@gmail.com>
+	<708EEE79-789F-4A5C-A4D6-FBA01DCF8E74@gmail.com>
+Message-ID: <18366A2A-7F5E-4E81-A954-282E9D639873@gmail.com>
+
+I changed the subject line from Re: [ImageJ-devel] Maven TrackMate Dependency Question because of the following...
+
+Oh boy, really at the extent of my knowledge... but I think I may have it, is this what is happening??? Is maven pulling TrackMate v 2.3 via TrackMate v2.5 and fiji?
+
+In TrackMate v 2.5 pom there is...
+
+<parent>
+	<groupId>sc.fiji</groupId>
+	<artifactId>pom-fiji</artifactId>
+	<version>2.0.0-beta-1-SNAPSHOT</version>
+	<relativePath/>
+</parent>
+<artifactId>TrackMate_</artifactId>
+<version>2.5.0</version>
+<name>plugins/TrackMate_.jar</name>
+
+which thus pulls in pom-fiji 2.0.0-beta-1-SNAPSHOT where there is the following...
+
+<fiji-compat.version>2.0.0-SNAPSHOT</fiji-compat.version>
+
+and 
+
+<dependency>
+	<groupId>sc.fiji</groupId>
+	<artifactId>fiji-compat</artifactId>
+</dependency>
+
+The pom for fiji-compat uses pom-fiji 2.0.0-SNAPSHOT as parent
+
+<parent>
+	<groupId>sc.fiji</groupId>
+	<artifactId>pom-fiji</artifactId>
+	<version>2.0.0-SNAPSHOT</version>
+	<relativePath/>
+</parent><
+artifactId>fiji-compat</artifactId>
+<name>jars/fiji-compat.jar</name>
+
+The pom-fiji 2.0.0-SNAPSHOT has the following
+
+<TrackMate.version>2.3.0-SNAPSHOT</TrackMate.version>
+
+and 
+
+<dependency>
+	<groupId>sc.fiji</groupId>
+	<artifactId>TrackMate_</artifactId>
+	<version>${TrackMate.version}</version>
+</dependency>
+
+Thus, ?maybe? with TrackMate v 2.5's pom parent being pom-fiji 2.0.0-beta-1-SNAPSHOT, fiji-compate 2.0.0-SNAPSHOT gets pulled in which pulls pom-fiji 2.0.0-SNAPSHOT which tries to pulls in TrackMate v 2.3 which then tries to use <groupId>${jama.groupId}</groupId> instead of <groupId>gov.nist.math</groupId> for jama. 
+
+Is this counter to what is intended or is there some maven magic which should right this "wrong"? If it is not intended and could be affecting things, what might be the fix? 
+
+Thanks all,
+
+Jay
+
+
+On Sep 14, 2014, at 6:51 AM, Jay Warrick <jay.w.warrick at gmail.com> wrote:
+
+> Ok. So this makes more sense...  TrackMate v 2.3 uses the <groupId>${jama.groupId}</groupId> which causes the error, which was fixed by TrackMate v2.5 which uses <groupId>gov.nist.math</groupId>.
+> 
+> So the whole issue boils down to, "Why is maven trying to do ANYTHING with v 2.3 when I can't find a single dependency on this version? If I can get Maven to stop looking for v 2.3 my issue will be solved.
+> 
+> Thoughts on where to search for hidden/residual links to v 2.3 given what I've checked already?
+> 
+> Thanks,
+> 
+> Jay
+> 
+> On Sep 14, 2014, at 6:45 AM, Jay Warrick <jay.w.warrick at gmail.com> wrote:
+> 
+>> I think never mind. Still learning about Maven, but it looks like the groupID is assumed the same as the parent so you TrackMate doesn't need to define it. Should have guessed this based on how everything else seems to work in Maven.
+>> 
+>> On Sep 14, 2014, at 6:15 AM, Jay Warrick <jay.w.warrick at gmail.com> wrote:
+>> 
+>>> If this might be on the right track, is there any way to test this on my end? Use offline mode and go into my .m2 repository and muck with poms or something?
+>>> On Sep 14, 2014, at 6:11 AM, Jay Warrick <jay.w.warrick at gmail.com> wrote:
+>>> 
+>>>> Hi JY,
+>>>> 
+>>>> Could it be a problem with the TrackMate groupId? Searching the internet with the error string brought up this past issue with jama and SPIM...
+>>>> 
+>>>> https://groups.google.com/forum/#!topic/fiji-devel/zEhBIf1bZEA
+>>>> 
+>>>> When I look at the TrackMate pom, I don't think I see a "groupId" defined for the TrackMate plugin. Hard for me to completely decipher in the issue discussion if this would cause the problem I'm seeing or if it would merely prevent the imageJ/Fiji folks from "seeing" that such a problem exists.
+>>>> 
+>>>> Stephan Preibisch, Curtis, and Dscho - Does that sound like the right track? Thoughts?
+>>>> 
+>>>> Thanks,
+>>>> 
+>>>> Jay
+>>>> 
+>>>> On Sep 13, 2014, at 9:20 AM, Jean-Yves Tinevez <tinevez at pasteur.fr> wrote:
+>>>> 
+>>>>> On 13-Sep-14 16:01, Jay Warrick wrote:
+>>>>>> Hi Jean-Yves,
+>>>>>> 
+>>>>>> Thanks for the quick reply! Here are the poms for my multi module project. I added to the default "pom.xml" names to make things easier to follow. The Master pom is the parent pom for each of my project modules. The parent of Master is scijava. The JEX module has essentially one class, Main which calls the main class in Core. Core contains essentially the whole program including the dependency on TrackMate. Broken contains broken code for one reason or another but doesn't really come into play as the Broken module is not part of the build process. It is "disabled" using a profile within the JEX module. Despite this, I still confirmed it didn't depend on TrackMate 2.3 using the Eclipse dependency hierarchy viewer, just in case.
+>>>>> 
+>>>>> Ok thank you for the crystal clear report. 
+>>>>> We are on the verge of what I know of maven. However I remember having a similar issue that was fixed by making the parent of the master pom the fiji plugin pom, like for TrackMate pom.
+>>>>> 
+>>>>> Any chance you could just try that first?
+>>>>> jy
+>>>>> 
+>>>>> 
+>>>>>  	
+>>>>> This email is free from viruses and malware because avast! Antivirus protection is active.
+>>>>> 
+>>>>> 
+>>>>> _______________________________________________
+>>>>> ImageJ-devel mailing list
+>>>>> ImageJ-devel at imagej.net
+>>>>> http://imagej.net/mailman/listinfo/imagej-devel
+>>>> 
+>>>> _______________________________________________
+>>>> ImageJ-devel mailing list
+>>>> ImageJ-devel at imagej.net
+>>>> http://imagej.net/mailman/listinfo/imagej-devel
+>>> 
+>>> _______________________________________________
+>>> ImageJ-devel mailing list
+>>> ImageJ-devel at imagej.net
+>>> http://imagej.net/mailman/listinfo/imagej-devel
+>> 
+>> _______________________________________________
+>> ImageJ-devel mailing list
+>> ImageJ-devel at imagej.net
+>> http://imagej.net/mailman/listinfo/imagej-devel
+> 
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140914/e7f3fe71/attachment-0001.html>
+
+From ctrueden at wisc.edu  Sun Sep 14 08:07:13 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Sun, 14 Sep 2014 08:07:13 -0500
+Subject: [ImageJ-devel] Maven TrackMate Dependency Question
+In-Reply-To: <708EEE79-789F-4A5C-A4D6-FBA01DCF8E74@gmail.com>
+References: <5C275889-D156-47A9-B3D7-205FD74AE089@gmail.com>
+	<5414381F.8010101@pasteur.fr>
+	<C10C3E67-8D09-42BC-946D-9A85C711B86C@gmail.com>
+	<541452A3.6050305@pasteur.fr>
+	<0EE0E1BA-83F3-4BEB-9457-3FA62F3920BA@gmail.com>
+	<4472093D-D0E8-4BDF-A24E-F667FFB6BB5E@gmail.com>
+	<FB2E708E-74E8-4BC0-9AEF-7A1C2621B564@gmail.com>
+	<708EEE79-789F-4A5C-A4D6-FBA01DCF8E74@gmail.com>
+Message-ID: <CADN69y=LgrAzT_k7G76ooxR4Pn=bEpMja8iqA-M12ciDiLn8xQ@mail.gmail.com>
+
+Hi Jay,
+
+Eclipse has tools to understand where deps are coming from. Double click
+the pom.xml and see the Dependency Hierarchy tab. Much faster than
+guesswork and experimentation.
+
+-Curtis
+On Sep 14, 2014 6:52 AM, "Jay Warrick" <jay.w.warrick at gmail.com> wrote:
+
+> Ok. So this makes more sense...  TrackMate v 2.3 uses
+> the <groupId>${jama.groupId}</groupId> which causes the error, which was
+> fixed by TrackMate v2.5 which uses <groupId>gov.nist.math</groupId>.
+>
+> So the whole issue boils down to, "Why is maven trying to do ANYTHING with
+> v 2.3 when I can't find a single dependency on this version? If I can get
+> Maven to stop looking for v 2.3 my issue will be solved.
+>
+> Thoughts on where to search for hidden/residual links to v 2.3 given what
+> I've checked already?
+>
+> Thanks,
+>
+> Jay
+>
+> On Sep 14, 2014, at 6:45 AM, Jay Warrick <jay.w.warrick at gmail.com> wrote:
+>
+> I think never mind. Still learning about Maven, but it looks like the
+> groupID is assumed the same as the parent so you TrackMate doesn't need to
+> define it. Should have guessed this based on how everything else seems to
+> work in Maven.
+>
+> On Sep 14, 2014, at 6:15 AM, Jay Warrick <jay.w.warrick at gmail.com> wrote:
+>
+> If this might be on the right track, is there any way to test this on my
+> end? Use offline mode and go into my .m2 repository and muck with poms or
+> something?
+> On Sep 14, 2014, at 6:11 AM, Jay Warrick <jay.w.warrick at gmail.com> wrote:
+>
+> Hi JY,
+>
+> Could it be a problem with the TrackMate groupId? Searching the internet
+> with the error string brought up this past issue with jama and SPIM...
+>
+> https://groups.google.com/forum/#!topic/fiji-devel/zEhBIf1bZEA
+>
+> When I look at the TrackMate pom, I don't think I see a "groupId" defined
+> for the TrackMate plugin. Hard for me to completely decipher in the issue
+> discussion if this would cause the problem I'm seeing or if it would merely
+> prevent the imageJ/Fiji folks from "seeing" that such a problem exists.
+>
+> Stephan Preibisch, Curtis, and Dscho - Does that sound like the right
+> track? Thoughts?
+>
+> Thanks,
+>
+> Jay
+>
+> On Sep 13, 2014, at 9:20 AM, Jean-Yves Tinevez <tinevez at pasteur.fr> wrote:
+>
+>  On 13-Sep-14 16:01, Jay Warrick wrote:
+>
+> Hi Jean-Yves,
+>
+>  Thanks for the quick reply! Here are the poms for my multi module
+> project. I added to the default "pom.xml" names to make things easier to
+> follow. The Master pom is the parent pom for each of my project modules.
+> The parent of Master is scijava. The JEX module has essentially one class,
+> Main which calls the main class in Core. Core contains essentially the
+> whole program including the dependency on TrackMate. Broken contains broken
+> code for one reason or another but doesn't really come into play as the
+> Broken module is not part of the build process. It is "disabled" using a
+> profile within the JEX module. Despite this, I still confirmed it didn't
+> depend on TrackMate 2.3 using the Eclipse dependency hierarchy viewer, just
+> in case.
+>
+>
+> Ok thank you for the crystal clear report.
+> We are on the verge of what I know of maven. However I remember having a
+> similar issue that was fixed by making the parent of the master pom the
+> fiji plugin pom, like for TrackMate pom.
+>
+> Any chance you could just try that first?
+> jy
+>
+>
+> ------------------------------
+>    <http://www.avast.com/>
+>
+> This email is free from viruses and malware because avast! Antivirus
+> <http://www.avast.com/> protection is active.
+>
+>  _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140914/53e66836/attachment.html>
+
+From harri.jaalinoja at helsinki.fi  Mon Sep 15 08:39:23 2014
+From: harri.jaalinoja at helsinki.fi (=?UTF-8?B?SGFycmkgSsOkw6RsaW5vamE=?=)
+Date: Mon, 15 Sep 2014 16:39:23 +0300
+Subject: [ImageJ-devel] Analyze Skeleton in jython
+Message-ID: <5416EC0B.7070603@helsinki.fi>
+
+Hi,
+
+I would like to use the Analyze Skeleton plugin in a silent mode 
+(http://fiji.sc/AnalyzeSkeleton) in Jython, but I don't know how to 
+import the module.
+
+Based on the jar-file contents...
+dev at 192e0e6fb8a5:~/lmu-users/jaakko$ jar tvf 
+/Fiji.app/plugins/AnalyzeSkeleton_-2.0.0-SNAPSHOT.jar
+      0 Tue Apr 15 17:25:22 UTC 2014 META-INF/
+    519 Tue Apr 15 17:25:20 UTC 2014 META-INF/MANIFEST.MF
+      0 Tue Apr 15 17:25:20 UTC 2014 skeleton_analysis/
+   1936 Tue Apr 15 17:25:20 UTC 2014 skeleton_analysis/Edge.class
+   1111 Tue Apr 15 17:25:20 UTC 2014 skeleton_analysis/Point.class
+
+... I have tried
+import skeleton_analysis
+
+... but I get the error
+ImportError: No module named skeleton_analysis
+
+
+JavaScript import works as advertised:
+dev at 192e0e6fb8a5:~/lmu-users/jaakko$ cat test.js
+importPackage(Packages.skeleton_analysis);
+dev at 192e0e6fb8a5:~/lmu-users/jaakko$ /Fiji.app/ImageJ-linux64 test.js
+dev at 192e0e6fb8a5:~/lmu-users/jaakko$
+
+
+I have ImageJ 1.49g (Fiji).
+
+Any ideas?
+
+Thanks, best regards,
+Harri
+
+
+From Johannes.Schindelin at gmx.de  Mon Sep 15 09:22:53 2014
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Mon, 15 Sep 2014 16:22:53 +0200 (CEST)
+Subject: [ImageJ-devel] Analyze Skeleton in jython
+In-Reply-To: <5416EC0B.7070603@helsinki.fi>
+References: <5416EC0B.7070603@helsinki.fi>
+Message-ID: <alpine.DEB.1.00.1409151616430.990@s15462909.onlinehome-server.info>
+
+Hi Harri,
+
+On Mon, 15 Sep 2014, Harri J??linoja wrote:
+
+> I would like to use the Analyze Skeleton plugin in a silent mode
+> (http://fiji.sc/AnalyzeSkeleton) in Jython, but I don't know how to import the
+> module.
+> 
+> Based on the jar-file contents...
+> dev at 192e0e6fb8a5:~/lmu-users/jaakko$ jar tvf
+> /Fiji.app/plugins/AnalyzeSkeleton_-2.0.0-SNAPSHOT.jar
+>      0 Tue Apr 15 17:25:22 UTC 2014 META-INF/
+>    519 Tue Apr 15 17:25:20 UTC 2014 META-INF/MANIFEST.MF
+>      0 Tue Apr 15 17:25:20 UTC 2014 skeleton_analysis/
+>   1936 Tue Apr 15 17:25:20 UTC 2014 skeleton_analysis/Edge.class
+>   1111 Tue Apr 15 17:25:20 UTC 2014 skeleton_analysis/Point.class
+
+A better way is to inspect the Javadoc:
+
+	http://jenkins.imagej.net/job/Fiji-javadoc/javadoc/skeleton_analysis/package-summary.html
+
+or the source code directly:
+
+	https://github.com/fiji/AnalyzeSkeleton
+
+> ... I have tried
+> import skeleton_analysis
+> 
+> ... but I get the error
+> ImportError: No module named skeleton_analysis
+
+For performance reasons, we had to disable the wildcard imports (Jython's
+startup was just really unbearably slow otherwise). Therefore, you have to
+import the classes explicitly:
+
+	from skeleton_analysis import Edge, Graph, AnalyzeSkeleton_
+
+Please feel free to become an active part of the community by enhancing
+the documentation on the ImageJ/Fiji wiki. As a rule of thumb: if the
+documentation could have done a better job helping you do your job, please
+just edit it accordingly, to help the community.
+
+Ciao,
+Johannes
+
+From Johannes.Schindelin at gmx.de  Mon Sep 15 10:31:12 2014
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Mon, 15 Sep 2014 17:31:12 +0200 (CEST)
+Subject: [ImageJ-devel] Analyze Skeleton in jython
+In-Reply-To: <alpine.DEB.1.00.1409151616430.990@s15462909.onlinehome-server.info>
+References: <5416EC0B.7070603@helsinki.fi>
+	<alpine.DEB.1.00.1409151616430.990@s15462909.onlinehome-server.info>
+Message-ID: <alpine.DEB.1.00.1409151727350.990@s15462909.onlinehome-server.info>
+
+Hi Harri,
+
+On Mon, 15 Sep 2014, Johannes Schindelin wrote:
+
+> Please feel free to become an active part of the community by enhancing
+> the documentation on the ImageJ/Fiji wiki. As a rule of thumb: if the
+> documentation could have done a better job helping you do your job,
+> please just edit it accordingly, to help the community.
+
+I should have provided the link, sorry! The ImageJ/Fiji wiki is accessible
+via http://imagej.net/Jython_Scripting (or http://fiji.sc/Jython_Scripting
+using the Fiji skin of the same wiki).
+
+Thank you for your contributions,
+Johannes
+
+
+From gaetano at impoco.it  Tue Sep 16 04:54:40 2014
+From: gaetano at impoco.it (Gaetano Impoco)
+Date: Tue, 16 Sep 2014 11:54:40 +0200
+Subject: [ImageJ-devel] importing custom "uncompressed" libraries (i.e.,
+	no JAR)
+In-Reply-To: <CADN69ynmDHTrvP2cHd4QvY3_hm2t==H6CigvhsdBmATq0jRT5Q@mail.gmail.com>
+References: <1410519938.5412d3820b67d@cp.tophost.it>
+	<CADN69ynmDHTrvP2cHd4QvY3_hm2t==H6CigvhsdBmATq0jRT5Q@mail.gmail.com>
+Message-ID: <1410861280.541808e00d07a@cp.tophost.it>
+
+Hi Curtis,
+
+> Could you please provide a minimal, complete, verifiable example
+> demonstrating the issue?
+
+I created a small example that requires my library (please, download it at
+http://www.impoco.it/files/gijLib.jar)
+
+-------------
+
+import ij.*;
+import ij.process.*;
+import ij.plugin.filter.*;
+import java.awt.*;
+import java.awt.geom.*;
+import gijlib.binary.*;
+import gijlib.geom.*;
+
+
+public class Example_ implements PlugInFilter
+{
+  public int setup(String arg, ImagePlus imp)
+  {
+    return DOES_8G;
+  }
+
+  public void run(ImageProcessor ip)
+  {
+    ContourFollower cf = new ContourFollower(ip);
+    if(cf.getNContours() != 1)
+    {
+      IJ.error("The input image should contain one and only one object!\nFound
+"+cf.getNContours());
+      return;
+    }
+
+    Point[] contour = cf.getContour(0);
+    Point2D cHull[] = ConvexHull.grahamsScan(contour);
+
+    Line2D  diam    = PolygonUtilities.computeDiameter(cHull);
+    Line2D  odiam   = PolygonUtilities.computeOrthogonalDiameter(cHull, diam);
+    OrientedRectangle obbox = PolygonUtilities.computeBoundingRect(diam, odiam);
+  }
+
+}
+
+-------------
+
+When I put gijLib.jar in the "jars" directory and compile this class using the
+--javac option of the ij2 launcher, everything is ok. When I uncompress the JAR
+file into the "jars" directory, the compiler cannot find the classes in the
+library.
+
+Moreover, if I try to run a plugin that includes a class in the same directory
+(but not using packages) the compiler fails, as well. I avoid this problem
+using the option --class-path $HOME/Fiji.app/jars/
+
+Hope I gave enough information.
+
+Thank you
+Gaetano
+
+
+
+
+Quoting Curtis Rueden <ctrueden at wisc.edu>:
+
+> Hi Gaetano,
+>
+> > In my brand new Fiji installation, I can import my library only if I
+> > archive all .class files into a JAR file.
+>
+> IIUC, what you describe is still supposed to work.
+>
+>
+> http://imagej.net/Bug_reporting_best_practices
+>
+> Regards,
+> Curtis
+>
+> On Fri, Sep 12, 2014 at 6:05 AM, Gaetano Impoco <gaetano at impoco.it> wrote:
+>
+> > Dear all,
+> > I developed a custom library for my own convenience that used to work in
+> > ImageJ1.x. In my old IJ1 installation I used to add the library root
+> > directory
+> > to the Java CLASSPATH (using a simple bash script).
+> > In my brand new Fiji installation, I can import my library only if I
+> > archive all
+> > .class files into a JAR file. I would like to use JARs only for
+> > deployment. Is
+> > there any way to include the "uncompressed" (development version) library?
+> >
+> > Thank you
+> > Gaetano
+> >
+> >
+> >
+> > _______________________________________________
+> > ImageJ-devel mailing list
+> > ImageJ-devel at imagej.net
+> > http://imagej.net/mailman/listinfo/imagej-devel
+> >
+>
+
+
+
+
+From preibischs at janelia.hhmi.org  Wed Sep 17 16:01:30 2014
+From: preibischs at janelia.hhmi.org (Preibisch, Stephan)
+Date: Wed, 17 Sep 2014 21:01:30 +0000
+Subject: [ImageJ-devel] Error in Fiji Updater
+Message-ID: <8F86540E7A8AA84DB369BD2234DDDCB301AA54C003@JFMB1.hhmi.org>
+
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140917/5085b805/attachment-0001.html>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: fijierror.jpg
+Type: image/jpg
+Size: 21454 bytes
+Desc: fijierror.jpg
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140917/5085b805/attachment-0001.jpg>
+
+From Johannes.Schindelin at gmx.de  Wed Sep 17 16:24:06 2014
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Wed, 17 Sep 2014 23:24:06 +0200 (CEST)
+Subject: [ImageJ-devel] Error in Fiji Updater
+In-Reply-To: <8F86540E7A8AA84DB369BD2234DDDCB301AA54C003@JFMB1.hhmi.org>
+References: <8F86540E7A8AA84DB369BD2234DDDCB301AA54C003@JFMB1.hhmi.org>
+Message-ID: <alpine.DEB.1.00.1409172323050.990@s15462909.onlinehome-server.info>
+
+Hi Steffi,
+
+On Wed, 17 Sep 2014, Preibisch, Stephan wrote:
+
+> when updating Fiji I get a HTTP 403 error for jython-shaded.
+
+Are you sure that this is not caused by a proxy or some such? I looked
+through the logs and cannot see a record of a 403 (i.e. forbidden), but
+plenty of 200 (i.e. OK) records for jython-shaded...
+
+Ciao,
+Johannes
+
+
+From Johannes.Schindelin at gmx.de  Wed Sep 17 16:25:45 2014
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Wed, 17 Sep 2014 23:25:45 +0200 (CEST)
+Subject: [ImageJ-devel] Error in Fiji Updater
+In-Reply-To: <alpine.DEB.1.00.1409172323050.990@s15462909.onlinehome-server.info>
+References: <8F86540E7A8AA84DB369BD2234DDDCB301AA54C003@JFMB1.hhmi.org>
+	<alpine.DEB.1.00.1409172323050.990@s15462909.onlinehome-server.info>
+Message-ID: <alpine.DEB.1.00.1409172324440.990@s15462909.onlinehome-server.info>
+
+Hi again,
+
+On Wed, 17 Sep 2014, Johannes Schindelin wrote:
+
+> On Wed, 17 Sep 2014, Preibisch, Stephan wrote:
+> 
+> > when updating Fiji I get a HTTP 403 error for jython-shaded.
+> 
+> Are you sure that this is not caused by a proxy or some such?
+
+Forgot to say: I would expect that to be clearer from the output of the
+console log.
+
+Ciao,
+Dscho
+
+
+From preibischs at janelia.hhmi.org  Wed Sep 17 16:26:35 2014
+From: preibischs at janelia.hhmi.org (Preibisch, Stephan)
+Date: Wed, 17 Sep 2014 21:26:35 +0000
+Subject: [ImageJ-devel] Error in Fiji Updater
+In-Reply-To: <alpine.DEB.1.00.1409172323050.990@s15462909.onlinehome-server.info>
+References: <8F86540E7A8AA84DB369BD2234DDDCB301AA54C003@JFMB1.hhmi.org>
+	<alpine.DEB.1.00.1409172323050.990@s15462909.onlinehome-server.info>
+Message-ID: <8F86540E7A8AA84DB369BD2234DDDCB301AA54C075@JFMB1.hhmi.org>
+
+Mmh, I am in the train, so it could be. But it did download all the other jars, so I thought I can rule that out. I will try again when I am in the hotel ?
+
+Thanks a lot Johannes,
+Steffi
+
+On Sep 17, 2014, at 17:24 , Johannes Schindelin <Johannes.Schindelin at GMX.DE> wrote:
+
+> Hi Steffi,
+> 
+> On Wed, 17 Sep 2014, Preibisch, Stephan wrote:
+> 
+>> when updating Fiji I get a HTTP 403 error for jython-shaded.
+> 
+> Are you sure that this is not caused by a proxy or some such? I looked
+> through the logs and cannot see a record of a 403 (i.e. forbidden), but
+> plenty of 200 (i.e. OK) records for jython-shaded...
+> 
+> Ciao,
+> Johannes
+> 
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+
+
+
+From preibischs at janelia.hhmi.org  Wed Sep 17 16:30:43 2014
+From: preibischs at janelia.hhmi.org (Preibisch, Stephan)
+Date: Wed, 17 Sep 2014 21:30:43 +0000
+Subject: [ImageJ-devel] Error in Fiji Updater
+In-Reply-To: <alpine.DEB.1.00.1409172324440.990@s15462909.onlinehome-server.info>
+References: <8F86540E7A8AA84DB369BD2234DDDCB301AA54C003@JFMB1.hhmi.org>
+	<alpine.DEB.1.00.1409172323050.990@s15462909.onlinehome-server.info>
+	<alpine.DEB.1.00.1409172324440.990@s15462909.onlinehome-server.info>
+Message-ID: <8F86540E7A8AA84DB369BD2234DDDCB301AA54C09E@JFMB1.hhmi.org>
+
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140917/ac30defe/attachment.html>
+
+From jay.w.warrick at gmail.com  Thu Sep 18 09:05:36 2014
+From: jay.w.warrick at gmail.com (Jay Warrick)
+Date: Thu, 18 Sep 2014 09:05:36 -0500
+Subject: [ImageJ-devel] Maven TrackMate Dependency Question
+In-Reply-To: <CADN69ymL1nLXgSKbtjYTGGqv8Xgox00S-0zT7zsPeGmzsGTWgg@mail.gmail.com>
+References: <5C275889-D156-47A9-B3D7-205FD74AE089@gmail.com>
+	<5414381F.8010101@pasteur.fr>
+	<C10C3E67-8D09-42BC-946D-9A85C711B86C@gmail.com>
+	<541452A3.6050305@pasteur.fr>
+	<0EE0E1BA-83F3-4BEB-9457-3FA62F3920BA@gmail.com>
+	<4472093D-D0E8-4BDF-A24E-F667FFB6BB5E@gmail.com>
+	<FB2E708E-74E8-4BC0-9AEF-7A1C2621B564@gmail.com>
+	<708EEE79-789F-4A5C-A4D6-FBA01DCF8E74@gmail.com>
+	<CADN69y=LgrAzT_k7G76ooxR4Pn=bEpMja8iqA-M12ciDiLn8xQ@mail.gmail.com>
+	<0A2421D4-43B2-40EF-B5A2-A98CC50C9C7C@gmail.com>
+	<CADN69ymL1nLXgSKbtjYTGGqv8Xgox00S-0zT7zsPeGmzsGTWgg@mail.gmail.com>
+Message-ID: <B881566C-4248-4BE1-A317-77CABE4E66F7@gmail.com>
+
+Hi Curtis,
+
+I updated maven and at least now it appears my plugin which depends on TrackMate 2.5 successfully gets included/built into the final app. I still get the warning about TrackMate 2.3 but at least it doesn't appear to be getting in the way of my TrackMate 2.5 dependent plugin (if it ever was).
+
+Thus, not an "emergency" for any of your assistance that you graciously offered, but this brings up a question... How does maven deal with reciprocally dependent jar's such as TrackMate and Fiji where the plugin depends on Fiji while it also seems that Fiji depends on the plugin. Is this all fine and dandy for maven in general or is it typically managed via "scope"? I didn't notice any specification for "scope" with respect to the TrackMate dependency. Can scope be specified elsewhere as a property of group of dependencies?
+
+Cheers and thanks,
+
+Jay
+
+On Sep 14, 2014, at 8:11 AM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+
+> If you still haven't solved in by tomorrow, I'll take a look when I'm in front of a computer tomorrow then.
+> 
+> On Sep 14, 2014 8:10 AM, "Jay Warrick" <jay.w.warrick at gmail.com> wrote:
+> I already mentioned that I did that. You pointed it out to me before and it has been extremely useful since then. However, in this case, it is showing that there are no TrackMate 2.3 dependencies yet when running maven from command line, I get an issue when, for some reason, it tries to pull it in.
+> 
+> Thanks,
+> 
+> Jay
+> 
+> On Sep 14, 2014, at 8:07 AM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+> 
+>> Hi Jay,
+>> 
+>> Eclipse has tools to understand where deps are coming from. Double click the pom.xml and see the Dependency Hierarchy tab. Much faster than guesswork and experimentation.
+>> 
+>> -Curtis
+>> 
+>> On Sep 14, 2014 6:52 AM, "Jay Warrick" <jay.w.warrick at gmail.com> wrote:
+>> Ok. So this makes more sense...  TrackMate v 2.3 uses the <groupId>${jama.groupId}</groupId> which causes the error, which was fixed by TrackMate v2.5 which uses <groupId>gov.nist.math</groupId>.
+>> 
+>> So the whole issue boils down to, "Why is maven trying to do ANYTHING with v 2.3 when I can't find a single dependency on this version? If I can get Maven to stop looking for v 2.3 my issue will be solved.
+>> 
+>> Thoughts on where to search for hidden/residual links to v 2.3 given what I've checked already?
+>> 
+>> Thanks,
+>> 
+>> Jay
+>> 
+>> On Sep 14, 2014, at 6:45 AM, Jay Warrick <jay.w.warrick at gmail.com> wrote:
+>> 
+>>> I think never mind. Still learning about Maven, but it looks like the groupID is assumed the same as the parent so you TrackMate doesn't need to define it. Should have guessed this based on how everything else seems to work in Maven.
+>>> 
+>>> On Sep 14, 2014, at 6:15 AM, Jay Warrick <jay.w.warrick at gmail.com> wrote:
+>>> 
+>>>> If this might be on the right track, is there any way to test this on my end? Use offline mode and go into my .m2 repository and muck with poms or something?
+>>>> On Sep 14, 2014, at 6:11 AM, Jay Warrick <jay.w.warrick at gmail.com> wrote:
+>>>> 
+>>>>> Hi JY,
+>>>>> 
+>>>>> Could it be a problem with the TrackMate groupId? Searching the internet with the error string brought up this past issue with jama and SPIM...
+>>>>> 
+>>>>> https://groups.google.com/forum/#!topic/fiji-devel/zEhBIf1bZEA
+>>>>> 
+>>>>> When I look at the TrackMate pom, I don't think I see a "groupId" defined for the TrackMate plugin. Hard for me to completely decipher in the issue discussion if this would cause the problem I'm seeing or if it would merely prevent the imageJ/Fiji folks from "seeing" that such a problem exists.
+>>>>> 
+>>>>> Stephan Preibisch, Curtis, and Dscho - Does that sound like the right track? Thoughts?
+>>>>> 
+>>>>> Thanks,
+>>>>> 
+>>>>> Jay
+>>>>> 
+>>>>> On Sep 13, 2014, at 9:20 AM, Jean-Yves Tinevez <tinevez at pasteur.fr> wrote:
+>>>>> 
+>>>>>> On 13-Sep-14 16:01, Jay Warrick wrote:
+>>>>>>> Hi Jean-Yves,
+>>>>>>> 
+>>>>>>> Thanks for the quick reply! Here are the poms for my multi module project. I added to the default "pom.xml" names to make things easier to follow. The Master pom is the parent pom for each of my project modules. The parent of Master is scijava. The JEX module has essentially one class, Main which calls the main class in Core. Core contains essentially the whole program including the dependency on TrackMate. Broken contains broken code for one reason or another but doesn't really come into play as the Broken module is not part of the build process. It is "disabled" using a profile within the JEX module. Despite this, I still confirmed it didn't depend on TrackMate 2.3 using the Eclipse dependency hierarchy viewer, just in case.
+>>>>>> 
+>>>>>> Ok thank you for the crystal clear report. 
+>>>>>> We are on the verge of what I know of maven. However I remember having a similar issue that was fixed by making the parent of the master pom the fiji plugin pom, like for TrackMate pom.
+>>>>>> 
+>>>>>> Any chance you could just try that first?
+>>>>>> jy
+>>>>>> 
+>>>>>> 
+>>>>>>  	
+>>>>>> This email is free from viruses and malware because avast! Antivirus protection is active.
+>>>>>> 
+>>>>>> 
+>>>>>> _______________________________________________
+>>>>>> ImageJ-devel mailing list
+>>>>>> ImageJ-devel at imagej.net
+>>>>>> http://imagej.net/mailman/listinfo/imagej-devel
+>>>>> 
+>>>>> _______________________________________________
+>>>>> ImageJ-devel mailing list
+>>>>> ImageJ-devel at imagej.net
+>>>>> http://imagej.net/mailman/listinfo/imagej-devel
+>>>> 
+>>>> _______________________________________________
+>>>> ImageJ-devel mailing list
+>>>> ImageJ-devel at imagej.net
+>>>> http://imagej.net/mailman/listinfo/imagej-devel
+>>> 
+>>> _______________________________________________
+>>> ImageJ-devel mailing list
+>>> ImageJ-devel at imagej.net
+>>> http://imagej.net/mailman/listinfo/imagej-devel
+>> 
+>> 
+>> _______________________________________________
+>> ImageJ-devel mailing list
+>> ImageJ-devel at imagej.net
+>> http://imagej.net/mailman/listinfo/imagej-devel
+>> 
+>> _______________________________________________
+>> ImageJ-devel mailing list
+>> ImageJ-devel at imagej.net
+>> http://imagej.net/mailman/listinfo/imagej-devel
+> 
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140918/4283ec80/attachment-0001.html>
+
+From harri.jaalinoja at helsinki.fi  Mon Sep 22 09:03:15 2014
+From: harri.jaalinoja at helsinki.fi (=?ISO-8859-15?Q?Harri_J=E4=E4linoja?=)
+Date: Mon, 22 Sep 2014 17:03:15 +0300
+Subject: [ImageJ-devel] Analyze Skeleton in jython
+In-Reply-To: <alpine.DEB.1.00.1409151616430.990@s15462909.onlinehome-server.info>
+References: <5416EC0B.7070603@helsinki.fi>
+	<alpine.DEB.1.00.1409151616430.990@s15462909.onlinehome-server.info>
+Message-ID: <54202C23.6020100@helsinki.fi>
+
+Hi Johannes,
+
+On 15/09/14 17:22, Johannes Schindelin wrote:
+> For performance reasons, we had to disable the wildcard imports (Jython's
+> startup was just really unbearably slow otherwise). Therefore, you have to
+> import the classes explicitly:
+>
+> 	from skeleton_analysis import Edge, Graph, AnalyzeSkeleton_
+thanks, I didn't know about this. It worked immediately.
+> Please feel free to become an active part of the community by enhancing
+> the documentation on the ImageJ/Fiji wiki. As a rule of thumb: if the
+> documentation could have done a better job helping you do your job, please
+> just edit it accordingly, to help the community.
+
+Thanks for invitation, I added a little example to see how it's done.
+
+Best,
+Harri
+>
+> Ciao,
+> Johannes
+
+
+
+From Johannes.Schindelin at gmx.de  Mon Sep 22 10:26:40 2014
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Mon, 22 Sep 2014 17:26:40 +0200 (CEST)
+Subject: [ImageJ-devel] Analyze Skeleton in jython
+In-Reply-To: <54202C23.6020100@helsinki.fi>
+References: <5416EC0B.7070603@helsinki.fi>
+	<alpine.DEB.1.00.1409151616430.990@s15462909.onlinehome-server.info>
+	<54202C23.6020100@helsinki.fi>
+Message-ID: <alpine.DEB.1.00.1409221725280.990@s15462909.onlinehome-server.info>
+
+Hi Harri,
+
+On Mon, 22 Sep 2014, Harri J??linoja wrote:
+
+> On 15/09/14 17:22, Johannes Schindelin wrote:
+> > For performance reasons, we had to disable the wildcard imports (Jython's
+> > startup was just really unbearably slow otherwise). Therefore, you have to
+> > import the classes explicitly:
+> >
+> >  from skeleton_analysis import Edge, Graph, AnalyzeSkeleton_
+>
+> thanks, I didn't know about this. It worked immediately.
+>
+> > Please feel free to become an active part of the community by enhancing
+> > the documentation on the ImageJ/Fiji wiki. As a rule of thumb: if the
+> > documentation could have done a better job helping you do your job, please
+> > just edit it accordingly, to help the community.
+> 
+> Thanks for invitation, I added a little example to see how it's done.
+
+Thank you!
+
+By the way, the Fiji community is (mostyl ;-)) inviting... And now you're
+part of it!
+
+Ciao,
+Johannes
+
+From pietzsch at mpi-cbg.de  Tue Sep 23 18:02:21 2014
+From: pietzsch at mpi-cbg.de (Tobias Pietzsch)
+Date: Wed, 24 Sep 2014 01:02:21 +0200
+Subject: [ImageJ-devel] imglib2-neon project for runtime bytecode
+	transformation
+Message-ID: <F8939ED5-C4E5-4B41-89CC-9CB4D567B7A5@mpi-cbg.de>
+
+Hi guys,
+
+As a weekend project I have started to look into bytecode modification using the wonderful ASM library (http://asm.ow2.org).
+I have cleaned up what I have played with and put it on github https://github.com/tpietzsch/neon.
+
+It tackles a long-standing imglib obstacle, namely megamorphic call-sites in certain methods, where the JIT fails to recognise that the runtime target of the polymorphic changes between calls to a method but doesn?t change in the hot inner loop of the method during a single call. I have been talking about ideas to address this for quite some time, most recently here https://github.com/imglib/imglib/issues/71#issuecomment-51227237. Now I went ahead and actually tried to do something about it.
+
+I have applied it to an example in imglib, which is described below. But for anyone not familiar with this particular issue (which is everyone except Christian probably) there
+is an illustrative example with explanations in the README on github https://github.com/tpietzsch/neon/blob/master/README.md.
+This does not involve imglib at all and is a clear illustration of the problem (and my solution).
+
+I?m quite happy with how it turned out so far. It certainly has to be applied with care, but I think this can be potentially huge for imglib2. It might open up new possibilities that we have shied away from because of performance reasons, such as internal iteration for IterableIntervals.
+
+Curtis, Johannes and Christian, I would also be interested what you think of this as a potential tool for imagej-ops.
+I think it is orthogonal to what you do with compile-time code generation currently and therefore might complement it nicely.
+
+I hope you have a look and tell me what you think.
+I would be especially interested in whether you can think of optimization idioms besides the @Instantiate @ByTypeOf that is implemented right now.
+It would be cool if we discuss this in the upcoming imglib hackathon.
+
+Okay, everybody except Christian might as well stop reading now.
+
+all the best,
+Tobias
+
+
+
+
+
+PS: the imglib stuff...
+
+For the imglib issue https://github.com/imglib/imglib/issues/71, we played with ways of iterating pixels which can be optimized for certain subintervals of larger images.
+The optimizations work out nicely when done on their own, but everything really breaks down when a single method is used with differnent Cursor incarnations.
+This is actually already a potential problem in standard imglib, when Cursors from different Img types are uses in a single method. But adding the new optimized versions
+only made it more probable that the problem actually occurs.
+
+Here is numbers from a recent test, at a stage where 4 different kinds of cursors are in play:
+
+normal cursor | array img
+walk through a subinterval
+	| Unoptimized 	| Optimized 	| Speedup Time 	| Speedup % 	|
+Best	|	566	|	371	| 195ms   	| 34.4%   	|
+
+localizing cursor | array img
+walk through a subinterval
+	| Unoptimized 	| Optimized 	| Speedup Time 	| Speedup % 	|
+Best	|	907	|	584	| 323ms   	| 35.6%   	|
+
+normal cursor | planar img
+walk through a subinterval
+	| Unoptimized 	| Optimized 	| Speedup Time 	| Speedup % 	|
+Best	|	562	|	373	| 189ms   	| 33.6%   	|
+
+localizing cursor | planar img
+walk through a subinterval
+	| Unoptimized 	| Optimized 	| Speedup Time 	| Speedup % 	|
+Best	|	928	|	611	| 317ms   	| 34.1%   	|
+
+
+With the neon java agent this improves to:
+
+normal cursor | array img
+walk through a subinterval
+	| Unoptimized 	| Optimized 	| Speedup Time 	| Speedup % 	|
+Best	|	153	|	8	| 145ms   	| 94.7%   	|
+
+localizing cursor | array img
+walk through a subinterval
+	| Unoptimized 	| Optimized 	| Speedup Time 	| Speedup % 	|
+Best	|	235	|	200	| 35ms   	| 14.8%   	|
+
+normal cursor | planar img
+walk through a subinterval
+	| Unoptimized 	| Optimized 	| Speedup Time 	| Speedup % 	|
+Best	|	128	|	8	| 120ms   	| 93.7%   	|
+
+localizing cursor | planar img
+walk through a subinterval
+	| Unoptimized 	| Optimized 	| Speedup Time 	| Speedup % 	|
+Best	|	217	|	208	| 9ms   	| 4.1%   	|
+
+
+A speedup of factor ~4 to ~40 can be observed.
+These two runs were made with exactly the same code, but for the second one, the program was run with the option
+   java -javaagent:/path/to/neon-1.0.0-SNAPSHOT.jar ?
+
+I just pushed the example to https://github.com/imglib/imglib/commit/a9b70d923e9a84c4055acae96f71d05ca4a26344
+
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140924/2908361d/attachment.pgp>
+
+From preibischs at janelia.hhmi.org  Tue Sep 23 19:12:42 2014
+From: preibischs at janelia.hhmi.org (Preibisch, Stephan)
+Date: Wed, 24 Sep 2014 00:12:42 +0000
+Subject: [ImageJ-devel] imglib2-neon project for runtime bytecode
+	transformation
+In-Reply-To: <F8939ED5-C4E5-4B41-89CC-9CB4D567B7A5@mpi-cbg.de>
+References: <F8939ED5-C4E5-4B41-89CC-9CB4D567B7A5@mpi-cbg.de>
+Message-ID: <8F86540E7A8AA84DB369BD2234DDDCB301AA54EAA6@JFMB1.hhmi.org>
+
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140924/ceeed0e6/attachment.html>
+
+From christian.dietz at uni-konstanz.de  Wed Sep 24 04:47:41 2014
+From: christian.dietz at uni-konstanz.de (Christian Dietz)
+Date: Wed, 24 Sep 2014 11:47:41 +0200
+Subject: [ImageJ-devel] imglib2-neon project for runtime bytecode
+	transformation
+In-Reply-To: <F8939ED5-C4E5-4B41-89CC-9CB4D567B7A5@mpi-cbg.de>
+References: <F8939ED5-C4E5-4B41-89CC-9CB4D567B7A5@mpi-cbg.de>
+Message-ID: <5422933D.5000105@uni-konstanz.de>
+
+Hi Tobias,
+
+I know we talked a lot about these issues and it's great that you found 
+some time to tackle them. So, thank you very much for your effort. I 
+really see the potential. ImageJ-Ops definitively can benefit from this 
+approach indirectly (ImgLib2 using ASM) but also directly (using ASM n 
+ImageJ-Ops). Unfortunately I will not take part at the next hackathon in 
+Madison, but I can easily join you with Skype whenever you want to 
+discuss ASM & Ops.
+
+Anyway, I'm a bit puzzled concerning the benchmark on SubIntervals. Even 
+the "unoptimized" iteration has a dramatic improvement in run-time using 
+the agent. Is this due to the fact, the ImgLib2 already suffered from 
+the megamorphic call-sites? Or do I misunderstand something?
+
+Again, thank you for the effort! This seems to be exactly what we need 
+on the ImgLib2 side.
+
+Christian
+
+
+
+
+
+
+On 24.09.2014 01:02, Tobias Pietzsch wrote:
+> Hi guys,
+>
+> As a weekend project I have started to look into bytecode modification using the wonderful ASM library (http://asm.ow2.org).
+> I have cleaned up what I have played with and put it on github https://github.com/tpietzsch/neon.
+>
+> It tackles a long-standing imglib obstacle, namely megamorphic call-sites in certain methods, where the JIT fails to recognise that the runtime target of the polymorphic changes between calls to a method but doesn?t change in the hot inner loop of the method during a single call. I have been talking about ideas to address this for quite some time, most recently here https://github.com/imglib/imglib/issues/71#issuecomment-51227237. Now I went ahead and actually tried to do something about it.
+>
+> I have applied it to an example in imglib, which is described below. But for anyone not familiar with this particular issue (which is everyone except Christian probably) there
+> is an illustrative example with explanations in the README on github https://github.com/tpietzsch/neon/blob/master/README.md.
+> This does not involve imglib at all and is a clear illustration of the problem (and my solution).
+>
+> I?m quite happy with how it turned out so far. It certainly has to be applied with care, but I think this can be potentially huge for imglib2. It might open up new possibilities that we have shied away from because of performance reasons, such as internal iteration for IterableIntervals.
+>
+> Curtis, Johannes and Christian, I would also be interested what you think of this as a potential tool for imagej-ops.
+> I think it is orthogonal to what you do with compile-time code generation currently and therefore might complement it nicely.
+>
+> I hope you have a look and tell me what you think.
+> I would be especially interested in whether you can think of optimization idioms besides the @Instantiate @ByTypeOf that is implemented right now.
+> It would be cool if we discuss this in the upcoming imglib hackathon.
+>
+> Okay, everybody except Christian might as well stop reading now.
+>
+> all the best,
+> Tobias
+>
+>
+>
+>
+>
+> PS: the imglib stuff...
+>
+> For the imglib issue https://github.com/imglib/imglib/issues/71, we played with ways of iterating pixels which can be optimized for certain subintervals of larger images.
+> The optimizations work out nicely when done on their own, but everything really breaks down when a single method is used with differnent Cursor incarnations.
+> This is actually already a potential problem in standard imglib, when Cursors from different Img types are uses in a single method. But adding the new optimized versions
+> only made it more probable that the problem actually occurs.
+>
+> Here is numbers from a recent test, at a stage where 4 different kinds of cursors are in play:
+>
+> normal cursor | array img
+> walk through a subinterval
+> 	| Unoptimized 	| Optimized 	| Speedup Time 	| Speedup % 	|
+> Best	|	566	|	371	| 195ms   	| 34.4%   	|
+>
+> localizing cursor | array img
+> walk through a subinterval
+> 	| Unoptimized 	| Optimized 	| Speedup Time 	| Speedup % 	|
+> Best	|	907	|	584	| 323ms   	| 35.6%   	|
+>
+> normal cursor | planar img
+> walk through a subinterval
+> 	| Unoptimized 	| Optimized 	| Speedup Time 	| Speedup % 	|
+> Best	|	562	|	373	| 189ms   	| 33.6%   	|
+>
+> localizing cursor | planar img
+> walk through a subinterval
+> 	| Unoptimized 	| Optimized 	| Speedup Time 	| Speedup % 	|
+> Best	|	928	|	611	| 317ms   	| 34.1%   	|
+>
+>
+> With the neon java agent this improves to:
+>
+> normal cursor | array img
+> walk through a subinterval
+> 	| Unoptimized 	| Optimized 	| Speedup Time 	| Speedup % 	|
+> Best	|	153	|	8	| 145ms   	| 94.7%   	|
+>
+> localizing cursor | array img
+> walk through a subinterval
+> 	| Unoptimized 	| Optimized 	| Speedup Time 	| Speedup % 	|
+> Best	|	235	|	200	| 35ms   	| 14.8%   	|
+>
+> normal cursor | planar img
+> walk through a subinterval
+> 	| Unoptimized 	| Optimized 	| Speedup Time 	| Speedup % 	|
+> Best	|	128	|	8	| 120ms   	| 93.7%   	|
+>
+> localizing cursor | planar img
+> walk through a subinterval
+> 	| Unoptimized 	| Optimized 	| Speedup Time 	| Speedup % 	|
+> Best	|	217	|	208	| 9ms   	| 4.1%   	|
+>
+>
+> A speedup of factor ~4 to ~40 can be observed.
+> These two runs were made with exactly the same code, but for the second one, the program was run with the option
+>     java -javaagent:/path/to/neon-1.0.0-SNAPSHOT.jar ?
+>
+> I just pushed the example to https://github.com/imglib/imglib/commit/a9b70d923e9a84c4055acae96f71d05ca4a26344
+>
+
+
+
+From pietzsch at mpi-cbg.de  Wed Sep 24 04:24:55 2014
+From: pietzsch at mpi-cbg.de (Tobias Pietzsch)
+Date: Wed, 24 Sep 2014 11:24:55 +0200
+Subject: [ImageJ-devel] [fiji-devel] imglib2-neon project for runtime
+	bytecode transformation
+In-Reply-To: <8F86540E7A8AA84DB369BD2234DDDCB301AA54EAA6@JFMB1.hhmi.org>
+References: <F8939ED5-C4E5-4B41-89CC-9CB4D567B7A5@mpi-cbg.de>
+	<8F86540E7A8AA84DB369BD2234DDDCB301AA54EAA6@JFMB1.hhmi.org>
+Message-ID: <76A74650-EAD2-4553-A88D-C0104FF8C91A@mpi-cbg.de>
+
+Hi Steffi,
+
+On 24 Sep 2014, at 02:12, Preibisch, Stephan <preibischs at janelia.hhmi.org> wrote:
+
+> Hi Tobi,
+> 
+> this does look pretty impressive indeed. As it is modified on runtime, it should even work with new Types and Accessibles that are not part of ImgLib2 but some external program that is based on ImgLib2 and adds for example its own types, or?
+
+Yes, absolutely.
+
+> 
+> Did you test if this scales well with larger number of instances? For ImgLib2 it would be something like |accessibles| x |types|, right? In many cases it would not use a lot of the possibilities, but for something like KNIME or ImageJ2 this might actually happen.
+
+I did not do any larger tests yet.
+
+Whether it would be |accessibles| x |types| for imglib depends on how it is used.
+Lets assume that you have a function
+  <T extends Type<T>> T getMax( Cursor<T> c, T type )
+Then it depends on how you annotate it. For
+  @Instantiate <T extends Type<T>> T getMax( @ByTypeOf Cursor<T> c, T type )
+it would be instantiate it for ArrayCursor and ArrayLocalizingCursor, but ArrayCursor<IntType> and ArrayCursor<FloatType> would share the same instance.
+For
+  @Instantiate <T extends Type<T>> T getMax( Cursor<T> c, @ByTypeOf T type )
+it would be instantiated for IntType and FloatType, but ArrayCursor<IntType> and ArrayLocalizingCursor<IntType> would share the same instance.
+For
+  @Instantiate <T extends Type<T>> T getMax( @ByTypeOf Cursor<T> c, @ByTypeOf T type )
+you would have the full |cursor| x |type| space.
+
+I don?t see this becoming a big problem at the moment.
+We should anyway not indiscriminately apply it everywhere, only where we can really show a performance increase.
+
+I see it as more of an issue if we add more of these instantiation idioms, for example for specializing classes. Then the number of instances might multiply through chains of such instantiations. Imagine the above with Cursor classes being generated depending on Type and number of dimensions. And that with Types being generated depending on the underlying Access.
+
+The nice thing is that you only pay for what you actually use.
+In any case, it is easy to cap the number of instances that are generated at a fixed number, and use the same instance for every newly occurring type after that.
+
+> 
+> Again, looks awesome! And if it turns out to be working in all cases, I agree, this could be a huge game changer.
+
+Cool, thanks!
+Tobias
+
+> 
+> Cheers,
+> Steffi
+> ---
+> 
+> Dr. Stephan Preibisch
+> HFSP Fellow
+> Robert H. Singer / Eugene Myers lab
+> 
+> Albert Einstein College of Medicine / HHMI Janelia Farm / MPI-CBG
+> 
+> email: stephan.preibisch at einstein.yu.edu / preibischs at janelia.hhmi.org / preibisch at mpi-cbg.de
+> web: http://www.preibisch.net/
+> 
+> On Sep 23, 2014, at 19:02 , Tobias Pietzsch <pietzsch at mpi-cbg.de> wrote:
+> 
+>> Hi guys,
+>> 
+>> As a weekend project I have started to look into bytecode modification using the wonderful ASM library (http://asm.ow2.org).
+>> I have cleaned up what I have played with and put it on github https://github.com/tpietzsch/neon.
+>> 
+>> It tackles a long-standing imglib obstacle, namely megamorphic call-sites in certain methods, where the JIT fails to recognise that the runtime target of the polymorphic changes between calls to a method but doesn?t change in the hot inner loop of the method during a single call. I have been talking about ideas to address this for quite some time, most recently here https://github.com/imglib/imglib/issues/71#issuecomment-51227237. Now I went ahead and actually tried to do something about it.
+>> 
+>> I have applied it to an example in imglib, which is described below. But for anyone not familiar with this particular issue (which is everyone except Christian probably) there
+>> is an illustrative example with explanations in the README on github https://github.com/tpietzsch/neon/blob/master/README.md.
+>> This does not involve imglib at all and is a clear illustration of the problem (and my solution).
+>> 
+>> I?m quite happy with how it turned out so far. It certainly has to be applied with care, but I think this can be potentially huge for imglib2. It might open up new possibilities that we have shied away from because of performance reasons, such as internal iteration for IterableIntervals.
+>> 
+>> Curtis, Johannes and Christian, I would also be interested what you think of this as a potential tool for imagej-ops.
+>> I think it is orthogonal to what you do with compile-time code generation currently and therefore might complement it nicely.
+>> 
+>> I hope you have a look and tell me what you think.
+>> I would be especially interested in whether you can think of optimization idioms besides the @Instantiate @ByTypeOf that is implemented right now.
+>> It would be cool if we discuss this in the upcoming imglib hackathon.
+>> 
+>> Okay, everybody except Christian might as well stop reading now.
+>> 
+>> all the best,
+>> Tobias
+>> 
+>> 
+>> 
+>> 
+>> 
+>> PS: the imglib stuff...
+>> 
+>> For the imglib issue https://github.com/imglib/imglib/issues/71, we played with ways of iterating pixels which can be optimized for certain subintervals of larger images.
+>> The optimizations work out nicely when done on their own, but everything really breaks down when a single method is used with differnent Cursor incarnations.
+>> This is actually already a potential problem in standard imglib, when Cursors from different Img types are uses in a single method. But adding the new optimized versions
+>> only made it more probable that the problem actually occurs.
+>> 
+>> Here is numbers from a recent test, at a stage where 4 different kinds of cursors are in play:
+>> 
+>> normal cursor | array img
+>> walk through a subinterval
+>> | Unoptimized 
+>> | Optimized | Speedup Time | Speedup % 
+>> |
+>> Best |
+>> 566 |
+>> 371 | 195ms   
+>> | 34.4%    |
+>> 
+>> localizing cursor | array img
+>> walk through a subinterval
+>> | Unoptimized 
+>> | Optimized | Speedup Time | Speedup % 
+>> |
+>> Best |
+>> 907 |
+>> 584 | 323ms   
+>> | 35.6%    |
+>> 
+>> normal cursor | planar img
+>> walk through a subinterval
+>> | Unoptimized 
+>> | Optimized | Speedup Time | Speedup % 
+>> |
+>> Best |
+>> 562 |
+>> 373 | 189ms   
+>> | 33.6%    |
+>> 
+>> localizing cursor | planar img
+>> walk through a subinterval
+>> | Unoptimized 
+>> | Optimized | Speedup Time | Speedup % 
+>> |
+>> Best |
+>> 928 |
+>> 611 | 317ms   
+>> | 34.1%    |
+>> 
+>> 
+>> With the neon java agent this improves to:
+>> 
+>> normal cursor | array img
+>> walk through a subinterval
+>> | Unoptimized 
+>> | Optimized | Speedup Time | Speedup % 
+>> |
+>> Best |
+>> 153 |
+>> 8 | 145ms   
+>> | 94.7%    |
+>> 
+>> localizing cursor | array img
+>> walk through a subinterval
+>> | Unoptimized 
+>> | Optimized | Speedup Time | Speedup % 
+>> |
+>> Best |
+>> 235 |
+>> 200 | 35ms   
+>> | 14.8%    |
+>> 
+>> normal cursor | planar img
+>> walk through a subinterval
+>> | Unoptimized 
+>> | Optimized | Speedup Time | Speedup % 
+>> |
+>> Best |
+>> 128 |
+>> 8 | 120ms   
+>> | 93.7%    |
+>> 
+>> localizing cursor | planar img
+>> walk through a subinterval
+>> | Unoptimized 
+>> | Optimized | Speedup Time | Speedup % 
+>> |
+>> Best |
+>> 217 |
+>> 208 | 9ms   
+>> | 4.1%    |
+>> 
+>> 
+>> A speedup of factor ~4 to ~40 can be observed.
+>> These two runs were made with exactly the same code, but for the second one, the program was run with the option
+>>   java -javaagent:/path/to/neon-1.0.0-SNAPSHOT.jar ?
+>> 
+>> I just pushed the example to https://github.com/imglib/imglib/commit/a9b70d923e9a84c4055acae96f71d05ca4a26344
+>> 
+> 
+> 
+> -- 
+> -- 
+> Please avoid top-posting, and please make sure to reply-to-all!
+>  
+> Mailing list web interface: http://groups.google.com/group/fiji-devel
+> 
+> --- 
+> You received this message because you are subscribed to the Google Groups "Fiji-devel" group.
+> To unsubscribe from this group and stop receiving emails from it, send an email to fiji-devel+unsubscribe at googlegroups.com.
+> For more options, visit https://groups.google.com/d/optout.
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140924/c7772823/attachment.html>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140924/c7772823/attachment.pgp>
+
+From pietzsch at mpi-cbg.de  Wed Sep 24 08:51:13 2014
+From: pietzsch at mpi-cbg.de (Tobias Pietzsch)
+Date: Wed, 24 Sep 2014 15:51:13 +0200
+Subject: [ImageJ-devel] imglib2-neon project for runtime bytecode
+	transformation
+In-Reply-To: <5422933D.5000105@uni-konstanz.de>
+References: <F8939ED5-C4E5-4B41-89CC-9CB4D567B7A5@mpi-cbg.de>
+	<5422933D.5000105@uni-konstanz.de>
+Message-ID: <908D1BB1-E5E7-4E62-AF01-C7EB1AEE9A03@mpi-cbg.de>
+
+Hi Christian,
+
+On 24 Sep 2014, at 11:47, Christian Dietz <christian.dietz at uni-konstanz.de> wrote:
+
+> Hi Tobias,
+> 
+> I know we talked a lot about these issues and it's great that you found some time to tackle them. So, thank you very much for your effort. I really see the potential. ImageJ-Ops definitively can benefit from this approach indirectly (ImgLib2 using ASM) but also directly (using ASM n ImageJ-Ops). Unfortunately I will not take part at the next hackathon in Madison, but I can easily join you with Skype whenever you want to discuss ASM & Ops.
+> 
+> Anyway, I'm a bit puzzled concerning the benchmark on SubIntervals. Even the "unoptimized" iteration has a dramatic improvement in run-time using the agent. Is this due to the fact, the ImgLib2 already suffered from the megamorphic call-sites? Or do I misunderstand something?
+
+Yes, exactly.
+This is the last of several iterations through the whole benchmark, so the call in the loop has already been made megamorphic.
+In the first iteration, you would see for the non-neon version the same performance for
+>> normal cursor | array img
+
+and then degrading from there.
+So indeed, just the fact that several cursors have ?gone through the code? makes the "normal cursor | array img | Optimized? go from 8ms runtime up to 371ms.
+(And similar degradation for the other cursors.)
+
+best regards,
+Tobias
+
+> 
+> Again, thank you for the effort! This seems to be exactly what we need on the ImgLib2 side.
+> 
+> Christian
+> 
+> 
+> 
+> 
+> 
+> 
+> On 24.09.2014 01:02, Tobias Pietzsch wrote:
+>> Hi guys,
+>> 
+>> As a weekend project I have started to look into bytecode modification using the wonderful ASM library (http://asm.ow2.org).
+>> I have cleaned up what I have played with and put it on github https://github.com/tpietzsch/neon.
+>> 
+>> It tackles a long-standing imglib obstacle, namely megamorphic call-sites in certain methods, where the JIT fails to recognise that the runtime target of the polymorphic changes between calls to a method but doesn?t change in the hot inner loop of the method during a single call. I have been talking about ideas to address this for quite some time, most recently here https://github.com/imglib/imglib/issues/71#issuecomment-51227237. Now I went ahead and actually tried to do something about it.
+>> 
+>> I have applied it to an example in imglib, which is described below. But for anyone not familiar with this particular issue (which is everyone except Christian probably) there
+>> is an illustrative example with explanations in the README on github https://github.com/tpietzsch/neon/blob/master/README.md.
+>> This does not involve imglib at all and is a clear illustration of the problem (and my solution).
+>> 
+>> I?m quite happy with how it turned out so far. It certainly has to be applied with care, but I think this can be potentially huge for imglib2. It might open up new possibilities that we have shied away from because of performance reasons, such as internal iteration for IterableIntervals.
+>> 
+>> Curtis, Johannes and Christian, I would also be interested what you think of this as a potential tool for imagej-ops.
+>> I think it is orthogonal to what you do with compile-time code generation currently and therefore might complement it nicely.
+>> 
+>> I hope you have a look and tell me what you think.
+>> I would be especially interested in whether you can think of optimization idioms besides the @Instantiate @ByTypeOf that is implemented right now.
+>> It would be cool if we discuss this in the upcoming imglib hackathon.
+>> 
+>> Okay, everybody except Christian might as well stop reading now.
+>> 
+>> all the best,
+>> Tobias
+>> 
+>> 
+>> 
+>> 
+>> 
+>> PS: the imglib stuff...
+>> 
+>> For the imglib issue https://github.com/imglib/imglib/issues/71, we played with ways of iterating pixels which can be optimized for certain subintervals of larger images.
+>> The optimizations work out nicely when done on their own, but everything really breaks down when a single method is used with differnent Cursor incarnations.
+>> This is actually already a potential problem in standard imglib, when Cursors from different Img types are uses in a single method. But adding the new optimized versions
+>> only made it more probable that the problem actually occurs.
+>> 
+>> Here is numbers from a recent test, at a stage where 4 different kinds of cursors are in play:
+>> 
+>> normal cursor | array img
+>> walk through a subinterval
+>> 	| Unoptimized 	| Optimized 	| Speedup Time 	| Speedup % 	|
+>> Best	|	566	|	371	| 195ms   	| 34.4%   	|
+>> 
+>> localizing cursor | array img
+>> walk through a subinterval
+>> 	| Unoptimized 	| Optimized 	| Speedup Time 	| Speedup % 	|
+>> Best	|	907	|	584	| 323ms   	| 35.6%   	|
+>> 
+>> normal cursor | planar img
+>> walk through a subinterval
+>> 	| Unoptimized 	| Optimized 	| Speedup Time 	| Speedup % 	|
+>> Best	|	562	|	373	| 189ms   	| 33.6%   	|
+>> 
+>> localizing cursor | planar img
+>> walk through a subinterval
+>> 	| Unoptimized 	| Optimized 	| Speedup Time 	| Speedup % 	|
+>> Best	|	928	|	611	| 317ms   	| 34.1%   	|
+>> 
+>> 
+>> With the neon java agent this improves to:
+>> 
+>> normal cursor | array img
+>> walk through a subinterval
+>> 	| Unoptimized 	| Optimized 	| Speedup Time 	| Speedup % 	|
+>> Best	|	153	|	8	| 145ms   	| 94.7%   	|
+>> 
+>> localizing cursor | array img
+>> walk through a subinterval
+>> 	| Unoptimized 	| Optimized 	| Speedup Time 	| Speedup % 	|
+>> Best	|	235	|	200	| 35ms   	| 14.8%   	|
+>> 
+>> normal cursor | planar img
+>> walk through a subinterval
+>> 	| Unoptimized 	| Optimized 	| Speedup Time 	| Speedup % 	|
+>> Best	|	128	|	8	| 120ms   	| 93.7%   	|
+>> 
+>> localizing cursor | planar img
+>> walk through a subinterval
+>> 	| Unoptimized 	| Optimized 	| Speedup Time 	| Speedup % 	|
+>> Best	|	217	|	208	| 9ms   	| 4.1%   	|
+>> 
+>> 
+>> A speedup of factor ~4 to ~40 can be observed.
+>> These two runs were made with exactly the same code, but for the second one, the program was run with the option
+>>    java -javaagent:/path/to/neon-1.0.0-SNAPSHOT.jar ?
+>> 
+>> I just pushed the example to https://github.com/imglib/imglib/commit/a9b70d923e9a84c4055acae96f71d05ca4a26344
+>> 
+> 
+
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140924/0a672e08/attachment-0001.pgp>
+
+From schindelin at wisc.edu  Thu Sep 25 12:58:16 2014
+From: schindelin at wisc.edu (Johannes Schindelin)
+Date: Thu, 25 Sep 2014 19:58:16 +0200 (CEST)
+Subject: [ImageJ-devel] imglib2-neon project for runtime bytecode
+	transformation
+In-Reply-To: <F8939ED5-C4E5-4B41-89CC-9CB4D567B7A5@mpi-cbg.de>
+References: <F8939ED5-C4E5-4B41-89CC-9CB4D567B7A5@mpi-cbg.de>
+Message-ID: <alpine.DEB.1.00.1409251742180.990@s15462909.onlinehome-server.info>
+
+Hi Tobias,
+
+On Wed, 24 Sep 2014, Tobias Pietzsch wrote:
+
+> As a weekend project I have started to look into bytecode modification
+> using the wonderful ASM library (http://asm.ow2.org).
+
+It is great that you continue our conversation from the hackathon last
+year in Madison:
+
+	http://fiji.sc/2013-05-03_-_ImgLib2_Hackathon_in_Madison
+
+I am very glad that you have returned to this work, with a promising
+initial foray into a general solution.
+
+I do have some questions and suggestions:
+
+- Why use ASM over Javassist? At the hackathon, we used Javassist because
+  it is easier to use, we have much better documentation (e.g.
+  http://fiji.sc/Javassist) and we already ship it with Fiji.
+
+- If the plan is to use it inside Fiji, why not use version 4.0 of ASM
+  which is in Fiji already as a transitive dependency of JRuby? Requiring
+  a newer version (5.0.2) is prone to cause problems...
+
+- The most challenging requirement of any potential performance
+  improvement is the separation of concerns: to truly be able to optimize
+  ImgLib2 routines, the optimization has to be decoupled from the
+  implementation because ImgLib2 is data type, storage and dimension
+  independent and developers need to be able to provide more sophisticated
+  optimizations for specific scenarios than automatic byte code
+  manipulation can provide
+
+- As usual, we'll want to carefully consider the issue of dependencies relating
+  to imglib2 core. Augmenting ImageJ OPS with this feature would avoid
+  complicating the imglib2 core with any dependencies.
+
+- I seem to recall that I demonstrated a much higher performance win at the
+  hackathon April/May 2013, what is the reason that the new approach does
+  not reach those numbers?
+
+> I have cleaned up what I have played with and put it on github
+> https://github.com/tpietzsch/neon.
+
+- A quick web search shows that there is an active, successful Neon library for
+  WebDAV communication. To avoid legal and social problems, we'll need to
+  choose a different name for the project.
+
+> I think it is orthogonal to what you do with compile-time code
+> generation currently and therefore might complement it nicely.
+
+- I agree that the bytecode manipulation and code generation strategies can
+  complement each other nicely. I am looking forward to the upcoming ImgLib2
+  hackathon so that we can show you how OPS tackles the performance issue in a
+  way that facilitates extensibility and keeps concerns well separated! If you
+  have a chance to explore OPS in depth before the hackathon, it would be very
+  helpful to expedite later discussion.
+
+- I encourage you to study ImageJ OPS before continuing this project because it
+  provides the necessary infrastructure already, matured over a course of
+  several iterations.
+
+- For demonstration purposes, using a Java Agent at startup is great; We will
+  definitely want to explore practical ways of applying the bytecode
+  manipulation. It should be achievable -- we do it already in the ImageJ Legacy
+  project to rewrite portions of ImageJ1 as needed.
+
+Ciao,
+Johannes
+
+
+From Johannes.Schindelin at gmx.de  Fri Sep 26 01:55:08 2014
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Fri, 26 Sep 2014 08:55:08 +0200 (CEST)
+Subject: [ImageJ-devel] Fiji-javadoc failure
+Message-ID: <alpine.DEB.1.00.1409260853420.990@s15462909.onlinehome-server.info>
+
+Hi all,
+
+I just saw that the Fiji-javadoc job failed; this is due to a downtime of
+the OME Maven repository and the job will most likely bounce back once the
+repository is reachable again.
+
+Ciao,
+Johannes
+
+
+From ctrueden at wisc.edu  Fri Sep 26 11:37:08 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Fri, 26 Sep 2014 11:37:08 -0500
+Subject: [ImageJ-devel] Fiji-javadoc failure
+In-Reply-To: <alpine.DEB.1.00.1409260853420.990@s15462909.onlinehome-server.info>
+References: <alpine.DEB.1.00.1409260853420.990@s15462909.onlinehome-server.info>
+Message-ID: <CADN69ymZxLcYa-n9FRhHk7rDYsy1ZkJfSObiabSrbvLhD3YgAA@mail.gmail.com>
+
+Hi Dscho,
+
+> I just saw that the Fiji-javadoc job failed; this is due to a downtime
+> of the OME Maven repository and the job will most likely bounce back
+> once the repository is reachable again.
+
+Indeed, the OME Maven repository was temporarily down for unscheduled
+maintenance in order to patch the recent bash vulnerability:
+
+http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2014-6271
+http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2014-7169
+
+The server is back online now.
+
+FWIW, I already patched all the LOCI & ImageJ & Fiji servers. All services
+should be up and running; please let us know if not.
+
+Regards,
+Curtis
+
+On Fri, Sep 26, 2014 at 1:55 AM, Johannes Schindelin <
+Johannes.Schindelin at gmx.de> wrote:
+
+> Hi all,
+>
+> I just saw that the Fiji-javadoc job failed; this is due to a downtime of
+> the OME Maven repository and the job will most likely bounce back once the
+> repository is reachable again.
+>
+> Ciao,
+> Johannes
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140926/7555be4a/attachment.html>
+
+From incardon at mpi-cbg.de  Tue Sep 30 10:55:35 2014
+From: incardon at mpi-cbg.de (Pietro Incardona)
+Date: Tue, 30 Sep 2014 17:55:35 +0200
+Subject: [ImageJ-devel] IJ.getDirectory("temp") on windows
+Message-ID: <542AD277.9090807@mpi-cbg.de>
+
+Hi
+
+On windows IJ.getDirectory("temp") return \tmp\, that as far as I know 
+is not a Valid folder for windows
+
+Cheers
+Pietro
+
+
+From ctrueden at wisc.edu  Tue Sep 30 11:33:50 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Tue, 30 Sep 2014 11:33:50 -0500
+Subject: [ImageJ-devel] importing custom "uncompressed" libraries (i.e.,
+ no JAR)
+In-Reply-To: <1410861280.541808e00d07a@cp.tophost.it>
+References: <1410519938.5412d3820b67d@cp.tophost.it>
+	<CADN69ynmDHTrvP2cHd4QvY3_hm2t==H6CigvhsdBmATq0jRT5Q@mail.gmail.com>
+	<1410861280.541808e00d07a@cp.tophost.it>
+Message-ID: <CADN69y=B+OT=DNQcs4B2w8mgOYiBqx09A4BPxYe1T4U2yrtLow@mail.gmail.com>
+
+Hi Gaetano,
+
+> I created a small example that requires my library
+
+Thanks for the working example. I did some digging, and here is what I
+discovered:
+
+- Vanilla ImageJ1 does not have a "jars/" folder, so unpacking your JAR
+there would not work in that scenario.
+
+- Having an unpacked directory structure in "plugins/" _does_ work, though.
+
+- The reason it doesn't work in ImageJ2 is because ImageJ2 recursively adds
+all subdirectories of all classpath directory elements to the effective
+classpath of the plugin class loader.
+
+- I discussed with Johannes, and he decided not to support unpacked class
+files anymore [1].
+
+Personally, I think there is a bug lurking there -- probably only the
+"plugins/" folder should have the recursive behavior described above -- but
+it is an edge case which we do not have time to fix right now. However, if
+you feel strongly about the issue, you are very welcome to submit a pull
+request addressing it!
+
+Otherwise, I'd encourage you to switch to an IDE, and/or JAR-based
+development model. Let us know if you need further guidance with it. See
+also: http://imagej.net/Development
+
+Regards,
+Curtis
+
+[1]
+http://code.imagej.net/chatlogs/imagejdev?times=prefix&start-date=2014-09-26&start-time=1500&end-date=2014-09-26&end-time=1700
+
+On Tue, Sep 16, 2014 at 4:54 AM, Gaetano Impoco <gaetano at impoco.it> wrote:
+
+> Hi Curtis,
+>
+> > Could you please provide a minimal, complete, verifiable example
+> > demonstrating the issue?
+>
+> I created a small example that requires my library (please, download it at
+> http://www.impoco.it/files/gijLib.jar)
+>
+> -------------
+>
+> import ij.*;
+> import ij.process.*;
+> import ij.plugin.filter.*;
+> import java.awt.*;
+> import java.awt.geom.*;
+> import gijlib.binary.*;
+> import gijlib.geom.*;
+>
+>
+> public class Example_ implements PlugInFilter
+> {
+>   public int setup(String arg, ImagePlus imp)
+>   {
+>     return DOES_8G;
+>   }
+>
+>   public void run(ImageProcessor ip)
+>   {
+>     ContourFollower cf = new ContourFollower(ip);
+>     if(cf.getNContours() != 1)
+>     {
+>       IJ.error("The input image should contain one and only one
+> object!\nFound
+> "+cf.getNContours());
+>       return;
+>     }
+>
+>     Point[] contour = cf.getContour(0);
+>     Point2D cHull[] = ConvexHull.grahamsScan(contour);
+>
+>     Line2D  diam    = PolygonUtilities.computeDiameter(cHull);
+>     Line2D  odiam   = PolygonUtilities.computeOrthogonalDiameter(cHull,
+> diam);
+>     OrientedRectangle obbox = PolygonUtilities.computeBoundingRect(diam,
+> odiam);
+>   }
+>
+> }
+>
+> -------------
+>
+> When I put gijLib.jar in the "jars" directory and compile this class using
+> the
+> --javac option of the ij2 launcher, everything is ok. When I uncompress
+> the JAR
+> file into the "jars" directory, the compiler cannot find the classes in the
+> library.
+>
+> Moreover, if I try to run a plugin that includes a class in the same
+> directory
+> (but not using packages) the compiler fails, as well. I avoid this problem
+> using the option --class-path $HOME/Fiji.app/jars/
+>
+> Hope I gave enough information.
+>
+> Thank you
+> Gaetano
+>
+>
+>
+>
+> Quoting Curtis Rueden <ctrueden at wisc.edu>:
+>
+> > Hi Gaetano,
+> >
+> > > In my brand new Fiji installation, I can import my library only if I
+> > > archive all .class files into a JAR file.
+> >
+> > IIUC, what you describe is still supposed to work.
+> >
+> >
+> > http://imagej.net/Bug_reporting_best_practices
+> >
+> > Regards,
+> > Curtis
+> >
+> > On Fri, Sep 12, 2014 at 6:05 AM, Gaetano Impoco <gaetano at impoco.it>
+> wrote:
+> >
+> > > Dear all,
+> > > I developed a custom library for my own convenience that used to work
+> in
+> > > ImageJ1.x. In my old IJ1 installation I used to add the library root
+> > > directory
+> > > to the Java CLASSPATH (using a simple bash script).
+> > > In my brand new Fiji installation, I can import my library only if I
+> > > archive all
+> > > .class files into a JAR file. I would like to use JARs only for
+> > > deployment. Is
+> > > there any way to include the "uncompressed" (development version)
+> library?
+> > >
+> > > Thank you
+> > > Gaetano
+> > >
+> > >
+> > >
+> > > _______________________________________________
+> > > ImageJ-devel mailing list
+> > > ImageJ-devel at imagej.net
+> > > http://imagej.net/mailman/listinfo/imagej-devel
+> > >
+> >
+>
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140930/5f7abfaa/attachment.html>
+
+From pietzsch at mpi-cbg.de  Tue Sep 30 12:35:27 2014
+From: pietzsch at mpi-cbg.de (Tobias Pietzsch)
+Date: Tue, 30 Sep 2014 19:35:27 +0200
+Subject: [ImageJ-devel] [fiji-devel] imglib2-neon project for runtime
+	bytecode transformation
+In-Reply-To: <alpine.DEB.1.00.1409251742180.990@s15462909.onlinehome-server.info>
+References: <F8939ED5-C4E5-4B41-89CC-9CB4D567B7A5@mpi-cbg.de>
+	<alpine.DEB.1.00.1409251742180.990@s15462909.onlinehome-server.info>
+Message-ID: <6E2CCEE4-D9AC-455A-B830-8CBC0D20D49F@mpi-cbg.de>
+
+Hi all,
+
+sorry, long (but hopefully informative) mail coming?
+
+On 25 Sep 2014, at 19:58, Johannes Schindelin <schindelin at wisc.edu> wrote:
+
+> It is great that you continue our conversation from the hackathon last
+> year in Madison:
+> 
+> 	http://fiji.sc/2013-05-03_-_ImgLib2_Hackathon_in_Madison
+> 
+> I am very glad that you have returned to this work, with a promising
+> initial foray into a general solution.
+
+I need to make clear that (ex-)neon is not a continuation of our hackathon conversation. There is a crucial difference in scope. Let me quote the two relevant points from the above page:
+
+Performance is another issue, completely. Over the course of several experiments, I became convinced that we were wrong to rely on the JIT so much: it is okay for simple things, but for ever so slightly complicated things, we need a precompiler that knows what we really want to do. For example, just the mere fact should have taught us something that stand-alone FloatType instances *must* refer to their *single* float value as a 1-element float array *just so* that the JIT does not do an utterly bad job when we access single values as well as pixel values in an array.
+As a consequence of the findings regarding performance, I came up with a simple proof-of-concept that things could be made fast by using Javassist, a library for bytecode manipulation. We use this library extensively in ImageJ2 and Fiji already for just-in-time patching of, say, ImageJ1. It was a natural choice to turn to Javassist for trying to optimize ImgLib, too. Mind you, the example I made was very simple: it constructed a class working on ArrayImgs of FloatType directly, without even inspecting any code to know what to do, but instead hard-coding the "+" op. But it showed the way to how we could do things in the future: inspect what the, say, Expression is supposed to do and rewrite it in optimized bytecode. The speed improvement was?as I expected?impressive.
+
+In contrast to what Johannes describes here, (ex-)neon explicitly relies on the JIT to ?do it?s thing?.
+I had hoped that this would be clear from the README which very explicitly explains what it currently does.
+It addresses one particular pattern of polymorphic method calls that makes the JIT *deoptimize* optimistically compiled code. I address this by modifying bytecode to make the optimistic assumption valid.
+Also answering the performance question below:
+	It should be clear, that this will never (!) produce something that runs faster than the optimistically compiled code, that is, the case where polymorphism was not realized at runtime.
+A lot of ImgLib2 benchmarks we did fall into this category. They are fast as individual benchmarks but put a few of them together and use different image types etc, it paints a totally different picture. This is where I though (ex-)neon could help ImgLib2.
+
+I also need to point out that I see the scope of (ex-)neon to be broader than imglib2, imagej2, scijava, etc. I think it could be useful in scenarios completely unrelated to our little corner of the world. Therefore, I would like to keep it a small, separate project to make it as easy as possible for whomever might be interested to take advantage of it.
+
+Johannes, what you describe in the above page is different in scope. You used knowledge about implementation details to hand-code a faster version. That the hand-coded source goes through a layer of indirection with Javassist is for that particular example irrelevant, but I absolutely see the potential of assembling code from expressions recombining these hand-coded patterns. This is a different but completely valid approach, which was what I meant by saying that it is ?orthogonal to imagej-ops?. However pushing this to a level where it works for many things (like in the imglib case something simple as user-made Types that are not part of the core library), gathering these implementation details automatically from places in the code that are potentially very far from where you currently are is extremely difficult, if not infeasible. It amounts to making a new JIT, but without access to profiling information.
+So in my opinion this is a complementary approach. The advantage is potentially higher performance. The drawback is that you basically hand-code things. It?s targeted at a specific library and/or application. If the library code changes too much, it is likely to break.
+
+
+Sorry for being so nit-picky about it but I really think it is important to not convolute these two (valid) approaches (and projects).
+
+
+On the other hand I do not want to give the impression that I made this up out of thin air. There is lot?s of stuff that *is* closely related and I neglected to give credit for that (which seems to me to be part of your problem with this, Johannes?). To rectify that, I added a ?Resources? section to the README on https://github.com/tpietzsch/none pointing to helpful discussions etc.
+
+
+> I do have some questions and suggestions:
+> 
+> - Why use ASM over Javassist? At the hackathon, we used Javassist because
+>  it is easier to use, we have much better documentation (e.g.
+>  http://fiji.sc/Javassist) and we already ship it with Fiji.
+
+Here I have a different opinion. I think ASM has the better documentation.
+
+There is no doc page for ASM on the Fiji wiki, but they have a very good guide on their own site:
+http://download.forge.objectweb.org/asm/asm4-guide.pdf
+which is both tutorial style and going into detail. It also contains an introduction to the java class file format and bytecode.
+
+The API is well structured and the API documentation is complete, ASM 5.0 API. Especially after reading the guide, I had absolutely trouble finding my way around.
+
+Finally, and this is really really helpful. They have a ?Bytecode Outline? plugin for Eclipse.
+This shows you not only the bytecode of the file you are currently editing:
+
+
+
+...but also the ASM code needed to generate that:
+
+
+
+This makes it trivial to get started. (Though you later figure out that there is a more powerful tree API that is to the above as DOM is to SAX).
+For the non-Eclipse people, there is of course a command-line ?ASMifier".
+
+Importantly, I need low-level manipulations to arrive at code that I could *not* have produced by source code + javac.
+I think these manipulations are possible using Javassist but I couldn?t easily find information about how.
+
+Besides all that, ASM has going for it that it is bleeding edge, always at the latest java release version (and often beta versions).
+There is overlap between OpenJDK and ASM people. ASM is used in the JDK itself (to implement java 8 lambda expressions for example).
+
+So to summarize, I?m pretty much married to ASM now. I like the documentation, I like the tools, and it works great for what I want to do.
+I see no reason to dig into Javassist now without any clear benefit.
+Obviously, the same is probably true for the Javassist people: no reason to learn ASM.
+So it is completely ok for me if, for example Johannes chooses to not get involved in (ex-)neon for that reason.
+
+> - If the plan is to use it inside Fiji, why not use version 4.0 of ASM
+>  which is in Fiji already as a transitive dependency of JRuby? Requiring
+>  a newer version (5.0.2) is prone to cause problems?
+
+Sure, I?ll start by making a branch that uses the 4.0 version.
+It should be as simple as using a now-deprecated ClassVisitor.visitMethodInsn() version.
+
+> - A quick web search shows that there is an active, successful Neon library for
+>  WebDAV communication. To avoid legal and social problems, we'll need to
+>  choose a different name for the project.
+
+Ok, I understand. I changed the name. I just scrambled the letters and now it?s called ?none?. I didn?t find a project called like this on google, so should be fine.
+It?s a bit strange at first, but actually, I think it?s not so bad:
+1) ample opportunity for evil chuckles whenever somebody claims his lib is ?second to none?.
+2) chemical elements logo still works out nicely.
+I hope nobody has a problem with that.
+
+
+By pure coincidence, ?none? is exactly the amount of controversy I expected when announcing the project.
+I could not have been more wrong. Off-list there has been a bit of a personal clash, which is not really of concern here.
+However, it made me realize that I was not prepared for the, let?s say, political discussions that I triggered.
+I wanted to get this out and off-my-plate in time for the hackathon. It turned out that by doing that I didn?t put it off-my-plate at all. To the contrary, it developed into a time- and fun-suck.
+
+So in order to avoid that, I want to step back a little and make this back into the little fun playground that it was.
+It has been made a much bigger deal than it actually is, and it needs time to mature before making it into imglib or fiji or wherever.
+By mature I mean that it must be a place where I can try ideas without worrying about compatibility, integratability, stepping on peoples toes, etc.
+So, this is what will happen in my github repository.
+
+The code is under BSD license, so of course if someone wants to fork, pick pieces out of it etc they are more than welcome.
+If there is a fork intended specifically for scijava/imglib2/imagej/fiji purposes, I?ll be glad to help with that.
+
+
+>> I think it is orthogonal to what you do with compile-time code
+>> generation currently and therefore might complement it nicely.
+> 
+> - I agree that the bytecode manipulation and code generation strategies can
+>  complement each other nicely. I am looking forward to the upcoming ImgLib2
+>  hackathon so that we can show you how OPS tackles the performance issue in a
+>  way that facilitates extensibility and keeps concerns well separated! If you
+>  have a chance to explore OPS in depth before the hackathon, it would be very
+>  helpful to expedite later discussion.
+> 
+> - I encourage you to study ImageJ OPS before continuing this project because it
+>  provides the necessary infrastructure already, matured over a course of
+>  several iterations.
+
+I?ve been following ImageJ-Ops loosely. As I understand it still very much in flux and documentation is very sparse. I?m looking forward to learn about it in personal discussion at the hackathon. I?ll probably not be able to get an in-depth look before.
+
+> - For demonstration purposes, using a Java Agent at startup is great; We will
+>  definitely want to explore practical ways of applying the bytecode
+>  manipulation. It should be achievable -- we do it already in the ImageJ Legacy
+>  project to rewrite portions of ImageJ1 as needed.
+
+The important thing is that it needs to be able to intercept any class as it is loaded into the JVM.
+
+I think another perfect place to put it is in a ClassLoader.
+Building on OSGi, that is probably a feasible way to go for KNIME.
+Does ImageJ2 use custom ClassLoaders?
+
+
+best regards,
+Tobias
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140930/d8412011/attachment-0001.html>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: Screen Shot 2014-09-30 at 16.59.16.png
+Type: image/png
+Size: 58997 bytes
+Desc: not available
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140930/d8412011/attachment-0002.png>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: Screen Shot 2014-09-30 at 16.59.56.png
+Type: image/png
+Size: 64848 bytes
+Desc: not available
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140930/d8412011/attachment-0003.png>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140930/d8412011/attachment-0001.pgp>
+
+From sapristi at gmail.com  Tue Sep 23 21:41:16 2014
+From: sapristi at gmail.com (Albert Cardona)
+Date: Tue, 23 Sep 2014 22:41:16 -0400
+Subject: [ImageJ-devel] [fiji-devel] imglib2-neon project for runtime
+	bytecode transformation
+In-Reply-To: <F8939ED5-C4E5-4B41-89CC-9CB4D567B7A5@mpi-cbg.de>
+References: <F8939ED5-C4E5-4B41-89CC-9CB4D567B7A5@mpi-cbg.de>
+Message-ID: <B416CAAC-AEF9-434E-B989-E85C86DF6CD4@gmail.com>
+
+Hi Tobias,
+
+Just to add to the cheer. It is not everyday that one sees 97% improvements on performance. I understand this is preliminary. Looking forward to seeing it applied in real world code.
+
+Albert
+
+
+> On Sep 23, 2014, at 7:02 PM, Tobias Pietzsch <pietzsch at mpi-cbg.de> wrote:
+> 
+> Hi guys,
+> 
+> As a weekend project I have started to look into bytecode modification using the wonderful ASM library (http://asm.ow2.org).
+> I have cleaned up what I have played with and put it on github https://github.com/tpietzsch/neon.
+> 
+> It tackles a long-standing imglib obstacle, namely megamorphic call-sites in certain methods, where the JIT fails to recognise that the runtime target of the polymorphic changes between calls to a method but doesn?t change in the hot inner loop of the method during a single call. I have been talking about ideas to address this for quite some time, most recently here https://github.com/imglib/imglib/issues/71#issuecomment-51227237. Now I went ahead and actually tried to do something about it.
+> 
+> I have applied it to an example in imglib, which is described below. But for anyone not familiar with this particular issue (which is everyone except Christian probably) there
+> is an illustrative example with explanations in the README on github https://github.com/tpietzsch/neon/blob/master/README.md.
+> This does not involve imglib at all and is a clear illustration of the problem (and my solution).
+> 
+> I?m quite happy with how it turned out so far. It certainly has to be applied with care, but I think this can be potentially huge for imglib2. It might open up new possibilities that we have shied away from because of performance reasons, such as internal iteration for IterableIntervals.
+> 
+> Curtis, Johannes and Christian, I would also be interested what you think of this as a potential tool for imagej-ops.
+> I think it is orthogonal to what you do with compile-time code generation currently and therefore might complement it nicely.
+> 
+> I hope you have a look and tell me what you think.
+> I would be especially interested in whether you can think of optimization idioms besides the @Instantiate @ByTypeOf that is implemented right now.
+> It would be cool if we discuss this in the upcoming imglib hackathon.
+> 
+> Okay, everybody except Christian might as well stop reading now.
+> 
+> all the best,
+> Tobias
+> 
+> 
+> 
+> 
+> 
+> PS: the imglib stuff...
+> 
+> For the imglib issue https://github.com/imglib/imglib/issues/71, we played with ways of iterating pixels which can be optimized for certain subintervals of larger images.
+> The optimizations work out nicely when done on their own, but everything really breaks down when a single method is used with differnent Cursor incarnations.
+> This is actually already a potential problem in standard imglib, when Cursors from different Img types are uses in a single method. But adding the new optimized versions
+> only made it more probable that the problem actually occurs.
+> 
+> Here is numbers from a recent test, at a stage where 4 different kinds of cursors are in play:
+> 
+> normal cursor | array img
+> walk through a subinterval
+>    | Unoptimized    | Optimized    | Speedup Time    | Speedup %    |
+> Best    |    566    |    371    | 195ms       | 34.4%       |
+> 
+> localizing cursor | array img
+> walk through a subinterval
+>    | Unoptimized    | Optimized    | Speedup Time    | Speedup %    |
+> Best    |    907    |    584    | 323ms       | 35.6%       |
+> 
+> normal cursor | planar img
+> walk through a subinterval
+>    | Unoptimized    | Optimized    | Speedup Time    | Speedup %    |
+> Best    |    562    |    373    | 189ms       | 33.6%       |
+> 
+> localizing cursor | planar img
+> walk through a subinterval
+>    | Unoptimized    | Optimized    | Speedup Time    | Speedup %    |
+> Best    |    928    |    611    | 317ms       | 34.1%       |
+> 
+> 
+> With the neon java agent this improves to:
+> 
+> normal cursor | array img
+> walk through a subinterval
+>    | Unoptimized    | Optimized    | Speedup Time    | Speedup %    |
+> Best    |    153    |    8    | 145ms       | 94.7%       |
+> 
+> localizing cursor | array img
+> walk through a subinterval
+>    | Unoptimized    | Optimized    | Speedup Time    | Speedup %    |
+> Best    |    235    |    200    | 35ms       | 14.8%       |
+> 
+> normal cursor | planar img
+> walk through a subinterval
+>    | Unoptimized    | Optimized    | Speedup Time    | Speedup %    |
+> Best    |    128    |    8    | 120ms       | 93.7%       |
+> 
+> localizing cursor | planar img
+> walk through a subinterval
+>    | Unoptimized    | Optimized    | Speedup Time    | Speedup %    |
+> Best    |    217    |    208    | 9ms       | 4.1%       |
+> 
+> 
+> A speedup of factor ~4 to ~40 can be observed.
+> These two runs were made with exactly the same code, but for the second one, the program was run with the option
+>   java -javaagent:/path/to/neon-1.0.0-SNAPSHOT.jar ?
+> 
+> I just pushed the example to https://github.com/imglib/imglib/commit/a9b70d923e9a84c4055acae96f71d05ca4a26344
+> 
+
+

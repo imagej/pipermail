@@ -1,0 +1,145 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Significant change to ImgOpener - or - why	ImgOpener.openImg() cannot return a T
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Significant%20change%20to%20ImgOpener%20-%20or%20-%20why%0A%09ImgOpener.openImg%28%29%20cannot%20return%20a%20T&In-Reply-To=%3CD7931AC1-BA9B-4561-AA28-D901E3A652B4%40mpi-cbg.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001117.html">
+   <LINK REL="Next"  HREF="001139.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Significant change to ImgOpener - or - why	ImgOpener.openImg() cannot return a T</H1>
+    <B>Stephan Preibisch</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Significant%20change%20to%20ImgOpener%20-%20or%20-%20why%0A%09ImgOpener.openImg%28%29%20cannot%20return%20a%20T&In-Reply-To=%3CD7931AC1-BA9B-4561-AA28-D901E3A652B4%40mpi-cbg.de%3E"
+       TITLE="[ImageJ-devel] Significant change to ImgOpener - or - why	ImgOpener.openImg() cannot return a T">preibisch at mpi-cbg.de
+       </A><BR>
+    <I>Tue Jul 17 16:08:06 CDT 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001117.html">[ImageJ-devel] Basic usage of ImageJ2 libraries in seperate application (Simple display image in JFrame)
+</A></li>
+        <LI>Next message: <A HREF="001139.html">[ImageJ-devel] [fiji-devel] Significant change to ImgOpener - or - why ImgOpener.openImg() cannot return a T
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1088">[ date ]</a>
+              <a href="thread.html#1088">[ thread ]</a>
+              <a href="subject.html#1088">[ subject ]</a>
+              <a href="author.html#1088">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi guys,
+
+this became a massive explanation. I suggest this as as solution to a problem we have been only partly aware of. I hope you enjoy reading ;)
+
+Steffi
+
+
+As the ImageJ conference is approaching I was talking with Johannes and we agreed that the ImgOpener needs to be finished. However, since its first version there has been a major design fault. 
+
+But first the good news:
+--------------------------------
+It works perfectly fine if you say &quot;open me an Image as float&quot; or &quot;...as UnsignedByte&quot; or whatever, classically called by the method
+-&gt; new ImgOpener.openImg( String id, ImgFactory&lt;T&gt; factory, T type ); 
+It can, without any problems, return you an Img&lt;T&gt;, and it requires that T is RealType (and not anymore NativeType, see at the end). So far, so good. 
+Note that &quot;T&quot; is NOT a return parameter, but something you give to the openAs method.
+
+Now the bad news. 
+--------------------------
+If you say &quot;open this image as whatever RealType it is&quot;, it can do that, but it cannot assign a &quot;T&quot; to it - because T is not a return parameter. We made an ugly hack inside so that it seems as if it would work, but it does not. Now you might ask, why change it if it worked so far? Well, here is an easy example that would cause a ClassCastException on run time
+
+public static &lt;T extends RealType&lt; T &gt;&gt; void main( String[] args )
+{
+	Img&lt; T &gt; img1 = new ImgOpener.openImg( &quot;somepic_8bit.tif&quot; ); // 8-bit unsigned
+	Img&lt; T &gt; img2 = new ImgOpener.openImg( &quot;somepic_32bit.tif&quot; ); // 32-bit float
+
+	img1.firstElement().set( img2.firstElement() ); // run-time crash
+}
+
+It will throw a ClassCastException because img1 is of UnsignedByteType and img2 of FloatType. But as we cast it in a dirty way, it compiles just fine.
+So, we cannot return a &quot;T&quot;, but what we can return is Img&lt; which is at least a RealType &gt;. And this is for sure always true, but img1 and img2 are not necessarily the same RealType (as above).
+
+The correct way (which doesn't work)
+--------------------------------------------------
+What we should return is an Img&lt; ? extends RealType&lt; ? &gt; &gt;. However, it is not ensured that the two &quot;?&quot; are the same, so an Img of this type is basically incompatible with everything else, which means an unchecked cast is necessary. So although correct, maybe not a good idea. And it is really ugly to write if necessary.
+
+The still somehow correct way
+-----------------------------------------
+Instead, it returns now an Img&lt; RealType &gt;. This is kind of a tradeoff. On one hand, this is very easy to write and will give you compile errors where it should, for example
+
+	img1.firstElement().set( img2.firstElement() ); // COMPILE ERROR (not the same RealType realization)
+
+OR
+     
+       public &lt;T extends RealType&lt; T &gt;&gt; void add( IterableInterval&lt; T &gt; i1, IterableInterval&lt; T &gt; i2 ) { .... }
+       add( img1, img2 ); // COMPILE ERROR (not the same RealType realization)
+
+BUT
+
+	Gauss.inFloatInPlace( 2.0 , img1 ); // FINE (just one RealType realization required, inside it will be always the same &quot;T&quot;)
+	Gauss.inFloatInPlace( 2.0 , img2 ); // FINE (just one RealType realization required, inside it will be always the same &quot;T&quot;)
+
+	public &lt; T extends RealType&lt; T &gt; &gt; void add1( Img&lt; T &gt; img1, double value ) { ... }
+        add1( img1, 5 ); // FINE (just one RealType realization required, inside it will be always the same &quot;T&quot;)
+
+	public &lt; T extends RealType&lt; T &gt;, S extends RealType&lt; S &gt; &gt; void add2( Img&lt; T &gt; img1, Img&lt; S &gt; img2 ) { ... }
+        add2( img1, img2 ); // FINE (explicitly two different RealType realizations are allowed)
+
+	public void add3( Img&lt; RealType &gt; img1, Img&lt; RealType &gt; img2 ) { ... }
+        add3( img1, img2 ); // FINE (both are just some kind of RealType, but gives a warning)
+
+On the other hand it gives a lot of Warnings because RealType should be more specified. 
+
+Why not Img&lt; RealType&lt; ? &gt; &gt;
+------------------------------------------
+Similar problem as in &lt;? extends RealType&lt; ? &gt; &gt;. RealType&lt; ? &gt; is not a valid substitute for any construct like &lt; T extends RealType &lt; T &gt; &gt;. One would have to cast to Img&lt; RealType &gt;, so we can take this one right away as it is less writing.
+
+Where did NativeType go?
+------------------------------------
+I do not see any reason why we should enforce a NativeType. There is no objection to load an image into a (hypothetical) ListImg&lt; BigDecimalType &gt;.
+
+What are the implications?
+-----------------------------------
+We should write NOTHING except the method opening files for Img&lt; RealType &gt;. And also only if it is really required - quite often it is not. But if, Img&lt; RealType &gt; It is a completely valid input for any generic algorithm as show above for Gauss, add, etc. 
+
+
+
+I implemented the changes on a branch called 'newimgopener'. It also contains four static convenience opening methods and a speed improvement.
+
+Any comments are very welcome. If somebody has a better idea how to solve the problem ... I am all ears ...
+
+Bye bye,
+Steffi
+</PRE>
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001117.html">[ImageJ-devel] Basic usage of ImageJ2 libraries in seperate application (Simple display image in JFrame)
+</A></li>
+	<LI>Next message: <A HREF="001139.html">[ImageJ-devel] [fiji-devel] Significant change to ImgOpener - or - why ImgOpener.openImg() cannot return a T
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1088">[ date ]</a>
+              <a href="thread.html#1088">[ thread ]</a>
+              <a href="subject.html#1088">[ subject ]</a>
+              <a href="author.html#1088">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

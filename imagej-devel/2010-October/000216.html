@@ -1,0 +1,153 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Design meeting notes
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Design%20meeting%20notes&In-Reply-To=%3CAANLkTimgvaB48R5ZgofnO8HOKGsP2OPmRU_DzAKKE%3Duq%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000215.html">
+   <LINK REL="Next"  HREF="000217.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Design meeting notes</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Design%20meeting%20notes&In-Reply-To=%3CAANLkTimgvaB48R5ZgofnO8HOKGsP2OPmRU_DzAKKE%3Duq%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Design meeting notes">ctrueden at wisc.edu
+       </A><BR>
+    <I>Thu Oct 14 11:39:56 CDT 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000215.html">[ImageJ-devel] Design meeting notes
+</A></li>
+        <LI>Next message: <A HREF="000217.html">[ImageJ-devel] Design meeting notes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#216">[ date ]</a>
+              <a href="thread.html#216">[ thread ]</a>
+              <a href="subject.html#216">[ subject ]</a>
+              <a href="author.html#216">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Dscho,
+
+Just the infinite recursion thing (which is harder than meets the eye;
+&gt;<i> you'd have to build a graph and detect circles).
+</I>&gt;<i>
+</I>
+Or we could invoke the callback only when the GUI changes by user action.
+
+It's also not clear how the callback would signal to the dialog (be that
+&gt;<i> an ImageJ, or a KNIME or CellProfiler dialog) _what_ value was changed by
+</I>&gt;<i> the callback. (Just think of the user changing the width, and the callback
+</I>&gt;<i> wanting to modify the height _iff_ &quot;keep aspect-ratio&quot; is checked.)
+</I>&gt;<i>
+</I>
+A given parameter's callback would be called only when the linked parameter
+changes.
+
+So the aspect ratio example might look like:
+
+@Parameter(callback=&quot;widthChanged&quot;)
+public int width;
+
+@Parameter(callback=&quot;heightChanged&quot;)
+public int height;
+
+@Parameter(label=&quot;Maintain aspect ratio&quot;, callback=&quot;aspectRatioToggled&quot;)
+public boolean aspectRatio;
+
+/** The plugin must populate these with the current/initial width and height
+choices. */
+private int originalWidth, originalHeight;
+
+/** Invoked when width text field changes. */
+public void widthChanged() {
+  if (aspectRatio) constrainHeight();
+}
+
+/** Invoked when height text field changes. */
+public void heightChanged() {
+  if (aspectRatio) constrainWidth();
+}
+
+public void aspectRatioToggled() {
+  if (aspectRatio) constrainHeight(); // arbitrarily change height, rather
+than width
+}
+
+/** Adjusts width to match original aspect ratio. */
+private void constrainWidth() {
+  width = originalWidth * height / originalHeight;
+}
+
+/** Adjusts height to match original aspect ratio. */
+private void constrainHeight() {
+  height = originalHeight * width / originalWidth;
+}
+
+After invoking the callback, the plugin infrastructure updates all dialog
+fields to the latest values (and this update does not itself trigger any
+additional callbacks).
+
+-Curtis
+
+On Tue, Oct 12, 2010 at 9:50 PM, Johannes Schindelin &lt;
+<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">Johannes.Schindelin at gmx.de</A>&gt; wrote:
+
+&gt;<i> Hi,
+</I>&gt;<i>
+</I>&gt;<i> On Tue, 12 Oct 2010, Curtis Rueden wrote:
+</I>&gt;<i>
+</I>&gt;<i> &gt; &gt; That was my first idea. But how would the user interface tell the
+</I>&gt;<i> &gt; &gt; callback without String or java.lang.reflect.Field ugliness which
+</I>&gt;<i> &gt; &gt; input was modified by the user (and by that, what field should be
+</I>&gt;<i> &gt; &gt; changed accordingly), and how would the callback tell that it changed
+</I>&gt;<i> &gt; &gt; something, and what?
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Each parameter has its own callback method, invoked when that particular
+</I>&gt;<i> &gt; parameter changes. So as Lee said, which method is called indicates
+</I>&gt;<i> &gt; which parameter was changed. (Perhaps it would be better to call the
+</I>&gt;<i> &gt; attribute something like &quot;onChange&quot; instead.)
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Does that clarify it? Or is there a problem I'm not seeing?
+</I>&gt;<i>
+</I>&gt;<i> Just the infinite recursion thing (which is harder than meets the eye;
+</I>&gt;<i> you'd have to build a graph and detect circles).
+</I>&gt;<i>
+</I>&gt;<i> It's also not clear how the callback would signal to the dialog (be that
+</I>&gt;<i> an ImageJ, or a KNIME or CellProfiler dialog) _what_ value was changed by
+</I>&gt;<i> the callback. (Just think of the user changing the width, and the callback
+</I>&gt;<i> wanting to modify the height _iff_ &quot;keep aspect-ratio&quot; is checked.)
+</I>&gt;<i>
+</I>&gt;<i> Ciao,
+</I>&gt;<i> Dscho
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20101014/9ac164af/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20101014/9ac164af/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000215.html">[ImageJ-devel] Design meeting notes
+</A></li>
+	<LI>Next message: <A HREF="000217.html">[ImageJ-devel] Design meeting notes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#216">[ date ]</a>
+              <a href="thread.html#216">[ thread ]</a>
+              <a href="subject.html#216">[ subject ]</a>
+              <a href="author.html#216">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

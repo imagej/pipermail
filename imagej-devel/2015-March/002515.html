@@ -1,0 +1,546 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Problems uploading jars to update site
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Problems%20uploading%20jars%20to%20update%20site&In-Reply-To=%3CCADN69ym6hqD1JMqrM0LzpdnhaCBZBLb8UPZ-rCtLUH9RYpx9EQ%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002514.html">
+   <LINK REL="Next"  HREF="002527.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Problems uploading jars to update site</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Problems%20uploading%20jars%20to%20update%20site&In-Reply-To=%3CCADN69ym6hqD1JMqrM0LzpdnhaCBZBLb8UPZ-rCtLUH9RYpx9EQ%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Problems uploading jars to update site">ctrueden at wisc.edu
+       </A><BR>
+    <I>Mon Mar 23 16:16:26 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002514.html">[ImageJ-devel] Problems uploading jars to update site
+</A></li>
+        <LI>Next message: <A HREF="002527.html">[ImageJ-devel] Problems uploading jars to update site
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2515">[ date ]</a>
+              <a href="thread.html#2515">[ thread ]</a>
+              <a href="subject.html#2515">[ subject ]</a>
+              <a href="author.html#2515">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Birgit,
+
+So your main deps are:
+
+&gt;<i> loci:loci_tools:4.4.8
+</I>&gt;<i> net.imglib2:imglib2:2.2.0
+</I>&gt;<i> net.imglib2:imglib2-algorithms:2.0.0-beta-10
+</I>
+There are a couple of problems.
+
+1) The imglib2-algorithms artifact is obsolete. Since the 2.0.0 final
+release of imglib2, the Algorithms library was renamed to imglib2-algorithm
+instead, for consistency.
+
+2) Bio-Formats 4.4.x is no longer shipped with Fiji. It currently ships
+Bio-Formats 5.0.x, which will soon become 5.1.0 once the OME team finalizes
+that version. MiToBo will have compatibility problems with Fiji as long as
+it still depends on 4.4.8.
+
+I advise extending pom-imagej (or alternately, import it in your
+dependencyManagement section [1]) to inherit its Bill of Materials [2], to
+get consistency of versioning. Otherwise, you are just taking a stab in the
+dark at getting all the version numbers right. The BOM exists as a promise
+to downstream projects that all the versions declared therein will work
+together. In general, if you have not already read over the ImageJ
+Architecture page [3], I would suggest doing so.
+
+As of this writing, if you extend or import the newest pom-imagej 6.0.0,
+you can then add the following dependencies:
+
+&gt;<i> ome:formats-api (for loci.formats.*)
+</I>&gt;<i> ome:formats-common (for loci.common.*)
+</I>&gt;<i> ome:ome-xml (for ome.xml.*)
+</I>&gt;<i> ome:formats-bsd (runtime; for open file formats)
+</I>&gt;<i> ome:formats-gpl (runtime; for proprietary file formats)
+</I>&gt;<i> net.imglib2:imglib2
+</I>&gt;<i> net.imglib2:imglib2-algorithm
+</I>
+I did not bother to specify the version numbers above -- the whole point is
+that you would leave off the &quot;&lt;version&gt;...&lt;/version&gt;&quot; lines in your POM,
+since they are managed by pom-imagej instead.
+
+Happy to help if you need further information or assistance with this!
+
+&gt;<i> We currently don't have an SCM being publically accessible
+</I>
+If you are willing to change that, we would be delighted to add more MiToBo
+links in the relevant places of our SciJava propaganda. In particular:
+
+* <A HREF="http://scijava.org/">http://scijava.org/</A>
+* <A HREF="http://imagej.net/Philosophy">http://imagej.net/Philosophy</A>
+
+And on the Architecture page too, adding (e.g.) a MiToBo GitHub
+organization, pom-mitobo, etc., to the various tables.
+
+Currently we do include the MiToBo and Alida logos in our talks when we
+mention SciJava module interoperability, but it would be nice to link to
+more of your project resources.
+
+Regards,
+Curtis
+
+[1]
+<A HREF="https://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html#Importing_Dependencies">https://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html#Importing_Dependencies</A>
+[2] <A HREF="http://imagej.net/BOM">http://imagej.net/BOM</A>
+[3] <A HREF="http://imagej.net/Architecture">http://imagej.net/Architecture</A>
+
+On Mon, Mar 23, 2015 at 4:45 AM, Birgit Moeller &lt;
+<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">birgit.moeller at informatik.uni-halle.de</A>&gt; wrote:
+
+&gt;<i> Hi Curtis!
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Curtis Rueden wrote
+</I>&gt;<i> &gt; Hi Birgit,
+</I>&gt;<i> &gt; [...]
+</I>&gt;<i> &gt; From a Maven perspective, I would suggest depending on the actual
+</I>&gt;<i> &gt; Bio-Formats components you are using, rather than any uber-JAR such as
+</I>&gt;<i> &gt; loci_tools (deprecated) or bioformats_package (the current uber-jar).
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; There is a brief discussion of the pros and cons of uber-jars from an
+</I>&gt;<i> &gt; ImageJ perspective here:
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;
+</I>&gt;<i> <A HREF="http://imagej.net/Frequently_Asked_Questions#How_can_I_call_ImageJ_from_my_software.3F">http://imagej.net/Frequently_Asked_Questions#How_can_I_call_ImageJ_from_my_software.3F</A>
+</I>&gt;<i>
+</I>&gt;<i> I totally agree that depending on the actual jars containing the components
+</I>&gt;<i> has many advantages. Using the uber-jars in Alida/Mitobo is mainly a relict
+</I>&gt;<i> of former days. In the beginning it was the easiest to simply use the
+</I>&gt;<i> uber-jars to not miss anything. And until now we did not think much about
+</I>&gt;<i> updating. But, for sure it would be best to change that now and we will do
+</I>&gt;<i> that.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Curtis Rueden wrote
+</I>&gt;<i> &gt; If you point me at the public SCM for your project, I'll gladly take a
+</I>&gt;<i> &gt; look
+</I>&gt;<i> &gt; at your POM and make some suggestions. With Bio-Formats, the standard
+</I>&gt;<i> &gt; approach is to add compile-time dependency on ome:formats-api:5.0.8, and
+</I>&gt;<i> &gt; runtime dependencies on ome:formats-bsd:5.0.8 and ome:formats-gpl:5.0.8,
+</I>&gt;<i> &gt; since those latter two components provide file format implementations
+</I>&gt;<i> &gt; (&quot;plugin&quot;-esque) which are not needed at compile time, but you want on
+</I>&gt;<i> the
+</I>&gt;<i> &gt; classpath at runtime for all the file format support.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Regards,
+</I>&gt;<i> &gt; Curtis
+</I>&gt;<i>
+</I>&gt;<i> We currently don't have an SCM being publically accessible, and our Maven
+</I>&gt;<i> server crashed some days ago, so unfortunately I cannot point you to the
+</I>&gt;<i> deployed artifacts or source directly. I will let you know immediately,
+</I>&gt;<i> when
+</I>&gt;<i> our server is up again. But, in the meantime I can already tell you on what
+</I>&gt;<i> functionality we currently depend being related to ImageJ and Bioformats.
+</I>&gt;<i> Probably you can already give me a hint based on this information. We
+</I>&gt;<i> define
+</I>&gt;<i> the following three dependencies:
+</I>&gt;<i>
+</I>&gt;<i>     &lt;dependency&gt;
+</I>&gt;<i>       &lt;groupId&gt;loci&lt;/groupId&gt;
+</I>&gt;<i>       &lt;artifactId&gt;loci_tools&lt;/artifactId&gt;
+</I>&gt;<i>       &lt;version&gt;4.4.8&lt;/version&gt;
+</I>&gt;<i>     &lt;/dependency&gt;
+</I>&gt;<i>     &lt;dependency&gt;
+</I>&gt;<i>       &lt;groupId&gt;net.imglib2&lt;/groupId&gt;
+</I>&gt;<i>       &lt;artifactId&gt;imglib2&lt;/artifactId&gt;
+</I>&gt;<i>       &lt;version&gt;2.2.0&lt;/version&gt;
+</I>&gt;<i>     &lt;/dependency&gt;
+</I>&gt;<i>     &lt;dependency&gt;
+</I>&gt;<i>       &lt;groupId&gt;net.imglib2&lt;/groupId&gt;
+</I>&gt;<i>       &lt;artifactId&gt;imglib2-algorithms&lt;/artifactId&gt;
+</I>&gt;<i>       &lt;version&gt;2.0.0-beta-10&lt;/version&gt;
+</I>&gt;<i>     &lt;/dependency&gt;
+</I>&gt;<i>
+</I>&gt;<i> We basically use functionality from the following Bioformats/Loci packages:
+</I>&gt;<i> import loci.common.*;
+</I>&gt;<i> import loci.common.services.*;
+</I>&gt;<i> import loci.formats.*;
+</I>&gt;<i> import loci.formats.gui.*;
+</I>&gt;<i> import loci.formats.meta.*;
+</I>&gt;<i> import loci.formats.out.*;
+</I>&gt;<i> import loci.formats.services.*;
+</I>&gt;<i> import ome.xml.model.*;
+</I>&gt;<i>
+</I>&gt;<i> With regard to Imglib2 we use basic functionality from
+</I>&gt;<i>
+</I>&gt;<i> net.imglib2.img
+</I>&gt;<i> net.imglib2.type
+</I>&gt;<i>
+</I>&gt;<i> as well as component trees to be found in
+</I>&gt;<i>
+</I>&gt;<i> net.imglib2.algorithm.componenttree.
+</I>&gt;<i>
+</I>&gt;<i> Regards,
+</I>&gt;<i>
+</I>&gt;<i>  Birgit
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Curtis Rueden wrote
+</I>&gt;<i> &gt; On Fri, Mar 20, 2015 at 7:57 AM, Birgit M&#246;ller &lt;
+</I>&gt;<i>
+</I>&gt;<i> &gt; <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">birgit.moeller at .uni-halle</A>
+</I>&gt;<i>
+</I>&gt;<i> &gt;&gt; wrote:
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;&gt; Hi Curtis!
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; On Thu, 19 Mar 2015 12:37:30 -0500, Curtis Rueden &lt;
+</I>&gt;<i>
+</I>&gt;<i> &gt; ctrueden@
+</I>&gt;<i>
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> &gt;&gt; wrote:
+</I>&gt;<i> &gt;&gt; &gt;Hi Birgit,
+</I>&gt;<i> &gt;&gt; &gt;
+</I>&gt;<i> &gt;&gt; &gt;&gt; we are trying to set up an ImageJ update site for our plugin
+</I>&gt;<i> &gt;&gt; &gt;&gt; collection MiToBo.
+</I>&gt;<i> &gt;&gt; &gt;
+</I>&gt;<i> &gt;&gt; &gt;Sounds great!
+</I>&gt;<i> &gt;&gt; &gt;
+</I>&gt;<i> &gt;&gt; &gt;&gt; Since we have a lot of dependencies we would like to test the setup
+</I>&gt;<i> &gt;&gt; &gt;&gt; first on our own local server
+</I>&gt;<i> &gt;&gt; &gt;
+</I>&gt;<i> &gt;&gt; &gt;Good idea.
+</I>&gt;<i> &gt;&gt; &gt;
+</I>&gt;<i> &gt;&gt; &gt;&gt; but in the end we plan to provide Mitobo via an ImageJ Wiki update
+</I>&gt;<i> &gt;&gt; &gt;&gt; site.
+</I>&gt;<i> &gt;&gt; &gt;
+</I>&gt;<i> &gt;&gt; &gt;Well, if you have a dedicated server, you can just use that. There is
+</I>&gt;<i> no
+</I>&gt;<i> &gt;&gt; &gt;requirement to use a personal update site. But I guess the URL &quot;
+</I>&gt;<i> &gt;&gt; &gt;<A HREF="http://sites.imagej.net/MiToBo">http://sites.imagej.net/MiToBo</A>&quot; would be pretty friendly. :-)
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; yes, I agree, and we will go for it soon :-)
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; &gt;&gt; Amongst others we depend on two jars, sezpoz.jar and xalan.jar. Both
+</I>&gt;<i> &gt;&gt; &gt;&gt; jars seem to have been provided by the Fiji Update Site in former
+</I>&gt;<i> &gt;&gt; &gt;&gt; days, but are now declared obsolete.
+</I>&gt;<i> &gt;&gt; &gt;
+</I>&gt;<i> &gt;&gt; &gt;Indeed.
+</I>&gt;<i> &gt;&gt; &gt;
+</I>&gt;<i> &gt;&gt; &gt;&gt; Since we need both of them we tried to upload them to our own site,
+</I>&gt;<i> &gt;&gt; &gt;&gt; however, this fails. First Fiji claims about changed checksums for
+</I>&gt;<i> &gt;&gt; &gt;&gt; both jar files. After recalculating the checksums and trying to
+</I>&gt;<i> &gt;&gt; &gt;&gt; upload them again, the updater throws the following exception:
+</I>&gt;<i> &gt;&gt; &gt;&gt;
+</I>&gt;<i> &gt;&gt; &gt;&gt; Upload failed: java.lang.NoClassDefFoundError:
+</I>&gt;<i> &gt;&gt; &gt;&gt; org/apache/xml/serializer/TreeWalker
+</I>&gt;<i> &gt;&gt; &gt;
+</I>&gt;<i> &gt;&gt; &gt;How bizarre. I wonder if this is something xalan-specific, since xalan
+</I>&gt;<i> &gt;&gt; &gt;ships classes that are also part of the JRE itself. As a test, you
+</I>&gt;<i> could
+</I>&gt;<i> &gt;&gt; &gt;temporarily delete your xalan JAR, restart ImageJ, and try to add
+</I>&gt;<i> _only_
+</I>&gt;<i> &gt;&gt; &gt;the sezpoz JAR to your update site, and see whether you encounter the
+</I>&gt;<i> &gt;&gt; same
+</I>&gt;<i> &gt;&gt; &gt;issue.
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; It looks like it is really a Xalan issue. Skipping the Xalan jar
+</I>&gt;<i> &gt;&gt; everything works fine. Meanwhile I also figured out that the Xalan jar
+</I>&gt;<i> is
+</I>&gt;<i> &gt;&gt; included in our dependencies only to due loci_tools declaring that jar
+</I>&gt;<i> as
+</I>&gt;<i> &gt;&gt; a
+</I>&gt;<i> &gt;&gt; dependency. As during the update procedure we were also told that
+</I>&gt;<i> &gt;&gt; loci_tools is now part of the bioformats package, I wonder if we can get
+</I>&gt;<i> &gt;&gt; rid of that dependency by switching from loci_tools to
+</I>&gt;<i> &gt;&gt; bioformats_package.
+</I>&gt;<i> &gt;&gt; Moreover, if the Xalan jar is not present, our operators and plugins
+</I>&gt;<i> seem
+</I>&gt;<i> &gt;&gt; to work anyway, so maybe we even do not really need any stuff contained
+</I>&gt;<i> &gt;&gt; in
+</I>&gt;<i> &gt;&gt; that jar - but we will still need to investigate that further.
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; &gt;[...]
+</I>&gt;<i> &gt;&gt; &gt;
+</I>&gt;<i> &gt;&gt; &gt;Regards,
+</I>&gt;<i> &gt;&gt; &gt;Curtis
+</I>&gt;<i> &gt;&gt; &gt;
+</I>&gt;<i> &gt;&gt; &gt;[...]
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; For now, thanks for your elaborate reply.  If we encounter additional
+</I>&gt;<i> &gt;&gt; problems, I will get back to you and the list again. But, as suggested,
+</I>&gt;<i> &gt;&gt; next time I will post questions regarding update sites on the
+</I>&gt;<i> &gt;&gt; imagej-devel
+</I>&gt;<i> &gt;&gt; list instead of this one.
+</I>&gt;<i> &gt;&gt; Thanks and kind regards,
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt;  Birgit
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; ---
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; On Thu, 19 Mar 2015 12:37:30 -0500, Curtis Rueden &lt;
+</I>&gt;<i>
+</I>&gt;<i> &gt; ctrueden@
+</I>&gt;<i>
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> &gt;&gt; wrote:
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; &gt;Hi Birgit,
+</I>&gt;<i> &gt;&gt; &gt;
+</I>&gt;<i> &gt;&gt; &gt;&gt; we are trying to set up an ImageJ update site for our plugin
+</I>&gt;<i> &gt;&gt; &gt;&gt; collection MiToBo.
+</I>&gt;<i> &gt;&gt; &gt;
+</I>&gt;<i> &gt;&gt; &gt;Sounds great!
+</I>&gt;<i> &gt;&gt; &gt;
+</I>&gt;<i> &gt;&gt; &gt;&gt; Since we have a lot of dependencies we would like to test the setup
+</I>&gt;<i> &gt;&gt; &gt;&gt; first on our own local server
+</I>&gt;<i> &gt;&gt; &gt;
+</I>&gt;<i> &gt;&gt; &gt;Good idea.
+</I>&gt;<i> &gt;&gt; &gt;
+</I>&gt;<i> &gt;&gt; &gt;&gt; but in the end we plan to provide Mitobo via an ImageJ Wiki update
+</I>&gt;<i> &gt;&gt; &gt;&gt; site.
+</I>&gt;<i> &gt;&gt; &gt;
+</I>&gt;<i> &gt;&gt; &gt;Well, if you have a dedicated server, you can just use that. There is
+</I>&gt;<i> no
+</I>&gt;<i> &gt;&gt; &gt;requirement to use a personal update site. But I guess the URL &quot;
+</I>&gt;<i> &gt;&gt; &gt;<A HREF="http://sites.imagej.net/MiToBo">http://sites.imagej.net/MiToBo</A>&quot; would be pretty friendly. :-)
+</I>&gt;<i> &gt;&gt; &gt;
+</I>&gt;<i> &gt;&gt; &gt;&gt; Amongst others we depend on two jars, sezpoz.jar and xalan.jar. Both
+</I>&gt;<i> &gt;&gt; &gt;&gt; jars seem to have been provided by the Fiji Update Site in former
+</I>&gt;<i> &gt;&gt; &gt;&gt; days, but are now declared obsolete.
+</I>&gt;<i> &gt;&gt; &gt;
+</I>&gt;<i> &gt;&gt; &gt;Indeed.
+</I>&gt;<i> &gt;&gt; &gt;
+</I>&gt;<i> &gt;&gt; &gt;&gt; Since we need both of them we tried to upload them to our own site,
+</I>&gt;<i> &gt;&gt; &gt;&gt; however, this fails. First Fiji claims about changed checksums for
+</I>&gt;<i> &gt;&gt; &gt;&gt; both jar files. After recalculating the checksums and trying to
+</I>&gt;<i> &gt;&gt; &gt;&gt; upload them again, the updater throws the following exception:
+</I>&gt;<i> &gt;&gt; &gt;&gt;
+</I>&gt;<i> &gt;&gt; &gt;&gt; Upload failed: java.lang.NoClassDefFoundError:
+</I>&gt;<i> &gt;&gt; &gt;&gt; org/apache/xml/serializer/TreeWalker
+</I>&gt;<i> &gt;&gt; &gt;
+</I>&gt;<i> &gt;&gt; &gt;How bizarre. I wonder if this is something xalan-specific, since xalan
+</I>&gt;<i> &gt;&gt; &gt;ships classes that are also part of the JRE itself. As a test, you
+</I>&gt;<i> could
+</I>&gt;<i> &gt;&gt; &gt;temporarily delete your xalan JAR, restart ImageJ, and try to add
+</I>&gt;<i> _only_
+</I>&gt;<i> &gt;&gt; &gt;the sezpoz JAR to your update site, and see whether you encounter the
+</I>&gt;<i> &gt;&gt; same
+</I>&gt;<i> &gt;&gt; &gt;issue.
+</I>&gt;<i> &gt;&gt; &gt;
+</I>&gt;<i> &gt;&gt; &gt;&gt; What is Fiji's strategy to deal with cases where the same jar in
+</I>&gt;<i> &gt;&gt; &gt;&gt; different versions is provided by two update sites?
+</I>&gt;<i> &gt;&gt; &gt;
+</I>&gt;<i> &gt;&gt; &gt;IIRC, the ImageJ Updater (which is part of ImageJ2, and not specific to
+</I>&gt;<i> &gt;&gt; the
+</I>&gt;<i> &gt;&gt; &gt;Fiji distribution) favors versions further down in the list of update
+</I>&gt;<i> &gt;&gt; &gt;sites. That is: there is a linear order to the update sites, such that
+</I>&gt;<i> &gt;&gt; &gt;files from sites further down the chain are considered to &quot;shadow&quot; the
+</I>&gt;<i> &gt;&gt; same
+</I>&gt;<i> &gt;&gt; &gt;file from sites further up the chain. The reason I say &quot;IIRC&quot; is
+</I>&gt;<i> because
+</I>&gt;<i> &gt;&gt; I
+</I>&gt;<i> &gt;&gt; &gt;am not 100% certain that chain order is only defined by the ordering
+</I>&gt;<i> &gt;&gt; listed
+</I>&gt;<i> &gt;&gt; &gt;on the &quot;List of update sites&quot; wiki page. It may be that the order
+</I>&gt;<i> &gt;&gt; changes
+</I>&gt;<i> &gt;&gt; &gt;for a local installation depending on when sites are toggled on and
+</I>&gt;<i> off.
+</I>&gt;<i> &gt;&gt; If
+</I>&gt;<i> &gt;&gt; &gt;you are curious to dig in further, there is a unit test that verifies
+</I>&gt;<i> &gt;&gt; that
+</I>&gt;<i> &gt;&gt; &gt;various multi-update-site features work properly [1], which you could
+</I>&gt;<i> &gt;&gt; play
+</I>&gt;<i> &gt;&gt; &gt;with.
+</I>&gt;<i> &gt;&gt; &gt;
+</I>&gt;<i> &gt;&gt; &gt;The gist is that there is currently _no_ mechanism for defining
+</I>&gt;<i> &gt;&gt; &gt;update-site-level dependencies, beyond just building on top of the
+</I>&gt;<i> &gt;&gt; ImageJ
+</I>&gt;<i> &gt;&gt; &gt;and Fiji update sites. It is currently the user's responsibility to
+</I>&gt;<i> &gt;&gt; enable
+</I>&gt;<i> &gt;&gt; &gt;update sites upon which your update site depends. Some day we may
+</I>&gt;<i> &gt;&gt; address
+</I>&gt;<i> &gt;&gt; &gt;that issue as the number of update sites continues to grow, but it is
+</I>&gt;<i> &gt;&gt; not
+</I>&gt;<i> &gt;&gt; a
+</I>&gt;<i> &gt;&gt; &gt;simple feature to add.
+</I>&gt;<i> &gt;&gt; &gt;
+</I>&gt;<i> &gt;&gt; &gt;&gt; How does the updater try to determine depencies of plugins? In our
+</I>&gt;<i> &gt;&gt; &gt;&gt; case while checking our local jars it claimed to detect a cyclic
+</I>&gt;<i> &gt;&gt; &gt;&gt; dependency which was not there.
+</I>&gt;<i> &gt;&gt; &gt;
+</I>&gt;<i> &gt;&gt; &gt;It uses byte-code analysis to detect the dependencies. However, you can
+</I>&gt;<i> &gt;&gt; &gt;tweak them before uploading by editing the list of dependencies
+</I>&gt;<i> directly
+</I>&gt;<i> &gt;&gt; in
+</I>&gt;<i> &gt;&gt; &gt;the right-hand text box of the graphical updater window. This is
+</I>&gt;<i> &gt;&gt; sometimes
+</I>&gt;<i> &gt;&gt; &gt;necessary in cases where there are undesired circular dependencies
+</I>&gt;<i> &gt;&gt; (e.g.,
+</I>&gt;<i> &gt;&gt; &gt;slf4j-api and various slf4j bindings always detect as circular, due to
+</I>&gt;<i> &gt;&gt; the
+</I>&gt;<i> &gt;&gt; &gt;design of SLF4J).
+</I>&gt;<i> &gt;&gt; &gt;
+</I>&gt;<i> &gt;&gt; &gt;Regards,
+</I>&gt;<i> &gt;&gt; &gt;Curtis
+</I>&gt;<i> &gt;&gt; &gt;
+</I>&gt;<i> &gt;&gt; &gt;[1]
+</I>&gt;<i> &gt;&gt; &gt;
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> <A HREF="https://github.com/imagej/imagej-updater/blob/imagej-updater-0.7.1/src/test/java/net/imagej/updater/MultipleSitesTest.java">https://github.com/imagej/imagej-updater/blob/imagej-updater-0.7.1/src/test/java/net/imagej/updater/MultipleSitesTest.java</A>
+</I>&gt;<i> &gt;&gt; &gt;
+</I>&gt;<i> &gt;&gt; &gt;On Sun, Mar 15, 2015 at 7:34 AM, Birgit M&#246;ller &lt;
+</I>&gt;<i> &gt;&gt; &gt;
+</I>&gt;<i>
+</I>&gt;<i> &gt; <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">birgit.moeller at .uni-halle</A>
+</I>&gt;<i>
+</I>&gt;<i> &gt;&gt; wrote:
+</I>&gt;<i> &gt;&gt; &gt;
+</I>&gt;<i> &gt;&gt; &gt;&gt; Dear all,
+</I>&gt;<i> &gt;&gt; &gt;&gt; we are trying to set up an ImageJ update site for our plugin
+</I>&gt;<i> &gt;&gt; collection
+</I>&gt;<i> &gt;&gt; &gt;&gt; MiToBo. Since we have a lot of dependencies we would like to test the
+</I>&gt;<i> &gt;&gt; setup
+</I>&gt;<i> &gt;&gt; &gt;&gt; first on our own local server, but in the end we plan to provide
+</I>&gt;<i> &gt;&gt; Mitobo
+</I>&gt;<i> &gt;&gt; via
+</I>&gt;<i> &gt;&gt; &gt;&gt; an ImageJ Wiki update site. Unfortunately we encountered some
+</I>&gt;<i> &gt;&gt; problems.
+</I>&gt;<i> &gt;&gt; &gt;&gt; Amongst others we depend on two jars, sezpoz.jar and xalan.jar. Both
+</I>&gt;<i> &gt;&gt; jars
+</I>&gt;<i> &gt;&gt; &gt;&gt; seem to have been provided by the Fiji Update Site in former days,
+</I>&gt;<i> but
+</I>&gt;<i> &gt;&gt; are
+</I>&gt;<i> &gt;&gt; &gt;&gt; now declared obsolete. Since we need both of them we tried to upload
+</I>&gt;<i> &gt;&gt; them
+</I>&gt;<i> &gt;&gt; &gt;&gt; to our own site, however, this fails. First Fiji claims about changed
+</I>&gt;<i> &gt;&gt; &gt;&gt; checksums for both jar files. After recalculating the checksums and
+</I>&gt;<i> &gt;&gt; trying
+</I>&gt;<i> &gt;&gt; &gt;&gt; to upload them again, the updater throws the following exception:
+</I>&gt;<i> &gt;&gt; &gt;&gt;
+</I>&gt;<i> &gt;&gt; &gt;&gt; Upload failed: java.lang.NoClassDefFoundError:
+</I>&gt;<i> &gt;&gt; &gt;&gt; org/apache/xml/serializer/TreeWalker
+</I>&gt;<i> &gt;&gt; &gt;&gt;
+</I>&gt;<i> &gt;&gt; &gt;&gt; Then the updater can only be canceled and trying to re-run it
+</I>&gt;<i> requires
+</I>&gt;<i> &gt;&gt; &gt;&gt; recalculation of checksums again. Nevertheless the upload fails again
+</I>&gt;<i> &gt;&gt; with
+</I>&gt;<i> &gt;&gt; &gt;&gt; the above exception. Does anyone have an idea why it is not possible
+</I>&gt;<i> &gt;&gt; to
+</I>&gt;<i> &gt;&gt; &gt;&gt; upload both jars to our own site? For other jars unseen by Fiji
+</I>&gt;<i> before
+</I>&gt;<i> &gt;&gt; &gt;&gt; there were no problems.
+</I>&gt;<i> &gt;&gt; &gt;&gt;
+</I>&gt;<i> &gt;&gt; &gt;&gt; And finally two general questions:
+</I>&gt;<i> &gt;&gt; &gt;&gt;
+</I>&gt;<i> &gt;&gt; &gt;&gt; - What is Fiji's strategy to deal with cases where the same jar in
+</I>&gt;<i> &gt;&gt; &gt;&gt; different versions is provided by two update sites?
+</I>&gt;<i> &gt;&gt; &gt;&gt;
+</I>&gt;<i> &gt;&gt; &gt;&gt; - How does the updater try to determine depencies of plugins? In our
+</I>&gt;<i> &gt;&gt; case
+</I>&gt;<i> &gt;&gt; &gt;&gt; while checking our local jars it claimed to detect a cyclic
+</I>&gt;<i> dependency
+</I>&gt;<i> &gt;&gt; &gt;&gt; which was not there.
+</I>&gt;<i> &gt;&gt; &gt;&gt;
+</I>&gt;<i> &gt;&gt; &gt;&gt; Thanks and best regards,
+</I>&gt;<i> &gt;&gt; &gt;&gt;
+</I>&gt;<i> &gt;&gt; &gt;&gt;  Birgit
+</I>&gt;<i> &gt;&gt; &gt;&gt;
+</I>&gt;<i> &gt;&gt; &gt;&gt;
+</I>&gt;<i> &gt;&gt; &gt;&gt;
+</I>&gt;<i> &gt;&gt; ------------------------------------------------------------------------
+</I>&gt;<i> &gt;&gt; &gt;&gt; Dr. rer. nat. Birgit Moeller
+</I>&gt;<i> &gt;&gt; &gt;&gt;
+</I>&gt;<i> &gt;&gt; &gt;&gt; Pattern Recognition &amp; Bioinformatics
+</I>&gt;<i> &gt;&gt; &gt;&gt; Institute of Computer Science / Faculty of Natural Sciences III
+</I>&gt;<i> &gt;&gt; &gt;&gt; Martin Luther University Halle-Wittenberg
+</I>&gt;<i> &gt;&gt; &gt;&gt;
+</I>&gt;<i> &gt;&gt; &gt;&gt; office:     Room 4.12
+</I>&gt;<i> &gt;&gt; &gt;&gt; phone:      +49(0)345-55-24745
+</I>&gt;<i> &gt;&gt; &gt;&gt; fax:        +49(0)345-55-27039
+</I>&gt;<i> &gt;&gt; &gt;&gt; snail mail: Von-Seckendorff-Platz 1, 06120 Halle / Saale (Germany)
+</I>&gt;<i> &gt;&gt; &gt;&gt; e-mail:
+</I>&gt;<i>
+</I>&gt;<i> &gt; <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">birgit.moeller at .uni-halle</A>
+</I>&gt;<i>
+</I>&gt;<i> &gt;&gt; &gt;&gt; www:        <A HREF="http://www.informatik.uni-halle.de/moeller/">http://www.informatik.uni-halle.de/moeller/</A>
+</I>&gt;<i> &gt;&gt; &gt;&gt;
+</I>&gt;<i> &gt;&gt; ------------------------------------------------------------------------
+</I>&gt;<i> &gt;&gt; &gt;&gt;
+</I>&gt;<i> &gt;&gt; &gt;&gt; --
+</I>&gt;<i> &gt;&gt; &gt;&gt; ImageJ mailing list: <A HREF="http://imagej.nih.gov/ij/list.html">http://imagej.nih.gov/ij/list.html</A>
+</I>&gt;<i> &gt;&gt; &gt;&gt;
+</I>&gt;<i> &gt;&gt; &gt;
+</I>&gt;<i> &gt;&gt; &gt;--
+</I>&gt;<i> &gt;&gt; &gt;ImageJ mailing list: <A HREF="http://imagej.nih.gov/ij/list.html">http://imagej.nih.gov/ij/list.html</A>
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; --
+</I>&gt;<i> &gt;&gt; ImageJ mailing list: <A HREF="http://imagej.nih.gov/ij/list.html">http://imagej.nih.gov/ij/list.html</A>
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; _______________________________________________
+</I>&gt;<i> &gt; ImageJ-devel mailing list
+</I>&gt;<i>
+</I>&gt;<i> &gt; ImageJ-devel@
+</I>&gt;<i>
+</I>&gt;<i> &gt; <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> --
+</I>&gt;<i> View this message in context:
+</I>&gt;<i> <A HREF="http://imagej-devel.54429.x6.nabble.com/Re-Problems-uploading-jars-to-update-site-tp940p941.html">http://imagej-devel.54429.x6.nabble.com/Re-Problems-uploading-jars-to-update-site-tp940p941.html</A>
+</I>&gt;<i> Sent from the ImageJ-devel mailing list archive at Nabble.com.
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20150323/273e21e3/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20150323/273e21e3/attachment-0001.html</A>&gt;
+</PRE>
+
+
+
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002514.html">[ImageJ-devel] Problems uploading jars to update site
+</A></li>
+	<LI>Next message: <A HREF="002527.html">[ImageJ-devel] Problems uploading jars to update site
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2515">[ date ]</a>
+              <a href="thread.html#2515">[ thread ]</a>
+              <a href="subject.html#2515">[ subject ]</a>
+              <a href="author.html#2515">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

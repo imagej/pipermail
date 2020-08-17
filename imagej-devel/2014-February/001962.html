@@ -1,0 +1,163 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [fiji-devel] Re:  jython scripting, No compatible service: io.scif.SCIFIOService
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20Re%3A%20%20jython%20scripting%2C%0A%20No%20compatible%20service%3A%20io.scif.SCIFIOService&In-Reply-To=%3C530E0615.3010507%40helsinki.fi%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001961.html">
+   <LINK REL="Next"  HREF="001963.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [fiji-devel] Re:  jython scripting, No compatible service: io.scif.SCIFIOService</H1>
+    <B>Harri J&#228;&#228;linoja</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20Re%3A%20%20jython%20scripting%2C%0A%20No%20compatible%20service%3A%20io.scif.SCIFIOService&In-Reply-To=%3C530E0615.3010507%40helsinki.fi%3E"
+       TITLE="[ImageJ-devel] [fiji-devel] Re:  jython scripting, No compatible service: io.scif.SCIFIOService">harri.jaalinoja at helsinki.fi
+       </A><BR>
+    <I>Wed Feb 26 09:19:49 CST 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001961.html">[ImageJ-devel] [fiji-devel] Re:  jython scripting, No compatible service: io.scif.SCIFIOService
+</A></li>
+        <LI>Next message: <A HREF="001963.html">[ImageJ-devel] [fiji-devel] Re:  jython scripting, No compatible service: io.scif.SCIFIOService
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1962">[ date ]</a>
+              <a href="thread.html#1962">[ thread ]</a>
+              <a href="subject.html#1962">[ subject ]</a>
+              <a href="author.html#1962">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Mark,
+
+thanks a lot, setting CLASSPATH did the trick, after I removed the 
+unnecessary lines. I didn't understand them anyway, I was just parroting 
+<A HREF="http://fiji.sc/ImgLib2_Examples.">http://fiji.sc/ImgLib2_Examples.</A>
+
+Now it sort of works, but I still don't see the image. I get an icon 
+with the Java guy on the launcher bar, with the image name and &quot;(V) 
+(3.1%)&quot;. If I click that, all other windows disappear and there a small 
+stick-like artefact on the top of the screen, but nothing more.
+
+Good progress anyway, more tomorrow.
+
+Harri
+
+On 26/02/14 16:41, Mark Hiner wrote:
+&gt;<i> Hi Harri,
+</I>&gt;<i>
+</I>&gt;<i>     java.lang.
+</I>&gt;<i>     IllegalArgumentException: java.lang.IllegalArgumentException: No
+</I>&gt;<i>     compatible service: io.scif.SCIFIOService
+</I>&gt;<i>     <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">hajaalin at biotek973</A>:~/Software/
+</I>&gt;<i>     mvn-IJ2$ jar tvf target/dependency/scifio-0.9.2.jar |grep
+</I>&gt;<i>     SCIFIOService
+</I>&gt;<i>        150 Fri Feb 14 16:24:24 EET 2014 io/scif/SCIFIOService.class
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> So this exception may be slightly misleading. SCIFIOService is a 
+</I>&gt;<i> marker interface for all the services that are part of SCIFIO. When an 
+</I>&gt;<i> org.scijava.Context is initialized as it is here, it's typically given 
+</I>&gt;<i> a set of base service interfaces and then loads all implementations of 
+</I>&gt;<i> that service. So it seems like the Context knows about the 
+</I>&gt;<i> SCIFIOService interface, but didn't discover any implementations 
+</I>&gt;<i> (things like DefaultFormatService, DefaultImgUtilityService).
+</I>&gt;<i>
+</I>&gt;<i>  So this brings me to my next point: I think there is either a) a bug 
+</I>&gt;<i> in jython where annotations are not preserved or b) a bug with the 
+</I>&gt;<i> class loading logic used by Fiji/IJ2. I am leaning towards a) right now.
+</I>&gt;<i>
+</I>&gt;<i>  I am using an Ubuntu 12.04 64-bit VM. I installed Jython 2.5.3, but I 
+</I>&gt;<i> suspect you can get this working with 2.5.1.
+</I>&gt;<i>
+</I>&gt;<i>  Anyway, I went back to OSX and tested jython with the -Dpython.path 
+</I>&gt;<i> option, and got the same missing service exception. But! If I set 
+</I>&gt;<i> $CLASSPATH (java automatically picks up the $CLASSPATH environment 
+</I>&gt;<i> variable) and run the equivalent of:
+</I>&gt;<i>
+</I>&gt;<i> jython macros/imglib0.py /home/hajaalin/Data/Misha/composite1.ome.tif
+</I>&gt;<i>
+</I>&gt;<i> it works! Thus I believe that python.path has a bug and although 
+</I>&gt;<i> jython supports discovery of classes on python.path, it does not 
+</I>&gt;<i> preserve their annotations (or some similar metadata is being lost).
+</I>&gt;<i>
+</I>&gt;<i> So instead of setting CP and passing it via -Dpython.path, just use:
+</I>&gt;<i>
+</I>&gt;<i> export CLASSPATH=`find 
+</I>&gt;<i> /home/hajaalin/Software/fiji-20140219/Fiji.app/jars -name '*.jar' |sed 
+</I>&gt;<i> ':a;N;$!ba;s/\n/:/g'`
+</I>&gt;<i>
+</I>&gt;<i> A simple rule of thumb is, try running a random SCIFIO class like 
+</I>&gt;<i> &quot;java io.scif.SCIFIOService&quot; from the command line. If you get a 
+</I>&gt;<i> NoClassDef error, your CLASSPATH is not configured correctly. If you 
+</I>&gt;<i> get a &quot;NoSuchMethodError: main&quot;, your CLASSPATH is correct and your 
+</I>&gt;<i> jython will pick up all the desired classes.
+</I>&gt;<i>
+</I>&gt;<i> Moving on...
+</I>&gt;<i>
+</I>&gt;<i> jython macros/imglib0.py /home/hajaalin/Data/Misha/composite1.ome.tif
+</I>&gt;<i>
+</I>&gt;<i> ^ That then works a bit better with my CLASSPATH set, except I get a 
+</I>&gt;<i> different runtime error about how ImgMode.CELL can't be coerced to 
+</I>&gt;<i> ImgMode. (same error I get when running using Fiji).
+</I>&gt;<i>
+</I>&gt;<i> I notice that you aren't actually using the SCIFIOConfig you 
+</I>&gt;<i> construct, so if you delete those lines and I'm finally able to open 
+</I>&gt;<i> an image. The SCIFIOConfig isn't strictly necessary either - SCIFIO 
+</I>&gt;<i> will open it as a CellImg automatically if it needs to. I will try to 
+</I>&gt;<i> investigate further as to how to get the types working for a nested 
+</I>&gt;<i> enum in jython..
+</I>&gt;<i>
+</I>&gt;<i> You may see yet another error message about 
+</I>&gt;<i> io.scif.bf.BioFormatsFormat failing. This is because some jars in Fiji 
+</I>&gt;<i> are out of date, but that shouldn't cause catastrophic failure (it 
+</I>&gt;<i> just means that some proprietary formats won't be supported right 
+</I>&gt;<i> now). These jars should be updated this week.
+</I>&gt;<i>
+</I>&gt;<i> I hope this helps. Let me know if you can't get this working on your end.
+</I>&gt;<i>
+</I>&gt;<i> - Mark
+</I>
+
+-- 
+__________________________________________________
+Harri J&#228;&#228;linoja
+Light Microscopy Unit
+Institute of Biotechnology, University of Helsinki
+<A HREF="http://www.biocenter.helsinki.fi/bi/lmu/">http://www.biocenter.helsinki.fi/bi/lmu/</A>
++358 9 191 59370 fax +358 9 191 59366
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140226/96ace526/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20140226/96ace526/attachment.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001961.html">[ImageJ-devel] [fiji-devel] Re:  jython scripting, No compatible service: io.scif.SCIFIOService
+</A></li>
+	<LI>Next message: <A HREF="001963.html">[ImageJ-devel] [fiji-devel] Re:  jython scripting, No compatible service: io.scif.SCIFIOService
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1962">[ date ]</a>
+              <a href="thread.html#1962">[ thread ]</a>
+              <a href="subject.html#1962">[ subject ]</a>
+              <a href="author.html#1962">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

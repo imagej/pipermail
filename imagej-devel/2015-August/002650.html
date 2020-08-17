@@ -1,0 +1,233 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Status and API of ROIs in ImageJ2 ?
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Status%20and%20API%20of%20ROIs%20in%20ImageJ2%20%3F&In-Reply-To=%3Cweb-159675194%40univ-paris7.fr%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002646.html">
+   <LINK REL="Next"  HREF="002670.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Status and API of ROIs in ImageJ2 ?</H1>
+    <B>Adrian Daerr</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Status%20and%20API%20of%20ROIs%20in%20ImageJ2%20%3F&In-Reply-To=%3Cweb-159675194%40univ-paris7.fr%3E"
+       TITLE="[ImageJ-devel] Status and API of ROIs in ImageJ2 ?">adrian.daerr at univ-paris-diderot.fr
+       </A><BR>
+    <I>Wed Aug 19 10:10:06 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002646.html">[ImageJ-devel] Status and API of ROIs in ImageJ2 ?
+</A></li>
+        <LI>Next message: <A HREF="002670.html">[ImageJ-devel] Status and API of ROIs in ImageJ2 ?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2650">[ date ]</a>
+              <a href="thread.html#2650">[ thread ]</a>
+              <a href="subject.html#2650">[ subject ]</a>
+              <a href="author.html#2650">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+Dear ImageJ developers,
+
+I have included code from the AddROIs tutorial into the main()
+method of my plugin (for the moment essentially one of Curtis'
+commands-with-preview example), to select a Rectangle before
+calling the plugin. The source is available here:
+
+<A HREF="https://gitlab.com/pendant-drop/pendant-drop">https://gitlab.com/pendant-drop/pendant-drop</A>
+(in Goutte_pendante.java)
+
+If I launch the default UI, then the ROI will not show, but the
+plugin can launch. If on the other hand I launch the &quot;swing&quot; UI
+as in the tutorial, I do see the ROI (not until I call
+Image&gt;Adjust&gt;Brightness/Contrast..., but that's a minor detail),
+but now the invocation of the plugin at the end of main() will
+throw a MethodCallException with the stackTrace pasted below. How
+can the choice of a UI make the plugin execution fail ?
+
+Is there any other way that main can set a ROI on a loaded image
+that the plugin, which still uses an ImagePlus as input
+parameter, will see when calling imp.getProcessor().getRoi() ?
+
+TIA
+Adrian
+
+
+$&gt; mvn package
+$&gt; fiji --class-path target/pendant_drop-2.0.0-SNAPSHOT.jar 
+Goutte_pendante.class
+[INFO] Overriding About Pendant Drop; identifier: 
+command:About_Pendant_Drop; jar: 
+file:/home/adrian/Programmes/plugins_ImageJ_src/Traitement_Gouttes/target/pendant_drop-2.0.0-SNAPSHOT.jar
+[INFO] Overriding Pendant Drop; identifier: command:Goutte_pendante; 
+jar: 
+file:/home/adrian/Programmes/plugins_ImageJ_src/Traitement_Gouttes/target/pendant_drop-2.0.0-SNAPSHOT.jar
+[INFO] Populating metadata
+[INFO] Populating metadata
+[INFO] Found 10 JHotDraw adapters.
+org.scijava.module.MethodCallException: Error executing method: 
+Goutte_pendante#initTitle
+         at org.scijava.module.MethodRef.execute(MethodRef.java:73)
+         at 
+org.scijava.module.AbstractModuleItem.initialize(AbstractModuleItem.java:199)
+         at 
+org.scijava.module.AbstractModule.initialize(AbstractModule.java:86)
+         at 
+org.scijava.command.CommandModule.initialize(CommandModule.java:147)
+         at 
+org.scijava.module.process.InitPreprocessor.process(InitPreprocessor.java:60)
+         at 
+org.scijava.module.ModuleRunner.preProcess(ModuleRunner.java:104)
+         at org.scijava.module.ModuleRunner.run(ModuleRunner.java:156)
+         at 
+org.scijava.module.ModuleRunner.call(ModuleRunner.java:126)
+         at org.scijava.module.ModuleRunner.call(ModuleRunner.java:65)
+         at 
+org.scijava.thread.DefaultThreadService$2.call(DefaultThreadService.java:191)
+         at 
+java.util.concurrent.FutureTask$Sync.innerRun(FutureTask.java:303)
+         at java.util.concurrent.FutureTask.run(FutureTask.java:138)
+         at 
+java.util.concurrent.ThreadPoolExecutor$Worker.runTask(ThreadPoolExecutor.java:886)
+         at 
+java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:908)
+         at java.lang.Thread.run(Thread.java:662)
+Caused by: java.lang.reflect.InvocationTargetException
+         at sun.reflect.NativeMethodAccessorImpl.invoke0(Native 
+Method)
+         at 
+sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:39)
+         at 
+sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:25)
+         at java.lang.reflect.Method.invoke(Method.java:597)
+         at org.scijava.module.MethodRef.execute(MethodRef.java:69)
+         ... 14 more
+Caused by: java.lang.NullPointerException
+         at Goutte_pendante.initTitle(Goutte_pendante.java:94)
+         ... 19 more
+[ERROR] Module threw exception
+java.lang.NullPointerException
+         at Goutte_pendante.cancel(Goutte_pendante.java:87)
+         at 
+org.scijava.command.CommandModule.cancel(CommandModule.java:140)
+         at 
+org.scijava.module.ModuleRunner.cleanupAndBroadcastCancelation(ModuleRunner.java:189)
+         at org.scijava.module.ModuleRunner.run(ModuleRunner.java:161)
+         at 
+org.scijava.module.ModuleRunner.call(ModuleRunner.java:126)
+         at org.scijava.module.ModuleRunner.call(ModuleRunner.java:65)
+         at 
+org.scijava.thread.DefaultThreadService$2.call(DefaultThreadService.java:191)
+         at 
+java.util.concurrent.FutureTask$Sync.innerRun(FutureTask.java:303)
+         at java.util.concurrent.FutureTask.run(FutureTask.java:138)
+         at 
+java.util.concurrent.ThreadPoolExecutor$Worker.runTask(ThreadPoolExecutor.java:886)
+         at 
+java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:908)
+         at java.lang.Thread.run(Thread.java:662)
+
+
+
+On Sat, 15 Aug 2015 13:14:13 +0200
+  Adrian Daerr &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">adrian.daerr at univ-paris-diderot.fr</A>&gt; wrote:
+&gt;<i> Hello,
+</I>&gt;<i> 
+</I>&gt;<i> I am seizing a major rewrite of a plugin as an opportunity to switch
+</I>&gt;<i> from ImageJ1 to ImageJ2, also to avoid concurrency issues[*], and 
+</I>&gt;<i>now
+</I>&gt;<i> lots of questions come up. Some concern the way ROIs are handled. 
+</I>&gt;<i>What
+</I>&gt;<i> has happened in this regard since
+</I>&gt;<i>   <A HREF="http://imagej.net/ROIs">http://imagej.net/ROIs</A>
+</I>&gt;<i> was last updated ?
+</I>&gt;<i> 
+</I>&gt;<i> [*] cf discussion on the ImageJ list archived at
+</I>&gt;<i> <A HREF="http://imagej.1557.x6.nabble.com/ExtendedPlugInFilter-GenericDialog-and-synchronization-td5013333.html">http://imagej.1557.x6.nabble.com/ExtendedPlugInFilter-GenericDialog-and-synchronization-td5013333.html</A>
+</I>&gt;<i> 
+</I>&gt;<i> Here are two concrete questions:
+</I>&gt;<i> 
+</I>&gt;<i> 1) My plugin relies on a rectangular ROI being drawn on the image to
+</I>&gt;<i> know which area to include in the computation. How do I draw this 
+</I>&gt;<i>ROI
+</I>&gt;<i> once I have loaded the image as a dataset in the main() method that 
+</I>&gt;<i>is
+</I>&gt;<i> used for testing purposes ?
+</I>&gt;<i> 
+</I>&gt;<i> public static void main(final String... args) throws Exception {
+</I>&gt;<i>     final String testImagePath = &quot;testImage.jpg&quot;;
+</I>&gt;<i> 
+</I>&gt;<i>     // Launch ImageJ as usual.
+</I>&gt;<i>     final ImageJ ij = net.imagej.Main.launch(args);
+</I>&gt;<i> 
+</I>&gt;<i>     // Open test image.
+</I>&gt;<i>     final Dataset dataset = ij.dataset().open(testImagePath);
+</I>&gt;<i> 
+</I>&gt;<i>     // display the dataset
+</I>&gt;<i>     ij.ui().show(dataset);
+</I>&gt;<i> 
+</I>&gt;<i>     // create rectangular ROI
+</I>&gt;<i>     //imp.setRoi(120,60,340,420);// How to do this on a dataset ?
+</I>&gt;<i> 
+</I>&gt;<i>     // Launch the &quot;Foo_Bar&quot; command.
+</I>&gt;<i>     ij.command().run(Foo_Bar.class, true);
+</I>&gt;<i> }
+</I>&gt;<i> 
+</I>&gt;<i> (alternatively, how would I generate a new dataset, or I guess 
+</I>&gt;<i>something like a &quot;View&quot; in ImageJ2 terminology, of the ROI sub-image 
+</I>&gt;<i>of the original dataset ? I could then substitute the original 
+</I>&gt;<i>dataset with this sub-image and have the plugin operate on the whole 
+</I>&gt;<i>image by default)
+</I>&gt;<i> 
+</I>&gt;<i> 2) The plugin preview generates overlays using java.awt.geom.Path2D,
+</I>&gt;<i> java.awt.geom.Area and java.awt.Shape, which are then converted via
+</I>&gt;<i> ij.gui.ShapeRoi() and ij.gui.Overlay(), assembled with 
+</I>&gt;<i>overlay.add(),
+</I>&gt;<i> and drawn using imp.setOverlay(). Is there a new IJ2-way to do this
+</I>&gt;<i> (especially since the cited web page (rightly) insists on separation
+</I>&gt;<i> of selection and visualisation shapes) ?
+</I>&gt;<i> 
+</I>&gt;<i> TIA,
+</I>&gt;<i> Adrian
+</I>&gt;<i> 
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>
+-- 
+<A HREF="http://www.msc.univ-paris-diderot.fr/~daerr/">http://www.msc.univ-paris-diderot.fr/~daerr/</A>
+
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002646.html">[ImageJ-devel] Status and API of ROIs in ImageJ2 ?
+</A></li>
+	<LI>Next message: <A HREF="002670.html">[ImageJ-devel] Status and API of ROIs in ImageJ2 ?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2650">[ date ]</a>
+              <a href="thread.html#2650">[ thread ]</a>
+              <a href="subject.html#2650">[ subject ]</a>
+              <a href="author.html#2650">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

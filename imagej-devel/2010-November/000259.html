@@ -1,0 +1,180 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] IJ2 Plugin Proposal
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20IJ2%20Plugin%20Proposal&In-Reply-To=%3C4CED809E.105%40wisc.edu%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000264.html">
+   <LINK REL="Next"  HREF="000261.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] IJ2 Plugin Proposal</H1>
+    <B>Aivar Grislis</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20IJ2%20Plugin%20Proposal&In-Reply-To=%3C4CED809E.105%40wisc.edu%3E"
+       TITLE="[ImageJ-devel] IJ2 Plugin Proposal">grislis at wisc.edu
+       </A><BR>
+    <I>Wed Nov 24 15:16:14 CST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000264.html">[ImageJ-devel] ImgLib automated builds
+</A></li>
+        <LI>Next message: <A HREF="000261.html">[ImageJ-devel] IJ2 Plugin Proposal
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#259">[ date ]</a>
+              <a href="thread.html#259">[ thread ]</a>
+              <a href="subject.html#259">[ subject ]</a>
+              <a href="author.html#259">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I'm proposing a more dynamic way of running plugins and sending images 
+from one plugin to another that would lend itself to workflows and 
+pipelines.  This could also be used within plugins and within IJ2 as an 
+architectural building block to chain chunks of image processing code 
+together.
+
+Basically I propose that a plugin can have multiple named input and 
+output images and that whenever an output image is ready it is passed on 
+to become the input image to the next plugin in the chain.
+
+IMPETUS
+
+I feel the need for this from a couple of plugins I have worked on 
+(actually my only plugins!).
+
+I worked on a Deep Zoom plugin.  This takes a huge image, tiles it, then 
+the tiles are written out in a particular directory/file name 
+structure.  Next we halve the original image and repeat, until the image 
+gets halved to a miniscule size.
+
+While working on this plugin I thought about writing the code to halve 
+the image and to tile it in the most general-purpose, reusable way.  
+Also I wanted to be memory-efficient: I didn't want to just make all the 
+halves, then go through them and make all the tiles, then go throughout 
+those and write out all the files.
+
+What I came up with at that time was a chainable plugin.  In pseudo-code:
+
+interface IChainablePlugin {
+
+   // chains one plugin to next; called from outside the plugin
+   public chain(IChainablePlugin plugin);
+
+   // gets the input image; called from within plugin
+   Image get();
+
+   // puts the output image; called from within plugin
+   put(Image image);
+}
+
+An abstract base class kept track of the next, chained plugin instance 
+and handed off the output image to that next plugin, using the same thread.
+
+I wrote a chainable plugin class to halve the image, one to tile it, and 
+had a third one that was just an inner class to my Deep Zoom plugin that 
+handled the specifics of writing out the tiled image files.  Presumably 
+the first two classes would be reusable code and the third was just 
+specific to Deep Zoom.
+
+Obviously as-is this is limited to one input and one output.  I started 
+thinking about having an image dispatcher class that would keep track of 
+which images a plugin required and hand them off from one plugin to another.
+
+I'll just briefly mention the SLIM plugin I am working on.  Since the 
+SLIM fitting process is time consuming I display a very coarse colorized 
+version of the fitted results that is refined as the fit progresses.  So 
+there I want to pass on my output image before the plugin finishes and I 
+want to put out successive versions of this image.  This is similar to 
+my wanting to process the individual tiles before the whole image is tiled.
+
+PROPOSAL
+
+We could label the input and output images using Java annotations.  
+(Note that the current Declarative Plugin annotations allow one to label 
+input and output image member variables but the outputs are harvested 
+only once the plugin is finished. There is no way to put out an output 
+image within the plugin code.)
+
+Here is some sample code for what I'm proposing:
+
+&quot;@Input
+@Output({ @Img(Plugin1.BLUE), @Img(Plugin1.GREEN) })
+public class Plugin1 extends AbstractPlugin {
+   public static final String BLUE = &quot;Blue&quot;;
+   public static final String GREEN = &quot;Green&quot;;
+
+   void process() {
+       Image image = get();
+       put(BLUE, image);
+       put(GREEN, image);
+   }
+}&quot;
+
+Here the annotations result in an input name set of [&quot;Default&quot;] and an 
+output set of [&quot;Blue&quot;,&quot;Green&quot;].  (If there are no parameters the default 
+name is used.)  Of course, there could also be named input images (i.e. 
+&quot;get(ORANGE)&quot;) or default output images (i.e. &quot;put()&quot;).
+
+Instances of plugins such as these could be chained together:
+   plugin1.chain(Plugin1.BLUE, plugin2);  // named output goes to 
+default input
+   plugin1.chain(Plugin1.GREEN, plugin2, Plugin2.ORANGE); // named 
+output goes to named input
+   plugin2.chain(plugin3); // default output goes to default input
+   plugin2.chain(plugin4, Plugin4.PURPLE); // default output goes to 
+named input
+
+Using strings as identifiers might seem less than ideal.  However, the 
+strings are unique to the plugin they belong to.  If they are specified 
+as static constants, as above, that would prevent spelling mismatches.  
+Once a chain of plugins is established and before we run it we could 
+make sure that all of the inputs have been chained to.  We can detect if 
+a plugin asks for an input or output that has not been annotated and 
+warn the plugin programmer.
+
+Of course, once we have named input and output images we could build on 
+that and give the IJ end-user ways to link up plugins in workflows or 
+pipelines, a la CellProfiler.
+
+I have a prototype implementation of this, so the sample code above 
+works, details upon request.
+
+Aivar
+
+(P.S. It's the Thanksgiving holiday in the U.S. so you might not hear 
+from us until Monday.  Happy Thanksgiving!)
+
+
+
+
+
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000264.html">[ImageJ-devel] ImgLib automated builds
+</A></li>
+	<LI>Next message: <A HREF="000261.html">[ImageJ-devel] IJ2 Plugin Proposal
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#259">[ date ]</a>
+              <a href="thread.html#259">[ thread ]</a>
+              <a href="subject.html#259">[ subject ]</a>
+              <a href="author.html#259">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

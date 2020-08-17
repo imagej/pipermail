@@ -1,0 +1,159 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Progress on the Beanshell/macro front
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Progress%20on%20the%20Beanshell/macro%20front&In-Reply-To=%3CCADN69yk85x2qQFkS2zj4jLwFdoPx7XUfMZmVvrOP_mNU_HmM%3DA%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000488.html">
+   <LINK REL="Next"  HREF="000490.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Progress on the Beanshell/macro front</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Progress%20on%20the%20Beanshell/macro%20front&In-Reply-To=%3CCADN69yk85x2qQFkS2zj4jLwFdoPx7XUfMZmVvrOP_mNU_HmM%3DA%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Progress on the Beanshell/macro front">ctrueden at wisc.edu
+       </A><BR>
+    <I>Wed Sep 14 17:12:35 CDT 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000488.html">[ImageJ-devel] Progress on the Beanshell/macro front
+</A></li>
+        <LI>Next message: <A HREF="000490.html">[ImageJ-devel] Fwd: [ome-devel] Storing 6D and 7D in OME-XML &amp;	OME-TIFF
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#489">[ date ]</a>
+              <a href="thread.html#489">[ thread ]</a>
+              <a href="subject.html#489">[ subject ]</a>
+              <a href="author.html#489">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Wayne,
+
+Why would you want to base the macro interpreter on Beanshell? This is going
+&gt;<i> to require a *lot* of work and the resulting Beanshell-based language is
+</I>&gt;<i> unlikely to be 100% backward compatible. I thought the plan for handling
+</I>&gt;<i> backward compatibility was to hand off legacy macros and plugins to IJ1.
+</I>&gt;<i>
+</I>
+The plan until recently was indeed to merely support IJ1 macros as-is,
+within the legacy layer. That is, existing macros would work as before, but
+no new IJ2 functionality would be accessible via macros. However, after
+hearing from people about how they would like to see the macro language
+truly work in IJ2 (e.g.,
+<A HREF="http://imagejdev.org/pipermail/imagej-devel/2011-September/000480.html">http://imagejdev.org/pipermail/imagej-devel/2011-September/000480.html</A>),
+Johannes and I discussed whether another solution might be possible. As
+Johannes says, we already have a proof-of-concept Beanshell-based version of
+the macro language, so it is looking quite doable right now&#8212;not an enormous
+effort to develop or maintain. If it turns out to be a huge burden, we can
+fall back to our original strategy, but it is worth a try to make IJ2
+accessible via macros.
+
+Regards,
+Curtis
+
+On Wed, Sep 14, 2011 at 1:58 PM, Johannes Schindelin &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">schindelin at wisc.edu</A>&gt;wrote:
+
+&gt;<i> Dear Wayne,
+</I>&gt;<i>
+</I>&gt;<i> [re-Cc:ing the list, since I think that this issue is of broader
+</I>&gt;<i> interest.]
+</I>&gt;<i>
+</I>&gt;<i> On Wed, 14 Sep 2011, Rasband, Wayne (NIH/NIMH) [E] wrote:
+</I>&gt;<i>
+</I>&gt;<i> &gt; On Sep 14, 2011, at 2:09 AM, Johannes Schindelin wrote:
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; &gt; I now have a proof-of concept of the Macro interpreter based on
+</I>&gt;<i> &gt; &gt; Beanshell. Note: it only supports the getDimensions() function for
+</I>&gt;<i> &gt; &gt; now. As described earlier, the problem is that that function takes
+</I>&gt;<i> &gt; &gt; possibly uninitialized variables by reference rather than values,
+</I>&gt;<i> &gt; &gt; which is fully out of line with the syntax of Beanshell (or C or
+</I>&gt;<i> &gt; &gt; Java).
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> &gt; &gt; Instead of forking Beanshell, I decided it'd be better to use
+</I>&gt;<i> &gt; &gt; javassist to rewrite a few method calls here and there. I also wanted
+</I>&gt;<i> &gt; &gt; to make sure that these modifications do not affect Beanshell itself,
+</I>&gt;<i> &gt; &gt; and I put a particular focus on making it possible to load the
+</I>&gt;<i> &gt; &gt; Beanshell classes before doing the Javassist modifications (because it
+</I>&gt;<i> &gt; &gt; would lead to nasty side effects otherwise).
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Why would you want to base the macro interpreter on Beanshell? This is
+</I>&gt;<i> &gt; going to require a *lot* of work and the resulting Beanshell-based
+</I>&gt;<i> &gt; language is unlikely to be 100% backward compatible. I thought the plan
+</I>&gt;<i> &gt; for handling backward compatibility was to hand off legacy macros and
+</I>&gt;<i> &gt; plugins to IJ1.
+</I>&gt;<i>
+</I>&gt;<i> There are a lot of power users out there who need the macro language to
+</I>&gt;<i> exist also in IJ2. So we cannot simply drop it.
+</I>&gt;<i>
+</I>&gt;<i> But the legacy macros will not handle IJ2 properly. So we need something
+</I>&gt;<i> better.
+</I>&gt;<i>
+</I>&gt;<i> Also, the limitations of the Macro language are rather severe, not being
+</I>&gt;<i> able to interact with the Java API. Now is the time to break that barrier.
+</I>&gt;<i>
+</I>&gt;<i> There is another rather big problem with the Macro language that I'd like
+</I>&gt;<i> to address at the same time: the functions of the macro language are not
+</I>&gt;<i> available to Java programmers. In many cases, one can work around that by
+</I>&gt;<i> adding chunks of Java code (but there is no consistent way how to
+</I>&gt;<i> translate calls to macro functions into Java code), but in some cases, it
+</I>&gt;<i> is plainly impossible to do the same thing in Java which is very easy in
+</I>&gt;<i> macros (because of the use of package-local methods and fields).
+</I>&gt;<i>
+</I>&gt;<i> As I suggested at multiple occasions, a properly designed macro interface
+</I>&gt;<i> should have a 1:1 correspondence in the Java API. Because if you need to
+</I>&gt;<i> be able to do something using macros, there is no good reason to believe
+</I>&gt;<i> that the same functionality should be lacking from the Java-accessible
+</I>&gt;<i> API.
+</I>&gt;<i>
+</I>&gt;<i> With the redesign, there will be finally a Java class that defines all the
+</I>&gt;<i> macro functions, so we have that 1:1 correspondence not only in the usage,
+</I>&gt;<i> but it will indeed be the very same code performing the actions, so there
+</I>&gt;<i> is no room for inconsistencies between macros and plugins.
+</I>&gt;<i>
+</I>&gt;<i> Yes, it will be a lot of work, but I dare to hope that you will notify me
+</I>&gt;<i> whenever you change something in the macro language so that I can take
+</I>&gt;<i> care of the IJ2 version thereof.
+</I>&gt;<i>
+</I>&gt;<i> Unfortunately, given the architecture of the IJ1 Macro interpreter, I do
+</I>&gt;<i> not see any chance to modify the IJ1 code such that it naturally
+</I>&gt;<i> transforms into the IJ2 Macro interpreter. If you do see such a chance,
+</I>&gt;<i> please enlighten me.
+</I>&gt;<i>
+</I>&gt;<i> Ciao,
+</I>&gt;<i> Johannes
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagejdev.org</A>
+</I>&gt;<i> <A HREF="http://imagejdev.org/mailman/listinfo/imagej-devel">http://imagejdev.org/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20110914/5957ec7c/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20110914/5957ec7c/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000488.html">[ImageJ-devel] Progress on the Beanshell/macro front
+</A></li>
+	<LI>Next message: <A HREF="000490.html">[ImageJ-devel] Fwd: [ome-devel] Storing 6D and 7D in OME-XML &amp;	OME-TIFF
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#489">[ date ]</a>
+              <a href="thread.html#489">[ thread ]</a>
+              <a href="subject.html#489">[ subject ]</a>
+              <a href="author.html#489">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,234 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [fiji-devel] Status reporting in ImgLib	Algorithms
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20Status%20reporting%20in%20ImgLib%0A%09Algorithms&In-Reply-To=%3CCADN69ykrBVkeYVk0tEUhh1SpZb%2BQb7O2ztrReCO-po5nLFCasg%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001722.html">
+   <LINK REL="Next"  HREF="001724.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [fiji-devel] Status reporting in ImgLib	Algorithms</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20Status%20reporting%20in%20ImgLib%0A%09Algorithms&In-Reply-To=%3CCADN69ykrBVkeYVk0tEUhh1SpZb%2BQb7O2ztrReCO-po5nLFCasg%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] [fiji-devel] Status reporting in ImgLib	Algorithms">ctrueden at wisc.edu
+       </A><BR>
+    <I>Mon Aug  5 12:15:58 CDT 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001722.html">[ImageJ-devel] [fiji-devel] Status reporting in ImgLib	Algorithms
+</A></li>
+        <LI>Next message: <A HREF="001724.html">[ImageJ-devel] [fiji-devel] Status reporting in ImgLib Algorithms
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1723">[ date ]</a>
+              <a href="thread.html#1723">[ thread ]</a>
+              <a href="subject.html#1723">[ subject ]</a>
+              <a href="author.html#1723">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Tobias,
+
+&gt;<i> I had a quick look and saw that scijava-common is itself not without
+</I>&gt;<i> dependencies. I found it depends on org.bushe.eventbus.
+</I>
+Yes. SciJava Common also depends on SezPoz. However, both of these
+dependencies are encapsulated, meaning that no downstream code is
+&quot;infected&quot; with any direct references to classes from either SezPoz or
+EventBus. All event logic goes through the SciJava Common EventService. And
+all SezPoz logic is transparent to the developer, via APT.
+
+&gt;<i> On the eventbus website I found the notice:
+</I>&gt;<i> Update 3/2013: The EventBus has gone stale
+</I>
+Thanks for the info; I hadn't seen that. Fortunately, the version of
+EventBus we use does everything we need. We are unlikely to need upstream
+support or new versions. At worst, we can fork the project and cut our own
+new release (and/or integrate the EventBus code into SciJava Common itself)
+in case a future critical bug is discovered.
+
+&gt;<i> I would favour a way where we could keep the imglib2 code focused on
+</I>&gt;<i> processing pixels, not caring about framework issues.
+</I>
+What about Mark's option (A): &quot;imglib2 needs its own status reporting
+mechanism (Listeners and Events etc.)&quot;?
+
+&gt;<i> I think the overhead will be quite high in some cases. For instance in
+</I>&gt;<i> your forked ComputeMinMax algorithm you do some work on updating
+</I>&gt;<i> status for every single pixel, which I think is definitely overdoing
+</I>&gt;<i> it.
+</I>
+Yes, there is always a tradeoff, and a balance, for this problem. I agree
+that status-per-pixel is overkill.
+
+What about polling? Another option might be for ImgLib2 algorithms to
+update some (standardized) internal state, but not inform anyone about such
+changes. Then downstream code could poll that state every X milliseconds.
+
+Regards,
+Curtis
+
+
+On Mon, Aug 5, 2013 at 11:01 AM, Tobias Pietzsch &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pietzsch at mpi-cbg.de</A>&gt;wrote:
+
+&gt;<i> Hi all,
+</I>&gt;<i>
+</I>&gt;<i> First of all, I am very reluctant to add any dependency to
+</I>&gt;<i> imglib2-algorithms core.
+</I>&gt;<i>
+</I>&gt;<i> I admit that I did not really look into scijava-common so far, so I cannot
+</I>&gt;<i> really comment on how severe I think this would be.
+</I>&gt;<i> I had a quick look and saw that scijava-common is itself not without
+</I>&gt;<i> dependencies. I found it depends on org.bushe.eventbus. On the eventbus
+</I>&gt;<i> website I found the notice:
+</I>&gt;<i> Update 3/2013: The EventBus has gone stale and is unlikely to be extended
+</I>&gt;<i> to other platforms. Suitable, though more primitive, replacements can be
+</I>&gt;<i> found for GWT (GWT EventBus&lt;<A HREF="http://google-web-toolkit.googlecode.com/svn/javadoc/2.1/com/google/gwt/event/shared/EventBus.html">http://google-web-toolkit.googlecode.com/svn/javadoc/2.1/com/google/gwt/event/shared/EventBus.html</A>&gt;),
+</I>&gt;<i> Javascript (TIBCO PageBus - an OpenAjax Hub implementation&lt;<A HREF="http://developer.tibco.com/pagebus/default.jsp">http://developer.tibco.com/pagebus/default.jsp</A>&gt;)
+</I>&gt;<i> and Flex (Parsley's Messaging&lt;<A HREF="http://www.spicefactory.org/parsley/docs/3.0/manual/">http://www.spicefactory.org/parsley/docs/3.0/manual/</A>&gt;
+</I>&gt;<i> )
+</I>&gt;<i> So would that mean dragging in a dead project as a transitive dependency?
+</I>&gt;<i>
+</I>&gt;<i> As far as I can tell, the net.imglib2.multithreading stuff is a leftover
+</I>&gt;<i> from imglib1 times and I think I have mentioned several times that I would
+</I>&gt;<i> like to get rid of it&#8230; :-)
+</I>&gt;<i> I guess that scijava-common ThreadService is more thought-through than the
+</I>&gt;<i> SimpleMultiThreading class. So replacing that I would see as an advantage.
+</I>&gt;<i> In general, I think ExecutorServices are a good fit for multithreading
+</I>&gt;<i> pixel processing algorithms, along the lines of submitting a runnable for
+</I>&gt;<i> every line/plane/.
+</I>&gt;<i>
+</I>&gt;<i> I see that you have a need for status reporting in ImageJ2 but I'm not
+</I>&gt;<i> sure that it should be in imglib-algorithms.
+</I>&gt;<i> I would favour a way where we could keep the imglib2 code focused on
+</I>&gt;<i> processing pixels, not caring about framework issues.
+</I>&gt;<i> In principle, status reporting can be performed before entering and after
+</I>&gt;<i> leaving a imglib2 &quot;work-unit&quot;.
+</I>&gt;<i> If fine grained reporting is required, then this would mean splitting up
+</I>&gt;<i> the work into smaller units and reporting in between.
+</I>&gt;<i>
+</I>&gt;<i> In any case, even if we add scijava-common as a dependency, I strongly
+</I>&gt;<i> suggest to also keep non-reporting versions of the algorithms.
+</I>&gt;<i> If noone is listening to the status reports thats just wasted computation
+</I>&gt;<i> time. I think the overhead will be quite high in some cases.
+</I>&gt;<i> For instance in your forked ComputeMinMax algorithm you do some work on
+</I>&gt;<i> updating status for every single pixel, which I think is definitely
+</I>&gt;<i> overdoing it.
+</I>&gt;<i>
+</I>&gt;<i> As a compromise I could image putting an empty protected method report()
+</I>&gt;<i> that is called periodically by the core algorithm implementation.
+</I>&gt;<i> The JIT would hopefully just optimize that away if you use the core
+</I>&gt;<i> algorithm. Then for the reporting version you would have to extend the core
+</I>&gt;<i> algorithm and override report().
+</I>&gt;<i>
+</I>&gt;<i> best regards,
+</I>&gt;<i> Tobias
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On Jul 26, 2013, at 5:09 PM, Mark Hiner &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">hinerm at gmail.com</A>&gt; wrote:
+</I>&gt;<i>
+</I>&gt;<i> Hi all (especially ImgLib2 developers)
+</I>&gt;<i>
+</I>&gt;<i>   Up until now, when running ImgLib2 algorithms on large datasets in
+</I>&gt;<i> ImageJ2, the UI was basically frozen for the complete compute time (e.g.
+</I>&gt;<i> when computing Min/Max values in the Brightness/Contrast plugin).
+</I>&gt;<i>
+</I>&gt;<i>   As of this commit&lt;<A HREF="https://github.com/imagej/imagej/commit/dde5c3529e4b5daf78eb899a781635d4730ecb85">https://github.com/imagej/imagej/commit/dde5c3529e4b5daf78eb899a781635d4730ecb85</A>&gt;UI-based refreshing and event callback methods are now handled on a
+</I>&gt;<i> separate thread, allowing them to send UI updates (e.g. via the
+</I>&gt;<i> StatusService).
+</I>&gt;<i>
+</I>&gt;<i>   For the moment, to avoid adding a Scijava-common dependency to ImgLib2
+</I>&gt;<i> algorithms, I forked the ComputeMinMax algorithm&lt;<A HREF="https://github.com/imagej/imagej/blob/ffb3d651811089e582c0698701a1a1ea19151db9/core/data/src/main/java/imagej/data/minmax/DefaultMinMaxMethod.java">https://github.com/imagej/imagej/blob/ffb3d651811089e582c0698701a1a1ea19151db9/core/data/src/main/java/imagej/data/minmax/DefaultMinMaxMethod.java</A>&gt;in IJ2 to use the StatusService to report computation progress.
+</I>&gt;<i>
+</I>&gt;<i>   Going forward though, we should agree on a long term solution:
+</I>&gt;<i>
+</I>&gt;<i>   A) imglib2 needs its own status reporting mechanism (Listeners and
+</I>&gt;<i> Events etc.)
+</I>&gt;<i>   B) it needs a SciJava context to use the StatusService
+</I>&gt;<i>   C) we have to fork every core algorithm in ImgLib2 to add StatusService
+</I>&gt;<i>
+</I>&gt;<i>   If possible I would like to avoid C, but if it becomes a necessity it
+</I>&gt;<i> would be helpful if the algorithms were refactored for extensibility
+</I>&gt;<i> (having protected field accessors, for example).
+</I>&gt;<i>
+</I>&gt;<i>   I personally am in favor of B because it would limit code repetition and
+</I>&gt;<i> pave the way for further unification (Part of why I completely forked
+</I>&gt;<i> ComputeMinMax was to use the Scijava-common ThreadService, which has some -
+</I>&gt;<i> I think unnecessary - overlap with the SimpleMultiThreading utility class).
+</I>&gt;<i>
+</I>&gt;<i>   But I understand that adding this dependency is not a minor request, and
+</I>&gt;<i> care would have to be taken to limit the impact on performance.
+</I>&gt;<i>
+</I>&gt;<i>   So what do other people think?
+</I>&gt;<i>
+</I>&gt;<i> Thanks,
+</I>&gt;<i> - Mark
+</I>&gt;<i>
+</I>&gt;<i> --
+</I>&gt;<i> --
+</I>&gt;<i> Please avoid top-posting, and please make sure to reply-to-all!
+</I>&gt;<i>
+</I>&gt;<i> Mailing list web interface: <A HREF="http://groups.google.com/group/fiji-devel">http://groups.google.com/group/fiji-devel</A>
+</I>&gt;<i>
+</I>&gt;<i> ---
+</I>&gt;<i> You received this message because you are subscribed to the Google Groups
+</I>&gt;<i> &quot;Fiji-devel&quot; group.
+</I>&gt;<i> To unsubscribe from this group and stop receiving emails from it, send an
+</I>&gt;<i> email to <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">fiji-devel+unsubscribe at googlegroups.com.</A>
+</I>&gt;<i> For more options, visit <A HREF="https://groups.google.com/groups/opt_out.">https://groups.google.com/groups/opt_out.</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>  --
+</I>&gt;<i> --
+</I>&gt;<i> Please avoid top-posting, and please make sure to reply-to-all!
+</I>&gt;<i>
+</I>&gt;<i> Mailing list web interface: <A HREF="http://groups.google.com/group/fiji-devel">http://groups.google.com/group/fiji-devel</A>
+</I>&gt;<i>
+</I>&gt;<i> ---
+</I>&gt;<i> You received this message because you are subscribed to the Google Groups
+</I>&gt;<i> &quot;Fiji-devel&quot; group.
+</I>&gt;<i> To unsubscribe from this group and stop receiving emails from it, send an
+</I>&gt;<i> email to <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">fiji-devel+unsubscribe at googlegroups.com.</A>
+</I>&gt;<i> For more options, visit <A HREF="https://groups.google.com/groups/opt_out.">https://groups.google.com/groups/opt_out.</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20130805/7aeb26ce/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20130805/7aeb26ce/attachment.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001722.html">[ImageJ-devel] [fiji-devel] Status reporting in ImgLib	Algorithms
+</A></li>
+	<LI>Next message: <A HREF="001724.html">[ImageJ-devel] [fiji-devel] Status reporting in ImgLib Algorithms
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1723">[ date ]</a>
+              <a href="thread.html#1723">[ thread ]</a>
+              <a href="subject.html#1723">[ subject ]</a>
+              <a href="author.html#1723">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

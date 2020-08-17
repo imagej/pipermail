@@ -1,0 +1,190 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] ImageJ - KNIME Integration: open questions
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImageJ%20-%20KNIME%20Integration%3A%20open%20questions&In-Reply-To=%3CCAHLFyjd0rDNJz%2B0SM7QB1-s_t5JG1VhVJr7spA6X-70bSf5njQ%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001495.html">
+   <LINK REL="Next"  HREF="001497.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] ImageJ - KNIME Integration: open questions</H1>
+    <B>Lee Kamentsky</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImageJ%20-%20KNIME%20Integration%3A%20open%20questions&In-Reply-To=%3CCAHLFyjd0rDNJz%2B0SM7QB1-s_t5JG1VhVJr7spA6X-70bSf5njQ%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] ImageJ - KNIME Integration: open questions">leek at broadinstitute.org
+       </A><BR>
+    <I>Wed May 15 09:35:50 CDT 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001495.html">[ImageJ-devel] ImageJ - KNIME Integration: open questions
+</A></li>
+        <LI>Next message: <A HREF="001497.html">[ImageJ-devel] (no subject)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1496">[ date ]</a>
+              <a href="thread.html#1496">[ thread ]</a>
+              <a href="subject.html#1496">[ subject ]</a>
+              <a href="author.html#1496">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Wed, May 15, 2013 at 9:08 AM, Michael Zinsmaier &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">michael.zinsmaier at gmx.de</A>
+&gt;<i> wrote:
+</I>
+&gt;<i>  Hi all,
+</I>&gt;<i>
+</I>&gt;<i>  after you guys have made so much progress during the hackathon, we felt
+</I>&gt;<i> motivated to review our KNIME-ImageJ2 integration and try to further
+</I>&gt;<i> improve it, as we want to have everything set-up when you release ImageJ2
+</I>&gt;<i> ;-)
+</I>&gt;<i>
+</I>&gt;<i> Anyway, we discussed several things and a lot of questions came up
+</I>&gt;<i> concerning ImageJ2:
+</I>&gt;<i>
+</I>&gt;<i> Thx guys, lots of stuff below also applies to CellProfiler running
+</I>ImageJ2.0 plugins.
+
+&gt;<i>
+</I>
+&gt;<i>  * Why is the threshold  plugin an interactive command? This for instance
+</I>&gt;<i> prevents the plugin from  beeing executing in headless mode (and hence from
+</I>&gt;<i> appearing as a KNIME node), which might be desirable in some use  cases.
+</I>&gt;<i>
+</I>
+I hadn't looked at the interactive commands with regard to CellProfiler. It
+looks like &quot;buttons&quot; could be interpreted as possible headless actions that
+could be performed... at least in some cases. I have CellProfiler analogs
+for most of the parameter types, but that one is new. I'm thinking that I
+might detect whether a plugin is interactive and, if so, display each
+button as a radio button, so that the button's callback could be executed
+in the context of a CellProfiler headless pipeline execution. For
+Threshold, I can see reasons for executing the callbacks for &quot;auto&quot;,
+&quot;apply&quot; and &quot;delete&quot; in a headless context - unfortunately, CellProfiler
+would convert the ThresholdOverlay to a binary mask, so &quot;delete&quot; doesn't
+make much sense for us.
+
+&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> * In KNIME we are currently loading all available plugins in the classpath
+</I>&gt;<i> which are headless executable. But therewith plugins like &quot;Help&quot;,
+</I>&gt;<i> &quot;Easteregg&quot;, &quot;LoadDataSet&quot; will appear as KNIME nodes as well. However they
+</I>&gt;<i> can't do anything useful in the KNIME context (as they are  ImageJ2
+</I>&gt;<i> specific). Are you planing to re-organize the plugins, e.g. such that
+</I>&gt;<i> plugins, which are interesting for any application reside in their own
+</I>&gt;<i> jar-file?
+</I>&gt;<i>
+</I>&gt;<i> We're using the plugin menu system to display the available plugins
+</I>hierarchically in CellProfiler. I guess that some plugins are less useful
+or arguably useless but who am I to judge (I'm still waiting for someone to
+publish a paper citing use of CellProfiler's &quot;game of life&quot; morphology
+operation). Hopefully, the hierarchy leads the users to the most useful
+plugins. I could see some other sort of annotation, e.g. &quot;tags&quot;, but I
+don't want to be the one who manages the tag ongology ;-).
+
+
+&gt;<i>
+</I> * Are there  plans how the &quot;dimension selection&quot; will be integrated into
+&gt;<i> ImageJ2,  i.e. how algorithms can be run on arbitrary dimensions? (Mapping
+</I>&gt;<i> from  AxesNames to indicies of dimensions in images). Can we help here? (see
+</I>&gt;<i> Doc hackathon!?)
+</I>&gt;<i>
+</I>&gt;<i> CellProfiler does use the AxesNames to transform the N-dimensional arrays
+</I>to our representation. I think that there's enough functionality in the
+restructuring commands to let power users pull out individual hyperplanes
+for processing in lower dimensions. Perhaps a &quot;ExtractData&quot; and
+&quot;ReplaceData&quot; plugin need to be added in order to create and reinsert
+lower-dimension datasets?
+
+There isn't any mechanism to handle AxesNames algebra - you don't know
+whether a plugin will reduce or augment a dataset's dimensionality or
+whether a plugin is only suitable for two dimensions. CellProfiler and, I'm
+guessing, Knime do a lot of matching inputs to outputs which is a contrast
+to ImageJ. I think our users can handle this ambiguity (they'd use only 2-D
+or N-D plugins adaptable to 2-D), but annotation improvements here would be
+nice.
+
+ * ROIs: Are there plans to support Labelings in ImageJ2? Or will Labelings
+&gt;<i> somehow be replaced in the future?
+</I>&gt;<i>
+</I>
+We're also looking forward to labelings being first-class entities in
+ImageJ, partially my fault personally that this is not better developed.
+I'm mostly interested in us having some agreement for the datatype for a
+labeling parameter - I think that once we have that sort of
+interoperability, we'll see lots of progress in both segmentation methods
+and use of segmentations in downstream analysis.
+
+&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> * In the current snapshot (compared to beta6) some functionality was movedfrom  ImageJ to sifio / scijava (e.g. the Services).  Regarding
+</I>&gt;<i> this some questions:
+</I>&gt;<i>   - The services seem to have some  ordering requirements now, we had to
+</I>&gt;<i> move
+</I>&gt;<i>     ModuleService behind  MenuService in the constructor call to avoid a
+</I>&gt;<i> null pointer during
+</I>&gt;<i>     initialization (onEvent(ModulesAddedEvent) was called before
+</I>&gt;<i> initialize). Is there a defined
+</I>&gt;<i>     service order?
+</I>&gt;<i>
+</I>It would be nice to have a headless service profile, something a little
+easier than leaving out the AWT dependent jars and crossing fingers.
+CellProfiler might instantiate both GUI and headless contexts in the same
+JVM - we'd appreciate being able to choose the UI configuration in a simple
+way.
+
+&gt;<i>
+</I>&gt;<i>
+</I>
+&gt;<i> ((So far, we have tons of ideas where we could do more things together.
+</I>&gt;<i> Thank you in advance for answering all these questions ;) ))
+</I>&gt;<i>
+</I>
+Likewise, thank you, thank you - don't misconstrue any of the above as
+demands. We all appreciate how all of this is being done and the time it
+all takes.
+
+&gt;<i>
+</I>&gt;<i>  Cheers,
+</I>&gt;<i>
+</I>&gt;<i>  Martin, Christian and Michael Z.
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20130515/3967a1f5/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20130515/3967a1f5/attachment-0001.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001495.html">[ImageJ-devel] ImageJ - KNIME Integration: open questions
+</A></li>
+	<LI>Next message: <A HREF="001497.html">[ImageJ-devel] (no subject)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1496">[ date ]</a>
+              <a href="thread.html#1496">[ thread ]</a>
+              <a href="subject.html#1496">[ subject ]</a>
+              <a href="author.html#1496">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

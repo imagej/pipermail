@@ -1,0 +1,279 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] jython scripting,	No compatible service: io.scif.SCIFIOService
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20jython%20scripting%2C%0A%09No%20compatible%20service%3A%20io.scif.SCIFIOService&In-Reply-To=%3CCA%2BB%3DmGpO-BYDGo47hKHFNka%2BJD27dDenMGZBMVe64quaRqAjiw%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001955.html">
+   <LINK REL="Next"  HREF="001957.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] jython scripting,	No compatible service: io.scif.SCIFIOService</H1>
+    <B>Mark Hiner</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20jython%20scripting%2C%0A%09No%20compatible%20service%3A%20io.scif.SCIFIOService&In-Reply-To=%3CCA%2BB%3DmGpO-BYDGo47hKHFNka%2BJD27dDenMGZBMVe64quaRqAjiw%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] jython scripting,	No compatible service: io.scif.SCIFIOService">hinerm at gmail.com
+       </A><BR>
+    <I>Tue Feb 25 11:42:34 CST 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001955.html">[ImageJ-devel] jython scripting,	No compatible service: io.scif.SCIFIOService
+</A></li>
+        <LI>Next message: <A HREF="001957.html">[ImageJ-devel] jython scripting, No compatible service: io.scif.SCIFIOService
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1956">[ date ]</a>
+              <a href="thread.html#1956">[ thread ]</a>
+              <a href="subject.html#1956">[ subject ]</a>
+              <a href="author.html#1956">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Harri,
+
+ First of all, I think it's awesome that you're doing this. It's great to
+see someone testing things from the scripting side, and it's definitely
+revealing some weaknesses. So thank you for that!
+
+ Anyway, when running from the command line:
+
+CP=`find /home/hajaalin/Software/fiji-20140219/Fiji.app/jars -name '*.jar'
+&gt;<i> |sed ':a;N;$!ba;s/\n/:/g'`
+</I>&gt;<i>
+</I>
+You have the right idea here, but your find command prints each jar on its
+own line. For use in a Java classpath, you need a single line with each jar
+separated by the path separator appropriate for your system (';' for
+Windows, ':' for Linux/OSX).
+
+ I used this stack
+overflow&lt;<A HREF="http://stackoverflow.com/questions/4729863/using-bash-how-do-you-make-a-classpath-out-of-all-files-in-a-directory">http://stackoverflow.com/questions/4729863/using-bash-how-do-you-make-a-classpath-out-of-all-files-in-a-directory</A>&gt;question
+to find a good way to format the jar list for the classpath. Note
+that they talk about Java 6 supporting jars/* notation, but I couldn't get
+that to work with jython. Also, according to this SO
+post&lt;<A HREF="http://stackoverflow.com/questions/537682/how-can-i-add-jars-to-the-classpath-when-i-invoke-jython-without-adding-them-t">http://stackoverflow.com/questions/537682/how-can-i-add-jars-to-the-classpath-when-i-invoke-jython-without-adding-them-t</A>&gt;,
+there is a convenient jython flag for passing the java classpath directly
+(without having to set environment variables).
+
+ My end result was the following command:
+
+jython -J-cp &quot;$(find find
+/home/hajaalin/Software/fiji-20140219/Fiji.app/jars -print0 -name '*.jar' |
+tr '\0' ':')blub&quot; macros/imglib0.py
+/home/hajaalin/Data/Misha/composite1.ome.tif
+
+Note the &quot;blub&quot; at the end is meaningless, but the tr call has a
+terminating ':' character which we probably shouldn't leave open on the
+classpath. (e.g. JAR:JAR:JAR:JAR:blub is preferable to JAR:JAR:JAR:JAR: )
+
+So, this ran for me and mostly worked! However, even though the image
+opened I did get some errors along the way, I believe related to the error
+you saw when trying to run your script from Fiji - SCIFIO 0.9.2 has some
+breaking API changes in it, and it looks like some downstream jars weren't
+updated as part of Fiji.
+
+If you run this using the pom.xml dependency trick that you came up with in
+your second e-mail, I didn't get any exceptions when running from the
+command line. But I will work on getting the Fiji dependencies straightened
+out so that you can use them, or run using Fiji directly.
+
+Thanks again for working on scripts like this. Let us know if you run into
+any more problems.
+
+- Mark
+
+
+On Mon, Feb 24, 2014 at 4:34 AM, Harri J&#228;&#228;linoja &lt;
+<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">harri.jaalinoja at helsinki.fi</A>&gt; wrote:
+
+&gt;<i> Hi again,
+</I>&gt;<i>
+</I>&gt;<i> here's my second try: I made a pom.xml (attached) and retrieved dependency
+</I>&gt;<i> jar files with:
+</I>&gt;<i>
+</I>&gt;<i> mvn dependency:copy-dependencies
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> But I still get the same error as before:
+</I>&gt;<i>
+</I>&gt;<i> CP=`find /home/hajaalin/Software/mvn-IJ2/target/dependency -name '*.jar'
+</I>&gt;<i> |sed ':a;N;$!ba;s/\n/:/g'`
+</I>&gt;<i> jython -Dpython.path=$CP /home/hajaalin/Software/fiji-
+</I>&gt;<i> 20140219/Fiji.app/macros/imglib0.py /home/hajaalin/Data/Misha/
+</I>&gt;<i> composite1.ome.tif
+</I>&gt;<i>
+</I>&gt;<i> [WARNING] Class pool is empty: forgot to call Thread#setClassLoader?
+</I>&gt;<i> Traceback (most recent call last):
+</I>&gt;<i>   File &quot;/home/hajaalin/Software/fiji-20140219/Fiji.app/macros/imglib0.py&quot;,
+</I>&gt;<i> line 16, in &lt;module&gt;
+</I>&gt;<i>
+</I>&gt;<i>     io = ImgOpener()
+</I>&gt;<i>     at org.scijava.service.ServiceHelper.loadService(
+</I>&gt;<i> ServiceHelper.java:218)
+</I>&gt;<i> ...
+</I>&gt;<i>
+</I>&gt;<i> java.lang.IllegalArgumentException: java.lang.IllegalArgumentException:
+</I>&gt;<i> No compatible service: io.scif.SCIFIOService
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Now it's maybe only a matter of getting the versions for pom-scijava and
+</I>&gt;<i> ij-app right. How can I find out which version to use?
+</I>&gt;<i>
+</I>&gt;<i> Thanks,
+</I>&gt;<i> Harri
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On 21/02/14 13:25, Harri J&#228;&#228;linoja wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> Hi,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I started to learn about ImgLib2 for the purpose of creating scripts I
+</I>&gt;&gt;<i> can run headlessly. I would like to use jython since I already used that
+</I>&gt;&gt;<i> with ImageJ1. First I downloaded a recent Fiji version. My idea was that
+</I>&gt;&gt;<i> this would be the easiest way to get the dependencies (scifio, imglib2
+</I>&gt;&gt;<i> etc.) right.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> mkdir fiji-20140219
+</I>&gt;&gt;<i> cd fiji-20140219/
+</I>&gt;&gt;<i> wget <A HREF="http://jenkins.imagej.net/job/Stable-Fiji/">http://jenkins.imagej.net/job/Stable-Fiji/</A>
+</I>&gt;&gt;<i> lastSuccessfulBuild/artifact/fiji-linux64.tar.gz
+</I>&gt;&gt;<i> tar xf fiji-linux64.tar.gz
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Then I just put all the jar files in the Fiji distribution in one long
+</I>&gt;&gt;<i> variable and gave that as the classpath for Jython
+</I>&gt;&gt;<i> CP=`find /home/hajaalin/Software/fiji-20140219/Fiji.app/jars -name
+</I>&gt;&gt;<i> '*.jar' |sed ':a;N;$!ba;s/\n/:/g'`
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Here's my test script:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> ----- imglib0.py ------
+</I>&gt;&gt;<i> import sys
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> #from io.scif.config import SCIFIOConfig
+</I>&gt;&gt;<i> from io.scif.config import *
+</I>&gt;&gt;<i> from io.scif.img import ImgIOException,ImgOpener
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> from java.io import File
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> from net.imglib2.img import Img
+</I>&gt;&gt;<i> from net.imglib2.img.display.imagej import ImageJFunctions
+</I>&gt;&gt;<i> from net.imglib2.type import NativeType
+</I>&gt;&gt;<i> from net.imglib2.type.numeric import RealType
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> filename = sys.argv[1]
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> io = ImgOpener()
+</I>&gt;&gt;<i> config = SCIFIOConfig()
+</I>&gt;&gt;<i> config.imgOpenerSetImgModes( SCIFIOConfig.ImgMode.CELL )
+</I>&gt;&gt;<i> img = io.openImg(filename)
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> ImageJFunctions.show( img )
+</I>&gt;&gt;<i> ---------------------------
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> When I run it, I get an error I've seen on the list before:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">hajaalin at biotek973</A>:~/Software/fiji-20140219/Fiji.app$ jython
+</I>&gt;&gt;<i> -Dpython.path=$CP macros/imglib0.py /home/hajaalin/Data/Misha/
+</I>&gt;&gt;<i> composite1.ome.tif
+</I>&gt;&gt;<i> [WARNING] Class pool is empty: forgot to call Thread#setClassLoader?
+</I>&gt;&gt;<i> Traceback (most recent call last):
+</I>&gt;&gt;<i>   File &quot;macros/imglib0.py&quot;, line 16, in &lt;module&gt;
+</I>&gt;&gt;<i>     io = ImgOpener()
+</I>&gt;&gt;<i>     at org.scijava.service.ServiceHelper.loadService(
+</I>&gt;&gt;<i> ServiceHelper.java:218)
+</I>&gt;&gt;<i>     at org.scijava.service.ServiceHelper.loadService(
+</I>&gt;&gt;<i> ServiceHelper.java:172)
+</I>&gt;&gt;<i>     at org.scijava.service.ServiceHelper.loadServices(
+</I>&gt;&gt;<i> ServiceHelper.java:149)
+</I>&gt;&gt;<i>     at org.scijava.Context.&lt;init&gt;(Context.java:179)
+</I>&gt;&gt;<i>     at org.scijava.Context.&lt;init&gt;(Context.java:121)
+</I>&gt;&gt;<i>     at org.scijava.Context.&lt;init&gt;(Context.java:109)
+</I>&gt;&gt;<i>     at io.scif.img.AbstractImgIOComponent.&lt;init&gt;(
+</I>&gt;&gt;<i> AbstractImgIOComponent.java:59)
+</I>&gt;&gt;<i>     at io.scif.img.ImgOpener.&lt;init&gt;(ImgOpener.java:94)
+</I>&gt;&gt;<i>     at sun.reflect.NativeConstructorAccessorImpl.newInstance0(Native
+</I>&gt;&gt;<i> Method)
+</I>&gt;&gt;<i>     at sun.reflect.NativeConstructorAccessorImpl.newInstance(
+</I>&gt;&gt;<i> NativeConstructorAccessorImpl.java:57)
+</I>&gt;&gt;<i>     at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(
+</I>&gt;&gt;<i> DelegatingConstructorAccessorImpl.java:45)
+</I>&gt;&gt;<i>     at java.lang.reflect.Constructor.newInstance(Constructor.java:526)
+</I>&gt;&gt;<i>     at org.python.core.PyReflectedConstructor.constructProxy(
+</I>&gt;&gt;<i> PyReflectedConstructor.java:163)
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> java.lang.IllegalArgumentException: java.lang.IllegalArgumentException:
+</I>&gt;&gt;<i> No compatible service: io.scif.SCIFIOService
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> If I try to run the script via Fiji, I don't get even that far:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">hajaalin at biotek973</A>:~/Software/fiji-20140219/Fiji.app$ ./ImageJ-linux64
+</I>&gt;&gt;<i> macros/imglib0.py /home/hajaalin/Data/Misha/composite1.ome.tif
+</I>&gt;&gt;<i> Traceback (most recent call last):
+</I>&gt;&gt;<i>   File &quot;macros/imglib0.py&quot;, line 4, in &lt;module&gt;
+</I>&gt;&gt;<i>     from io.scif.config import *
+</I>&gt;&gt;<i> ImportError: No module named io
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> So now my questions are:
+</I>&gt;&gt;<i> 1. Is there a better way to get all the dependency jars?
+</I>&gt;&gt;<i> 2. Is there something wrong with my general setup (jython + script +
+</I>&gt;&gt;<i> required jars)?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Thanks, best regards,
+</I>&gt;&gt;<i> Harri
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> --
+</I>&gt;<i> __________________________________________________
+</I>&gt;<i> Harri J&#228;&#228;linoja
+</I>&gt;<i> Light Microscopy Unit
+</I>&gt;<i> Institute of Biotechnology, University of Helsinki
+</I>&gt;<i> <A HREF="http://www.biocenter.helsinki.fi/bi/lmu/">http://www.biocenter.helsinki.fi/bi/lmu/</A>
+</I>&gt;<i> +358 9 191 59370 fax +358 9 191 59366
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140225/de09ebc5/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20140225/de09ebc5/attachment.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001955.html">[ImageJ-devel] jython scripting,	No compatible service: io.scif.SCIFIOService
+</A></li>
+	<LI>Next message: <A HREF="001957.html">[ImageJ-devel] jython scripting, No compatible service: io.scif.SCIFIOService
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1956">[ date ]</a>
+              <a href="thread.html#1956">[ thread ]</a>
+              <a href="subject.html#1956">[ subject ]</a>
+              <a href="author.html#1956">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

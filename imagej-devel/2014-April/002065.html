@@ -1,0 +1,200 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Module structure for OPS,	and support for scripting
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Module%20structure%20for%20OPS%2C%0A%09and%20support%20for%20scripting&In-Reply-To=%3CCADN69ymNuHc4__kuk5wNbBxe%2BBkZokm_%3DU5-%2B8LqQNko7jhDTw%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002062.html">
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Module structure for OPS,	and support for scripting</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Module%20structure%20for%20OPS%2C%0A%09and%20support%20for%20scripting&In-Reply-To=%3CCADN69ymNuHc4__kuk5wNbBxe%2BBkZokm_%3DU5-%2B8LqQNko7jhDTw%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Module structure for OPS,	and support for scripting">ctrueden at wisc.edu
+       </A><BR>
+    <I>Wed Apr 30 12:03:48 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002062.html">[ImageJ-devel] [Bug 732] &quot;Subtract Background&quot; exception via	macro/batch mode
+</A></li>
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2065">[ date ]</a>
+              <a href="thread.html#2065">[ thread ]</a>
+              <a href="subject.html#2065">[ subject ]</a>
+              <a href="author.html#2065">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi all,
+
+To follow up on this old thread:
+
+&gt;<i> &quot;What is SciJava, and what is ImageJ?&quot;
+</I>&gt;<i>
+</I>&gt;<i> The intuition that appeals to me is: if it is image-specific, it is
+</I>&gt;<i> part of ImageJ. And if it is more general, it lives in SciJava.
+</I>
+Earlier this week, we completed a refactoring of the ImageJ2 component
+structure in line with this intuition:
+
+* <A HREF="https://github.com/imagej">https://github.com/imagej</A> -- contains components specific to image
+processing.
+* <A HREF="https://github.com/scijava">https://github.com/scijava</A> -- contains foundation components which are
+*not* specific to images.
+
+Each component lives in its own Git repository as a single-module Maven
+project, with release version couplings to other components.
+
+The ImageJ2 application is now made up of the following core components:
+
+* imagej-common -- the core ImageJ library and data model built on ImgLib2
+* imagej-ops -- the framework for extensible image processing algorithms
+announced earlier this month
+* imagej-updater -- the famous ImageJ Updater which keeps people up-to-date
+* imagej-launcher -- the command line executable for launching ImageJ
+* imagej-legacy -- the glue component providing backwards compatibility
+with ImageJ 1.x
+* scijava-common -- the core library for non-image-processing-specific
+logic, including the plugin mechanism, application container, and module
+framework
+
+ImageJ2 also includes the following optional plugin components:
+
+* imagej-plugins-commands -- built-in commands (i.e., most of the ImageJ
+menu structure)
+* imagej-plugins-tools -- built-in tools (i.e., the toolbar buttons)
+* imagej-plugins-uploader-* -- plugins for the ImageJ Updater which make it
+possible to upload to ImageJ update sites
+* imagej-ui-swing -- the &quot;modern&quot; ImageJ2 user interface
+* scijava-plugins-platforms -- platform-specific logic (stuff like &quot;how do
+I open a web browser on OS X?&quot;)
+* scijava-plugins-text-* -- plugins for rendering text formats like Markdown
+* scripting-* -- plugins for the various scripting languages: Beanshell,
+Clojure, etc.
+
+More details at:
+<A HREF="http://jenkins.imagej.net/job/ImageJ-daily/lastSuccessfulBuild/artifact/target/site/dependencies.html">http://jenkins.imagej.net/job/ImageJ-daily/lastSuccessfulBuild/artifact/target/site/dependencies.html</A>
+
+Lastly, a couple of comments relating to earlier messages in this thread:
+
+* We decided not to split imagej-ops in half.
+* The ij-core module and scripting code was thus migrated to scijava-common.
+
+We aim to release a new ImageJ2 beta by the end of this week.
+
+Regards,
+Curtis
+
+
+On Sat, Mar 29, 2014 at 12:24 PM, Johannes Schindelin
+&lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">schindelin at wisc.edu</A>&gt;wrote:
+
+&gt;<i> Hi Curtis,
+</I>&gt;<i>
+</I>&gt;<i> On Sat, 29 Mar 2014, Curtis Rueden wrote:
+</I>&gt;<i>
+</I>&gt;<i> &gt; * scijava-ops -&gt; scijava-ops-OLD (or moved to &quot;old-master&quot; topic branch)
+</I>&gt;<i> &gt;   -- preserve previous effort until all code has been successfully
+</I>&gt;<i> &gt;   migrated out
+</I>&gt;<i>
+</I>&gt;<i> I would like to do that anyway.
+</I>&gt;<i>
+</I>&gt;<i> &gt; * imagej-ops core framework -&gt; scijava-ops
+</I>&gt;<i> &gt;   -- the core framework is not image specific
+</I>&gt;<i>
+</I>&gt;<i> How about doing that later? There is no need to stress ourselves out about
+</I>&gt;<i> it; we can easily do that anytime.
+</I>&gt;<i>
+</I>&gt;<i> &gt; * ij-core module framework -&gt; migrate into scijava-ops
+</I>&gt;<i> &gt;   -- that framework includes modules, commands, displays and widgets
+</I>&gt;<i> &gt;   -- Christian asked me: why not move ij-core's module framework into
+</I>&gt;<i> &gt; scijava-common?
+</I>&gt;<i> &gt;   -- I strongly considered that, but instead I think it fits perfectly
+</I>&gt;<i> into
+</I>&gt;<i> &gt; the OPS framework
+</I>&gt;<i>
+</I>&gt;<i> I agree, but I would suggest doing that later, too.
+</I>&gt;<i>
+</I>&gt;<i> &gt; * imagej-ops image processing ops -&gt; stay in imagej-ops
+</I>&gt;<i> &gt;   -- these ops are image-specific, and depend on ImgLib2
+</I>&gt;<i>
+</I>&gt;<i> That makes absolute sense (as the above), but I would like to focus on
+</I>&gt;<i> using ij-ops first. Traditionally, it has been much easier to develop a
+</I>&gt;<i> fast-moving project when it is maintained in a single repository.
+</I>&gt;<i>
+</I>&gt;<i> &gt; * imagej-ops widgets -&gt; stay in imagej-ops
+</I>&gt;<i> &gt;   -- and move Swing-specific code into ij-ui-swing
+</I>&gt;<i>
+</I>&gt;<i> I guess that probably needs to happen sooner rather than later because the
+</I>&gt;<i> technical debt incurred by mixing UI with processing can be a huge pain in
+</I>&gt;<i> the back side.
+</I>&gt;<i>
+</I>&gt;<i> &gt; * ij-core scripting framework -&gt; scijava-scripting
+</I>&gt;<i> &gt;   -- scripting support is not image-specific
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; * ij-scripting-* -&gt; scijava-scripting-*
+</I>&gt;<i> &gt;   -- each of these has different, often very large, dependencies
+</I>&gt;<i>
+</I>&gt;<i> I agree that this is a good plan, but again, I would love to see this
+</I>&gt;<i> happening later. Preferably after switching Fiji to the ImageJ2 script
+</I>&gt;<i> editor because I see a couple of architectural questions looming for us;
+</I>&gt;<i> These architectural issues are much easier solved when all involved code
+</I>&gt;<i> lives in the same repository.
+</I>&gt;<i>
+</I>&gt;<i> &gt; * other ij-core unrelated stuff -&gt; think more; consider case-by-case
+</I>&gt;<i> &gt;   -- maybe some goes to scijava-common...
+</I>&gt;<i> &gt;   -- would be nice if the &quot;ij-core&quot; module could completely go away
+</I>&gt;<i>
+</I>&gt;<i> Whoa. Radical food for thought. But I begin to see your reasoning and to
+</I>&gt;<i> agree.
+</I>&gt;<i>
+</I>&gt;<i> &gt; I know that such changes would rock the boat... again. But before we get
+</I>&gt;<i> &gt; too much farther along I would like to have a very clear, sensible policy
+</I>&gt;<i> &gt; which answers the question: &quot;What is SciJava, and what is ImageJ?&quot; And I
+</I>&gt;<i> &gt; think the structure above would do that, and be a really strong
+</I>&gt;<i> foundation
+</I>&gt;<i> &gt; for the next decade at least.
+</I>&gt;<i>
+</I>&gt;<i> Makes sense. How about revisiting the split in two weeks? We could even
+</I>&gt;<i> call it milestone 0.2.0.
+</I>&gt;<i>
+</I>&gt;<i> Ciao,
+</I>&gt;<i> Dscho
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140430/ffebf1d7/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20140430/ffebf1d7/attachment.html</A>&gt;
+</PRE>
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002062.html">[ImageJ-devel] [Bug 732] &quot;Subtract Background&quot; exception via	macro/batch mode
+</A></li>
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2065">[ date ]</a>
+              <a href="thread.html#2065">[ thread ]</a>
+              <a href="subject.html#2065">[ subject ]</a>
+              <a href="author.html#2065">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

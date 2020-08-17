@@ -1,0 +1,3061 @@
+From preibisch at mpi-cbg.de  Thu May 12 06:05:25 2011
+From: preibisch at mpi-cbg.de (Stephan Preibisch)
+Date: Thu, 12 May 2011 13:05:25 +0200
+Subject: [ImageJ-devel] imglib positionables for dimension 0
+Message-ID: <003d01cc1094$7e8c9b50$7ba5d1f0$@de>
+
+Hi guys,
+
+ 
+
+what do you think about that:
+<http://pacific.mpi-cbg.de/wiki/index.php/ImgLib2_Discussion#Positionables>
+http://pacific.mpi-cbg.de/wiki/index.php/ImgLib2_Discussion#Positionables
+
+ 
+
+Nice greetings,
+
+Steffi
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110512/6ad57885/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Thu May 12 06:54:33 2011
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Thu, 12 May 2011 13:54:33 +0200 (CEST)
+Subject: [ImageJ-devel] imglib positionables for dimension 0
+In-Reply-To: <003d01cc1094$7e8c9b50$7ba5d1f0$@de>
+References: <003d01cc1094$7e8c9b50$7ba5d1f0$@de>
+Message-ID: <alpine.DEB.1.00.1105121353080.15247@pacific.mpi-cbg.de>
+
+Hi,
+
+On Thu, 12 May 2011, Stephan Preibisch wrote:
+
+> what do you think about that:
+> <http://pacific.mpi-cbg.de/wiki/index.php/ImgLib2_Discussion#Positionables>
+> http://pacific.mpi-cbg.de/wiki/index.php/ImgLib2_Discussion#Positionables
+
+I understand the reasoning, but wouldn't it be better to make that a new 
+interface? For most truly n-dimensional algorithms, setPosition(long) 
+would not be needed, and I could imagine that at least for some containers 
+(think Hilbert-curve) setPosition(long) could be pretty complicated for no 
+clear benefit.
+
+Ciao,
+Dscho
+
+
+
+From jean-yves.tinevez at mpi-cbg.de  Thu May 12 06:33:39 2011
+From: jean-yves.tinevez at mpi-cbg.de (Jean-Yves Tinevez)
+Date: Thu, 12 May 2011 13:33:39 +0200
+Subject: [ImageJ-devel] [fiji-devel] imglib positionables for dimension 0
+In-Reply-To: <003d01cc1094$7e8c9b50$7ba5d1f0$@de>
+References: <003d01cc1094$7e8c9b50$7ba5d1f0$@de>
+Message-ID: <F8FEEE81-751A-4EB7-9F59-7EF7474A12BB@mpi-cbg.de>
+
+
+On May 12, 2011, at 1:05 PM, Stephan Preibisch wrote:
+
+> Hi guys,
+>
+> what do you think about that: http://pacific.mpi-cbg.de/wiki/index.php/ImgLib2_Discussion#Positionables
+>
+
+Just a stupid, naive question:
+
+How can you make a explicit specific implementation in Cursor, for a  
+special case of the general Image<T>?
+
+Is it possible?
+
+cheers
+jy
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110512/7f5939fb/attachment.html>
+
+From preibisch at mpi-cbg.de  Thu May 12 07:07:24 2011
+From: preibisch at mpi-cbg.de (Stephan Preibisch)
+Date: Thu, 12 May 2011 14:07:24 +0200
+Subject: [ImageJ-devel] imglib positionables for dimension 0
+In-Reply-To: <alpine.DEB.1.00.1105121353080.15247@pacific.mpi-cbg.de>
+References: <003d01cc1094$7e8c9b50$7ba5d1f0$@de>
+	<alpine.DEB.1.00.1105121353080.15247@pacific.mpi-cbg.de>
+Message-ID: <005501cc109d$27badf90$77309eb0$@de>
+
+I think for many (n-dimensional) algorithms 1-dimensional temporary arrays
+of <T> are necessary in some form, as it is now for example in Gaussian
+Convolution and Fourier Transform. It is no overhead for any other
+container. If you do not want to implement it you could simply write:
+
+setPosition(long)
+{
+   // call existing but maybe slower method which does the same
+   setPosition(long,0);
+}
+
+But as temporary Img, where you know it is one-dimensional it gives you a
+clear benefit. And of course, if I make a temp 1-d Img<T> I would only use
+ArrayImg<T> - or CellImg<T> if a dimension is larger than
+Integer.MAX_VALUE/EntitiesPerPixel. It would also be fine with me if only
+those two do it and implement a special new interface.
+
+Steffi
+
+-----Original Message-----
+From: Johannes Schindelin [mailto:Johannes.Schindelin at gmx.de] 
+Sent: Thursday, May 12, 2011 1:55 PM
+To: Stephan Preibisch
+Cc: saalfeld at mpi-cbg.de; 'Tobias Pietzsch'; 'Fiji-devel'; 'Imagejdev.org
+Developers'
+Subject: Re: [ImageJ-devel] imglib positionables for dimension 0
+
+Hi,
+
+On Thu, 12 May 2011, Stephan Preibisch wrote:
+
+> what do you think about that:
+>
+<http://pacific.mpi-cbg.de/wiki/index.php/ImgLib2_Discussion#Positionables>
+> http://pacific.mpi-cbg.de/wiki/index.php/ImgLib2_Discussion#Positionables
+
+I understand the reasoning, but wouldn't it be better to make that a new 
+interface? For most truly n-dimensional algorithms, setPosition(long) 
+would not be needed, and I could imagine that at least for some containers 
+(think Hilbert-curve) setPosition(long) could be pretty complicated for no 
+clear benefit.
+
+Ciao,
+Dscho
+
+
+
+
+From ctrueden at wisc.edu  Thu May 12 07:14:29 2011
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Thu, 12 May 2011 08:14:29 -0400
+Subject: [ImageJ-devel] imglib positionables for dimension 0
+In-Reply-To: <005501cc109d$27badf90$77309eb0$@de>
+References: <003d01cc1094$7e8c9b50$7ba5d1f0$@de>
+	<alpine.DEB.1.00.1105121353080.15247@pacific.mpi-cbg.de>
+	<005501cc109d$27badf90$77309eb0$@de>
+Message-ID: <BANLkTimz5J9Ffun2kZGDVCaHFbDjJy+tjg@mail.gmail.com>
+
+Hi Steffi,
+
+Your proposal is fine with me?it makes a lot of sense.
+
+-Curtis
+
+On Thu, May 12, 2011 at 8:07 AM, Stephan Preibisch <preibisch at mpi-cbg.de>wrote:
+
+> I think for many (n-dimensional) algorithms 1-dimensional temporary arrays
+> of <T> are necessary in some form, as it is now for example in Gaussian
+> Convolution and Fourier Transform. It is no overhead for any other
+> container. If you do not want to implement it you could simply write:
+>
+> setPosition(long)
+> {
+>   // call existing but maybe slower method which does the same
+>   setPosition(long,0);
+> }
+>
+> But as temporary Img, where you know it is one-dimensional it gives you a
+> clear benefit. And of course, if I make a temp 1-d Img<T> I would only use
+> ArrayImg<T> - or CellImg<T> if a dimension is larger than
+> Integer.MAX_VALUE/EntitiesPerPixel. It would also be fine with me if only
+> those two do it and implement a special new interface.
+>
+> Steffi
+>
+> -----Original Message-----
+> From: Johannes Schindelin [mailto:Johannes.Schindelin at gmx.de]
+> Sent: Thursday, May 12, 2011 1:55 PM
+> To: Stephan Preibisch
+> Cc: saalfeld at mpi-cbg.de; 'Tobias Pietzsch'; 'Fiji-devel'; 'Imagejdev.org
+> Developers'
+> Subject: Re: [ImageJ-devel] imglib positionables for dimension 0
+>
+> Hi,
+>
+> On Thu, 12 May 2011, Stephan Preibisch wrote:
+>
+> > what do you think about that:
+> >
+> <http://pacific.mpi-cbg.de/wiki/index.php/ImgLib2_Discussion#Positionables
+> >
+> >
+> http://pacific.mpi-cbg.de/wiki/index.php/ImgLib2_Discussion#Positionables
+>
+> I understand the reasoning, but wouldn't it be better to make that a new
+> interface? For most truly n-dimensional algorithms, setPosition(long)
+> would not be needed, and I could imagine that at least for some containers
+> (think Hilbert-curve) setPosition(long) could be pretty complicated for no
+> clear benefit.
+>
+> Ciao,
+> Dscho
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110512/35190353/attachment.html>
+
+From saalfeld at mpi-cbg.de  Thu May 12 08:40:32 2011
+From: saalfeld at mpi-cbg.de (Stephan Saalfeld)
+Date: Thu, 12 May 2011 09:40:32 -0400
+Subject: [ImageJ-devel] imglib positionables for dimension 0
+In-Reply-To: <005501cc109d$27badf90$77309eb0$@de>
+References: <003d01cc1094$7e8c9b50$7ba5d1f0$@de>
+	<alpine.DEB.1.00.1105121353080.15247@pacific.mpi-cbg.de>
+	<005501cc109d$27badf90$77309eb0$@de>
+Message-ID: <1305207632.18566.13.camel@saalfeld-laptop>
+
+Hi,
+
+I wrote a note into the Wiki.  I agree about the need for a faster
+controlled jump in a 1D structure.  I would prefer a specialized
+RandomAccess1D implementation for those Img variants where it makes
+sense.  That RandomAccess1D would be returned by that Img if n=1.  We
+have done similarly for the PlanarImg to speed up iteration in the 1D
+and 2D cases.  That way, you would need to implement it only where it
+makes sense.  In case you know that you were using an ArrayImg or
+CellImg (which you should decide yourself for temporary data holding),
+you could cast to the respective RandomAccess1D and get the most inlined
+speed possible.
+
+I do not like the idea to add setPosition0 to the
+Positionable/RandomAccess interface since it clutters it and does not
+make sense in many situations.
+
+What do you think?
+
+Best,
+Stephan
+
+
+
+
+
+On Thu, 2011-05-12 at 14:07 +0200, Stephan Preibisch wrote: 
+> I think for many (n-dimensional) algorithms 1-dimensional temporary arrays
+> of <T> are necessary in some form, as it is now for example in Gaussian
+> Convolution and Fourier Transform. It is no overhead for any other
+> container. If you do not want to implement it you could simply write:
+> 
+> setPosition(long)
+> {
+>    // call existing but maybe slower method which does the same
+>    setPosition(long,0);
+> }
+> 
+> But as temporary Img, where you know it is one-dimensional it gives you a
+> clear benefit. And of course, if I make a temp 1-d Img<T> I would only use
+> ArrayImg<T> - or CellImg<T> if a dimension is larger than
+> Integer.MAX_VALUE/EntitiesPerPixel. It would also be fine with me if only
+> those two do it and implement a special new interface.
+> 
+> Steffi
+> 
+> -----Original Message-----
+> From: Johannes Schindelin [mailto:Johannes.Schindelin at gmx.de] 
+> Sent: Thursday, May 12, 2011 1:55 PM
+> To: Stephan Preibisch
+> Cc: saalfeld at mpi-cbg.de; 'Tobias Pietzsch'; 'Fiji-devel'; 'Imagejdev.org
+> Developers'
+> Subject: Re: [ImageJ-devel] imglib positionables for dimension 0
+> 
+> Hi,
+> 
+> On Thu, 12 May 2011, Stephan Preibisch wrote:
+> 
+> > what do you think about that:
+> >
+> <http://pacific.mpi-cbg.de/wiki/index.php/ImgLib2_Discussion#Positionables>
+> > http://pacific.mpi-cbg.de/wiki/index.php/ImgLib2_Discussion#Positionables
+> 
+> I understand the reasoning, but wouldn't it be better to make that a new 
+> interface? For most truly n-dimensional algorithms, setPosition(long) 
+> would not be needed, and I could imagine that at least for some containers 
+> (think Hilbert-curve) setPosition(long) could be pretty complicated for no 
+> clear benefit.
+> 
+> Ciao,
+> Dscho
+> 
+
+
+
+
+From preibisch at mpi-cbg.de  Thu May 12 09:10:47 2011
+From: preibisch at mpi-cbg.de (Stephan Preibisch)
+Date: Thu, 12 May 2011 16:10:47 +0200
+Subject: [ImageJ-devel] imglib positionables for dimension 0
+In-Reply-To: <1305207632.18566.13.camel@saalfeld-laptop>
+References: <003d01cc1094$7e8c9b50$7ba5d1f0$@de>	
+	<alpine.DEB.1.00.1105121353080.15247@pacific.mpi-cbg.de>	
+	<005501cc109d$27badf90$77309eb0$@de>
+	<1305207632.18566.13.camel@saalfeld-laptop>
+Message-ID: <006801cc10ae$63ef8fe0$2bceafa0$@de>
+
+Hi Stephan,
+
+I like this way of realizing it, maybe we could also implement it on ImgFactory level. If a Img implements RandomAccessible1D, the factory could also have a special create( long size ) method (in e.g. RandomAccessible1DFactory) which returns for example <I extends ArrayImg<T,?> & RandomAccessible1D>, so no unchecked casts are necessary...
+
+Stephan
+
+-----Original Message-----
+From: Stephan Saalfeld [mailto:saalfeld at mpi-cbg.de] 
+Sent: Thursday, May 12, 2011 3:41 PM
+To: Stephan Preibisch
+Cc: 'Johannes Schindelin'; 'Tobias Pietzsch'; 'Fiji-devel'; 'Imagejdev.org Developers'
+Subject: RE: [ImageJ-devel] imglib positionables for dimension 0
+
+Hi,
+
+I wrote a note into the Wiki.  I agree about the need for a faster
+controlled jump in a 1D structure.  I would prefer a specialized
+RandomAccess1D implementation for those Img variants where it makes
+sense.  That RandomAccess1D would be returned by that Img if n=1.  We
+have done similarly for the PlanarImg to speed up iteration in the 1D
+and 2D cases.  That way, you would need to implement it only where it
+makes sense.  In case you know that you were using an ArrayImg or
+CellImg (which you should decide yourself for temporary data holding),
+you could cast to the respective RandomAccess1D and get the most inlined
+speed possible.
+
+I do not like the idea to add setPosition0 to the
+Positionable/RandomAccess interface since it clutters it and does not
+make sense in many situations.
+
+What do you think?
+
+Best,
+Stephan
+
+
+
+
+
+On Thu, 2011-05-12 at 14:07 +0200, Stephan Preibisch wrote: 
+> I think for many (n-dimensional) algorithms 1-dimensional temporary arrays
+> of <T> are necessary in some form, as it is now for example in Gaussian
+> Convolution and Fourier Transform. It is no overhead for any other
+> container. If you do not want to implement it you could simply write:
+> 
+> setPosition(long)
+> {
+>    // call existing but maybe slower method which does the same
+>    setPosition(long,0);
+> }
+> 
+> But as temporary Img, where you know it is one-dimensional it gives you a
+> clear benefit. And of course, if I make a temp 1-d Img<T> I would only use
+> ArrayImg<T> - or CellImg<T> if a dimension is larger than
+> Integer.MAX_VALUE/EntitiesPerPixel. It would also be fine with me if only
+> those two do it and implement a special new interface.
+> 
+> Steffi
+> 
+> -----Original Message-----
+> From: Johannes Schindelin [mailto:Johannes.Schindelin at gmx.de] 
+> Sent: Thursday, May 12, 2011 1:55 PM
+> To: Stephan Preibisch
+> Cc: saalfeld at mpi-cbg.de; 'Tobias Pietzsch'; 'Fiji-devel'; 'Imagejdev.org
+> Developers'
+> Subject: Re: [ImageJ-devel] imglib positionables for dimension 0
+> 
+> Hi,
+> 
+> On Thu, 12 May 2011, Stephan Preibisch wrote:
+> 
+> > what do you think about that:
+> >
+> <http://pacific.mpi-cbg.de/wiki/index.php/ImgLib2_Discussion#Positionables>
+> > http://pacific.mpi-cbg.de/wiki/index.php/ImgLib2_Discussion#Positionables
+> 
+> I understand the reasoning, but wouldn't it be better to make that a new 
+> interface? For most truly n-dimensional algorithms, setPosition(long) 
+> would not be needed, and I could imagine that at least for some containers 
+> (think Hilbert-curve) setPosition(long) could be pretty complicated for no 
+> clear benefit.
+> 
+> Ciao,
+> Dscho
+> 
+
+
+
+
+
+From ctrueden at wisc.edu  Tue May 17 14:41:22 2011
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Tue, 17 May 2011 14:41:22 -0500
+Subject: [ImageJ-devel] recording commands
+In-Reply-To: <BANLkTi=6srQV98UBXubu413B_0ETC+RXog@mail.gmail.com>
+References: <BANLkTi=6srQV98UBXubu413B_0ETC+RXog@mail.gmail.com>
+Message-ID: <BANLkTikWh3bkNBDG7RvEq5HSUd5pH-Rp2Q@mail.gmail.com>
+
+Hi Albert,
+
+Is ImageJ 2.0 implementing a recording system similar to the Macro
+> recording in ImageJ 1.x?
+>
+
+Nice question, and sorry for the long delay in reply.
+
+Are we implementing it? Not yet. Do we plan to? Absolutely. Best estimate
+would be for one of the betas this summer, hopefully 2.0-beta1 for July 1st,
+or else 2.0-beta2 for August 1st.
+
+Will this recording system be generic, i.e. able to emit the commands
+> and their arguments, so that then a translator can emit a recording in
+> any language (java, jython, etc.)?
+>
+
+The idea is that commands publish an event when executed, which informs
+interested parties ("subscribers") that a command has run. This part is
+already done, and the infrastructure is actually quite fine-grained. See the
+code here:
+
+http://dev.imagejdev.org/trac/imagej/browser/trunk/core/plugin/src/main/java/imagej/plugin/PluginRunner.java?rev=2657#L61
+
+The plugin runner notifies when a plugin starts, when it finishes, and which
+preprocessors and postprocessors are called. It passes along the
+PluginModule instance which can be queried for its parameter types, values
+and more. So there should be a hook at every step of the way, for any
+third-party code (including the future macro recording system) that wants to
+intervene or just be aware of the status.
+
+Regards,
+Curtis
+
+On Fri, Apr 8, 2011 at 4:06 AM, Albert Cardona <sapristi at gmail.com> wrote:
+
+> Is ImageJ 2.0 implementing a recording system similar to the Macro
+> recording in ImageJ 1.x?
+>
+> Will this recording system be generic, i.e. able to emit the commands
+> and their arguments, so that then a translator can emit a recording in
+> any language (java, jython, etc.)?
+>
+> I recall that is the case, but just checking!
+>
+> Albert
+>
+> --
+> http://albert.rierol.net
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110517/e9496310/attachment.html>
+
+From oliver.gress at informatik.uni-halle.de  Wed May 18 08:42:15 2011
+From: oliver.gress at informatik.uni-halle.de (Oliver Gress)
+Date: Wed, 18 May 2011 15:42:15 +0200
+Subject: [ImageJ-devel] Auto-Documentation of Processing Chain:
+ Extension of @Parameter Annotation
+In-Reply-To: <AANLkTin-FPgW0ixG5C7s_ZmwW-2uz7JHPu3oNn5aAPpF@mail.gmail.com>
+References: <1299587182.1868.373.camel@localhost>
+	<AANLkTin-FPgW0ixG5C7s_ZmwW-2uz7JHPu3oNn5aAPpF@mail.gmail.com>
+Message-ID: <1305726135.1887.14.camel@localhost>
+
+Hi everybody,
+
+sorry for the long silence on our side, other projects had priority :-(
+
+> First, a little background: as Johannes mentioned, there has been
+initial
+> development of a "workflow engine" for ImageJ2:
+> 
+> 
+>
+http://dev.imagejdev.org/trac/imagej/browser/trunk/extra/workflow/src/main/java/imagej/workflow
+> 
+> We have begun a reconciliation of the workflow engine with the plugin
+> framework. Essentially, the toplevel idea is that of a "module" with
+inputs
+> and outputs; see:
+> 
+> LINES DELETED ..
+>
+> Anyway, none of this work precludes your implementation from being
+useful as
+> well, since our focus was not on data provenance at all yet (though we
+are
+> very interested in supporting it).
+
+The IJ ideas of modules and work flows definitely seem to be related to
+our automatic documentation framework Alida. 
+However, we started with the idea to automatically create a
+documentation of the data manipulations which gave rise to a given
+(image) data object persistently stored (e.g., in files). E.g., for an
+image on disk we want to know, how this image was generated. This means,
+to trace back - potentially through different interactive (IJ) sessions
+and/or processing started from command line - which operations
+(including their parameter settings and software version) were applied
+(in which sequence).
+Of course, with proper manual documentation one can achieve this kind of
+documentation as well, which however is cumbersome and error prone.
+
+Another thread was to be able to use plugins/operations from within
+other plugins and operations,
+which for our feeling was not easy to accomplish in IJ1.
+Furthermore, we like to be able to execute each plugin also from command
+line (or rather shell scripts), to process large amounts of data sets or
+to e.g. do grid search for parameters of our algorithms.
+And preferable to be able to do so without programming efforts, e.g. to
+generically execute plugins from command line.
+
+These wishes led us to a framework of operators as the only place of
+processing (which probably are very similar to IJ2 modules) and a
+generic way to describe there interface (input and output data, control
+parameter, supplemental parameters like verbose flag or flags to control
+visualization of intermediate results), very similar to the @Parameter
+annotation.
+
+At this point naturally the idea of visual programming came into play,
+however, only thoughts (or rather dreams) for now.
+
+> Would it be possible to extend or modify the @Parameter annotation to
+> > categorize a field as input, output, parameter or supplemental?
+> >
+> Certainly! How about a "visibility" enum with values: NORMAL
+(default),
+> TRANSIENT (for no history), and INVISIBLE (for no recording nor
+history). If
+> anyone has an idea for better names, I'm all ears. In the meantime, I
+have
+> committed an initial version of this enum to SVN and updated the
+Parameter
+
+First let us make sure whether we understand this correctly. An input
+and/or output image would be NORMAL, whereas, e.g., a mask size or
+stddev of a Gaussian would be TRANSIENT?
+Is there a sensible situation for a transient output parameter,
+which we can not conceive of?
+
+If this is correct, we would suggest something like DATAFLOW  
+in place of NORMAL, and e.g. CONTROL instead of TRANSIENT.
+This might be more intuitive for programmers, as parameters like mask
+size are, of course, "normal", too, and we have the association of data
+flow and the control of plugins.
+
+Two more issues regarding the @Parameter annotation from our side:
+- we would strongly prefer to let have the @Parameter annotation the
+  @Documented annotation so as to yield a complete javadoc
+  describing the interface of the plugin/workflow
+
+- How to cope with operations which modifiy their input
+  data in place, and this modified data is the result of the plugin
+  (like Smooth or Sharpen in the Process menue of IJ)?
+  If we annotate such a plugin with one input parameter 
+  we cannot (automatically) infer the complete data flow,
+  as it is not evident, which data enters and leaves the plugin.
+
+  Within the current framework this could be expressed using a second
+  member annotated as output parameter, and the run method just assigns
+  the input to the output member.
+  Another option is to introduce (instead of the binary choice input or 
+  ouput) the choice input or output or inoutput (maybe inputoutput)
+
+  Conceptionally we prefer the second possibility, as it clearly 
+  expresses what really happens (i.e. the input is modified, where I 
+  assume by default that inputs are not modified).
+  Pragmatically the first option might be advantageous as it does not
+  require a change of the @Parameter annotation
+  (but would ask the programmer to add the annotated output member and 
+  the assign statement)
+
+> We would really like to merge these annotations, because the
+processing
+> > chain documentation could be easily employed by IJ plugins that use
+the
+> > @Parameter annotation and no additional annotation would be
+necessary.
+> >
+> 
+> Great, please let us know what else you need to make this happen!
+
+we integrated our automatic documentation experimentally into IJ2.
+Essentially 
+(i) we introduced a few lines of code into the PluginRunner
+    to either execute the Plugin's run() method or to pipe this
+    through Alida's operator framework (depending on the alida.run 
+    property given to the jvm).
+    Besides adding some plugins this is the only modification of IJ
+    (assuming the PluginRunner is the only place were a plugin is 
+    generically started from within IJ)
+
+    Probably this could be done nicer using the events as published by 
+    the plugin runner
+(ii) we added a Alida Plugin Wrapper - used in (i) - which essentially
+    converts IJ's module info to its Alida counterpart
+
+    However: currently we take the @Parameter annotations from the 
+    ModuleInfo which excludes presets, thus, might get not all annotated
+    parameters (which we should change) 
+
+For testing
+(iii) we added a plugin WriteHistory which takes an image and a
+      file(name) as input and writes Alida's processing history of the  
+      image as enhanced graphml (i.e. xml) to the file (if properly 
+      integrated this step would go to FileReader and FileSaver and 
+      thus is transparent to the user)
+(iv)  we derived plugins 
+    - from IJs SharpenDataValues (which does not modify the input image,
+      but rather a cloned version) and 
+    - SmoothDataValues (with an additonal output assign from the input, 
+      see input/output issue above) and added plugins
+    - ALDDemo which internally used Alida operators
+    - ALDDemo2 which internally first used the modified 
+      SharpenDataValues-plugin and on the result the modfied 
+      SmoothDataValues
+        
+The resulting IJ snapshot may be downloaded from
+
+http://www2.informatik.uni-halle.de/agprbio/alida/downloads/imagej-2.0-SNAPSHOT-application-alida.zip
+(Note: you need to start the JVM with the property alida.run set)
+
+This zip contains in addition
+- a README-ALIDA with some more details as well as
+- a sample Alida History File (sample.ald) and a screen shot thereof.
+- the source files mentioned above (alida-ij-sources.zip)
+
+We tested only under Linux.
+
+This .ald file may be viewed with Chipory, which we derived from the
+graph editing and visualization tool Chisio. Chipory is available for
+linux system as a zip file and for windows as a self extracting archive.
+
+Both along with more details on and source code of Alida as well as
+Chipory is available at Alidas home page
+	http://www2.informatik.uni-halle.de/agprbio/alida
+	(soon: www.informatik.uni-halle.de/alida)
+
+We welcome to test the stuff and we are hoping for comments and
+suggestions from any side!
+
+BTW: Is there a intended scheme to invoke a plugin from within another
+plugin? (In the above sketched integration we create an instance of a
+PluginEntry using a class object and the classname (as a string) and use
+this entry to instantiate a PluginModule (which is than run as an
+AlidaOperator)
+
+> Lastly, I will second Johannes's question: are you planning to open
+source
+> this work? Or is it already available somewhere? Would you be
+interested in
+> integrating it into ImageJ2 core?
+
+we just made Alida available under the GPL (soon
+www.informatik.uni-halle.de/alida) and of course we are also interested
+to integrate it into the ImageJ2 core.
+
+
+Best - Oliver, Stefan on behalf of the complete Alida team.
+
+
+
+
+From sapristi at gmail.com  Wed May 18 08:44:29 2011
+From: sapristi at gmail.com (Albert Cardona)
+Date: Wed, 18 May 2011 09:44:29 -0400
+Subject: [ImageJ-devel] recording commands
+In-Reply-To: <BANLkTikWh3bkNBDG7RvEq5HSUd5pH-Rp2Q@mail.gmail.com>
+References: <BANLkTi=6srQV98UBXubu413B_0ETC+RXog@mail.gmail.com>
+	<BANLkTikWh3bkNBDG7RvEq5HSUd5pH-Rp2Q@mail.gmail.com>
+Message-ID: <BANLkTinGhWX8s+_odv_ETW+uw-4tZyPW3A@mail.gmail.com>
+
+Thanks for the info Curtis.
+
+Albert
+-- 
+http://albert.rierol.net
+http://www.ini.uzh.ch/~acardona/
+
+
+
+From G.Landini at bham.ac.uk  Wed May 18 09:02:37 2011
+From: G.Landini at bham.ac.uk (Gabriel Landini)
+Date: Wed, 18 May 2011 15:02:37 +0100
+Subject: [ImageJ-devel] Auto-Documentation of Processing Chain:
+	Extension of @Parameter Annotation
+In-Reply-To: <1305726135.1887.14.camel@localhost>
+References: <1299587182.1868.373.camel@localhost>
+	<AANLkTin-FPgW0ixG5C7s_ZmwW-2uz7JHPu3oNn5aAPpF@mail.gmail.com>
+	<1305726135.1887.14.camel@localhost>
+Message-ID: <201105181502.37545.G.Landini@bham.ac.uk>
+
+This sounds quite interesting. Something that I wonder is how is the workflow 
+merged when let's say we operates images each with related or unrelated 
+histories.
+
+Let's suppose that one wishes to divide a current image -with all its history 
+of processes- by another image -with its history of processes too. The second 
+image might be derived from the first one too.
+
+It might be that unless all this is started from scratch and recorded every 
+step, on has lots of unknowns in the workflow? Is the idea to do this by 
+default or only when required, like with the macro recorder?
+
+And where are all these workflow histories stored? With the images themselves?
+
+Sorry for the many questions.
+Cheers
+
+Gabriel
+
+
+
+From posch at informatik.uni-halle.de  Thu May 19 04:46:20 2011
+From: posch at informatik.uni-halle.de (Stefan Posch)
+Date: Thu, 19 May 2011 11:46:20 +0200
+Subject: [ImageJ-devel] Auto-Documentation of Processing Chain:
+ Extension of @Parameter Annotation
+In-Reply-To: <201105181502.37545.G.Landini@bham.ac.uk>
+References: <1299587182.1868.373.camel@localhost>
+	<AANLkTin-FPgW0ixG5C7s_ZmwW-2uz7JHPu3oNn5aAPpF@mail.gmail.com>
+	<1305726135.1887.14.camel@localhost>
+	<201105181502.37545.G.Landini@bham.ac.uk>
+Message-ID: <20110519094620.GH14556@informatik.uni-halle.de>
+
+Hi,
+
+On Wed, May 18, 2011 at 03:02:37PM +0100, Gabriel Landini wrote:
+> This sounds quite interesting. Something that I wonder is how is the workflow 
+> merged when let's say we operates images each with related or unrelated 
+> histories.
+
+This answer refers to Alida&Mitobo which we are developing
+(where Alida is the basis for automatic documentation and mitobo our framework for
+image analysis building on Alida and IJ).
+Alidas processing histories nd IJs workflows are very likely
+similar concepts.
+As posted recently we experimentally integrated Alida into IJ2 (at our site).
+
+> Let's suppose that one wishes to divide a current image -with all its history 
+> of processes- by another image -with its history of processes too. The second 
+> image might be derived from the first one too.
+> 
+> It might be that unless all this is started from scratch and recorded every 
+> step, on has lots of unknowns in the workflow? Is the idea to do this by 
+> default or only when required, like with the macro recorder?
+> 
+> And where are all these workflow histories stored? With the images themselves?
+Starting with the last question:
+In Mitobo, each image (as well as other data, like segmentation result, e.g. snakes)
+written to disk is accomandied by an additional .ald history file containing the processing history.
+
+If this image (or file containing snakes) is read lateron the .ald file containing the history is read also,
+(in IJ you have to use the ReadImage Plugin which is part of Mitobo)
+and internally linked into the implicit processing graph build on the fly when operators are invoked.
+
+If the result of the second processing pipeline is written to disk, the first history is
+included and also saved to disk.
+
+Fig A.1 of the Alida-Manual
+(http://www2.informatik.uni-halle.de/agprbio/alida/downloads/manual/AlidaManual.pdf)
+shows an example where the image in file "nuc-corrected.pgm" was in a first session 
+created applying a gamma correction on a image read from file.
+The file "nuc-corrected.pgm" and the image in "pd.pgm" are read in a later session 
+and the operator CellSegmentation is invoked,
+which uses nested calls to further opertors (e.g. DectectNucleim ActiveContours).
+
+The fact, that the history of nuc-corrected stems from a previous session is visualized
+by the orange colour of the triangle.
+The source image of the gamma correction is hidden in this view, as the ReadImage sending its output
+to MTBGammaCorrection has been collapsed. In Fig A.2 on the second page, it is uncollapsed, 
+and we see, it was read from fiel "nuc.pgm".
+
+If this file would be identical to "pg.pgm", this would currently not be identified by Alida/Mitobo
+as this would require to identify persistently stored (image) data. I do not think this is possible
+for data on disk (easily) (unless we have unique IDs), of course would be feasable if we use a database.
+
+In Alida all invocations of operators (roughly corresponding to plugins) are transparently recorded, unless
+the _programmer_ who invokes the operator refrains from doing so.
+
+Hope this helps .... and dont't hesitate to send further questions
+
+Regards
+
+Stefan
+-- 
+Prof. Dr.-Ing. Stefan Posch,
+        Institut fuer Informatik, Martin-Luther-Universitaet Halle-Wittenberg
+        Von-Seckendorff-Platz 1, 06099 Halle (Saale)
+phone:  ++49 345 55-24728
+fax:	++49 345 55-27039
+e-mail: Stefan.Posch at informatik.uni-halle.de
+www:    www.informatik.uni-halle.de/~posch/
+
+
+
+From ctrueden at wisc.edu  Thu May 19 13:40:41 2011
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Thu, 19 May 2011 13:40:41 -0500
+Subject: [ImageJ-devel] [fiji-devel] [Bug 258] Opening multiposition LSM
+ files by Drag&Drop throws exception (fwd)
+In-Reply-To: <46B2E5FD-61D9-4691-83B3-913B49E58785@mpi-cbg.de>
+References: <alpine.DEB.1.00.1104042343240.2040@bonsai2>
+	<8316725B-636C-4AD3-9583-13EA062409EA@mpi-cbg.de>
+	<813CE4B1-3D00-42F9-8A62-66BDC5B5EE1A@lifesci.dundee.ac.uk>
+	<46B2E5FD-61D9-4691-83B3-913B49E58785@mpi-cbg.de>
+Message-ID: <BANLkTimfedVqHG0PCBzTaq+2CtTAoOFcMA@mail.gmail.com>
+
+Hi Dan,
+
+Sorry for the long delay in my reply to your questions.
+
+LSM files can be 1D line scans over multiple data channels (lambda or
+> spectral scan) over time.
+> We have no way of easily displaying that in imageJ right now without
+> jumping through many hoops...
+> but we should aim to make a good general and trivial (for the user)
+>  solution for the 2D and 3D display of n dimensional pixels?
+>
+> Whats the plan in imageJ2 for this Curtis?
+> Now the 1st alpha is out... its certainly the right time to get this stuff
+> nailed down right?
+> Is there a design for the new "hyperstack" pixel data viewer?
+>
+
+The current status of the multidimensional viewer is that it displays one
+plane at a time, just like IJ1 does, with optional color compositing across
+the Channel axis (if any). So RGB images display as expected with red, green
+and blue channels simultaneously. The compositing options are more flexible
+than in IJ1, in that there is no 7-channel limit, and you can have a
+separate color table per plane, not just per channel.
+
+I imagine a display configuration window gadget... something like the image
+> disply properties in imaris, where you can choose which dimension to show as
+> x and whoch as y on the 2D display, and which extra dimensions with sliders,
+> and which as different colour channels (like composite, still with a
+> slider?). LUTs could also be handled in there....?
+>
+
+Unfortunately, we are currently limited to the first two dataset dimensions
+as XY. I agree completely that eventually, we want to allow the user to
+select which two dimensions are displayed as XY in space, but there are
+various implementation challenges to that. I am not sure whether we can have
+something like that in place for the 2.0-final release, but if not it will
+be a goal for the next major release after that.
+
+This is all tied into the ongoing discussion about and OME/imglib work on
+> n-dimensional ROIs I guess...
+>
+
+True, and N-dimensional ROIs get really complicated very quickly. For ImageJ
+2.0-final we are shooting for 2D ROIs only tied to specific image planes,
+like ImageJ1 has, but with an extensible architecture which will allow 3D+
+ROIs later. We are making good progress on that now, and should have
+something to show for the 2.0-alpha3 release at the end of the month.
+
+Right now there is the imglib1/2 stuff to sort out, so better not get too
+> distracted from that...
+> but anyway, these are ideas for the future.
+>
+
+Fortunately, as of 2.0-alpha2, we are completely switched over to ImgLib2.
+Development continues!
+
+-Curtis
+
+On Tue, Apr 5, 2011 at 4:32 AM, Daniel James White <white at mpi-cbg.de> wrote:
+
+> Hi Jason and all,
+>
+> On Apr 5, 2011, at 9:58 AM, Jason Swedlow wrote:
+>
+> > Hi Dan-
+> >
+> > <large scale tooting of own horn>
+>
+> you should and you must!!!
+>
+> >
+> > In fact, this type of data collection is not strange at all-- we, and
+> many others do it alot.  It's really very helpful for gathering many
+> examples in timelapse, and also for tiling.  Another example is the concept
+> of a WellSample in HCS-- multiple images in different locations of the same
+> Well.
+>
+> Exactly...
+> I just wonder how we are going to get imglib and these higher dimensions to
+> play nice?
+>
+> >
+> > In OME this is handled explicitly (
+> http://www.openmicroscopy.org/Schemas/OME/2010-06/ome.xsd).  Look under
+> the Plane Element for details.
+>
+> Good (phew!)
+>
+> >
+> > I understand this approach is somewhat at odds with imglib. As we move
+> forward towards a similar concept (
+> http://trac.openmicroscopy.org.uk/ome/ticket/3678), we'll definitely keep
+> an eye on what the Fiji/Imagejdev team is doing there.
+> >
+> > Obviously, implementing this in software is technically not challenging,
+> but it's not always clear how user wants data displayed.  View 10 20 GB
+> images at once?  Toggle them?  Montage? Tile?
+>
+> I guess the way familiar to most imageJ users will be to have a single
+> "hyperstack"  window, which only ever shows one image at a time (or maybe 2
+> images in magenta / green, or 3 images as  RGB or CYM) with a slider for
+> every dimension other than x and y.
+>
+> I suppose there is no need to say that x and y must be the 2 dimensions
+> plotted to the screen.... once could choose which 2 to plot,
+> and relegate the others to having sliders.
+>
+> In the 3D viewer.... same story, choose which 3 dimensions to render as a
+> volume, and have sliders for the others?
+>
+> As you suggest, once can also imagine a "'google maps" type viewer for
+> large tiled image data sets, where you can see and over view of the whole
+> structure when zoomed out, and also zoom in to see the details of one
+> area... and of course Stephan Saalfeld already did exactly that right here:
+> http://fly.mpi-cbg.de/
+> so we have a good idea how to approach that i guess?
+> I think I remember that this required pre computation of the over view,
+> zoomed out images at various scales.. and this is exactly why imaris takes
+> forever to open large images... its calculating the down sampled
+> representations.... so once its loaded the zooming in and out is fast...
+>
+> LSM files can be 1D line scans over multiple data channels (lambda or
+> spectral scan) over time.
+> We have no way of easily displaying that in imageJ right now without
+> jumping through many hoops...
+> but we should aim to make a good general and trivial (for the user)
+>  solution for the 2D and 3D display of n dimensional pixels?
+>
+> Whats the plan in imageJ2 for this Curtis?
+> Now the 1st alpha is out... its certainly the right time to get this stuff
+> nailed down right?
+> Is there a design for the new "hyperstack" pixel data viewer?
+>
+> I imagine a display configuration window gadget... something like the image
+> disply properties in imaris, where you can choose which dimension to show as
+> x and whoch as y on the 2D display, and which extra dimensions with sliders,
+> and which as different colour channels (like composite, still with a
+> slider?). LUTs could also be handled in there....?
+>
+> This is all tied into the ongoing discussion about and OME/imglib work on
+> n-dimensional ROIs I guess...
+>
+> Right now there is the imglib1/2 stuff to sort out, so better not get too
+> distracted from that...
+> but anyway, these are ideas for the future.
+>
+> cheers
+>
+> Dan
+>
+>
+>
+>
+>
+> >
+> > </large scale tooting of own horn>
+> >
+> > Cheers,
+> >
+> > jason
+> >
+> > On 5 Apr 2011, at 08:45, Daniel James White wrote:
+> >
+> >> Hi all .lsm sufferers,
+> >>
+> >>
+> >> On Apr 4, 2011, at 11:46 PM, Johannes Schindelin wrote:
+> >>
+> >>> Hi Mark & other .lsm experts,
+> >>>
+> >>>> ---------- Forwarded message ----------
+> >>>> [...]
+> >>>> http://pacific.mpi-cbg.de/cgi-bin/bugzilla/show_bug.cgi?id=258
+> >>>>
+> >>>> [...]
+> >>>> ------- Comment #9 from johannes.schindelin at gmx.de  2011-04-04 23:31
+> -------
+> >>>> I pushed the changes to the 'lsm-reader-4.0g' branch, and hope to
+> merge
+> >>>> to 'master' and to upload to the Updater soon.
+> >>>
+> >>> May I ask you for a quick sanity check? It's actually very small:
+> >>>
+> >>>
+> http://pacific.mpi-cbg.de/cgi-bin/gitweb.cgi?p=fiji.git;a=commitdiff;h=7e70bc5762abf993b729910b4c3b0414e5a97ae6
+> >>
+> >> Hmmm, looking at the diffs... it seems that tile position is stuffed
+> into the time dimension.
+> >>
+> >> So whats gonna happen if there is a time series tile scan?
+> >> "There may be trouble ahead, but while there's moonlight, and music, and
+> love and romance..."
+> >>
+> >> Do we have a strategy in imageJ2 for dealing with multi stage xy
+> position data sets
+> >> that also allows time series?
+> >>
+> >> Imglib is the answer guess? But hoiw?
+> >> Does imglib have a concept for this rather strange pair of extra
+> dimensions: x and y stage position?
+> >> Some kind of x and y offset (in theory also z could be "tiled" eg. when
+> a z piezo stepper has a limited range, and you do several scans in z to
+> cover a larger range)
+> >>
+> >> ???
+> >>
+> >> Dan
+> >>
+> >>
+> >>>
+> >>> Ciao,
+> >>> Dscho
+> >>>
+> >>> --
+> >>> You received this message because you are subscribed to the Google
+> Groups "Fiji-devel" group.
+> >>> To post to this group, send email to fiji-devel at googlegroups.com.
+> >>> To unsubscribe from this group, send email to
+> fiji-devel+unsubscribe at googlegroups.com.
+> >>> For more options, visit this group at
+> http://groups.google.com/group/fiji-devel?hl=en.
+> >>>
+> >>
+> >> Dr. Daniel James White BSc. (Hons.) PhD
+> >> Senior Microscopist / Image Visualisation, Processing and Analysis
+> >> Light Microscopy and Image Processing Facilities
+> >> Max Planck Institute of Molecular Cell Biology and Genetics
+> >> Pfotenhauerstrasse 108
+> >> 01307 DRESDEN
+> >> Germany
+> >>
+> >> +49 (0)15114966933 (German Mobile)
+> >> +49 (0)351 210 2627 (Work phone at MPI-CBG)
+> >> +49 (0)351 210 1078 (Fax MPI-CBG LMF)
+> >>
+> >> http://www.bioimagexd.net    BioImageXD
+> >> http://pacific.mpi-cbg.de            Fiji -  is just ImageJ (Batteries
+> Included)
+> >> http://www.chalkie.org.uk            Dan's Homepages
+> >> https://ifn.mpi-cbg.de                       Dresden Imaging Facility
+> Network
+> >> dan (at) chalkie.org.uk
+> >> ( white (at) mpi-cbg.de )
+> >>
+> >>
+> >>
+> >>
+> >>
+> >>
+> >>
+> >>
+> >>
+> >>
+> >>
+> >>
+> >> _______________________________________________
+> >> ImageJ-devel mailing list
+> >> ImageJ-devel at imagejdev.org
+> >> http://imagejdev.org/mailman/listinfo/imagej-devel
+> >
+> >
+> >
+> > **************************
+> > Wellcome Trust Centre for Gene Regulation & Expression
+> > College of Life Sciences
+> > MSI/WTB/JBC Complex
+> > University of Dundee
+> > Dow Street
+> > Dundee  DD1 5EH
+> > United Kingdom
+> >
+> > phone (01382) 385819
+> > Intl phone:  44 1382 385819
+> > FAX   (01382) 388072
+> > email: jason at lifesci.dundee.ac.uk
+> >
+> > Lab Page: http://gre.lifesci.dundee.ac.uk/staff/jason_swedlow.html
+> > Open Microscopy Environment: http://openmicroscopy.org
+> > **************************
+> >
+> > The University of Dundee is a Scottish Registered Charity, No. SC015096.
+> >
+> >
+> >
+>
+> Dr. Daniel James White BSc. (Hons.) PhD
+> Senior Microscopist / Image Visualisation, Processing and Analysis
+> Light Microscopy and Image Processing Facilities
+> Max Planck Institute of Molecular Cell Biology and Genetics
+> Pfotenhauerstrasse 108
+> 01307 DRESDEN
+> Germany
+>
+> +49 (0)15114966933 (German Mobile)
+> +49 (0)351 210 2627 (Work phone at MPI-CBG)
+> +49 (0)351 210 1078 (Fax MPI-CBG LMF)
+>
+> http://www.bioimagexd.net       BioImageXD
+> http://pacific.mpi-cbg.de               Fiji -  is just ImageJ (Batteries
+> Included)
+> http://www.chalkie.org.uk               Dan's Homepages
+> https://ifn.mpi-cbg.de                  Dresden Imaging Facility Network
+> dan (at) chalkie.org.uk
+> ( white (at) mpi-cbg.de )
+>
+>
+>
+>
+>
+>
+>
+>
+>
+>
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110519/8ea82c20/attachment.html>
+
+From preibisch at mpi-cbg.de  Fri May 20 07:09:09 2011
+From: preibisch at mpi-cbg.de (Stephan Preibisch)
+Date: Fri, 20 May 2011 14:09:09 +0200
+Subject: [ImageJ-devel] Changes to the Interval and RealInterval interfaces
+Message-ID: <001c01cc16e6$b9276e40$2b764ac0$@de>
+
+Hi guys,
+
+ 
+
+I am just implementing algorithms and I noticed that it saves quite some
+temporary arrays if Interval and RealInterval can set Positionables to their
+min and max location.
+
+ 
+
+The interface would look like (red just added):
+
+ 
+
+       /**
+
+        * 
+
+        * @param d dimension
+
+        * @return minimum
+
+        */
+
+       public long min( final int d );
+
+       
+
+       /**
+
+        * Write the minimum of each dimension into long[].
+
+        * 
+
+        * @param min
+
+        */
+
+       public void min( long[] min );
+
+       
+
+       /**
+
+        * Sets a {@link Positionable} to the minimum of this {@link
+Interval}
+
+        * 
+
+        * @param min
+
+        */
+
+       public void min( Positionable min );
+
+       
+
+       /**
+
+        * 
+
+        * @param d dimension
+
+        * @return maximum
+
+        */
+
+       public long max( final int d );
+
+       
+
+       /**
+
+        * Write the minimum of each dimension into long[].
+
+        * 
+
+        * @param max
+
+        */
+
+       public void max( long[] max );
+
+ 
+
+       /**
+
+        * Sets a {@link Positionable} to the maximum of this {@link
+Interval}
+
+        * 
+
+        * @param max
+
+        */
+
+       public void max( Positionable max );
+
+       
+
+       /**
+
+        * Write the number of pixels in each dimension into long[].
+
+        * 
+
+        * @param dimensions
+
+        */
+
+       public void dimensions( long[] dimensions );
+
+       
+
+       /**
+
+        * Get the number of pixels in a given dimension <em>d</em>.
+
+        * 
+
+        * @param d
+
+        */
+
+       public long dimension( int d );
+
+ 
+
+ 
+
+Same applies to the RealInterval..
+
+ 
+
+Now you could write:
+
+ 
+
+interval.min( randomAccess );
+
+ 
+
+instead of:
+
+ 
+
+long[] tmp = new long[ numDimensions ];
+
+interval.min( tmp );
+
+randomAccess.setPosition( tmp );
+
+ 
+
+or
+
+ 
+
+for ( int d = 0; d < numDimensions; ++d )
+
+   randomAccess.setPosition( interval.min( d ), d );
+
+ 
+
+which might be inefficient for the case that the input is a paged/compressed
+cell container. Potentially, it would have to load a lot of unnecessary
+cells on its way through the dimensions.
+
+ 
+
+What do you think? Everything is already implemented and updated, I simply
+have to push it..
+
+ 
+
+Steffi
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110520/8f5047a3/attachment.html>
+
+From leek at broadinstitute.org  Fri May 20 07:15:09 2011
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Fri, 20 May 2011 08:15:09 -0400
+Subject: [ImageJ-devel] Changes to the Interval and RealInterval
+	interfaces
+In-Reply-To: <001c01cc16e6$b9276e40$2b764ac0$@de>
+References: <001c01cc16e6$b9276e40$2b764ac0$@de>
+Message-ID: <4dd65b4f.8d8de50a.1b32.762f@mx.google.com>
+
+Makes perfect sense, especially if you've updated all implementers of 
+the interfaces.
+
+--Lee
+On 5/20/2011 8:09 AM, Stephan Preibisch wrote:
+>
+> Hi guys,
+>
+> I am just implementing algorithms and I noticed that it saves quite 
+> some temporary arrays if Interval and RealInterval can set 
+> Positionables to their min and max location.
+>
+> The interface would look like (red just added):
+>
+> /**
+>
+>         *
+>
+>         * *@param*d dimension
+>
+>         * *@return*minimum
+>
+>         */
+>
+> *public**long*min( *final**int*d );
+>
+> /**
+>
+>         * Write the minimum of each dimension into long[].
+>
+>         *
+>
+>         * *@param*min
+>
+>         */
+>
+> *public**void*min( *long*[] min );
+>
+> *       /***
+>
+> *        * Sets a {@link Positionable} to the minimum of this {@link 
+> Interval}*
+>
+> *        * *
+>
+> *        * @param min*
+>
+> *        */*
+>
+> *       public void min( Positionable min );*
+>
+> /**
+>
+>         *
+>
+>  * *@param*d dimension
+>
+>         * *@return*maximum
+>
+>         */
+>
+> *public**long*max( *final**int*d );
+>
+> /**
+>
+>         * Write the minimum of each dimension into long[].
+>
+>         *
+>
+>         * *@param*max
+>
+>         */
+>
+> *public**void*max( *long*[] max );
+>
+> *       /***
+>
+> *        * Sets a {@link Positionable} to the maximum of this {@link 
+> Interval}*
+>
+> *        * *
+>
+> *        * @param max*
+>
+> *        */*
+>
+> *       public void max( Positionable max );*
+>
+> /**
+>
+>         * Write the number of pixels in each dimension into long[].
+>
+>         *
+>
+>         * *@param*dimensions
+>
+>         */
+>
+> *public**void*dimensions( *long*[] dimensions );
+>
+> /**
+>
+>         * Get the number of pixels in a given dimension <em>d</em>.
+>
+>         *
+>
+>         * *@param*d
+>
+>         */
+>
+> *public**long*dimension( *int*d );
+>
+> Same applies to the RealInterval....
+>
+> Now you could write:
+>
+> interval.min( randomAccess );
+>
+> instead of:
+>
+> long[] tmp = new long[ numDimensions ];
+>
+> interval.min( tmp );
+>
+> randomAccess.setPosition( tmp );
+>
+> or
+>
+> for ( int d = 0; d < numDimensions; ++d )
+>
+>    randomAccess.setPosition( interval.min( d ), d );
+>
+> which might be inefficient for the case that the input is a 
+> paged/compressed cell container. Potentially, it would have to load a 
+> lot of unnecessary cells on its way through the dimensions...
+>
+> What do you think? Everything is already implemented and updated, I 
+> simply have to push it....
+>
+> Steffi
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110520/d0f437df/attachment.html>
+
+From preibisch at mpi-cbg.de  Fri May 20 08:01:18 2011
+From: preibisch at mpi-cbg.de (Stephan Preibisch)
+Date: Fri, 20 May 2011 15:01:18 +0200
+Subject: [ImageJ-devel] Changes to the Interval and
+	RealInterval	interfaces
+In-Reply-To: <4dd65b4f.8d8de50a.1b32.762f@mx.google.com>
+References: <001c01cc16e6$b9276e40$2b764ac0$@de>
+	<4dd65b4f.8d8de50a.1b32.762f@mx.google.com>
+Message-ID: <003301cc16ee$02492f80$06db8e80$@de>
+
+Hi Lee,
+
+ 
+
+I did that already in all imglib2-core classes. The question also is if it
+is necessary somewhere else, too..
+
+ 
+
+Nice greetings,
+
+Steffi
+
+ 
+
+From: imagej-devel-bounces at imagejdev.org
+[mailto:imagej-devel-bounces at imagejdev.org] On Behalf Of Lee Kamentsky
+Sent: Friday, May 20, 2011 2:15 PM
+To: imagej-devel at imagejdev.org
+Subject: Re: [ImageJ-devel] Changes to the Interval and RealInterval
+interfaces
+
+ 
+
+Makes perfect sense, especially if you've updated all implementers of the
+interfaces.
+
+--Lee
+On 5/20/2011 8:09 AM, Stephan Preibisch wrote: 
+
+Hi guys,
+
+ 
+
+I am just implementing algorithms and I noticed that it saves quite some
+temporary arrays if Interval and RealInterval can set Positionables to their
+min and max location.
+
+ 
+
+The interface would look like (red just added):
+
+ 
+
+       /**
+
+        * 
+
+        * @param d dimension
+
+        * @return minimum
+
+        */
+
+       public long min( final int d );
+
+       
+
+       /**
+
+        * Write the minimum of each dimension into long[].
+
+        * 
+
+        * @param min
+
+        */
+
+       public void min( long[] min );
+
+       
+
+       /**
+
+        * Sets a {@link Positionable} to the minimum of this {@link
+Interval}
+
+        * 
+
+        * @param min
+
+        */
+
+       public void min( Positionable min );
+
+       
+
+       /**
+
+        * 
+
+        * @param d dimension
+
+        * @return maximum
+
+        */
+
+       public long max( final int d );
+
+       
+
+       /**
+
+        * Write the minimum of each dimension into long[].
+
+        * 
+
+        * @param max
+
+        */
+
+       public void max( long[] max );
+
+ 
+
+       /**
+
+        * Sets a {@link Positionable} to the maximum of this {@link
+Interval}
+
+        * 
+
+        * @param max
+
+        */
+
+       public void max( Positionable max );
+
+       
+
+       /**
+
+        * Write the number of pixels in each dimension into long[].
+
+        * 
+
+        * @param dimensions
+
+        */
+
+       public void dimensions( long[] dimensions );
+
+       
+
+       /**
+
+        * Get the number of pixels in a given dimension <em>d</em>.
+
+        * 
+
+        * @param d
+
+        */
+
+       public long dimension( int d );
+
+ 
+
+ 
+
+Same applies to the RealInterval..
+
+ 
+
+Now you could write:
+
+ 
+
+interval.min( randomAccess );
+
+ 
+
+instead of:
+
+ 
+
+long[] tmp = new long[ numDimensions ];
+
+interval.min( tmp );
+
+randomAccess.setPosition( tmp );
+
+ 
+
+or
+
+ 
+
+for ( int d = 0; d < numDimensions; ++d )
+
+   randomAccess.setPosition( interval.min( d ), d );
+
+ 
+
+which might be inefficient for the case that the input is a paged/compressed
+cell container. Potentially, it would have to load a lot of unnecessary
+cells on its way through the dimensions.
+
+ 
+
+What do you think? Everything is already implemented and updated, I simply
+have to push it..
+
+ 
+
+Steffi
+
+ 
+ 
+_______________________________________________
+ImageJ-devel mailing list
+ImageJ-devel at imagejdev.org
+http://imagejdev.org/mailman/listinfo/imagej-devel
+
+ 
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110520/be6399a6/attachment.html>
+
+From pietzsch at mpi-cbg.de  Fri May 20 08:16:15 2011
+From: pietzsch at mpi-cbg.de (Tobias Pietzsch)
+Date: Fri, 20 May 2011 15:16:15 +0200
+Subject: [ImageJ-devel] Changes to the Interval and RealInterval
+	interfaces
+In-Reply-To: <001c01cc16e6$b9276e40$2b764ac0$@de>
+References: <001c01cc16e6$b9276e40$2b764ac0$@de>
+Message-ID: <4DD6699F.3000207@mpi-cbg.de>
+
+Hi,
+I think this is a good idea. Go ahead and push it.
+Tobias
+
+
+
+On 05/20/2011 02:09 PM, Stephan Preibisch wrote:
+> Hi guys,
+>
+> I am just implementing algorithms and I noticed that it saves quite some
+> temporary arrays if Interval and RealInterval can set Positionables to
+> their min and max location.
+>
+> The interface would look like (red just added):
+>
+> /**
+>
+> *
+>
+> * *@param*d dimension
+>
+> * *@return*minimum
+>
+> */
+>
+> *public**long*min( *final**int*d );
+>
+> /**
+>
+> * Write the minimum of each dimension into long[].
+>
+> *
+>
+> * *@param*min
+>
+> */
+>
+> *public**void*min( *long*[] min );
+>
+> */***
+>
+> ** Sets a {@link Positionable} to the minimum of this {@link Interval}*
+>
+> ** *
+>
+> ** @param min*
+>
+> **/*
+>
+> *public void min( Positionable min );*
+>
+> /**
+>
+> *
+>
+> * *@param*d dimension
+>
+> * *@return*maximum
+>
+> */
+>
+> *public**long*max( *final**int*d );
+>
+> /**
+>
+> * Write the minimum of each dimension into long[].
+>
+> *
+>
+> * *@param*max
+>
+> */
+>
+> *public**void*max( *long*[] max );
+>
+> */***
+>
+> ** Sets a {@link Positionable} to the maximum of this {@link Interval}*
+>
+> ** *
+>
+> ** @param max*
+>
+> **/*
+>
+> *public void max( Positionable max );*
+>
+> /**
+>
+> * Write the number of pixels in each dimension into long[].
+>
+> *
+>
+> * *@param*dimensions
+>
+> */
+>
+> *public**void*dimensions( *long*[] dimensions );
+>
+> /**
+>
+> * Get the number of pixels in a given dimension <em>d</em>.
+>
+> *
+>
+> * *@param*d
+>
+> */
+>
+> *public**long*dimension( *int*d );
+>
+> Same applies to the RealInterval?.
+>
+> Now you could write:
+>
+> interval.min( randomAccess );
+>
+> instead of:
+>
+> long[] tmp = new long[ numDimensions ];
+>
+> interval.min( tmp );
+>
+> randomAccess.setPosition( tmp );
+>
+> or
+>
+> for ( int d = 0; d < numDimensions; ++d )
+>
+> randomAccess.setPosition( interval.min( d ), d );
+>
+> which might be inefficient for the case that the input is a
+> paged/compressed cell container. Potentially, it would have to load a
+> lot of unnecessary cells on its way through the dimensions?
+>
+> What do you think? Everything is already implemented and updated, I
+> simply have to push it?.
+>
+> Steffi
+>
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+
+
+
+
+From leek at broadinstitute.org  Mon May 23 15:04:26 2011
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Mon, 23 May 2011 16:04:26 -0400
+Subject: [ImageJ-devel] ROI presentation powerpoint
+Message-ID: <4ddabdcc.028de50a.4670.ffffcf4a@mx.google.com>
+
+Here's the powerpoint presentation for the ROI talk. We'll be online via 
+Skype at 10:00 am US Eastern, 9:00 am US central, 16:00 in Germany (?) 
+next Wednesday.
+
+--Lee
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: Regions of Interest in ImageJ 2.ppt
+Type: application/vnd.ms-powerpoint
+Size: 722944 bytes
+Desc: not available
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110523/61fa9031/attachment.ppt>
+
+From ctrueden at wisc.edu  Mon May 23 15:37:29 2011
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Mon, 23 May 2011 15:37:29 -0500
+Subject: [ImageJ-devel] ROI presentation powerpoint
+In-Reply-To: <4ddabdcc.028de50a.4670.ffffcf4a@mx.google.com>
+References: <4ddabdcc.028de50a.4670.ffffcf4a@mx.google.com>
+Message-ID: <BANLkTim-9yTmxNEA3Zjd93kN0ZmB1c6vmQ@mail.gmail.com>
+
+>
+> Here's the powerpoint presentation for the ROI talk. We'll be online via
+> Skype at 10:00 am US Eastern, 9:00 am US central, 16:00 in Germany (?) next
+> Wednesday.
+>
+
+Thanks Lee. To be clear, for those interested, we are meeting to discuss the
+current status of ROI support in ImageJ2. The meeting will be this Wednesday
+the 25th at the time Lee indicated. Lee is going to walk us through the
+aforementioned presentation, I'll chime in as needed, and we can discuss
+next steps.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110523/df33bd89/attachment.html>
+
+From preibisch at mpi-cbg.de  Tue May 24 02:30:20 2011
+From: preibisch at mpi-cbg.de (Stephan Preibisch)
+Date: Tue, 24 May 2011 09:30:20 +0200
+Subject: [ImageJ-devel] ImgLib2: ImageJFunctions.show() works again
+Message-ID: <004301cc19e4$70005690$500103b0$@de>
+
+Hi everybody,
+
+ 
+
+I just wanted to mention that 
+
+ 
+
+ImageJFunctions.show()
+
+ 
+
+works again for all kind of ImgLib2 imgs and randomaccessibleintervals. It
+should automatically display all RealTypes and ARGBType properly. It
+displays it as a VirtualStack and returns the reference to the ImagePlus
+instance.
+
+ 
+
+FloatType and DoubleType are displayed as ImageJ FloatProcessor.
+
+All IntegerTypes are displayed as ImageJ ShortProcessor.
+
+UnsignedByteType is displayed as ImageJ ByteProcessor.
+
+ARGBType is displayed as ImageJ ColorProcessor
+
+ 
+
+There also individual methods to display it as any of those Processors:
+
+ 
+
+ImageJFunctions.showFloat()
+
+ImageJFunctions.showUnsignedByte()
+
+ImageJFunctions.showUnsignedShort()
+
+ImageJFunctions.showRGB()
+
+ 
+
+I will add support for Complex Types this week.
+
+ 
+
+Nice greetings,
+
+Steffi
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110524/f8de0003/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Tue May 24 02:32:44 2011
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Tue, 24 May 2011 09:32:44 +0200 (CEST)
+Subject: [ImageJ-devel] ImgLib2: ImageJFunctions.show() works again
+In-Reply-To: <004301cc19e4$70005690$500103b0$@de>
+References: <004301cc19e4$70005690$500103b0$@de>
+Message-ID: <alpine.DEB.1.00.1105240932290.2701@bonsai2>
+
+Hi Steffi,
+
+On Tue, 24 May 2011, Stephan Preibisch wrote:
+
+> I just wanted to mention that 
+> 
+> ImageJFunctions.show()
+
+Cooool!
+
+Thank you!
+Dscho
+
+
+
+From G.Landini at bham.ac.uk  Tue May 24 03:09:43 2011
+From: G.Landini at bham.ac.uk (Gabriel Landini)
+Date: Tue, 24 May 2011 09:09:43 +0100
+Subject: [ImageJ-devel] ROI presentation powerpoint
+In-Reply-To: <4ddabdcc.028de50a.4670.ffffcf4a@mx.google.com>
+References: <4ddabdcc.028de50a.4670.ffffcf4a@mx.google.com>
+Message-ID: <201105240909.43249.G.Landini@bham.ac.uk>
+
+On Monday 23 May 2011 21:04:26 Lee Kamentsky wrote:
+> Here's the powerpoint presentation for the ROI talk. We'll be online via
+> Skype at 10:00 am US Eastern, 9:00 am US central, 16:00 in Germany (?)
+> next Wednesday.
+
+I am not sure I will be able to make it, but I would like to listen to this.
+How does one join the conference session?
+
+BTW, have there been any thoughts on how to handle the positioning of the ROIs 
+boundaries? I mentioned this some time ago and I think it is the ideal time to 
+get this right from the start.
+
+Regards
+
+Gabriel
+
+
+
+From leek at broadinstitute.org  Tue May 24 07:24:33 2011
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Tue, 24 May 2011 08:24:33 -0400
+Subject: [ImageJ-devel] ROI presentation powerpoint
+In-Reply-To: <201105240909.43249.G.Landini@bham.ac.uk>
+References: <4ddabdcc.028de50a.4670.ffffcf4a@mx.google.com>
+	<201105240909.43249.G.Landini@bham.ac.uk>
+Message-ID: <4ddba382.028de50a.6680.ffffe347@mx.google.com>
+
+Gabriel, by boundaries, do you mean the perimeter pixels? I think I 
+could put that interface in.
+
+Under the covers, the abstract ROI classes ask for rasters - runs of 
+pixels at constant Y and incremental X. That's pretty much the same 
+thing as finding two of the perimeter pixels, so we could add an 
+interface to iterate through the perimeter pixels. You wouldn't get them 
+in the right order though, not clockwise or counterclockwise along the 
+boundary. I'm not sure how to handle topologically complex objects where 
+iterating clockwise doesn't make sense (objects with holes, objects that 
+are disjoint).
+
+But definitely, we should figure out a way to have you join - we've been 
+using Skype voice chat for our ImageJ meeting calls. Curtis calls all of 
+the participants, maybe if we had a list of people we could add them as 
+well. Also, there's an ImageJDev channel on Skype which is very active. 
+If you have a Skype account, one of us can add you.
+
+--Lee
+
+On 5/24/2011 4:09 AM, Gabriel Landini wrote:
+> On Monday 23 May 2011 21:04:26 Lee Kamentsky wrote:
+>> Here's the powerpoint presentation for the ROI talk. We'll be online via
+>> Skype at 10:00 am US Eastern, 9:00 am US central, 16:00 in Germany (?)
+>> next Wednesday.
+> I am not sure I will be able to make it, but I would like to listen to this.
+> How does one join the conference session?
+>
+> BTW, have there been any thoughts on how to handle the positioning of the ROIs
+> boundaries? I mentioned this some time ago and I think it is the ideal time to
+> get this right from the start.
+>
+> Regards
+>
+> Gabriel
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+
+
+
+
+From G.Landini at bham.ac.uk  Tue May 24 09:27:00 2011
+From: G.Landini at bham.ac.uk (Gabriel Landini)
+Date: Tue, 24 May 2011 15:27:00 +0100
+Subject: [ImageJ-devel] ROI presentation powerpoint
+In-Reply-To: <4ddba382.028de50a.6680.ffffe347@mx.google.com>
+References: <4ddabdcc.028de50a.4670.ffffcf4a@mx.google.com>
+	<201105240909.43249.G.Landini@bham.ac.uk>
+	<4ddba382.028de50a.6680.ffffe347@mx.google.com>
+Message-ID: <201105241527.00611.G.Landini@bham.ac.uk>
+
+On Tuesday 24 May 2011 13:24:33 Lee Kamentsky wrote:
+> Gabriel, by boundaries, do you mean the perimeter pixels? I think I
+> could put that interface in.
+
+Hi Lee:
+Excellent.
+ 
+> Under the covers, the abstract ROI classes ask for rasters - runs of
+> pixels at constant Y and incremental X. That's pretty much the same
+> thing as finding two of the perimeter pixels, so we could add an
+> interface to iterate through the perimeter pixels. You wouldn't get them
+> in the right order though, not clockwise or counterclockwise along the
+> boundary. I'm not sure how to handle topologically complex objects where
+> iterating clockwise doesn't make sense (objects with holes, objects that
+> are disjoint).
+
+I seem to remember somebody encoding holes ROIs in the opposite 
+direction of the boundary ROIs. I am not sure what advantage this has. 
+
+In some imaging packages I worked with before (notably Optimas, now defunct) 
+there were 2 different resolutions for the positioning, one for addressing the 
+image and one for ROIs. The ROIs were located (by default) on the centre of 
+the "pixels". I know that pixels are really points, but if you enlarge the 
+image, they look like squares, so it would be useful to really have an 
+intuitive positioning of the ROI nodes on the image.
+
+There are at least 8 different ways to encode a blob, depending whether the 
+ROI centres on the pixels belonging to the object boundary, on the background 
+bounday pixel centres or to the boundaries of the underlying grid, and whether 
+4 or 8 connected.
+
+As far as I know, IJ uses the top left corner to position the polygon, but 
+then this creates an un-intuitive situation of the ROI not reaching the point 
+the it will paint if you fill the ROI.
+ImageJ's polygon length computation is somewhat difficult to grasp. It does 
+not return the same length as the standard Freeman's algorithm (the difference 
+is not too large, but it is different). This needs to be investigated a bit, I 
+think.
+
+There used to be a problem (not sure if this is still there) that if you 
+filled ROI then get the ROI again the wand, then drew the 
+outline, it would be bigger by 1 pixel again to the right and down. Somehow 
+this does not seem to be the ideal. An ROI should define a blob, that when 
+filled and detected again with the want, the same boundary is detected.
+Although I eventually became used to to live with it, I think it would be 
+better to avoid this in future.
+
+I contacted Curtis so he has my skype id and hope to join to -at least to 
+listen- about the progress tomorrow.
+
+Regards
+
+Gabriel
+
+
+
+
+
+From leek at broadinstitute.org  Tue May 24 09:34:56 2011
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Tue, 24 May 2011 10:34:56 -0400
+Subject: [ImageJ-devel] ROI presentation powerpoint
+In-Reply-To: <201105241527.00611.G.Landini@bham.ac.uk>
+References: <4ddabdcc.028de50a.4670.ffffcf4a@mx.google.com>	<201105240909.43249.G.Landini@bham.ac.uk>	<4ddba382.028de50a.6680.ffffe347@mx.google.com>
+	<201105241527.00611.G.Landini@bham.ac.uk>
+Message-ID: <4ddbc211.8b8de50a.745a.fffff113@mx.google.com>
+
+Lots of good stuff in your email, Gabriel. Just to respond to one point, 
+the "all-connected-components" segmentation algorithm I did in imglib 
+lets you specify the connectedness using a structuring element. You can 
+do 4 or 8 connectedness and it does segment in N dimensions... you can 
+specify the connectedness there too. You can even increase the 
+connectedness to encompass pixels that are 2 or more away to get a 
+dilation effect, although that might be computationally expensive for 
+large dilations.
+
+--Lee
+
+On 5/24/2011 10:27 AM, Gabriel Landini wrote:
+> On Tuesday 24 May 2011 13:24:33 Lee Kamentsky wrote:
+>> Gabriel, by boundaries, do you mean the perimeter pixels? I think I
+>> could put that interface in.
+> Hi Lee:
+> Excellent.
+>
+>> Under the covers, the abstract ROI classes ask for rasters - runs of
+>> pixels at constant Y and incremental X. That's pretty much the same
+>> thing as finding two of the perimeter pixels, so we could add an
+>> interface to iterate through the perimeter pixels. You wouldn't get them
+>> in the right order though, not clockwise or counterclockwise along the
+>> boundary. I'm not sure how to handle topologically complex objects where
+>> iterating clockwise doesn't make sense (objects with holes, objects that
+>> are disjoint).
+> I seem to remember somebody encoding holes ROIs in the opposite
+> direction of the boundary ROIs. I am not sure what advantage this has.
+>
+> In some imaging packages I worked with before (notably Optimas, now defunct)
+> there were 2 different resolutions for the positioning, one for addressing the
+> image and one for ROIs. The ROIs were located (by default) on the centre of
+> the "pixels". I know that pixels are really points, but if you enlarge the
+> image, they look like squares, so it would be useful to really have an
+> intuitive positioning of the ROI nodes on the image.
+>
+> There are at least 8 different ways to encode a blob, depending whether the
+> ROI centres on the pixels belonging to the object boundary, on the background
+> bounday pixel centres or to the boundaries of the underlying grid, and whether
+> 4 or 8 connected.
+>
+> As far as I know, IJ uses the top left corner to position the polygon, but
+> then this creates an un-intuitive situation of the ROI not reaching the point
+> the it will paint if you fill the ROI.
+> ImageJ's polygon length computation is somewhat difficult to grasp. It does
+> not return the same length as the standard Freeman's algorithm (the difference
+> is not too large, but it is different). This needs to be investigated a bit, I
+> think.
+>
+> There used to be a problem (not sure if this is still there) that if you
+> filled ROI then get the ROI again the wand, then drew the
+> outline, it would be bigger by 1 pixel again to the right and down. Somehow
+> this does not seem to be the ideal. An ROI should define a blob, that when
+> filled and detected again with the want, the same boundary is detected.
+> Although I eventually became used to to live with it, I think it would be
+> better to avoid this in future.
+>
+> I contacted Curtis so he has my skype id and hope to join to -at least to
+> listen- about the progress tomorrow.
+>
+> Regards
+>
+> Gabriel
+>
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+
+
+
+
+From G.Landini at bham.ac.uk  Tue May 24 10:30:47 2011
+From: G.Landini at bham.ac.uk (Gabriel Landini)
+Date: Tue, 24 May 2011 16:30:47 +0100
+Subject: [ImageJ-devel] ROI presentation powerpoint
+In-Reply-To: <4ddbc211.8b8de50a.745a.fffff113@mx.google.com>
+References: <4ddabdcc.028de50a.4670.ffffcf4a@mx.google.com>
+	<201105241527.00611.G.Landini@bham.ac.uk>
+	<4ddbc211.8b8de50a.745a.fffff113@mx.google.com>
+Message-ID: <201105241630.47449.G.Landini@bham.ac.uk>
+
+On Tuesday 24 May 2011 15:34:56 Lee Kamentsky wrote:
+> Lots of good stuff in your email, Gabriel. Just to respond to one point,
+> the "all-connected-components" segmentation algorithm I did in imglib
+> lets you specify the connectedness using a structuring element. You can
+> do 4 or 8 connectedness and it does segment in N dimensions... you can
+> specify the connectedness there too. You can even increase the
+> connectedness to encompass pixels that are 2 or more away to get a
+> dilation effect, although that might be computationally expensive for
+> large dilations.
+
+That is superb!
+Cheers
+
+Gabriel
+
+
+
+From gharris at mbl.edu  Tue May 24 17:07:42 2011
+From: gharris at mbl.edu (Grant B. Harris)
+Date: Tue, 24 May 2011 18:07:42 -0400
+Subject: [ImageJ-devel] @Parameter fields - don't make them final
+Message-ID: <4DDC2C2E.1020408@mbl.edu>
+
+I discovered the hard way - don't declare @Parameter fields final.
+
+In the GradientImage plugin, the width and height are declared thus:
+     @Parameter(min = "1")
+     private final int width = 512;
+
+     @Parameter(min = "1")
+     private final int height = 512;
+
+The input dialog gives you two spinners to change these values.  It even 
+remembers the last values input.  But then the plugin uses the initial 
+final values set when declared... which makes sense.  But the input 
+dialog does not recognize, and there are not warnings that the inputs 
+will be ignored.
+
+So, if you really want the user to be able to change a parameter, best 
+to not final !
+
+-- Grant
+
+
+
+From ctrueden at wisc.edu  Tue May 24 17:23:41 2011
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Tue, 24 May 2011 17:23:41 -0500
+Subject: [ImageJ-devel] @Parameter fields - don't make them final
+In-Reply-To: <4DDC2C2E.1020408@mbl.edu>
+References: <4DDC2C2E.1020408@mbl.edu>
+Message-ID: <BANLkTinw5KbiYMFnrR+GO3r1G6b0xy+7UQ@mail.gmail.com>
+
+Hi Grant,
+
+I fixed GradientImage in r2956. If you notice any others, please fix and
+commit.
+
+The problem is that I frequently use the command "Clean up" in Eclipse which
+formats source code according to our conventions. One of the things it does
+is add final where possible, which normally is very nice, but in this one
+case causes problems. A workaround might be to add methods such as
+"setWidth(int)" and "setHeight(int)" to GradientImage so that the parameters
+cannot legally be final.
+
+-Curtis
+
+On Tue, May 24, 2011 at 5:07 PM, Grant B. Harris <gharris at mbl.edu> wrote:
+
+> I discovered the hard way - don't declare @Parameter fields final.
+>
+> In the GradientImage plugin, the width and height are declared thus:
+>    @Parameter(min = "1")
+>    private final int width = 512;
+>
+>    @Parameter(min = "1")
+>    private final int height = 512;
+>
+> The input dialog gives you two spinners to change these values.  It even
+> remembers the last values input.  But then the plugin uses the initial final
+> values set when declared... which makes sense.  But the input dialog does
+> not recognize, and there are not warnings that the inputs will be ignored.
+>
+> So, if you really want the user to be able to change a parameter, best to
+> not final !
+>
+> -- Grant
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110524/313e92f3/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Wed May 25 01:53:45 2011
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Wed, 25 May 2011 08:53:45 +0200 (CEST)
+Subject: [ImageJ-devel] @Parameter fields - don't make them final
+In-Reply-To: <BANLkTinw5KbiYMFnrR+GO3r1G6b0xy+7UQ@mail.gmail.com>
+References: <4DDC2C2E.1020408@mbl.edu>
+	<BANLkTinw5KbiYMFnrR+GO3r1G6b0xy+7UQ@mail.gmail.com>
+Message-ID: <alpine.DEB.1.00.1105250852480.2701@bonsai2>
+
+Hi,
+
+good catch, Grant!
+
+On Tue, 24 May 2011, Curtis Rueden wrote:
+
+> I fixed GradientImage in r2956. If you notice any others, please fix and 
+> commit.
+
+Can we have some check when the class is parsed to make sure that 
+@Parameter fields are not final?
+
+Ciao,
+Dscho
+
+
+
+From Johannes.Schindelin at gmx.de  Wed May 25 02:35:17 2011
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Wed, 25 May 2011 09:35:17 +0200 (CEST)
+Subject: [ImageJ-devel] ROI presentation powerpoint
+In-Reply-To: <4ddabdcc.028de50a.4670.ffffcf4a@mx.google.com>
+References: <4ddabdcc.028de50a.4670.ffffcf4a@mx.google.com>
+Message-ID: <alpine.DEB.1.00.1105250928080.2701@bonsai2>
+
+Hi Lee,
+
+On Mon, 23 May 2011, Lee Kamentsky wrote:
+
+> Here's the powerpoint presentation for the ROI talk. We'll be online via 
+> Skype at 10:00 am US Eastern, 9:00 am US central, 16:00 in Germany (?) 
+> next Wednesday.
+
+It's probably cutting it a bit close for us, since we'll have a symposium 
+about Fiji that runs until 4pm (and hopefully not over). So I will 
+probably be late, but still try to attend.
+
+But I can mention a few points I would like to hear raised:
+
+- often it is necessary to be able to iterate the just-outside pixels and 
+  the just-inside pixels. A trivial fallback strategy would be to wrap an 
+  Iterator of all outside (or inside) pixels and test, and continue until 
+  we find out that is on the boundary. Horribly slow, but robust.
+
+- When measuring area and circumference, we should definitely realize that 
+  we're working with sampled data, and consequentially we should always 
+  have some +/- number with the value.
+
+- 3D display of ROIs.
+
+That last point is probably a bit philosophical, because it will only hit 
+us in the future... So for now it's just necessary to keep in mind that 
+we'll want to have them.
+
+Ciao,
+Dscho
+
+
+
+
+
+
+From leek at broadinstitute.org  Wed May 25 07:34:34 2011
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Wed, 25 May 2011 08:34:34 -0400
+Subject: [ImageJ-devel] ROI presentation powerpoint
+In-Reply-To: <alpine.DEB.1.00.1105250928080.2701@bonsai2>
+References: <4ddabdcc.028de50a.4670.ffffcf4a@mx.google.com>
+	<alpine.DEB.1.00.1105250928080.2701@bonsai2>
+Message-ID: <4ddcf759.c35f340a.4328.147b@mx.google.com>
+
+
+On 5/25/2011 3:35 AM, Johannes Schindelin wrote:
+> Hi Lee,
+>
+> On Mon, 23 May 2011, Lee Kamentsky wrote:
+> - When measuring area and circumference, we should definitely realize that
+>    we're working with sampled data, and consequentially we should always
+>    have some +/- number with the value.
+>
+>
+Maybe we shouldn't call it area.  There are a lot of circumstances where 
+you want to normalize a sum over the pixels in an image by the number of 
+pixels, so I've found it handy to keep the number of pixels in a ROI 
+cached. So that's the number I'm trying to represent. I think it would 
+be great to have an algorithm that could come up with an error estimate 
+(or competing algorithms, each calculating the error in its own clever 
+way, each arriving at a different, but arguably correct estimate).  
+Gabriel Landini has also asked for the perimeter pixels (and from those, 
+you can use a structuring element find the "just inside" and "just 
+outside" pixels) so I will add that to the ROI interface sometime in the 
+near future. But, baby steps, right?
+>
+
+
+
+
+From G.Landini at bham.ac.uk  Wed May 25 08:39:15 2011
+From: G.Landini at bham.ac.uk (Gabriel Landini)
+Date: Wed, 25 May 2011 14:39:15 +0100
+Subject: [ImageJ-devel] ROI presentation powerpoint
+In-Reply-To: <4ddcf759.c35f340a.4328.147b@mx.google.com>
+References: <4ddabdcc.028de50a.4670.ffffcf4a@mx.google.com>
+	<alpine.DEB.1.00.1105250928080.2701@bonsai2>
+	<4ddcf759.c35f340a.4328.147b@mx.google.com>
+Message-ID: <201105251439.15448.G.Landini@bham.ac.uk>
+
+On Wednesday 25 May 2011 13:34:34 Lee Kamentsky wrote:
+> On 5/25/2011 3:35 AM, Johannes Schindelin wrote:
+> > On Mon, 23 May 2011, Lee Kamentsky wrote:
+> > - When measuring area and circumference, we should definitely realize
+> > that
+> > 
+> >    we're working with sampled data, and consequentially we should always
+> >    have some +/- number with the value.
+> 
+> Maybe we shouldn't call it area. 
+
+Why not? it is the area of the polygon that is defined very precisely. This is 
+a geometric feature of the vectorised object. What the connection of the 
+vectorised perimeter has to do with reality cannot be built into the measuring 
+machinery without any further information and this is most often missing.
+Easiest example: think of a fractal outline which has been digitised. All 
+correction factors that have been published (there are a few) to estimate the 
+"correct" perimeter or line length (and area) fail miserably because they have 
+been tested on low dimensional or simple profiles. The assumption that the 
+world is smooth at high resolution outside the pixel grid cannot be 
+guaranteed.
+
+> There are a lot of circumstances where
+> you want to normalize a sum over the pixels in an image by the number of
+> pixels, so I've found it handy to keep the number of pixels in a ROI
+> cached. So that's the number I'm trying to represent.
+
+Yes, I have taken the same approach in my humble Particles8 and 4 plugins. If 
+I need the area I use Freeman's chaincode length which gives the (or "a type 
+of") length and area of the polygon. If I need Pixels, they are there too.
+Note that just restricting ourselves to using pixels to estimate area gives 
+peculiar results. Single pixels and lines will return a non-zero area, but 
+these are 0 when using a chaincode. Although this would fail (and give some 
+tiny areas in some lines (due to the connectivity issue), it can be 
+nevertheless exploited to get an idea that it might be really a linear 
+feature. This might not account to much in most cases, but when one starts 
+computing shape ratios things start getting very confusing.
+
+> I think it would
+> be great to have an algorithm that could come up with an error estimate
+> (or competing algorithms, each calculating the error in its own clever
+> way, each arriving at a different, but arguably correct estimate).
+
+These error estimates already exist, but this assumes that the geometry of the 
+real objects is known and stable, none of which can be assured.
+
+> Gabriel Landini has also asked for the perimeter pixels (and from those,
+> you can use a structuring element find the "just inside" and "just
+> outside" pixels) so I will add that to the ROI interface sometime in the
+> near future. 
+
+Yes he has :-), thanks!
+
+Regards
+
+Gabriel
+
+
+
+
+
+
+
+From Johannes.Schindelin at gmx.de  Wed May 25 09:25:09 2011
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Wed, 25 May 2011 16:25:09 +0200 (CEST)
+Subject: [ImageJ-devel] ROI presentation powerpoint
+In-Reply-To: <4ddcf759.c35f340a.4328.147b@mx.google.com>
+References: <4ddabdcc.028de50a.4670.ffffcf4a@mx.google.com>
+	<alpine.DEB.1.00.1105250928080.2701@bonsai2>
+	<4ddcf759.c35f340a.4328.147b@mx.google.com>
+Message-ID: <alpine.DEB.1.00.1105251624460.2701@bonsai2>
+
+Hi,
+
+On Wed, 25 May 2011, Lee Kamentsky wrote:
+
+> On 5/25/2011 3:35 AM, Johannes Schindelin wrote:
+>
+> > On Mon, 23 May 2011, Lee Kamentsky wrote:
+> > - When measuring area and circumference, we should definitely realize that
+> >    we're working with sampled data, and consequentially we should always
+> >    have some +/- number with the value.
+> >
+> >
+> Maybe we shouldn't call it area.  There are a lot of circumstances where 
+> you want to normalize a sum over the pixels in an image by the number of 
+> pixels, so I've found it handy to keep the number of pixels in a ROI 
+> cached. So that's the number I'm trying to represent. I think it would 
+> be great to have an algorithm that could come up with an error estimate 
+> (or competing algorithms, each calculating the error in its own clever 
+> way, each arriving at a different, but arguably correct estimate).  
+> Gabriel Landini has also asked for the perimeter pixels (and from those, 
+> you can use a structuring element find the "just inside" and "just 
+> outside" pixels) so I will add that to the ROI interface sometime in the 
+> near future. But, baby steps, right?
+
+Baby steps work for me. The best way to develop things.
+
+Thanks!
+Dscho
+
+
+
+
+From gharris at mbl.edu  Wed May 25 10:12:54 2011
+From: gharris at mbl.edu (Grant B. Harris)
+Date: Wed, 25 May 2011 11:12:54 -0400
+Subject: [ImageJ-devel] @Parameter fields - don't make them final
+In-Reply-To: <alpine.DEB.1.00.1105250852480.2701@bonsai2>
+References: <4DDC2C2E.1020408@mbl.edu>
+	<BANLkTinw5KbiYMFnrR+GO3r1G6b0xy+7UQ@mail.gmail.com>
+	<alpine.DEB.1.00.1105250852480.2701@bonsai2>
+Message-ID: <4DDD1C76.6090403@mbl.edu>
+
+On 5/25/2011 2:53 AM, Johannes Schindelin wrote:
+> Can we have some check when the class is parsed to make sure that
+> @Parameter fields are not final?
+>
+Johannes,
+Ya, I was thinking the same thing.   We can add a check using 
+Field.getModifiers() and not add an input widget if the field is final.  
+I've filed a ticket for it.
+-- Grant
+
+
+
+From saalfeld at mpi-cbg.de  Wed May 25 21:08:51 2011
+From: saalfeld at mpi-cbg.de (Stephan Saalfeld)
+Date: Wed, 25 May 2011 22:08:51 -0400
+Subject: [ImageJ-devel] [fiji-devel] ImgLib2: ImageJFunctions.show()
+	works again
+In-Reply-To: <004301cc19e4$70005690$500103b0$@de>
+References: <004301cc19e4$70005690$500103b0$@de>
+Message-ID: <1306375731.6044.132.camel@saalfeld-laptop>
+
+Hi Steffi,
+
+I have checked this today and found it not compiling for missing
+Converters and VirtualStack variants.  I have added these classes and
+fixed a few over-constrained input parameters.  I have also added
+variants of the explicit type show methods that would take a Converter
+as input and thus allow to display all input T for which you are willing
+to build a Converter :).  That means that ComplexType is already
+supported.  You would just make your favorite Converter into
+UnsignedByte, UnsignedShortType, ARGBType or FloatType.
+
+Best,
+Stephan
+
+
+
+
+On Tue, 2011-05-24 at 09:30 +0200, Stephan Preibisch wrote: 
+> Hi everybody,
+> 
+>  
+> 
+> I just wanted to mention that 
+> 
+>  
+> 
+> ImageJFunctions.show()
+> 
+>  
+> 
+> works again for all kind of ImgLib2 imgs and
+> randomaccessibleintervals. It should automatically display all
+> RealTypes and ARGBType properly. It displays it as a VirtualStack and
+> returns the reference to the ImagePlus instance.
+> 
+>  
+> 
+> FloatType and DoubleType are displayed as ImageJ FloatProcessor.
+> 
+> All IntegerTypes are displayed as ImageJ ShortProcessor.
+> 
+> UnsignedByteType is displayed as ImageJ ByteProcessor.
+> 
+> ARGBType is displayed as ImageJ ColorProcessor
+> 
+>  
+> 
+> There also individual methods to display it as any of those
+> Processors:
+> 
+>  
+> 
+> ImageJFunctions.showFloat()
+> 
+> ImageJFunctions.showUnsignedByte()
+> 
+> ImageJFunctions.showUnsignedShort()
+> 
+> ImageJFunctions.showRGB()
+> 
+>  
+> 
+> I will add support for Complex Types this week?
+> 
+>  
+> 
+> Nice greetings,
+> 
+> Steffi
+> 
+> 
+> -- 
+> You received this message because you are subscribed to the Google
+> Groups "Fiji-devel" group.
+> To post to this group, send email to fiji-devel at googlegroups.com.
+> To unsubscribe from this group, send email to fiji-devel
+> +unsubscribe at googlegroups.com.
+> For more options, visit this group at
+> http://groups.google.com/group/fiji-devel?hl=en.
+
+
+
+
+From preibisch at mpi-cbg.de  Thu May 26 02:01:50 2011
+From: preibisch at mpi-cbg.de (Stephan Preibisch)
+Date: Thu, 26 May 2011 09:01:50 +0200
+Subject: [ImageJ-devel] [fiji-devel] ImgLib2: ImageJFunctions.show()
+	works again
+In-Reply-To: <1306375731.6044.132.camel@saalfeld-laptop>
+References: <004301cc19e4$70005690$500103b0$@de>
+	<1306375731.6044.132.camel@saalfeld-laptop>
+Message-ID: <001201cc1b72$c99db780$5cd92680$@de>
+
+Hi Stephan,
+
+I am sorry, I forgot to add some classes with git ... my apologies, that was
+a bit stupid...
+
+I see what you mean with the converter, that is nice. I will also add some
+more methods where the title is not necessary...
+
+Actually, what I meant by supporting ComplexType is that we have converters
+for showing the PowerSpectrum, PhaseSpectrum etc...I will add them later
+today.
+
+Thanks for looking into that Stephan!!
+
+Ciao ciao,
+Steffi
+
+-----Original Message-----
+From: fiji-devel at googlegroups.com [mailto:fiji-devel at googlegroups.com] On
+Behalf Of Stephan Saalfeld
+Sent: Thursday, May 26, 2011 4:09 AM
+To: Stephan Preibisch
+Cc: fiji-devel at googlegroups.com; 'Imagejdev.org Developers'
+Subject: Re: [fiji-devel] ImgLib2: ImageJFunctions.show() works again
+
+Hi Steffi,
+
+I have checked this today and found it not compiling for missing
+Converters and VirtualStack variants.  I have added these classes and
+fixed a few over-constrained input parameters.  I have also added
+variants of the explicit type show methods that would take a Converter
+as input and thus allow to display all input T for which you are willing
+to build a Converter :).  That means that ComplexType is already
+supported.  You would just make your favorite Converter into
+UnsignedByte, UnsignedShortType, ARGBType or FloatType.
+
+Best,
+Stephan
+
+
+
+
+On Tue, 2011-05-24 at 09:30 +0200, Stephan Preibisch wrote: 
+> Hi everybody,
+> 
+>  
+> 
+> I just wanted to mention that 
+> 
+>  
+> 
+> ImageJFunctions.show()
+> 
+>  
+> 
+> works again for all kind of ImgLib2 imgs and
+> randomaccessibleintervals. It should automatically display all
+> RealTypes and ARGBType properly. It displays it as a VirtualStack and
+> returns the reference to the ImagePlus instance.
+> 
+>  
+> 
+> FloatType and DoubleType are displayed as ImageJ FloatProcessor.
+> 
+> All IntegerTypes are displayed as ImageJ ShortProcessor.
+> 
+> UnsignedByteType is displayed as ImageJ ByteProcessor.
+> 
+> ARGBType is displayed as ImageJ ColorProcessor
+> 
+>  
+> 
+> There also individual methods to display it as any of those
+> Processors:
+> 
+>  
+> 
+> ImageJFunctions.showFloat()
+> 
+> ImageJFunctions.showUnsignedByte()
+> 
+> ImageJFunctions.showUnsignedShort()
+> 
+> ImageJFunctions.showRGB()
+> 
+>  
+> 
+> I will add support for Complex Types this week.
+> 
+>  
+> 
+> Nice greetings,
+> 
+> Steffi
+> 
+> 
+> -- 
+> You received this message because you are subscribed to the Google
+> Groups "Fiji-devel" group.
+> To post to this group, send email to fiji-devel at googlegroups.com.
+> To unsubscribe from this group, send email to fiji-devel
+> +unsubscribe at googlegroups.com.
+> For more options, visit this group at
+> http://groups.google.com/group/fiji-devel?hl=en.
+
+-- 
+You received this message because you are subscribed to the Google Groups
+"Fiji-devel" group.
+To post to this group, send email to fiji-devel at googlegroups.com.
+To unsubscribe from this group, send email to
+fiji-devel+unsubscribe at googlegroups.com.
+For more options, visit this group at
+http://groups.google.com/group/fiji-devel?hl=en.
+
+
+
+
+From Johannes.Schindelin at gmx.de  Thu May 26 02:35:16 2011
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Thu, 26 May 2011 09:35:16 +0200 (CEST)
+Subject: [ImageJ-devel] @Parameter fields - don't make them final
+In-Reply-To: <4DDD1C76.6090403@mbl.edu>
+References: <4DDC2C2E.1020408@mbl.edu>
+	<BANLkTinw5KbiYMFnrR+GO3r1G6b0xy+7UQ@mail.gmail.com>
+	<alpine.DEB.1.00.1105250852480.2701@bonsai2>
+	<4DDD1C76.6090403@mbl.edu>
+Message-ID: <alpine.DEB.1.00.1105260910260.2701@bonsai2>
+
+Hi,
+
+On Wed, 25 May 2011, Grant B. Harris wrote:
+
+> On 5/25/2011 2:53 AM, Johannes Schindelin wrote:
+> > Can we have some check when the class is parsed to make sure that
+> > @Parameter fields are not final?
+> >
+> Johannes,
+> Ya, I was thinking the same thing.   We can add a check using
+> Field.getModifiers() and not add an input widget if the field is final.  I've
+> filed a ticket for it.
+
+Maybe this is already half the solution?
+
+-- snipsnap --
+diff --git a/core/plugin/src/main/java/imagej/plugin/PluginModuleInfo.java b/core/plugin/src/main/java/imagej/plugin/PluginModuleInfo.java
+index d520260..bd6d988 100644
+--- a/core/plugin/src/main/java/imagej/plugin/PluginModuleInfo.java
++++ b/core/plugin/src/main/java/imagej/plugin/PluginModuleInfo.java
+@@ -165,6 +165,8 @@ public class PluginModuleInfo<T extends BasePlugin> implements ModuleInfo {
+ 			if (param == null) continue; // not a parameter
+ 
+ 			final String name = f.getName();
++			if (Modifier.isFinal(f.getModifiers()))
++				throw new RuntimeException("Invalid 'final' parameter: " + name);
+ 			if (presets.containsKey(name)) {
+ 				// assign preset value to field, and exclude from the list of inputs
+ 				PluginModule.setValue(f, plugin, presets.get(name));
+
+
+
+From ctrueden at wisc.edu  Thu May 26 12:00:39 2011
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Thu, 26 May 2011 12:00:39 -0500
+Subject: [ImageJ-devel] @Parameter fields - don't make them final
+In-Reply-To: <alpine.DEB.1.00.1105260910260.2701@bonsai2>
+References: <4DDC2C2E.1020408@mbl.edu>
+	<BANLkTinw5KbiYMFnrR+GO3r1G6b0xy+7UQ@mail.gmail.com>
+	<alpine.DEB.1.00.1105250852480.2701@bonsai2> <4DDD1C76.6090403@mbl.edu>
+	<alpine.DEB.1.00.1105260910260.2701@bonsai2>
+Message-ID: <BANLkTiniOp+q12hPGvhzNUAbvE3pBuW6aQ@mail.gmail.com>
+
+Hi Dscho,
+
+I implemented a fix yesterday:
+  http://dev.imagejdev.org/trac/imagej/ticket/543
+  http://dev.imagejdev.org/trac/imagej/changeset/2957
+
+It simply flags the parameter as "resolved," meaning it will not appear in
+the input dialog.
+
+I also added a warning message if a final parameter is detected:
+  http://dev.imagejdev.org/trac/imagej/changeset/2958
+
+However, we could be stricter and throw an exception instead, as you
+suggest. What do you think?
+
+Regards,
+Curtis
+
+On Thu, May 26, 2011 at 2:35 AM, Johannes Schindelin <
+Johannes.Schindelin at gmx.de> wrote:
+
+> Hi,
+>
+> On Wed, 25 May 2011, Grant B. Harris wrote:
+>
+> > On 5/25/2011 2:53 AM, Johannes Schindelin wrote:
+> > > Can we have some check when the class is parsed to make sure that
+> > > @Parameter fields are not final?
+> > >
+> > Johannes,
+> > Ya, I was thinking the same thing.   We can add a check using
+> > Field.getModifiers() and not add an input widget if the field is final.
+>  I've
+> > filed a ticket for it.
+>
+> Maybe this is already half the solution?
+>
+> -- snipsnap --
+> diff --git a/core/plugin/src/main/java/imagej/plugin/PluginModuleInfo.java
+> b/core/plugin/src/main/java/imagej/plugin/PluginModuleInfo.java
+> index d520260..bd6d988 100644
+> --- a/core/plugin/src/main/java/imagej/plugin/PluginModuleInfo.java
+> +++ b/core/plugin/src/main/java/imagej/plugin/PluginModuleInfo.java
+> @@ -165,6 +165,8 @@ public class PluginModuleInfo<T extends BasePlugin>
+> implements ModuleInfo {
+>                        if (param == null) continue; // not a parameter
+>
+>                        final String name = f.getName();
+> +                       if (Modifier.isFinal(f.getModifiers()))
+> +                               throw new RuntimeException("Invalid 'final'
+> parameter: " + name);
+>                        if (presets.containsKey(name)) {
+>                                // assign preset value to field, and exclude
+> from the list of inputs
+>                                PluginModule.setValue(f, plugin,
+> presets.get(name));
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110526/fac10d00/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Thu May 26 13:22:54 2011
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Thu, 26 May 2011 20:22:54 +0200 (CEST)
+Subject: [ImageJ-devel] @Parameter fields - don't make them final
+In-Reply-To: <BANLkTiniOp+q12hPGvhzNUAbvE3pBuW6aQ@mail.gmail.com>
+References: <4DDC2C2E.1020408@mbl.edu>
+	<BANLkTinw5KbiYMFnrR+GO3r1G6b0xy+7UQ@mail.gmail.com>
+	<alpine.DEB.1.00.1105250852480.2701@bonsai2>
+	<4DDD1C76.6090403@mbl.edu>
+	<alpine.DEB.1.00.1105260910260.2701@bonsai2>
+	<BANLkTiniOp+q12hPGvhzNUAbvE3pBuW6aQ@mail.gmail.com>
+Message-ID: <alpine.DEB.1.00.1105262021310.16250@s15462909.onlinehome-server.info>
+
+Hi,
+
+On Thu, 26 May 2011, Curtis Rueden wrote:
+
+> I implemented a fix yesterday:
+
+I should have known :0)
+
+>   http://dev.imagejdev.org/trac/imagej/ticket/543
+>   http://dev.imagejdev.org/trac/imagej/changeset/2957
+> 
+> It simply flags the parameter as "resolved," meaning it will not appear 
+> in the input dialog.
+> 
+> I also added a warning message if a final parameter is detected:
+>   http://dev.imagejdev.org/trac/imagej/changeset/2958
+> 
+> However, we could be stricter and throw an exception instead, as you 
+> suggest. What do you think?
+
+I actually like the idea of Eiffel to have multiple levels of contract 
+checking. We do not have that in Java (unless we implement it ourselves), 
+but at least we could have assertions, right?
+
+Ciao,
+Dscho
+
+
+
+
+From ctrueden at wisc.edu  Fri May 27 12:46:03 2011
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Fri, 27 May 2011 12:46:03 -0500
+Subject: [ImageJ-devel] @Parameter fields - don't make them final
+In-Reply-To: <alpine.DEB.1.00.1105262021310.16250@s15462909.onlinehome-server.info>
+References: <4DDC2C2E.1020408@mbl.edu>
+	<BANLkTinw5KbiYMFnrR+GO3r1G6b0xy+7UQ@mail.gmail.com>
+	<alpine.DEB.1.00.1105250852480.2701@bonsai2> <4DDD1C76.6090403@mbl.edu>
+	<alpine.DEB.1.00.1105260910260.2701@bonsai2>
+	<BANLkTiniOp+q12hPGvhzNUAbvE3pBuW6aQ@mail.gmail.com>
+	<alpine.DEB.1.00.1105262021310.16250@s15462909.onlinehome-server.info>
+Message-ID: <BANLkTimcdTPb_TXrBf-jtCHnB8EhP=hBgQ@mail.gmail.com>
+
+Hi Dscho,
+
+I actually like the idea of Eiffel to have multiple levels of contract
+> checking. We do not have that in Java (unless we implement it ourselves),
+> but at least we could have assertions, right?
+>
+
+There are a handful of assertions sprinkled throughout the IJ2 code, but no
+formal policy on when they should be used, as of yet.
+
+We do have a sort of multi-level contract checking, in that there are
+multiple levels of logging. Calling Log.error is most severe, followed by
+Log.warn, then Log.info, and lastly Log.debug. I would say calls to
+Log.error and Log.warn are two different levels of severity as far as
+notifying the user of abnormalities in execution. And of course, more severe
+than any log message would be throwing an exception.
+
+Regards,
+Curtis
+
+On Thu, May 26, 2011 at 1:22 PM, Johannes Schindelin <
+Johannes.Schindelin at gmx.de> wrote:
+
+> Hi,
+>
+> On Thu, 26 May 2011, Curtis Rueden wrote:
+>
+> > I implemented a fix yesterday:
+>
+> I should have known :0)
+>
+> >   http://dev.imagejdev.org/trac/imagej/ticket/543
+> >   http://dev.imagejdev.org/trac/imagej/changeset/2957
+> >
+> > It simply flags the parameter as "resolved," meaning it will not appear
+> > in the input dialog.
+> >
+> > I also added a warning message if a final parameter is detected:
+> >   http://dev.imagejdev.org/trac/imagej/changeset/2958
+> >
+> > However, we could be stricter and throw an exception instead, as you
+> > suggest. What do you think?
+>
+> I actually like the idea of Eiffel to have multiple levels of contract
+> checking. We do not have that in Java (unless we implement it ourselves),
+> but at least we could have assertions, right?
+>
+> Ciao,
+> Dscho
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110527/9e3471d0/attachment.html>
+
+From preibisch at mpi-cbg.de  Mon May 30 07:24:02 2011
+From: preibisch at mpi-cbg.de (Stephan Preibisch)
+Date: Mon, 30 May 2011 14:24:02 +0200
+Subject: [ImageJ-devel] Minutes of the ImgLib2 algorithms discussion
+Message-ID: <008701cc1ec4$75bcea00$6136be00$@de>
+
+Hi,
+
+ 
+
+last Friday Curtis, Saalfeld and me discussed the conventions for algorithm
+development.
+
+ 
+
+I summarized them on the Fiji wiki here:
+
+ <http://pacific.mpi-cbg.de/wiki/index.php/ImgLib2_Algorithms>
+http://pacific.mpi-cbg.de/wiki/index.php/ImgLib2_Algorithms
+
+ 
+
+Comments are always welcome!
+
+ 
+
+Nice greetings,
+
+Steffi
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110530/b123a584/attachment.html>
+

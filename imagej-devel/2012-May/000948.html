@@ -1,0 +1,140 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] ROI -&gt; Overlay bug
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ROI%20-%3E%20Overlay%20bug&In-Reply-To=%3C1336984442.3628.37.camel%40saalfeld-thinkpad%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000947.html">
+   <LINK REL="Next"  HREF="000949.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] ROI -&gt; Overlay bug</H1>
+    <B>Stephan Saalfeld</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ROI%20-%3E%20Overlay%20bug&In-Reply-To=%3C1336984442.3628.37.camel%40saalfeld-thinkpad%3E"
+       TITLE="[ImageJ-devel] ROI -&gt; Overlay bug">saalfeld at mpi-cbg.de
+       </A><BR>
+    <I>Mon May 14 03:34:02 CDT 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000947.html">[ImageJ-devel] ROI -&gt; Overlay bug
+</A></li>
+        <LI>Next message: <A HREF="000949.html">[ImageJ-devel] ROI -&gt; Overlay bug
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#948">[ date ]</a>
+              <a href="thread.html#948">[ thread ]</a>
+              <a href="subject.html#948">[ subject ]</a>
+              <a href="author.html#948">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Michael,
+
+you are of course perfectly right.  So the PSF is elongated along the
+scanning direction.  However, that PSF would still be symmetric, except
+if the sensor has a tendency to collect photons only later or earlier
+during exposure.  So to make my statement clearer, a point sample taken
+from the physical world is almost never a point-sample, but it's
+representative coordinate is most likely not at the top left corner of
+the area between samples.  If the PSF is symmetric, that coordinate is
+at the center of the sample.
+
+Take a pixel sensor of a single channel CCD camera.  That sensor has an
+area to collect a number of photons.  Be it square.  Then it looks as
+
+x-------+
+|<i>       |
+</I>|<i>   o   |
+</I>|<i>       |
+</I>+-------+
+
+In that picture, it is more than obvious that the intensity collected by
+that sensor has it's 'location' not where the 'x' is but where the 'o'
+is.  So, from that perspective, it is much easier to think about
+coordinates centered in the pixel.
+
+Alternative example:  If you rotate an image of 3x3 pixels, coordinates
+are
+
+(0,0), (0,1), (0,2)
+(1,0), (1,1), (1,2)
+(2,0), (2,1), (2,2)
+
+by say 90 deg clockwise around it's middle pixel, whose coordinate is
+(1,1).  Then doing so with the top,left-model moves that pixel to (1,0).
+Not very convenient.  The center-model would keep it in place as is the
+natural expectation.  You may now argue that the center of that image is
+at 3/2=1.5, but that requires that you know that the 'size' of the last
+sample is 1x1.
+
+The situation is different when it comes to display, where all AWT comes
+from.  On a display, pixels are fixed size rectangles, and in this case
+the top-left model has some benefits.  E.g. when it comes to scaling:
+you can scale a pixel image by 1/2 by combining 2x2 pixels into a single
+one.  With the top,left-model, that would correctly scale the coordinate
+of a pixel by 1/2, with the center-model it would shift the pixel by
+0.5px down,right.
+
+So, in conclusion both models are valid and none is in general better
+than the other.  We need however to be aware what model is used in a
+particular context.  I think that, for data processing, the center-model
+clearly simplifies processing and transformation and that is the reason
+why we are using it.
+
+Best,
+Stephan
+
+
+
+
+On Sun, 2012-05-13 at 23:24 +0200, Michael Doube wrote: 
+&gt;<i> &gt; in Fiji
+</I>&gt;<i> &gt; we consider pixel coordinates at a pixel's center which is in perfect
+</I>&gt;<i> &gt; agreement when working with microscopic images (particularly confocal
+</I>&gt;<i> &gt; scanners where the coordinate really is a point sample
+</I>&gt;<i> 
+</I>&gt;<i> It's not really - the scanned point is normally moving for the duration
+</I>&gt;<i> of sampling, so there is some lateral smear of the sampled space. In
+</I>&gt;<i> many confocals the scan speed varies within a row, so the 'point
+</I>&gt;<i> samples' aren't  even the same on that level. True point-by-point
+</I>&gt;<i> scanning requires the scan mechanism to dwell for the duration of
+</I>&gt;<i> measurement, then not measure while the mechanism moves to the next
+</I>&gt;<i> dwell point. As far as I'm aware this is not implemented in current
+</I>&gt;<i> 'point-scanners' because it would be horribly slow to stop and start the
+</I>&gt;<i> scan mirrors millions of times per frame.
+</I>&gt;<i> 
+</I>&gt;<i> Michael
+</I>&gt;<i> 
+</I>
+
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000947.html">[ImageJ-devel] ROI -&gt; Overlay bug
+</A></li>
+	<LI>Next message: <A HREF="000949.html">[ImageJ-devel] ROI -&gt; Overlay bug
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#948">[ date ]</a>
+              <a href="thread.html#948">[ thread ]</a>
+              <a href="subject.html#948">[ subject ]</a>
+              <a href="author.html#948">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

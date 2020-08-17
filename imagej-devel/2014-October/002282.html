@@ -1,0 +1,326 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [fiji-devel] Re: What's left to do for ImgLib2
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20Re%3A%20What%27s%20left%20to%20do%20for%20ImgLib2&In-Reply-To=%3CCAJj13__wORcf%2B4hW2Ac3Hccvev28SH%3Dv7pC1spCXiOZSkcgPXg%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002281.html">
+   <LINK REL="Next"  HREF="002283.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [fiji-devel] Re: What's left to do for ImgLib2</H1>
+    <B>Albert Cardona</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20Re%3A%20What%27s%20left%20to%20do%20for%20ImgLib2&In-Reply-To=%3CCAJj13__wORcf%2B4hW2Ac3Hccvev28SH%3Dv7pC1spCXiOZSkcgPXg%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] [fiji-devel] Re: What's left to do for ImgLib2">sapristi at gmail.com
+       </A><BR>
+    <I>Wed Oct 29 19:48:16 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002281.html">[ImageJ-devel] What's left to do for ImgLib2
+</A></li>
+        <LI>Next message: <A HREF="002283.html">[ImageJ-devel] Lock-free bit fields, was Re:  What's left to do for ImgLib2
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2282">[ date ]</a>
+              <a href="thread.html#2282">[ thread ]</a>
+              <a href="subject.html#2282">[ subject ]</a>
+              <a href="author.html#2282">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Tobias and ImgLib2ers,
+
+the bit types are not thread safe. At some point it said so in the
+documentation at the top of the files--I think--but I cannot find that note
+now in the github repository version of the files. Perhaps we removed it:
+as far as I know, no numeric type is thread safe. Perhaps some may be
+incidentally thread safe, but they don't have to be. Coordinating
+multi-threaded access to the same Img requires a special-purpose approach,
+that can be ameliorated with e.g. proxy types that declare each method as
+synchronized. Declaring all type methods as synchronized adds overheads to
+the general case, which is not the best approach.
+
+Regarding the lock-free approach: that reads like software transactional
+memory, and there are implementations out there. I wouldn't want to impose
+that kind of overhead, either, in the Type classes themselves.
+
+As usual with threads, code that accesses a resource must consider the
+consequences and synchronize access where appropriate.
+
+Albert
+
+
+2014-10-29 19:34 GMT-04:00 Tobias Pietzsch &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pietzsch at mpi-cbg.de</A>&gt;:
+
+&gt;<i> Ok, just looking at the code of ApplyManualThresholdTest, I have a hunch
+</I>&gt;<i> of whats going wrong.
+</I>&gt;<i> The test uses
+</I>&gt;<i> final Img&lt;BitType&gt; out = bitmap();
+</I>&gt;<i>
+</I>&gt;<i> I bet that for the new BitType from the Fractions branch nobody considered
+</I>&gt;<i> the possibility that two cursors might simultaneously write to bits of the
+</I>&gt;<i> same underlying long value.
+</I>&gt;<i>
+</I>&gt;<i> One solution would be to use locks to synchronize all accesses to the
+</I>&gt;<i> underlying long[] array (this is for BitType, Unsigned12BitType, etc).
+</I>&gt;<i> However, I fear that this will slow down things considerably.
+</I>&gt;<i>
+</I>&gt;<i> Is anyone familiar enough with the Java Memory Model to provide an
+</I>&gt;<i> educated guess as to whether a lock-free approach would be feasible?
+</I>&gt;<i> By lock-free I mean setting the value and then checking whether the value
+</I>&gt;<i> is actually what was expected (and if not, retry).
+</I>&gt;<i> I&#8217;m cc&#8217;ing Albert and the imagej-devel and fiji-devel lists to increase
+</I>&gt;<i> the probability that someone might actually know&#8230;
+</I>&gt;<i>
+</I>&gt;<i> best regards,
+</I>&gt;<i> Tobias
+</I>&gt;<i>
+</I>&gt;<i> On 30 Oct 2014, at 00:18, Tobias Pietzsch &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pietzsch at mpi-cbg.de</A>&gt; wrote:
+</I>&gt;<i>
+</I>&gt;<i> Hi Curtis,
+</I>&gt;<i>
+</I>&gt;<i> I&#8217;m trying to look at it, however I get the following maven error:
+</I>&gt;<i>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pietzsch at tomancak-mac-17</A>:~/workspace/imagej-ops (imglib2-release)$ mvn -U
+</I>&gt;<i> clean install
+</I>&gt;<i> [INFO] Scanning for projects...
+</I>&gt;<i> Downloading:
+</I>&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/net/imagej/pom-imagej/3.2/pom-imagej-3.2.pom">http://maven.imagej.net/content/groups/public/net/imagej/pom-imagej/3.2/pom-imagej-3.2.pom</A>
+</I>&gt;<i> Downloading:
+</I>&gt;<i> <A HREF="http://repo.maven.apache.org/maven2/net/imagej/pom-imagej/3.2/pom-imagej-3.2.pom">http://repo.maven.apache.org/maven2/net/imagej/pom-imagej/3.2/pom-imagej-3.2.pom</A>
+</I>&gt;<i> [ERROR] The build could not read 1 project -&gt; [Help 1]
+</I>&gt;<i> [ERROR]
+</I>&gt;<i> [ERROR]   The project net.imagej:imagej-ops:0.6.0-SNAPSHOT
+</I>&gt;<i> (/Users/pietzsch/workspace/imagej-ops/pom.xml) has 1 error
+</I>&gt;<i> [ERROR]     Non-resolvable parent POM: Could not find artifact
+</I>&gt;<i> net.imagej:pom-imagej:pom:3.2 in imagej.public (
+</I>&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public">http://maven.imagej.net/content/groups/public</A>) and 'parent.relativePath'
+</I>&gt;<i> points at no local POM @ line 5, column 10 -&gt; [Help 2]
+</I>&gt;<i> [ERROR]
+</I>&gt;<i> [ERROR] To see the full stack trace of the errors, re-run Maven with the
+</I>&gt;<i> -e switch.
+</I>&gt;<i> [ERROR] Re-run Maven using the -X switch to enable full debug logging.
+</I>&gt;<i> [ERROR]
+</I>&gt;<i> [ERROR] For more information about the errors and possible solutions,
+</I>&gt;<i> please read the following articles:
+</I>&gt;<i> [ERROR] [Help 1]
+</I>&gt;<i> <A HREF="http://cwiki.apache.org/confluence/display/MAVEN/ProjectBuildingException">http://cwiki.apache.org/confluence/display/MAVEN/ProjectBuildingException</A>
+</I>&gt;<i> [ERROR] [Help 2]
+</I>&gt;<i> <A HREF="http://cwiki.apache.org/confluence/display/MAVEN/UnresolvableModelException">http://cwiki.apache.org/confluence/display/MAVEN/UnresolvableModelException</A>
+</I>&gt;<i>
+</I>&gt;<i> How can I fix this?
+</I>&gt;<i>
+</I>&gt;<i> best regards,
+</I>&gt;<i> Tobias
+</I>&gt;<i>
+</I>&gt;<i> On 29 Oct 2014, at 23:37, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt; wrote:
+</I>&gt;<i>
+</I>&gt;<i> Hi Tobi &amp; all,
+</I>&gt;<i>
+</I>&gt;<i> [Added Christian to CC, since this mail is mostly about OPS]
+</I>&gt;<i>
+</I>&gt;<i> Still left to do:
+</I>&gt;<i>
+</I>&gt;<i> 1) Check out the imglib2-release branch of imglib2-tests and fix the
+</I>&gt;<i> compile errors.
+</I>&gt;<i> 2) Check out the imglib2-release branch of imglib2-script and fix the
+</I>&gt;<i> compile errors.
+</I>&gt;<i> 3) Check out the imglib2-release branch of imagej-ops and figure out why
+</I>&gt;<i> tests fail now.
+</I>&gt;<i>
+</I>&gt;<i> I spent some hours working on imagej-ops this afternoon. With the latest
+</I>&gt;<i> imglib2 master branch, there is only one remaining test failure. (I guess
+</I>&gt;<i> Tobi's bug-fix fixed the other test failure...)
+</I>&gt;<i>
+</I>&gt;<i> The problem is really deep, though: the ParallelMapI2I uses multiple
+</I>&gt;<i> cursors simultaneously to iterate over ArrayImgs, and it seems there is a
+</I>&gt;<i> race condition that causes the ApplyManualThresholdTest to intermittently
+</I>&gt;<i> fail.
+</I>&gt;<i>
+</I>&gt;<i> I have to head out for the day, but if anyone else wants to take a crack
+</I>&gt;<i> at it, I added a WIP to the topic branch that illustrates the issue.
+</I>&gt;<i> Setting a breakpoint on the &quot;WTF&quot; line will stop the code if/when the
+</I>&gt;<i> problem occurs.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> <A HREF="https://github.com/imagej/imagej-ops/commit/86f8452f77680dafbff747a86ffca2be4a993b37#diff-da607cd95c8ebd526929f7ea15a1da91R117">https://github.com/imagej/imagej-ops/commit/86f8452f77680dafbff747a86ffca2be4a993b37#diff-da607cd95c8ebd526929f7ea15a1da91R117</A>
+</I>&gt;<i>
+</I>&gt;<i> On my machine, the problem seems to occur ~40% of the time, depending on
+</I>&gt;<i> the location and quantity of print statements.
+</I>&gt;<i>
+</I>&gt;<i> Regards,
+</I>&gt;<i> Curtis
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On Mon, Oct 27, 2014 at 11:37 AM, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt; wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> Hi Tobi,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> &gt; I fixed the remaining errors.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Thanks!
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> &gt; Curtis, maybe we can do this via Skype tomorrow (i.e. Monday)?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I am available every day from ~9:30am - 4:30pm. I am available via GChat (
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at gmail.com</A>), IRC (#imagejdev and #fiji-devel on freenode) and
+</I>&gt;&gt;<i> Skype (curtis_rueden).
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> &gt; I&#8217;ll continue working on these tomorrow.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Thanks again! I'll work on documentation today, then.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Regards,
+</I>&gt;&gt;<i> Curtis
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> On Sun, Oct 26, 2014 at 6:51 PM, Tobias Pietzsch &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pietzsch at mpi-cbg.de</A>&gt;
+</I>&gt;&gt;<i> wrote:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Hi,
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> On 25 Oct 2014, at 01:02, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt; wrote:
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Tobias asked if there is anything others could do to help, so here is a
+</I>&gt;&gt;&gt;<i> list (in my opinion of priority order):
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> 1) Check out the imglib2-release branch of imglib2-tutorials and fix the
+</I>&gt;&gt;&gt;<i> compile errors.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> I fixed the remaining errors.
+</I>&gt;&gt;&gt;<i> To run these examples I had to do two additional things (not committed
+</I>&gt;&gt;&gt;<i> because they shouldn&#8217;t be required soon)
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> 1.) I had to add an empty class
+</I>&gt;&gt;&gt;<i> net.imglib2.img.basictypeaccess.array.BitArray to make scifio able to open
+</I>&gt;&gt;&gt;<i> the images.
+</I>&gt;&gt;&gt;<i> This is because at some point scifio does an &#8220;instanceof BitArray&#8221; check
+</I>&gt;&gt;&gt;<i> and BitArray isn&#8217;t there anymore. These checks should be removed for next
+</I>&gt;&gt;&gt;<i> scifio version.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> 2.) I had to make a SNAPSHOT dependency on imglib2-core because in the
+</I>&gt;&gt;&gt;<i> current release there is a bug which I fixed in this commit
+</I>&gt;&gt;&gt;<i> <A HREF="https://github.com/imglib/imglib2/commit/fc0d3ebcd9256e60961180952c0383c47e63d111">https://github.com/imglib/imglib2/commit/fc0d3ebcd9256e60961180952c0383c47e63d111</A>
+</I>&gt;&gt;&gt;<i> So already it is time to release imglib2-core 2.0.2
+</I>&gt;&gt;&gt;<i> It would be absolutely fantastic if you could walk me through how to do
+</I>&gt;&gt;&gt;<i> that. Curtis, maybe we can do this via Skype tomorrow (i.e. Monday)?
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> 2) Check out the imglib2-release branch of imglib2-tests and fix the
+</I>&gt;&gt;&gt;<i> compile errors.
+</I>&gt;&gt;&gt;<i> 3) Check out the imglib2-release branch of imglib2-script and fix the
+</I>&gt;&gt;&gt;<i> compile errors.
+</I>&gt;&gt;&gt;<i> 4) Check out the imglib2-release branch of imagej-ops and figure out why
+</I>&gt;&gt;&gt;<i> tests fail now.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> I&#8217;ll continue working on these tomorrow.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> all the best,
+</I>&gt;&gt;&gt;<i> Tobias
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> On 25 Oct 2014, at 01:02, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt; wrote:
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Hi guys,
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Here is a status update on the ImgLib2 release.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> The following components are released:
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> * imglib2 2.0.1
+</I>&gt;&gt;&gt;<i> * imglib2-algorithm 0.1.0
+</I>&gt;&gt;&gt;<i> * imglib2-algorithm-fft 0.1.0
+</I>&gt;&gt;&gt;<i> * imglib2-algorithm-gpl 0.1.0
+</I>&gt;&gt;&gt;<i> * imglib2-ij 2.0.0-beta-27
+</I>&gt;&gt;&gt;<i> * imglib2-realtransform 2.0.0-beta-27
+</I>&gt;&gt;&gt;<i> * imagej-common 0.10.0
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> The following components are not done yet:
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> * imglib2-script 0.1.0
+</I>&gt;&gt;&gt;<i> * imglib2-tests
+</I>&gt;&gt;&gt;<i> * imglib2-tutorials
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> (Note that for tests and tutorials, it is just a matter of updating the
+</I>&gt;&gt;&gt;<i> master branch, since we will never cut Maven release of those.)
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> * imagej-ops 0.6.0
+</I>&gt;&gt;&gt;<i> * imagej-plugins-commands 0.3.0
+</I>&gt;&gt;&gt;<i> * imagej-ui-swing 0.8.0
+</I>&gt;&gt;&gt;<i> * scifio 0.17.0
+</I>&gt;&gt;&gt;<i> * scifio-ome-xml 0.10.0
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> And probably others that will become obvious as we proceed further along.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> You can glean much of this same information from the following URL:
+</I>&gt;&gt;&gt;<i>     <A HREF="http://status.imagej.net/">http://status.imagej.net/</A>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Tobias asked if there is anything others could do to help, so here is a
+</I>&gt;&gt;&gt;<i> list (in my opinion of priority order):
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> 1) Check out the imglib2-release branch of imglib2-tutorials and fix the
+</I>&gt;&gt;&gt;<i> compile errors.
+</I>&gt;&gt;&gt;<i> 2) Check out the imglib2-release branch of imglib2-tests and fix the
+</I>&gt;&gt;&gt;<i> compile errors.
+</I>&gt;&gt;&gt;<i> 3) Check out the imglib2-release branch of imglib2-script and fix the
+</I>&gt;&gt;&gt;<i> compile errors.
+</I>&gt;&gt;&gt;<i> 4) Check out the imglib2-release branch of imagej-ops and figure out why
+</I>&gt;&gt;&gt;<i> tests fail now.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Any help any of you can contribute toward the above goals would be
+</I>&gt;&gt;&gt;<i> greatly appreciated! I'll be back on the case on Monday. (I would not worry
+</I>&gt;&gt;&gt;<i> about the Git history, Tobi -- just fix the errors on each branch.)
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Regards,
+</I>&gt;&gt;&gt;<i> Curtis
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> P.S. Thorough docs on the component structure, development best
+</I>&gt;&gt;&gt;<i> practices, and related stuff will be coming soon to a
+</I>&gt;&gt;&gt;<i> <A HREF="http://imagej.net/Architecture">http://imagej.net/Architecture</A> near you.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>
+
+-- 
+<A HREF="http://albert.rierol.net">http://albert.rierol.net</A>
+<A HREF="http://www.janelia.org/lab/cardona-lab">http://www.janelia.org/lab/cardona-lab</A>
+<A HREF="http://www.ini.uzh.ch/~acardona/">http://www.ini.uzh.ch/~acardona/</A>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20141029/607d8fdf/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20141029/607d8fdf/attachment-0001.html</A>&gt;
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002281.html">[ImageJ-devel] What's left to do for ImgLib2
+</A></li>
+	<LI>Next message: <A HREF="002283.html">[ImageJ-devel] Lock-free bit fields, was Re:  What's left to do for ImgLib2
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2282">[ date ]</a>
+              <a href="thread.html#2282">[ thread ]</a>
+              <a href="subject.html#2282">[ subject ]</a>
+              <a href="author.html#2282">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

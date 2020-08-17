@@ -1,0 +1,161 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] SCIFIO via Avian
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20SCIFIO%20via%20Avian&In-Reply-To=%3C30DAB23F-C52F-4568-AA45-050171B69624%40mpi-cbg.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001861.html">
+   <LINK REL="Next"  HREF="001830.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] SCIFIO via Avian</H1>
+    <B>Tobias Pietzsch</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20SCIFIO%20via%20Avian&In-Reply-To=%3C30DAB23F-C52F-4568-AA45-050171B69624%40mpi-cbg.de%3E"
+       TITLE="[ImageJ-devel] SCIFIO via Avian">pietzsch at mpi-cbg.de
+       </A><BR>
+    <I>Wed Dec  4 18:35:57 CST 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001861.html">[ImageJ-devel] [ImgLib2] The img-metadata branch
+</A></li>
+        <LI>Next message: <A HREF="001830.html">[ImageJ-devel] SCIFIO via Avian
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1829">[ date ]</a>
+              <a href="thread.html#1829">[ thread ]</a>
+              <a href="subject.html#1829">[ subject ]</a>
+              <a href="author.html#1829">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi guys,
+
+I made a benchmark for ArrayImg backed by
+- primitive arrays
+- direct buffers
+- sun.misc.Unsafe (off-heap memory)
+<A HREF="https://github.com/imagej/imglib/blob/2e1929873e2f4bafcfe9d90ad616fedb8b7ed4f0/tests/src/test/java/net/imglib2/img/BufferAndUnsafeBenchmark.java">https://github.com/imagej/imglib/blob/2e1929873e2f4bafcfe9d90ad616fedb8b7ed4f0/tests/src/test/java/net/imglib2/img/BufferAndUnsafeBenchmark.java</A>
+(in branch &quot;buffer-and-unsafe&quot;)
+
+On my computer, the result is that Unsafe is the about the same speed as primitive arrays. Direct buffers are consistently slower:
+
+copy image using class net.imglib2.img.array.ArrayImgFactory
+median: 52 ms
+
+copy image using class net.imglib2.img.array.ArrayImgUnsafeFactory
+median: 52 ms
+
+copy image using class net.imglib2.img.array.ArrayImgBufferFactory
+median: 59 ms
+
+The not-so-good news is that using the same type backed by different accesses will make the calls into the ByteAccess (or whatever the type is) polymorphic, spoiling it for the JIT (at least if both are used from the same call-site).
+This is visible in the second part of the benchmark. Here, a constant UnsignedByteType is added to every pixel of the image. Because the new UnsignedByteType(1) is always backed by a primitive array, we hit the bimorphic case for Unsafe and direct buffer, and this results in a big slowdown:
+
+add constant to image using class net.imglib2.img.array.ArrayImgFactory
+median: 22 ms
+
+add constant to image using class net.imglib2.img.array.ArrayImgUnsafeFactory
+median: 122 ms
+
+add constant to image using class net.imglib2.img.array.ArrayImgBufferFactory
+median: 186 ms
+
+We can try some tricks to make UnsignedByteType constants backed by the other ByteAccess types, but in general I see no easy way around this.
+Maybe someone has a few months to spare to make imglib3 using ASM or Javassist to manually inline this stuff (that would solve the bottleneck in making a proper bidirectional read/write type hierarchy&#8230;) Of course, we can always hope that the JIT will &quot;get it&quot; at some point in the future, but I think this is quite a pathological case.
+
+I think, we should go for the sun.misc.Unsafe for now.
+If it really turns out to be a show-stopper, we will have to look into using primitive arrays and pinning. One downside of that would be that then the memory must be owned by Java, so it would be a problem for the Avian integration. Another downside is that JNI implementations are not forced to pin the array, they may just decide to copy the data.
+
+I also made a imglib2-vigra branch that uses Unsafe <A HREF="https://github.com/tpietzsch/vigra-imglib2/commits/unsafe">https://github.com/tpietzsch/vigra-imglib2/commits/unsafe</A> (requires the buffer-and-unsafe branch of imglib2).
+
+best regards,
+Tobias
+
+On Nov 30, 2013, at 12:36 AM, Tobias Pietzsch &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pietzsch at mpi-cbg.de</A>&gt; wrote:
+
+&gt;<i> Hi Johannes and Ulli,
+</I>&gt;<i> 
+</I>&gt;<i> with respect to the need to set up the paths in the pom.xml:
+</I>&gt;<i> This is an issue with the nar-maven-plugin, which compiles and packages the native code.
+</I>&gt;<i> With Johannes' help, I submitted an integration test to the nar-maven-plugin project, that illustrates this problem. So hopefully it will be fixed at some point in the future.
+</I>&gt;<i> Ulli, I remember that there was another issue on Windows: The dll was named differently to what the NarHelper class expects. Could you elaborate on that?
+</I>&gt;<i> 
+</I>&gt;<i> With respect to what we did on the vigra-imglib2 project. I forked your project, Johannes, <A HREF="https://github.com/tpietzsch/vigra-imglib2.">https://github.com/tpietzsch/vigra-imglib2.</A>
+</I>&gt;<i> We worked on the &quot;buffer&quot; branch.
+</I>&gt;<i> This is using direct buffers as the underlying data structure for both ImgLib2's ArrayImg and VIGRA's MultiArrayView. At the moment, the direct buffer is allocated on the Java side, but as you pointed out, one can use JNI's NewDirectByteBuffer() from the C++ side. I think this is a good solution, because it leaves the option for both scenarios, Java embedded in C++ and C++ embedded in Java. The ByteBuffer is wrapped in a ImgLib2 Access (e.g. IntAccess for Imgs of IntType. It is easy to provide two constructors there, one which allocates the buffer and one which takes an existing buffer. Responsibility for freeing the memory is not a problem. Note that JNI NewDirectByteBuffer is constructed with already allocated memory. So, if C++ allocated the memory, Java may garbage-collect the ByteBuffer, but will not free the memory block. If creating the ByteBuffer form Java, Java will also free the memory.
+</I>&gt;<i> The good thing is that both ImgLib ArrayImgs and VIGRA MultiArrayViews were designed to wrap flat arrays, which is what is happening here.
+</I>&gt;<i> 
+</I>&gt;<i> The ByteBuffer code came from the ImgLib2 branch &quot;buffer-and-unsafe&quot;, where I played with using direct buffers and sun.misc.Unsafe to back ArrayImgs instead of Java primitive arrays.
+</I>&gt;<i> sun.misc.Unsafe is the other viable option. In contrast to primitive arrays and direct buffers it does not suffer from the 2G size limit of Java arrays. Of course, if we put it behind an ArrayImg, we cannot make use of that fact yet. So we could have a BigArrayImg at some point in the future (which would be useful in its own right). Otherwise, same advantages as explained above.
+</I>&gt;<i> The benchmark that Johannes mentioned was comparing the speed of ArrayImgs backed by primitive arrays, direct buffers, and sun.misc.Unsafe, respectively. I just had a look and I couldn't find it. I'll recreate it next week.
+</I>&gt;<i> 
+</I>&gt;<i> Note, that I copied the byte buffer stuff from the ImgLib2 branch &quot;buffer-and-unsafe&quot;, so that vigra-imglib2 works with the current ImgLib2 beta.
+</I>&gt;<i> 
+</I>&gt;<i> But wrapping the images back and forth was only part of what we did. An important point is to make it easy to make bindings to VIGRA functions withou writing lots of boilderplate code on either side of JNI. Based on earlier VIGRA-Matlab wrapper we made some macros that allow to write on the C++ side
+</I>&gt;<i> 
+</I>&gt;<i> JNIEXPORT void JNICALL Java_net_imglib2_vigra_VigraWrapper_gaussianSmoothMultiArray
+</I>&gt;<i>   (JNIEnv *env, jclass, jlongArray shape, jint typeId, jobject sourceData, jobject destData, jdouble sigma)
+</I>&gt;<i> {
+</I>&gt;<i>     using namespace vigra; // to get UInt8 and Int32
+</I>&gt;<i>     #define F(T) gaussianSmoothMultiArray&lt;T&gt;(env, shape, typeId, sourceData, destData, sigma)
+</I>&gt;<i>     ALLOW_TYPES(typeId, UInt8, Int32, float)
+</I>&gt;<i>     #undef F
+</I>&gt;<i> }
+</I>&gt;<i> 
+</I>&gt;<i> This creates a switch statement that instantiates the VIGRA template function for the specified C++ types and dispatches to these according to the corresponding ImgLib type.
+</I>&gt;<i> The same is done for supported dimensionalities (because with templates we have to specify that at compile time).
+</I>&gt;<i> 
+</I>&gt;<i> The plan is to directly pass in the ArrayImg jobject (and maybe even views later) and extract the type and dimension etc directly from that.
+</I>&gt;<i> This would mean, that on the Java side, we only have one native method for each exported VIGRA function, basically with the same signature and just replacing MultiArrayView with Img.
+</I>&gt;<i> 
+</I>&gt;<i> best regards,
+</I>&gt;<i> Tobias
+</I>&gt;<i> 
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20131205/34d4bdeb/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20131205/34d4bdeb/attachment-0001.html</A>&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20131205/34d4bdeb/attachment-0001.pgp">http://imagej.net/pipermail/imagej-devel/attachments/20131205/34d4bdeb/attachment-0001.pgp</A>&gt;
+</PRE>
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001861.html">[ImageJ-devel] [ImgLib2] The img-metadata branch
+</A></li>
+	<LI>Next message: <A HREF="001830.html">[ImageJ-devel] SCIFIO via Avian
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1829">[ date ]</a>
+              <a href="thread.html#1829">[ thread ]</a>
+              <a href="subject.html#1829">[ subject ]</a>
+              <a href="author.html#1829">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

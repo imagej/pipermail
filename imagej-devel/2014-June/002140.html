@@ -1,0 +1,345 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Patch Improving Non-uniform Units Handling
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Patch%20Improving%20Non-uniform%20Units%20Handling&In-Reply-To=%3CCAHx_jrbtjzHAjafQeRSJK9e0dAWWrR%2B%3D1kmAOmmByOYgDxVMuw%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002139.html">
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Patch Improving Non-uniform Units Handling</H1>
+    <B>Alan Brooks</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Patch%20Improving%20Non-uniform%20Units%20Handling&In-Reply-To=%3CCAHx_jrbtjzHAjafQeRSJK9e0dAWWrR%2B%3D1kmAOmmByOYgDxVMuw%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Patch Improving Non-uniform Units Handling">alancbrooks at gmail.com
+       </A><BR>
+    <I>Wed Jun 25 13:40:19 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002139.html">[ImageJ-devel] [Bug 810] Process Filter Convolve does not work
+</A></li>
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2140">[ date ]</a>
+              <a href="thread.html#2140">[ thread ]</a>
+              <a href="subject.html#2140">[ subject ]</a>
+              <a href="author.html#2140">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>ImageJ1 has built-in support for non-uniform x/y/z units via Calibration's
+getX/Y/ZUnit() and setX/Y/ZUnit(). At my company, we look a good amount of
+&quot;raw&quot; image data that naturally has time as one unit and detectors as the
+other unit, so our raw file reader makes use of this functionality. I found
+that some parts of ImageJ don't seem to look for X/Y/Z units, instead using
+getUnit/s() without checking for non-uniform units.
+
+So, I have put together a patch to improve a couple of key functions. I
+based the patch on the 2014.06.23 (1.40c20) snapshot on
+<A HREF="https://github.com/imagej/imagej1.git.">https://github.com/imagej/imagej1.git.</A> I don't see any pull requests for
+that project, so not sure how the IJ team would want this patch? For now,
+it is inline, below. But I'm happy to push it to the correct spot ...
+perhaps I should be asking <A HREF="http://wiki.imagej.net/ImageJA">http://wiki.imagej.net/ImageJA</A> for a pull
+request?
+
+Thanks,
+Alan
+
+
+&gt;<i>From ad1add8f9dcdfd1ba42436a225a0c41e80353be6 Mon Sep 17 00:00:00 2001
+</I>From: Alan Brooks &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">alancbrooks at gmail.com</A>&gt;
+Date: Wed, 25 Jun 2014 12:21:48 -0500
+Subject: [PATCH] Show correct non-matching x &amp; y units on surface plot.
+
+---
+ ij/plugin/SurfacePlotter.java | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/ij/plugin/SurfacePlotter.java b/ij/plugin/SurfacePlotter.java
+index 011754e..9789155 100644
+--- a/ij/plugin/SurfacePlotter.java
++++ b/ij/plugin/SurfacePlotter.java
+@@ -306,12 +306,15 @@ public class SurfacePlotter implements PlugIn {
+  ip2.drawString(s, (int) p1x-18-w, (int) p1y +h/2);
+
+  //x-axis
+- s = (double) Math.round(roi.height*cal.pixelHeight*10)/10+&quot;
+&quot;+cal.getUnits();
++ boolean unitsMatch = cal.getXUnit().equals(cal.getYUnit());
++ String xunits = unitsMatch ? cal.getUnits() : cal.getYUnit(); // why
+swapped?
++ s = (double) Math.round(roi.height*cal.pixelHeight*10)/10+&quot; &quot;+xunits;
+  w =  ip2.getFontMetrics().stringWidth(s);
+  drawAxis(ip2, (int) p1x, (int) p1y, (int) p2x, (int) p2y, s, 10, -1, 1,
+1);
+
+  //y-axis
+- s =  (double) Math.round(roi.width*cal.pixelWidth*10)/10+&quot;
+&quot;+cal.getUnits();
++ String yunits = unitsMatch ? cal.getUnits() : cal.getXUnit(); // why
+swapped?
++ s =  (double) Math.round(roi.width*cal.pixelWidth*10)/10+&quot; &quot;+yunits;
+  w =  ip2.getFontMetrics().stringWidth(s);
+  //drawAxis(ip2, (int) p2x, (int) p2y, (int) p3x, (int) p3y, s, 10, 1 , 1,
+-1);
+  drawAxis(ip2, (int) p2x, (int) p2y, (int) p3x, (int) p3y, s, 10, 1, -1,
+1);
+-- 
+1.8.4.msysgit.0
+
+&gt;<i>From 70df4ea5619a010caa8732c764ea2ab897dab448 Mon Sep 17 00:00:00 2001
+</I>From: Alan Brooks &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">alancbrooks at gmail.com</A>&gt;
+Date: Wed, 25 Jun 2014 12:20:54 -0500
+Subject: [PATCH] Show correct non-matching x &amp; y units when specifying an
+ROI
+ selection.
+
+---
+ ij/plugin/SpecifyROI.java | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/ij/plugin/SpecifyROI.java b/ij/plugin/SpecifyROI.java
+index bb48b24..db71ac3 100644
+--- a/ij/plugin/SpecifyROI.java
++++ b/ij/plugin/SpecifyROI.java
+@@ -111,8 +111,10 @@ public class SpecifyROI implements PlugIn,
+DialogListener {
+  gd.addCheckbox(&quot;Oval&quot;, oval);
+  gd.addCheckbox(&quot;Constrain square/circle&quot;, square);
+  gd.addCheckbox(&quot;Centered&quot;,centered);
++ boolean unitsMatch = cal.getXUnit().equals(cal.getYUnit());
++ String units = unitsMatch ? cal.getUnits() : cal.getXUnit()+&quot; x
+&quot;+cal.getYUnit();
+  if (cal.scaled())
+- gd.addCheckbox(&quot;Scaled units (&quot;+cal.getUnits()+&quot;)&quot;, scaledUnits);
++ gd.addCheckbox(&quot;Scaled units (&quot;+units+&quot;)&quot;, scaledUnits);
+  fields = gd.getNumericFields();
+  gd.addDialogListener(this);
+  gd.showDialog();
+-- 
+1.8.4.msysgit.0
+
+&gt;<i>From c8717cd7146dae5e54f6b93ba529632f828ce5ef Mon Sep 17 00:00:00 2001
+</I>From: Alan Brooks &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">alancbrooks at gmail.com</A>&gt;
+Date: Wed, 25 Jun 2014 12:18:12 -0500
+Subject: [PATCH] Update Transformer so that Rotate Right and Rotate Left
+ commands preserve non-matching x &amp; y units.
+
+---
+ ij/plugin/filter/Transformer.java | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/ij/plugin/filter/Transformer.java
+b/ij/plugin/filter/Transformer.java
+index 26a1e96..5a6aa88 100644
+--- a/ij/plugin/filter/Transformer.java
++++ b/ij/plugin/filter/Transformer.java
+@@ -62,6 +62,9 @@ public class Transformer implements PlugInFilter {
+      double pixelWidth = cal.pixelWidth;
+      cal.pixelWidth = cal.pixelHeight;
+      cal.pixelHeight = pixelWidth;
++     String xUnit = cal.getXUnit();
++        cal.setXUnit(cal.getYUnit());
++        cal.setYUnit(xUnit);
+  return;
+  }
+  }
+-- 
+1.8.4.msysgit.0
+
+&gt;<i>From bc4a026a612559b77be7dfc2120886be3529d092 Mon Sep 17 00:00:00 2001
+</I>From: Alan Brooks &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">alancbrooks at gmail.com</A>&gt;
+Date: Wed, 25 Jun 2014 12:16:43 -0500
+Subject: [PATCH] Improve ImageWindow's subtitle to handle non-matching x &amp; y
+ units. Useful when working with raw data files.
+
+---
+ ij/gui/ImageWindow.java | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/ij/gui/ImageWindow.java b/ij/gui/ImageWindow.java
+index a81ebe3..ee853d9 100644
+--- a/ij/gui/ImageWindow.java
++++ b/ij/gui/ImageWindow.java
+@@ -301,8 +301,16 @@ public class ImageWindow extends Frame implements
+FocusListener, WindowListener,
+      int type = imp.getType();
+      Calibration cal = imp.getCalibration();
+      if (cal.scaled()) {
+-     s += IJ.d2s(imp.getWidth()*cal.pixelWidth,2) + &quot;x&quot; +
+IJ.d2s(imp.getHeight()*cal.pixelHeight,2)
+- + &quot; &quot; + cal.getUnits() + &quot; (&quot; + imp.getWidth() + &quot;x&quot; + imp.getHeight() +
+&quot;); &quot;;
++     boolean unitsMatch = cal.getXUnit().equals(cal.getYUnit());
++     if (unitsMatch) {
++     s += IJ.d2s(imp.getWidth()*cal.pixelWidth,2) + &quot;x&quot;
++       + IJ.d2s(imp.getHeight()*cal.pixelHeight,2) + &quot; &quot; + cal.getUnits()
++       + &quot; (&quot; + imp.getWidth() + &quot;x&quot; + imp.getHeight() + &quot;); &quot;;
++  } else {
++     s += IJ.d2s(imp.getWidth()*cal.pixelWidth,2) + cal.getXUnit() + &quot; x &quot;
++       + IJ.d2s(imp.getHeight()*cal.pixelHeight,2) + cal.getYUnit()
++       + &quot; (&quot; + imp.getWidth() + &quot;x&quot; + imp.getHeight() + &quot;); &quot;;
++  }
+      } else
+      s += imp.getWidth() + &quot;x&quot; + imp.getHeight() + &quot; pixels; &quot;;
+  double size =
+((double)imp.getWidth()*imp.getHeight()*imp.getStackSize())/1024.0;
+-- 
+1.8.4.msysgit.0
+
+&gt;<i>From cb0e1dd0f81ca526cc17de90acc13f1569e06584 Mon Sep 17 00:00:00 2001
+</I>From: Alan Brooks &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">alancbrooks at gmail.com</A>&gt;
+Date: Wed, 25 Jun 2014 12:07:30 -0500
+Subject: [PATCH] Respect X/Y/Z units when showing file information. Useful
+for
+ displaying details about raw data collect files where x-y-z units are often
+ different.
+
+---
+ ij/plugin/filter/Info.java | 59
++++++++++++++++++++++++-----------------------
+ 1 file changed, 30 insertions(+), 29 deletions(-)
+
+diff --git a/ij/plugin/filter/Info.java b/ij/plugin/filter/Info.java
+index 9ce1ac2..99fdcf8 100644
+--- a/ij/plugin/filter/Info.java
++++ b/ij/plugin/filter/Info.java
+@@ -85,36 +85,37 @@ public class Info implements PlugInFilter {
+  }
+
+  String getInfo(ImagePlus imp, ImageProcessor ip) {
+- String s = new String(&quot;\n&quot;);
+- s += &quot;Title: &quot; + imp.getTitle() + &quot;\n&quot;;
+- Calibration cal = imp.getCalibration();
+-     int stackSize = imp.getStackSize();
+-     int channels = imp.getNChannels();
+-     int slices = imp.getNSlices();
+-     int frames = imp.getNFrames();
+- int digits = imp.getBitDepth()==32?4:0;
+- int dp, dp2;
+- if (cal.scaled()) {
+- String unit = cal.getUnit();
+- String units = cal.getUnits();
+- double pw = imp.getWidth()*cal.pixelWidth;
+- double ph = imp.getHeight()*cal.pixelHeight;
+-     dp = Tools.getDecimalPlaces(pw, ph);
+-     s += &quot;Width:  &quot;+IJ.d2s(pw,dp)+&quot; &quot; + units+&quot; (&quot;+imp.getWidth()+&quot;)\n&quot;;
+-     s += &quot;Height:  &quot;+IJ.d2s(ph,dp)+&quot; &quot; + units+&quot; (&quot;+imp.getHeight()+&quot;)\n&quot;;
+-     if (slices&gt;1) {
+- double pd = slices*cal.pixelDepth;
+- dp = Tools.getDecimalPlaces(pw, pd);
+-     s += &quot;Depth:  &quot;+IJ.d2s(pd,dp)+&quot; &quot; + units+&quot; (&quot;+slices+&quot;)\n&quot;;
+-     }
++            String s = new String(&quot;\n&quot;);
++            s += &quot;Title: &quot; + imp.getTitle() + &quot;\n&quot;;
++            Calibration cal = imp.getCalibration();
++            int stackSize = imp.getStackSize();
++            int channels = imp.getNChannels();
++            int slices = imp.getNSlices();
++            int frames = imp.getNFrames();
++            int digits = imp.getBitDepth()==32?4:0;
++            int dp, dp2;
++            String xunit = cal.getXUnit();
++            String yunit = cal.getYUnit();
++            String zunit = cal.getZUnit();
++            if (cal.scaled()) {
++                double pw = imp.getWidth()*cal.pixelWidth;
++                double ph = imp.getHeight()*cal.pixelHeight;
++                dp = Tools.getDecimalPlaces(pw, ph);
++                s += &quot;Width:  &quot;+IJ.d2s(pw,dp)+&quot; &quot; + xunit +&quot;s
+(&quot;+imp.getWidth()+&quot;)\n&quot;;
++                s += &quot;Height:  &quot;+IJ.d2s(ph,dp)+&quot; &quot; + yunit +&quot;s
+(&quot;+imp.getHeight()+&quot;)\n&quot;;
++                if (slices&gt;1) {
++                                double pd = slices*cal.pixelDepth;
++                                dp = Tools.getDecimalPlaces(pw, pd);
++                        s += &quot;Depth:  &quot;+IJ.d2s(pd,dp)+&quot; &quot; + zunit +&quot;s
+(&quot;+slices+&quot;)\n&quot;;
++                }
+      double xResolution = 1.0/cal.pixelWidth;
+      double yResolution = 1.0/cal.pixelHeight;
+      int places = Tools.getDecimalPlaces(xResolution, yResolution);
+      if (xResolution==yResolution)
+-     s += &quot;Resolution:  &quot;+IJ.d2s(xResolution,places) + &quot; pixels per
+&quot;+unit+&quot;\n&quot;;
++     s += &quot;Resolution:  &quot;+IJ.d2s(xResolution,places) + &quot; pixels per
+&quot;+xunit+&quot;\n&quot;;
+      else {
+-     s += &quot;X Resolution:  &quot;+IJ.d2s(xResolution,places) + &quot; pixels per
+&quot;+unit+&quot;\n&quot;;
+-     s += &quot;Y Resolution:  &quot;+IJ.d2s(yResolution,places) + &quot; pixels per
+&quot;+unit+&quot;\n&quot;;
++     s += &quot;X Resolution:  &quot;+IJ.d2s(xResolution,places) + &quot; pixels per
+&quot;+xunit+&quot;\n&quot;;
++     s += &quot;Y Resolution:  &quot;+IJ.d2s(yResolution,places) + &quot; pixels per
+&quot;+yunit+&quot;\n&quot;;
+      }
+     } else {
+      s += &quot;Width:  &quot; + imp.getWidth() + &quot; pixels\n&quot;;
+@@ -122,19 +123,19 @@ public class Info implements PlugInFilter {
+      if (stackSize&gt;1)
+      s += &quot;Depth:  &quot; + slices + &quot; pixels\n&quot;;
+     }
+-     if (stackSize&gt;1) {
++            if (stackSize&gt;1) {
+      dp = Tools.getDecimalPlaces(cal.pixelWidth, cal.pixelDepth);
+-     s += &quot;Voxel size:
+&quot;+IJ.d2s(cal.pixelWidth,dp)+&quot;x&quot;+IJ.d2s(cal.pixelHeight,dp)+&quot;x&quot;+IJ.d2s(cal.pixelDepth,dp)+&quot;
+&quot;+cal.getUnit()+&quot;\n&quot;;
++     s += &quot;Voxel size:
+&quot;+IJ.d2s(cal.pixelWidth,dp)+&quot;x&quot;+IJ.d2s(cal.pixelHeight,dp)+&quot;x&quot;+IJ.d2s(cal.pixelDepth,dp)+&quot;
+(&quot;+xunit+&quot; x &quot;+yunit+&quot; x &quot;+zunit+&quot;)\n&quot;;
+     } else {
+      dp = Tools.getDecimalPlaces(cal.pixelWidth, cal.pixelHeight);
+-     s += &quot;Pixel size:
+&quot;+IJ.d2s(cal.pixelWidth,dp)+&quot;x&quot;+IJ.d2s(cal.pixelHeight,dp)+&quot;
+&quot;+cal.getUnit()+&quot;\n&quot;;
++     s += &quot;Pixel size:
+&quot;+IJ.d2s(cal.pixelWidth,dp)+&quot;x&quot;+IJ.d2s(cal.pixelHeight,dp)+&quot; (&quot;+xunit+&quot; x
+&quot;+yunit+&quot;)\n&quot;;
+     }
+
+     s += &quot;ID: &quot;+imp.getID()+&quot;\n&quot;;
+     String zOrigin = stackSize&gt;1||cal.zOrigin!=0.0?&quot;,&quot;+d2s(cal.zOrigin):&quot;&quot;;
+     s += &quot;Coordinate origin:  &quot; +
+d2s(cal.xOrigin)+&quot;,&quot;+d2s(cal.yOrigin)+zOrigin+&quot;\n&quot;;
+     int type = imp.getType();
+-     switch (type) {
++            switch (type) {
+      case ImagePlus.GRAY8:
+      s += &quot;Bits per pixel: 8 &quot;;
+      String lut = &quot;LUT&quot;;
+-- 
+1.8.4.msysgit.0
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140625/5e944ddc/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20140625/5e944ddc/attachment-0001.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002139.html">[ImageJ-devel] [Bug 810] Process Filter Convolve does not work
+</A></li>
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2140">[ date ]</a>
+              <a href="thread.html#2140">[ thread ]</a>
+              <a href="subject.html#2140">[ subject ]</a>
+              <a href="author.html#2140">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

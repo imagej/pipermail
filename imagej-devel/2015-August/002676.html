@@ -1,0 +1,234 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Masking @Parameter from GUI harvesting ?
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Masking%20%40Parameter%20from%20GUI%20harvesting%20%3F&In-Reply-To=%3CCADN69ymuUk%3D6z85na5aHFd_2rJcynvOFmB60jQKYfU9qrwxC%2Bw%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002671.html">
+   <LINK REL="Next"  HREF="002685.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Masking @Parameter from GUI harvesting ?</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Masking%20%40Parameter%20from%20GUI%20harvesting%20%3F&In-Reply-To=%3CCADN69ymuUk%3D6z85na5aHFd_2rJcynvOFmB60jQKYfU9qrwxC%2Bw%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Masking @Parameter from GUI harvesting ?">ctrueden at wisc.edu
+       </A><BR>
+    <I>Mon Aug 24 15:31:07 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002671.html">[ImageJ-devel] Masking @Parameter from GUI harvesting ?
+</A></li>
+        <LI>Next message: <A HREF="002685.html">[ImageJ-devel] Masking @Parameter from GUI harvesting ?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2676">[ date ]</a>
+              <a href="thread.html#2676">[ thread ]</a>
+              <a href="subject.html#2676">[ subject ]</a>
+              <a href="author.html#2676">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Adrian,
+
+&gt;<i> 1) How does one prevent a @Parameter from showing up in the harvesting
+</I>&gt;<i> GUI dialog, in the manner of a '@Parameter LogService log'? (more
+</I>&gt;<i> below)
+</I>
+Parameters which are resolved before the input harvester dialog pops up
+will not show up.
+
+They get resolved by the various preprocessors in the preprocessing chain,
+which is applied before the module is actually run. The InputHarvester --
+which is what pops the dialog box -- is (IIRC) the final preprocessing step
+before run happens.
+
+We could add a way to mark parameters which are not desired to be shown in
+the dialog box. What is your use case for a parameter you want to have in
+the script, but never shown to the user in cases where it is still null?
+
+&gt;<i> 2) A net.imagej.overlay.RectangleOverlay parameter, although properly
+</I>&gt;<i> populated, provoques an Exception after the execution of the command.
+</I>&gt;<i> (more details and stacktraces below)
+</I>
+As I mentioned in the other thread: try with Overlay instead? We could
+certainly make it autofill parameters with specific Overlay subclasses
+too&#8212;just need to confirm first that that is indeed your problem.
+
+&gt;<i> 3) When a new preview is triggered, and that preview modifies numeric
+</I>&gt;<i> parameters, then the numeric values visible in the gui dialog are
+</I>&gt;<i> updated except for the NumericField on which input has triggered the
+</I>&gt;<i> call to preview().
+</I>
+It is a programming error for the preview() function to modify parameter
+values. Use callbacks instead, which occur before preview() is called [1].
+
+&gt;<i> 4) It would be nice if a parameter could have a label even if
+</I>&gt;<i> ItemVisibility is MESSAGE
+</I>
+Fixed [2].
+
+Regards,
+Curtis
+
+[1]
+<A HREF="https://github.com/scijava/scijava-common/blob/scijava-common-2.44.2/src/main/java/org/scijava/widget/DefaultWidgetModel.java#L167-L169">https://github.com/scijava/scijava-common/blob/scijava-common-2.44.2/src/main/java/org/scijava/widget/DefaultWidgetModel.java#L167-L169</A>
+
+[2]
+<A HREF="https://github.com/scijava/scijava-ui-swing/commit/84c30c045bf3327a424f499f1f2fe867b0d9375e">https://github.com/scijava/scijava-ui-swing/commit/84c30c045bf3327a424f499f1f2fe867b0d9375e</A>
+
+
+On Sun, Aug 23, 2015 at 6:44 AM, Adrian Daerr &lt;
+<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">adrian.daerr at univ-paris-diderot.fr</A>&gt; wrote:
+
+&gt;<i> Dear ImageJ developers,
+</I>&gt;<i>
+</I>&gt;<i> As I slowly learn more about IJ2 @Plugins, I have one question and three
+</I>&gt;<i> minor comments that I would like to submit to you.
+</I>&gt;<i>
+</I>&gt;<i> 1) How does one prevent a @Parameter from showing up in the harvesting
+</I>&gt;<i> GUI dialog, in the manner of a '@Parameter LogService log'? (more below)
+</I>&gt;<i>
+</I>&gt;<i> 2) A net.imagej.overlay.RectangleOverlay parameter, although properly
+</I>&gt;<i> populated, provoques an Exception after the execution of the command.
+</I>&gt;<i> (more details and stacktraces below)
+</I>&gt;<i>
+</I>&gt;<i> 3) When a new preview is triggered, and that preview modifies numeric
+</I>&gt;<i> parameters, then the numeric values visible in the gui dialog are
+</I>&gt;<i> updated except for the NumericField on which input has triggered the
+</I>&gt;<i> call to preview().
+</I>&gt;<i>
+</I>&gt;<i> 4) It would be nice if a parameter could have a label even if
+</I>&gt;<i> ItemVisibility is MESSAGE:
+</I>&gt;<i>   @Parameter(persist = false,
+</I>&gt;<i>              visibility = org.scijava.ItemVisibility.MESSAGE,
+</I>&gt;<i>              label = &quot;Current foo value&quot;)
+</I>&gt;<i>     private double foo = 0;
+</I>&gt;<i> (currently, at least on my box, the label is not shown in this case)
+</I>&gt;<i> Obviously a workaround is to build a String with label+foo instead.
+</I>&gt;<i>
+</I>&gt;<i> cheers,
+</I>&gt;<i> Adrian
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> ad 1)
+</I>&gt;<i> How to prevent a @Parameter from showing up in the harvesting GUI
+</I>&gt;<i> dialog? Some seem to be masked by default (ImagePlus, LogService), but
+</I>&gt;<i> I did not find the appropriate annotation to make the parameter roi in
+</I>&gt;<i> the following not show up, although it is already properly populated
+</I>&gt;<i> by the rectangular selection of the active image ? There is no
+</I>&gt;<i> meaningful thing I can do with the associated selector in the dialog.
+</I>&gt;<i>
+</I>&gt;<i>     @Parameter private ImagePlus imp;
+</I>&gt;<i>     @Parameter private RectangleOverlay roi;
+</I>&gt;<i>     @Parameter private double a;
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> ad 2)
+</I>&gt;<i> A net.imagej.overlay.RectangleOverlay parameter
+</I>&gt;<i>
+</I>&gt;<i>   @Parameter private RectangleOverlay roi;
+</I>&gt;<i>
+</I>&gt;<i> is properly populated when the Command is invoqued on an active image
+</I>&gt;<i> containing a rectangular selection. However it provoques an Exception
+</I>&gt;<i> after the execution of the command, when either the
+</I>&gt;<i> DefaultPrefService, or the Recorder if a persist=false attribute is
+</I>&gt;<i> added, apparently tries to record a 'null' value for an option. The
+</I>&gt;<i> two stacktraces are
+</I>&gt;<i>
+</I>&gt;<i>   [ERROR] Module threw exception
+</I>&gt;<i>   java.lang.NullPointerException
+</I>&gt;<i>         at
+</I>&gt;<i> java.util.prefs.AbstractPreferences.put(AbstractPreferences.java:224)
+</I>&gt;<i>         at
+</I>&gt;<i> org.scijava.prefs.DefaultPrefService.put(DefaultPrefService.java:183)
+</I>&gt;<i>         at
+</I>&gt;<i> org.scijava.module.DefaultModuleService.save(DefaultModuleService.java:278)
+</I>&gt;<i>         at
+</I>&gt;<i> org.scijava.module.process.SaveInputsPreprocessor.saveValue(SaveInputsPreprocessor.java:74)
+</I>&gt;<i>         at
+</I>&gt;<i> org.scijava.module.process.SaveInputsPreprocessor.process(SaveInputsPreprocessor.java:65)
+</I>&gt;<i>         at
+</I>&gt;<i> org.scijava.module.ModuleRunner.preProcess(ModuleRunner.java:104)
+</I>&gt;<i>         at org.scijava.module.ModuleRunner.run(ModuleRunner.java:156)
+</I>&gt;<i>         at org.scijava.module.ModuleRunner.call(ModuleRunner.java:126)
+</I>&gt;<i>         at org.scijava.module.ModuleRunner.call(ModuleRunner.java:65)
+</I>&gt;<i>         at
+</I>&gt;<i> org.scijava.thread.DefaultThreadService$2.call(DefaultThreadService.java:191)
+</I>&gt;<i>         at
+</I>&gt;<i> java.util.concurrent.FutureTask$Sync.innerRun(FutureTask.java:303)
+</I>&gt;<i>         at java.util.concurrent.FutureTask.run(FutureTask.java:138)
+</I>&gt;<i>         at
+</I>&gt;<i> java.util.concurrent.ThreadPoolExecutor$Worker.runTask(ThreadPoolExecutor.java:886)
+</I>&gt;<i>         at
+</I>&gt;<i> java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:908)
+</I>&gt;<i>         at java.lang.Thread.run(Thread.java:662)
+</I>&gt;<i>
+</I>&gt;<i>   [ERROR] Module threw exception
+</I>&gt;<i>   java.lang.NullPointerException
+</I>&gt;<i>         at ij.plugin.frame.Recorder.addQuotes(Recorder.java:612)
+</I>&gt;<i>         at ij.plugin.frame.Recorder.recordOption(Recorder.java:362)
+</I>&gt;<i>         at net.imagej.legacy.IJ1Helper.recordOption(IJ1Helper.java:467)
+</I>&gt;<i>         at
+</I>&gt;<i> net.imagej.legacy.plugin.MacroRecorderPostprocessor.process(MacroRecorderPostprocessor.java:70)
+</I>&gt;<i>         at
+</I>&gt;<i> org.scijava.module.ModuleRunner.postProcess(ModuleRunner.java:116)
+</I>&gt;<i>         at org.scijava.module.ModuleRunner.run(ModuleRunner.java:176)
+</I>&gt;<i>         at org.scijava.module.ModuleRunner.call(ModuleRunner.java:126)
+</I>&gt;<i>         at org.scijava.module.ModuleRunner.call(ModuleRunner.java:65)
+</I>&gt;<i>         at
+</I>&gt;<i> org.scijava.thread.DefaultThreadService$2.call(DefaultThreadService.java:191)
+</I>&gt;<i>         at
+</I>&gt;<i> java.util.concurrent.FutureTask$Sync.innerRun(FutureTask.java:303)
+</I>&gt;<i>         at java.util.concurrent.FutureTask.run(FutureTask.java:138)
+</I>&gt;<i>         at
+</I>&gt;<i> java.util.concurrent.ThreadPoolExecutor$Worker.runTask(ThreadPoolExecutor.java:886)
+</I>&gt;<i>         at
+</I>&gt;<i> java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:908)
+</I>&gt;<i>         at java.lang.Thread.run(Thread.java:662)
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20150824/c21c3eb5/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20150824/c21c3eb5/attachment.html</A>&gt;
+</PRE>
+
+
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002671.html">[ImageJ-devel] Masking @Parameter from GUI harvesting ?
+</A></li>
+	<LI>Next message: <A HREF="002685.html">[ImageJ-devel] Masking @Parameter from GUI harvesting ?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2676">[ date ]</a>
+              <a href="thread.html#2676">[ thread ]</a>
+              <a href="subject.html#2676">[ subject ]</a>
+              <a href="author.html#2676">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,2034 @@
+From leek at broadinstitute.org  Tue Sep  6 09:00:24 2011
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Tue, 06 Sep 2011 10:00:24 -0400
+Subject: [ImageJ-devel] Display lifecycle
+Message-ID: <4e66277a.026ae00a.3c68.078d@mx.google.com>
+
+Hi Curtis / ImageJ dev. I've gotten CellProfiler to run ImageJ 2 plugins 
+with images. I assume that any Display parameter contains an image with 
+possible overlay and that input Display parameters will be modified by 
+the time they are output. The picture below is the result of running one 
+of the IJ2 shadow commands in CellProfiler.
+
+I have to fix what looks like a bug in SwingDisplayPanel. In "close", it 
+assumes that its direct parent is the SwingDisplayWindow and apparently 
+that's no longer the case. I'd just like to do this.window.dispose() 
+there. The patch file for the change is attached, I'll probably just 
+commit it but you guys should review briefly.
+
+--Lee
+
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110906/334b8c23/attachment.html>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: checdbec.png
+Type: image/png
+Size: 261150 bytes
+Desc: not available
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110906/334b8c23/attachment.png>
+-------------- next part --------------
+An embedded and charset-unspecified text was scrubbed...
+Name: sdp.diff
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110906/334b8c23/attachment.ksh>
+
+From afraser at broadinstitute.org  Tue Sep  6 09:23:47 2011
+From: afraser at broadinstitute.org (Adam Fraser)
+Date: Tue, 6 Sep 2011 10:23:47 -0400
+Subject: [ImageJ-devel] Display lifecycle
+In-Reply-To: <4e66277a.026ae00a.3c68.078d@mx.google.com>
+References: <4e66277a.026ae00a.3c68.078d@mx.google.com>
+Message-ID: <CANCtz6db6+jtctp7G86tqN=uG4Ouo8gUk+qajpy6fq1yR2sFtQ@mail.gmail.com>
+
+Nice work, Lee! woohoo!
+
+On Tue, Sep 6, 2011 at 10:00 AM, Lee Kamentsky <leek at broadinstitute.org>wrote:
+
+>  Hi Curtis / ImageJ dev. I've gotten CellProfiler to run ImageJ 2 plugins
+> with images. I assume that any Display parameter contains an image with
+> possible overlay and that input Display parameters will be modified by the
+> time they are output. The picture below is the result of running one of the
+> IJ2 shadow commands in CellProfiler.
+>
+> I have to fix what looks like a bug in SwingDisplayPanel. In "close", it
+> assumes that its direct parent is the SwingDisplayWindow and apparently
+> that's no longer the case. I'd just like to do this.window.dispose() there.
+> The patch file for the change is attached, I'll probably just commit it but
+> you guys should review briefly.
+>
+> --Lee
+>
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110906/3f1f2ac1/attachment.html>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: image/png
+Size: 261150 bytes
+Desc: not available
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110906/3f1f2ac1/attachment.png>
+
+From gharris at mbl.edu  Tue Sep  6 10:30:06 2011
+From: gharris at mbl.edu (Grant B. Harris)
+Date: Tue, 06 Sep 2011 11:30:06 -0400
+Subject: [ImageJ-devel] Display lifecycle
+In-Reply-To: <4e66277a.026ae00a.3c68.078d@mx.google.com>
+References: <4e66277a.026ae00a.3c68.078d@mx.google.com>
+Message-ID: <4E663C7E.2020306@mbl.edu>
+
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110906/b75b7c6f/attachment.html>
+
+From leek at broadinstitute.org  Tue Sep  6 10:37:48 2011
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Tue, 06 Sep 2011 11:37:48 -0400
+Subject: [ImageJ-devel] Display lifecycle
+In-Reply-To: <4E663C7E.2020306@mbl.edu>
+References: <4e66277a.026ae00a.3c68.078d@mx.google.com>
+	<4E663C7E.2020306@mbl.edu>
+Message-ID: <4e663e4e.07c2e00a.5171.10ec@mx.google.com>
+
+OK - you'll have to change code in SwingDisplayPanel to remove the cast 
+I added to SwingDisplayWindow.
+
+Thx,
+Lee
+On 9/6/2011 11:30 AM, Grant B. Harris wrote:
+> Lee --
+>
+> You have caught an oversight on my part... DisplayWindow should have a 
+> close() method.
+> And SwingDisplayWindow should actually be in the Swing-SDI package.
+>
+> So, I added a close() method to DisplayWindow and implemented it in 
+> the SDI and MDI packages.
+>
+> Let me know if this doesn't take care of the problem.
+> Grant B. Harris
+> ---------------------------------------------------------
+> Scientific Informatics Analyst, Cellular Dynamics Program
+> Marine Biological Laboratory, Woods Hole, Mass. 02543
+> gharris at mbl.edu
+>
+> On 9/6/2011 10:00 AM, Lee Kamentsky wrote:
+>> Hi Curtis / ImageJ dev. I've gotten CellProfiler to run ImageJ 2 
+>> plugins with images. I assume that any Display parameter contains an 
+>> image with possible overlay and that input Display parameters will be 
+>> modified by the time they are output. The picture below is the result 
+>> of running one of the IJ2 shadow commands in CellProfiler.
+>>
+>> I have to fix what looks like a bug in SwingDisplayPanel. In "close", 
+>> it assumes that its direct parent is the SwingDisplayWindow and 
+>> apparently that's no longer the case. I'd just like to do 
+>> this.window.dispose() there. The patch file for the change is 
+>> attached, I'll probably just commit it but you guys should review 
+>> briefly.
+>>
+>> --Lee
+>>
+>> (snip)
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110906/dcf5c2a7/attachment.html>
+
+From ctrueden at wisc.edu  Tue Sep  6 11:34:37 2011
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Tue, 6 Sep 2011 11:34:37 -0500
+Subject: [ImageJ-devel] Display lifecycle
+In-Reply-To: <4E663C7E.2020306@mbl.edu>
+References: <4e66277a.026ae00a.3c68.078d@mx.google.com>
+	<4E663C7E.2020306@mbl.edu>
+Message-ID: <CADN69ynaMLs+GhR8F1vHjzu2hWPwueCK+QgPh1VxiGNMcu59cg@mail.gmail.com>
+
+Hi Grant,
+
+And SwingDisplayWindow should actually be in the Swing-SDI package.
+>
+
+Just a heads up: SwingDisplayWindow is referenced in AbstractSwingUI as well
+as SwingDisplayPanel, both of which are in the ij-ui-swing-base package. It
+looks like it would be non-trivial to migrate that class into the
+ij-ui-swing-sdi project.
+
+-Curtis
+
+On Tue, Sep 6, 2011 at 10:30 AM, Grant B. Harris <gharris at mbl.edu> wrote:
+
+>  Lee --
+>
+> You have caught an oversight on my part... DisplayWindow should have a
+> close() method.
+> And SwingDisplayWindow should actually be in the Swing-SDI package.
+>
+> So, I added a close() method to DisplayWindow and implemented it in the SDI
+> and MDI packages.
+>
+> Let me know if this doesn't take care of the problem.
+>
+> Grant B. Harris
+> ---------------------------------------------------------
+> Scientific Informatics Analyst, Cellular Dynamics Program
+> Marine Biological Laboratory, Woods Hole, Mass. 02543gharris at mbl.edu
+>
+>
+> On 9/6/2011 10:00 AM, Lee Kamentsky wrote:
+>
+> Hi Curtis / ImageJ dev. I've gotten CellProfiler to run ImageJ 2 plugins
+> with images. I assume that any Display parameter contains an image with
+> possible overlay and that input Display parameters will be modified by the
+> time they are output. The picture below is the result of running one of the
+> IJ2 shadow commands in CellProfiler.
+>
+> I have to fix what looks like a bug in SwingDisplayPanel. In "close", it
+> assumes that its direct parent is the SwingDisplayWindow and apparently
+> that's no longer the case. I'd just like to do this.window.dispose() there.
+> The patch file for the change is attached, I'll probably just commit it but
+> you guys should review briefly.
+>
+> --Lee
+>
+> (snip)
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110906/5a145958/attachment.html>
+
+From leek at broadinstitute.org  Tue Sep  6 11:44:04 2011
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Tue, 06 Sep 2011 12:44:04 -0400
+Subject: [ImageJ-devel] Display lifecycle
+In-Reply-To: <CADN69ynaMLs+GhR8F1vHjzu2hWPwueCK+QgPh1VxiGNMcu59cg@mail.gmail.com>
+References: <4e66277a.026ae00a.3c68.078d@mx.google.com>
+	<4E663C7E.2020306@mbl.edu>
+	<CADN69ynaMLs+GhR8F1vHjzu2hWPwueCK+QgPh1VxiGNMcu59cg@mail.gmail.com>
+Message-ID: <4e664dd6.c3c1e00a.7bfb.1402@mx.google.com>
+
+Close to the same mistake is replicated in AbstractSwingUI (it probably 
+works, but the cast is dangerous). The code that references 
+SwingDisplayWindow in SwingDisplayPanel was added by me today and should 
+be removed by Grant. If DisplayWindow has a close() method, then you can 
+add a getWindow() method to DisplayPanel so you can get the 
+DisplayWindow in a uniform fashion and close it.
+
+IMHO SwingDisplayWindow should be abstract and you should derive SDI and 
+MDI versions in the respective packages.
+
+On 9/6/2011 12:34 PM, Curtis Rueden wrote:
+> Hi Grant,
+>
+>     And SwingDisplayWindow should actually be in the Swing-SDI package.
+>
+>
+> Just a heads up: SwingDisplayWindow is referenced in AbstractSwingUI 
+> as well as SwingDisplayPanel, both of which are in the 
+> ij-ui-swing-base package. It looks like it would be non-trivial to 
+> migrate that class into the ij-ui-swing-sdi project.
+>
+> -Curtis
+>
+> On Tue, Sep 6, 2011 at 10:30 AM, Grant B. Harris <gharris at mbl.edu 
+> <mailto:gharris at mbl.edu>> wrote:
+>
+>     Lee --
+>
+>     You have caught an oversight on my part... DisplayWindow should
+>     have a close() method.
+>     And SwingDisplayWindow should actually be in the Swing-SDI package.
+>
+>     So, I added a close() method to DisplayWindow and implemented it
+>     in the SDI and MDI packages.
+>
+>     Let me know if this doesn't take care of the problem.
+>
+>     Grant B. Harris
+>     ---------------------------------------------------------
+>     Scientific Informatics Analyst, Cellular Dynamics Program
+>     Marine Biological Laboratory, Woods Hole, Mass. 02543
+>     gharris at mbl.edu  <mailto:gharris at mbl.edu>
+>
+>
+>     On 9/6/2011 10:00 AM, Lee Kamentsky wrote:
+>>     Hi Curtis / ImageJ dev. I've gotten CellProfiler to run ImageJ 2
+>>     plugins with images. I assume that any Display parameter contains
+>>     an image with possible overlay and that input Display parameters
+>>     will be modified by the time they are output. The picture below
+>>     is the result of running one of the IJ2 shadow commands in
+>>     CellProfiler.
+>>
+>>     I have to fix what looks like a bug in SwingDisplayPanel. In
+>>     "close", it assumes that its direct parent is the
+>>     SwingDisplayWindow and apparently that's no longer the case. I'd
+>>     just like to do this.window.dispose() there. The patch file for
+>>     the change is attached, I'll probably just commit it but you guys
+>>     should review briefly.
+>>
+>>     --Lee
+>>
+>>     (snip)
+>
+>
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110906/4cffa30c/attachment.html>
+
+From eliceiri at wisc.edu  Tue Sep  6 20:17:33 2011
+From: eliceiri at wisc.edu (Kevin W Eliceiri)
+Date: Tue, 06 Sep 2011 20:17:33 -0500
+Subject: [ImageJ-devel] Display lifecycle
+In-Reply-To: <CANCtz6db6+jtctp7G86tqN=uG4Ouo8gUk+qajpy6fq1yR2sFtQ@mail.gmail.com>
+References: <4e66277a.026ae00a.3c68.078d@mx.google.com>
+	<CANCtz6db6+jtctp7G86tqN=uG4Ouo8gUk+qajpy6fq1yR2sFtQ@mail.gmail.com>
+Message-ID: <75f0a33975b82.4e667fdd@wiscmail.wisc.edu>
+
+this is great Leek
+
+On 09/06/11, Adam Fraser   wrote:
+> Nice work, Lee! woohoo!
+> 
+> On Tue, Sep 6, 2011 at 10:00 AM, Lee Kamentsky <leek at broadinstitute.org <leek at broadinstitute.org>> wrote:
+> 
+> > 
+> 
+> > 
+> 
+> > 
+> 
+> >   
+> 
+> > 
+> 
+> >     
+> 
+> >   
+> 
+> >   
+> 
+> >     Hi Curtis / ImageJ dev. I&#39;ve gotten CellProfiler to run ImageJ 2
+> 
+> >     plugins with images. I assume that any Display parameter contains an
+> 
+> >     image with possible overlay and that input Display parameters will
+> 
+> >     be modified by the time they are output. The picture below is the
+> 
+> >     result of running one of the IJ2 shadow commands in CellProfiler.
+> > 
+> 
+> >     
+> > 
+> 
+> >     I have to fix what looks like a bug in SwingDisplayPanel. In
+> 
+> >     "close", it assumes that its direct parent is the SwingDisplayWindow
+> 
+> >     and apparently that&#39;s no longer the case. I&#39;d just like to do
+> 
+> >     this.window.dispose() there. The patch file for the change is
+> 
+> >     attached, I&#39;ll probably just commit it but you guys should review
+> 
+> >     briefly.
+> > 
+> 
+> >     
+> > 
+> 
+> >     --Lee
+> > 
+> 
+> >     
+> > 
+> 
+> >     
+> > 
+> 
+> >   
+> > 
+> 
+> > 
+> 
+> > 
+> > _______________________________________________
+> > 
+> 
+> > ImageJ-devel mailing list
+> > 
+> 
+> > ImageJ-devel at imagejdev.org <ImageJ-devel at imagejdev.org>
+> > 
+> 
+> > http://imagejdev.org/mailman/listinfo/imagej-devel
+> > 
+> 
+> > 
+> > 
+> 
+> 
+> 
+> 
+> 
+> 
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+
+--
+Kevin W. Eliceiri
+Director and Principal Investigator
+Laboratory for Optical and Computational Instrumentation (LOCI)
+http://www.loci.wisc.edu
+Departments of Molecular Biology and Biomedical Engineering
+Affiliate Investigator, Morgridge Institute for Research (MIR)
+Room 271 Animal Sciences
+1675 Observatory Drive
+Madison, WI 53706
+Phone: 608-263-6288
+Fax: 608-262-4570
+
+
+
+From leek at broadinstitute.org  Wed Sep  7 07:55:22 2011
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Wed, 07 Sep 2011 08:55:22 -0400
+Subject: [ImageJ-devel] Macros and scripting in Imagej 2.0
+Message-ID: <4e6769b9.434ee00a.5358.4378@mx.google.com>
+
+Hi all,
+What are the plans and timeline for bringing macros and scripting into 
+ImageJ 2.0? I'm looking for a way to programatically run a script from 
+CellProfiler. I'm guessing that, as a first pass, I create a legacy 
+plugin for some ImageJ 1.0 plugin that takes the script as its argument 
+- I could really use pointers on how to do this. Also, I'm not sure 
+where scripting is on the roadmap and what the planned architecture is. 
+I'd opt for a macro / scripting service. As a start, that sort of thing 
+could talk to the legacy code, but would end up using the same 
+interfaces to talk to the IJ2 code. I'm also guessing that the IJ1 
+scripting engine might only need minor modifications to reference 
+displays instead of ImagePlus.
+
+--Lee
+
+
+
+From gharris at mbl.edu  Wed Sep  7 15:18:42 2011
+From: gharris at mbl.edu (Grant B. Harris)
+Date: Wed, 07 Sep 2011 16:18:42 -0400
+Subject: [ImageJ-devel] Macros and scripting in Imagej 2.0
+In-Reply-To: <4e6769b9.434ee00a.5358.4378@mx.google.com>
+References: <4e6769b9.434ee00a.5358.4378@mx.google.com>
+Message-ID: <4E67D1A2.5030507@mbl.edu>
+
+All --
+
+Following-up on Lee's message this morning and some of the chatter on 
+the chat, I'm adding my two (perhaps even three)  cent's worth...
+
+-- Scripting Languages
+
+Our plan is to use the scripting engine in Java 6 (JSR-223 Scripting for 
+the Java Platform).  This enables us to be 
+polyglotic/language-agnostic... Jython, Closure, JavaScript, etc.
+
+As mentioned in the chat, BeanShell is interesting for the fact that it 
+is syntactically very similar to the ImageJ Macro language - The Macro 
+Language is a DSL (domain specific language) for image processing and 
+manipulating the ImageJ environment.   "Porting" it to Beanshell (as 
+suggested by Dscho) sounds like a good idea.  And it seems that that 
+process could produce a layer (i.e. API) that could be accessed by any 
+scripting language that works with JSR-223.
+
+(Note that MicroManager also uses BeanShell - 
+http://valelab.ucsf.edu/~MM/MMwiki/index.php/Example_Beanshell_scripts)
+
+-- Macro Recording
+
+Our EventBus-based architecture enables straight-forward macro recording 
+events.  A simple experiment/example is the 
+imagej.ui.swing.plugins.SwingScriptRecorder.  It records plugin/module 
+invocations and their parameter values, and then generates a chunk of 
+Java-like code.
+
+It remains to be decided how to handle
+(this applies to undo/redo as well)
+
+-- Code/Script Generation
+
+The plan is to have a Code Generation API which will enable the 
+generation of code/script in a variety of languages.
+In imagej.ext.script there is a very simple CodeGenerator with a 
+JavaCodeGenerator implementation.
+
+-- Script Execution
+
+A simple example of programmatic invocation of a plugins is in 
+imagej.core.plugins.debug.InvokePluginTest which passes the parameters 
+using varargs.
+
+Using the JSR-223 Scripting engine, scripts can easily access Java 
+classes.  The 'layer' I mentioned earlier would ease the script-writers 
+effort by providing wrappers to commonly used classes/objects and services.
+
+I'm interested to here other thoughts on these issues.
+
+(See my links and references on scripting here: 
+http://dev.imagejdev.org/gbh/arch/Scripting.html)
+
+
+
+Grant B. Harris
+---------------------------------------------------------
+Scientific Informatics Analyst, Cellular Dynamics Program
+Marine Biological Laboratory, Woods Hole, Mass. 02543
+gharris at mbl.edu
+
+
+On 9/7/2011 8:55 AM, Lee Kamentsky wrote:
+> Hi all,
+> What are the plans and timeline for bringing macros and scripting into 
+> ImageJ 2.0? I'm looking for a way to programatically run a script from 
+> CellProfiler. I'm guessing that, as a first pass, I create a legacy 
+> plugin for some ImageJ 1.0 plugin that takes the script as its 
+> argument - I could really use pointers on how to do this. Also, I'm 
+> not sure where scripting is on the roadmap and what the planned 
+> architecture is. I'd opt for a macro / scripting service. As a start, 
+> that sort of thing could talk to the legacy code, but would end up 
+> using the same interfaces to talk to the IJ2 code. I'm also guessing 
+> that the IJ1 scripting engine might only need minor modifications to 
+> reference displays instead of ImagePlus.
+>
+> --Lee
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+
+
+
+From wmohler at neuron.uchc.edu  Wed Sep  7 15:30:53 2011
+From: wmohler at neuron.uchc.edu (Bill Mohler)
+Date: Wed, 7 Sep 2011 16:30:53 -0400
+Subject: [ImageJ-devel] Macros and scripting in Imagej 2.0
+In-Reply-To: <4E67D1A2.5030507@mbl.edu>
+References: <4e6769b9.434ee00a.5358.4378@mx.google.com>
+	<4E67D1A2.5030507@mbl.edu>
+Message-ID: <4E67D47D.8080502@neuron.uchc.edu>
+
+As a user and avid amateur developer in ImageJ1, I would vote that some 
+version of the current macro language be preserved/supported/developed 
+in ImageJ2.  There is a learning curve to adopting new scripting 
+language syntax and rules that I would like to avoid when possible.  Not 
+sure if that's really the question here.  Curtis has told me that IJ1 
+support for macros will be retained in IJ2, but it would be great if the 
+beanshell port actually kept the macro language alive and growing in 
+IJ2.  Am I hoping for more than can happen, or is that what Dscho and 
+Grant are discussing here?
+
+Thanks,
+Bill
+
+On 9/7/11 4:18 PM, Grant B. Harris wrote:
+> All --
+>
+> Following-up on Lee's message this morning and some of the chatter on
+> the chat, I'm adding my two (perhaps even three)  cent's worth...
+>
+> -- Scripting Languages
+>
+> Our plan is to use the scripting engine in Java 6 (JSR-223 Scripting for
+> the Java Platform).  This enables us to be
+> polyglotic/language-agnostic... Jython, Closure, JavaScript, etc.
+>
+> As mentioned in the chat, BeanShell is interesting for the fact that it
+> is syntactically very similar to the ImageJ Macro language - The Macro
+> Language is a DSL (domain specific language) for image processing and
+> manipulating the ImageJ environment.   "Porting" it to Beanshell (as
+> suggested by Dscho) sounds like a good idea.  And it seems that that
+> process could produce a layer (i.e. API) that could be accessed by any
+> scripting language that works with JSR-223.
+>
+> (Note that MicroManager also uses BeanShell -
+> http://valelab.ucsf.edu/~MM/MMwiki/index.php/Example_Beanshell_scripts)
+>
+> -- Macro Recording
+>
+> Our EventBus-based architecture enables straight-forward macro recording
+> events.  A simple experiment/example is the
+> imagej.ui.swing.plugins.SwingScriptRecorder.  It records plugin/module
+> invocations and their parameter values, and then generates a chunk of
+> Java-like code.
+>
+> It remains to be decided how to handle
+> (this applies to undo/redo as well)
+>
+> -- Code/Script Generation
+>
+> The plan is to have a Code Generation API which will enable the
+> generation of code/script in a variety of languages.
+> In imagej.ext.script there is a very simple CodeGenerator with a
+> JavaCodeGenerator implementation.
+>
+> -- Script Execution
+>
+> A simple example of programmatic invocation of a plugins is in
+> imagej.core.plugins.debug.InvokePluginTest which passes the parameters
+> using varargs.
+>
+> Using the JSR-223 Scripting engine, scripts can easily access Java
+> classes.  The 'layer' I mentioned earlier would ease the script-writers
+> effort by providing wrappers to commonly used classes/objects and services.
+>
+> I'm interested to here other thoughts on these issues.
+>
+> (See my links and references on scripting here:
+> http://dev.imagejdev.org/gbh/arch/Scripting.html)
+>
+>
+>
+> Grant B. Harris
+> ---------------------------------------------------------
+> Scientific Informatics Analyst, Cellular Dynamics Program
+> Marine Biological Laboratory, Woods Hole, Mass. 02543
+> gharris at mbl.edu
+>
+>
+> On 9/7/2011 8:55 AM, Lee Kamentsky wrote:
+>> Hi all,
+>> What are the plans and timeline for bringing macros and scripting into
+>> ImageJ 2.0? I'm looking for a way to programatically run a script from
+>> CellProfiler. I'm guessing that, as a first pass, I create a legacy
+>> plugin for some ImageJ 1.0 plugin that takes the script as its
+>> argument - I could really use pointers on how to do this. Also, I'm
+>> not sure where scripting is on the roadmap and what the planned
+>> architecture is. I'd opt for a macro / scripting service. As a start,
+>> that sort of thing could talk to the legacy code, but would end up
+>> using the same interfaces to talk to the IJ2 code. I'm also guessing
+>> that the IJ1 scripting engine might only need minor modifications to
+>> reference displays instead of ImagePlus.
+>>
+>> --Lee
+>>
+>> _______________________________________________
+>> ImageJ-devel mailing list
+>> ImageJ-devel at imagejdev.org
+>> http://imagejdev.org/mailman/listinfo/imagej-devel
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+> .
+>
+
+-- 
+
+William A. Mohler
+
+Associate Professor
+Dept. of Genetics and Developmental Biology
+University of Connecticut Health Center
+
+*Physical Address:***
+
+Room R1159
+
+Cell and Genome Sciences Building
+
+400 Farmington Ave.
+
+Farmington, CT
+
+*Mail Address:*
+
+MC-6403
+
+263 Farmington Ave.
+
+Farmington, CT06030-6403
+
+wmohler at neuron.uchc.edu <mailto:wmohler at neuron.uchc.edu>
+*Mobile: (860) 985-2719*
+
+skype: wmohler
+Office: (860) 679-1833, room R1159
+Lab: (860) 679-1834, room R1265
+Fax: (314) 689-1833
+
+http://genetics.uchc.edu/Faculty/assoc_professors/mohler.html
+PThink before you print
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110907/50367912/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Wed Sep  7 16:54:43 2011
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Wed, 7 Sep 2011 23:54:43 +0200 (CEST)
+Subject: [ImageJ-devel] Macros and scripting in Imagej 2.0
+In-Reply-To: <4E67D1A2.5030507@mbl.edu>
+References: <4e6769b9.434ee00a.5358.4378@mx.google.com>
+	<4E67D1A2.5030507@mbl.edu>
+Message-ID: <alpine.DEB.1.00.1109072349360.7748@s15462909.onlinehome-server.info>
+
+Hi Grant,
+
+On Wed, 7 Sep 2011, Grant B. Harris wrote:
+
+> -- Scripting Languages
+> 
+> Our plan is to use the scripting engine in Java 6 (JSR-223 Scripting for 
+> the Java Platform).  This enables us to be 
+> polyglotic/language-agnostic... Jython, Closure, JavaScript, etc.
+
+That's all good and well, but (correct me where I am wrong) JSR-223 does 
+not support
+
+	- single stepping
+	- setting breakpoints
+	- keeping states and evaluating incrementally
+	- syntax highlighting
+
+All of these are required for development. (We do not support any single 
+stepping nor similar in the Fiji Script Editor yet, but that is something 
+we need to fix).
+
+> As mentioned in the chat, BeanShell is interesting for the fact that it 
+> is syntactically very similar to the ImageJ Macro language - The Macro 
+> Language is a DSL (domain specific language) for image processing and 
+> manipulating the ImageJ environment.  "Porting" it to Beanshell (as 
+> suggested by Dscho) sounds like a good idea.
+
+But it is not at all without problems. The most urgent problem is that the 
+macro language has this quite surprising feature that you can assign 
+variables thusly:
+
+	getDimensions(width, height, depth, channels, frames);
+
+That is so out of line with C/Java like languages that it is impossible to 
+support in Beanshell. I am currently looking into hacking the Beanshell 
+interpreter to work around such problems, but it is hard.
+
+Ciao,
+Dscho
+
+
+
+
+From gharris at mbl.edu  Thu Sep  8 12:18:37 2011
+From: gharris at mbl.edu (Grant B. Harris)
+Date: Thu, 08 Sep 2011 13:18:37 -0400
+Subject: [ImageJ-devel] Macros and scripting in Imagej 2.0
+In-Reply-To: <alpine.DEB.1.00.1109072349360.7748@s15462909.onlinehome-server.info>
+References: <4e6769b9.434ee00a.5358.4378@mx.google.com>
+	<4E67D1A2.5030507@mbl.edu>
+	<alpine.DEB.1.00.1109072349360.7748@s15462909.onlinehome-server.info>
+Message-ID: <4E68F8ED.8050704@mbl.edu>
+
+There are a number of different issues around 'Scripting'...
+
+-- A "Default" IJ2 Scripting Language
+
+I think when we speak of a script, we are referring to a 'high-level', 
+domain-specific  language that makes it easy/ier to do image 
+processing.  The ImageJ Macro language is certainly such a thing; so 
+perhaps the question is whether it provides a good starting point for IJ2.
+
+Since existing IJ1 Macros will continue to function through the Legacy 
+layer,
+we could 'migrate' the IJ1 Macro language to BeanShell with some changes 
+that make it consonant with Java/C; that way users of IJ1 macros would 
+only need to understand the changes, but would otherwise find it familiar.
+
+-- Script Execution
+
+The real value of the Java 6 ScriptingEngine is that it provides 
+execution polyglotinousness.  ;-0
+So plugins/modules written in any suppported language can be easily used 
+by a naive user.
+
+-- 'Macro' Recording
+
+The ability to record events (macros) is useful for:
+     - creating a sequence of actions that the user just wants to 
+repeat.  In this case, the language used for the encoding is not 
+important, as long as it works.
+     - creating code that is the basis for a script or program that they 
+want to write.  In this case, the user wants a choice of the language 
+for the code that results from the recording.
+
+-- Development Tools
+
+     - Interactive Interpreter provides:
+         - single stepping
+         - keeping states and evaluating incrementally
+
+     The interpretted scripting languages have interactive consoles that 
+can be embedded in an application. (e.g. BeanShell and Jython have an 
+interactive console, Clojure has its REPL.)
+
+     - Code Editor provides
+         - syntax highlighting
+         - code completion
+         - refactoring
+
+     An editor may be integrated with an interactive console, allowing 
+one or more lines to be selected and interpretted/executed.
+
+     - Debugger might provide:
+         - single stepping
+         - setting breakpoints
+         - state inspector of objects and variables
+         - setting watches
+
+     Jython has a debugging framework 
+(http://www.jython.org/docs/library/bdb.html) and there are a variety of 
+debugging tools that we might possible incorportate.
+
+What development tools can we realisticly provide?  At some point a 
+developer may be better served by an IDE.  Eclipse and NetBeans have 
+plugins for most of the languages of consequence.
+
+-- Grant
+
+
+On 9/7/2011 5:54 PM, Johannes Schindelin wrote:
+> Hi Grant,
+>
+> On Wed, 7 Sep 2011, Grant B. Harris wrote:
+>
+>> -- Scripting Languages
+>>
+>> Our plan is to use the scripting engine in Java 6 (JSR-223 Scripting for
+>> the Java Platform).  This enables us to be
+>> polyglotic/language-agnostic... Jython, Closure, JavaScript, etc.
+> That's all good and well, but (correct me where I am wrong) JSR-223 does
+> not support
+>
+> 	- single stepping
+> 	- setting breakpoints
+> 	- keeping states and evaluating incrementally
+> 	- syntax highlighting
+>
+> All of these are required for development. (We do not support any single
+> stepping nor similar in the Fiji Script Editor yet, but that is something
+> we need to fix).
+>
+>> As mentioned in the chat, BeanShell is interesting for the fact that it
+>> is syntactically very similar to the ImageJ Macro language - The Macro
+>> Language is a DSL (domain specific language) for image processing and
+>> manipulating the ImageJ environment.  "Porting" it to Beanshell (as
+>> suggested by Dscho) sounds like a good idea.
+> But it is not at all without problems. The most urgent problem is that the
+> macro language has this quite surprising feature that you can assign
+> variables thusly:
+>
+> 	getDimensions(width, height, depth, channels, frames);
+>
+> That is so out of line with C/Java like languages that it is impossible to
+> support in Beanshell. I am currently looking into hacking the Beanshell
+> interpreter to work around such problems, but it is hard.
+>
+> Ciao,
+> Dscho
+>
+
+
+
+From sapristi at gmail.com  Thu Sep  8 12:36:10 2011
+From: sapristi at gmail.com (Albert Cardona)
+Date: Thu, 8 Sep 2011 19:36:10 +0200
+Subject: [ImageJ-devel] Macros and scripting in Imagej 2.0
+In-Reply-To: <4E68F8ED.8050704@mbl.edu>
+References: <4e6769b9.434ee00a.5358.4378@mx.google.com>
+	<4E67D1A2.5030507@mbl.edu>
+	<alpine.DEB.1.00.1109072349360.7748@s15462909.onlinehome-server.info>
+	<4E68F8ED.8050704@mbl.edu>
+Message-ID: <CAJj13_8Q=Ky7EQhHqYGPwNPWqsCJ5PuVKV1O9fUCVUkdM2Z6NQ@mail.gmail.com>
+
+> What development tools can we realisticly provide? ?At some point a
+> developer may be better served by an IDE. ?Eclipse and NetBeans have plugins
+> for most of the languages of consequence.
+>
+> -- Grant
+
+
+Fiji's Script Editor as is already provides the right balance between
+a barebones text editor (not too useful) and a mammoth like netbeans
+or eclipse (far too complex).
+
+If any effort is available I would invest it in making the Script
+Editor have proper control+space word expansion for classes, methods
+and variables, which helps discover the contents of libraries.
+Anything else won't pay off as much.
+
+Albert
+
+-- 
+http://albert.rierol.net
+http://www.ini.uzh.ch/~acardona/
+
+
+
+From Johannes.Schindelin at gmx.de  Thu Sep  8 17:00:16 2011
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Fri, 9 Sep 2011 00:00:16 +0200 (CEST)
+Subject: [ImageJ-devel] Macros and scripting in Imagej 2.0
+In-Reply-To: <4E68F8ED.8050704@mbl.edu>
+References: <4e6769b9.434ee00a.5358.4378@mx.google.com>
+	<4E67D1A2.5030507@mbl.edu>
+	<alpine.DEB.1.00.1109072349360.7748@s15462909.onlinehome-server.info>
+	<4E68F8ED.8050704@mbl.edu>
+Message-ID: <alpine.DEB.1.00.1109082356480.27746@s15462909.onlinehome-server.info>
+
+Dear Grant,
+
+On Thu, 8 Sep 2011, Grant B. Harris wrote:
+
+> -- A "Default" IJ2 Scripting Language
+> 
+> I think when we speak of a script, we are referring to a 'high-level', 
+> domain-specific language that makes it easy/ier to do image processing.  
+> The ImageJ Macro language is certainly such a thing; so perhaps the 
+> question is whether it provides a good starting point for IJ2.
+> 
+> Since existing IJ1 Macros will continue to function through the Legacy 
+> layer, we could 'migrate' the IJ1 Macro language to BeanShell with some 
+> changes that make it consonant with Java/C; that way users of IJ1 macros 
+> would only need to understand the changes, but would otherwise find it 
+> familiar.
+
+It is much "worse" than that: existing users already know the macro 
+language. So there is not even a single bit of an option. On the other 
+hand, it relieves us from yet another decision.
+
+As to Beanshell, I think I already listed the problems with that?
+
+> -- Script Execution
+> 
+> The real value of the Java 6 ScriptingEngine is that it provides 
+> execution polyglotinousness.  ;-0 So plugins/modules written in any 
+> suppported language can be easily used by a naive user.
+
+The problem is that the ScriptingEngine does not provide half the methods 
+we require.
+
+> -- 'Macro' Recording
+> 
+> The ability to record events (macros) is useful for:
+>     - creating a sequence of actions that the user just wants to repeat.  
+>       In this case, the language used for the encoding is not important, 
+>       as long as it works.
+>     - creating code that is the basis for a script or program that they 
+>       want to write.  In this case, the user wants a choice of the 
+>       language for the code that results from the recording.
+
+No question about that.
+
+> -- Development Tools
+> 
+>     - Interactive Interpreter provides:
+>         - single stepping
+>         - keeping states and evaluating incrementally
+> 
+>     The interpretted scripting languages have interactive consoles that can be
+> embedded in an application. (e.g. BeanShell and Jython have an interactive
+> console, Clojure has its REPL.)
+> 
+>     - Code Editor provides
+>         - syntax highlighting
+>         - code completion
+>         - refactoring
+> 
+>     An editor may be integrated with an interactive console, allowing one or
+> more lines to be selected and interpretted/executed.
+> 
+>     - Debugger might provide:
+>         - single stepping
+>         - setting breakpoints
+>         - state inspector of objects and variables
+>         - setting watches
+> 
+>     Jython has a debugging framework
+> (http://www.jython.org/docs/library/bdb.html) and there are a variety of
+> debugging tools that we might possible incorportate.
+> 
+> What development tools can we realisticly provide?  At some point a developer
+> may be better served by an IDE.  Eclipse and NetBeans have plugins for most of
+> the languages of consequence.
+
+Good luck with integrating Eclipse and/or NetBeans seamlessly into IJ2. I 
+really mean it, have you considered what it takes?
+
+Ciao,
+Johannes
+
+
+
+From Johannes.Schindelin at gmx.de  Fri Sep  9 01:00:20 2011
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Fri, 9 Sep 2011 08:00:20 +0200 (CEST)
+Subject: [ImageJ-devel] Macros and scripting in Imagej 2.0
+In-Reply-To: <alpine.DEB.1.00.1109072349360.7748@s15462909.onlinehome-server.info>
+References: <4e6769b9.434ee00a.5358.4378@mx.google.com>
+	<4E67D1A2.5030507@mbl.edu>
+	<alpine.DEB.1.00.1109072349360.7748@s15462909.onlinehome-server.info>
+Message-ID: <alpine.DEB.1.00.1109090735230.27746@s15462909.onlinehome-server.info>
+
+Hi,
+
+On Wed, 7 Sep 2011, Johannes Schindelin wrote:
+
+> Grant wrote:
+>
+> > As mentioned in the chat, BeanShell is interesting for the fact that 
+> > it is syntactically very similar to the ImageJ Macro language - The 
+> > Macro Language is a DSL (domain specific language) for image 
+> > processing and manipulating the ImageJ environment.  "Porting" it to 
+> > Beanshell (as suggested by Dscho) sounds like a good idea.
+> 
+> But it is not at all without problems. The most urgent problem is that 
+> the macro language has this quite surprising feature that you can assign 
+> variables thusly:
+> 
+> 	getDimensions(width, height, depth, channels, frames);
+> 
+> That is so out of line with C/Java like languages that it is impossible 
+> to support in Beanshell. I am currently looking into hacking the 
+> Beanshell interpreter to work around such problems, but it is hard.
+
+So here are my findings (after spending way too much time on this issue): 
+If I (ab-)use javassist before loading Beanshell to do the following:
+
+	CtClass clazz = pool.get("bsh.BSHArguments");
+	CtMethod method = CtNewMethod.make(
+		"public String[] getParameterNames() {\n"
+		+ "	String[] result = new String[jjtGetNumChildren()];\n"
+		+ "	for (int i = 0; i < result.length; i++) try {\n"
+		+ "		result[i] = ((bsh.SimpleNode)jjtGetChild(i)).firstToken.image;\n"
+		+ "	} catch (Exception e) {}\n"
+		+ "	return result;\n"
+		+ "}", clazz);
+	clazz.addMethod(method);
+	pool.toClass(clazz);
+
+	clazz = pool.get("bsh.BSHMethodInvocation");
+	method = clazz.getMethod("eval", "(Lbsh/CallStack;Lbsh/Interpreter;)Ljava/lang/Object;");
+	method.insertBefore("Object result = "
+		+ "BSHHelper.handleSpecial(getNameNode().getName($1.top()).toString(),"
+		+ "	getArgsNode().getParameterNames(), $1.top());"
+		+ "if (result != Boolean.FALSE) return result;");
+	pool.toClass(clazz);
+
+... and then have the following definition in a class called BSHHelper:
+
+	public static Object handleSpecial3(String functionName,
+			String[] firstTokens, NameSpace nameSpace) {
+		if (!functionName.equals("getText"))
+			return Boolean.FALSE;
+		try {
+			nameSpace.setTypedVariable(firstTokens[0], 
+				String.class, "Hello", false);
+		} catch (Exception e) {
+			IJ.handleException(e);
+		}
+		return null;
+	}
+
+... then a Beanshell script "getText(blabla);" will define the variable 
+"blabla" to the value "Hello".
+
+This is all horribly convoluted and I need to streamline it and introduce 
+checks and stuff, but at least I now know that we can overcome that 
+obstacle.
+
+But that'll have to wait until after sleeping.
+
+Ciao,
+Johannes
+
+
+
+
+From schindelin at wisc.edu  Fri Sep  9 19:36:54 2011
+From: schindelin at wisc.edu (Johannes Schindelin)
+Date: Sat, 10 Sep 2011 02:36:54 +0200 (CEST)
+Subject: [ImageJ-devel] Updates on the script front
+Message-ID: <alpine.DEB.1.00.1109100231400.27746@s15462909.onlinehome-server.info>
+
+Hi,
+
+today I managed to add a ScriptPlugin which executes Javascript (no clever 
+convenient default imports yet). I also managed to fix the build in 
+Jenkins :-)
+
+Further, I am working toward a generic Script framework, where we use 
+SezPoz to discover what languages are available, and where we define what 
+capabilities a Script implementation must, and what it can, have.
+
+My progress is still only in the Git repository on fiji.sc:
+
+	http://fiji.sc/cgi-bin/gitweb.cgi?p=imagej2/.git;a=shortlog;h=refs/heads/scripts
+
+This is so that I can still rewrite commits if someone does not like it 
+the way I did and I do not have to suffer eternal embarassment like with 
+the ScriptPlugin.
+
+Note: this is just a fun project to dive into the ImageJ2 code and 
+architecture, I will address much more pressing things soon and let the 
+Script framework (which is not exactly necessary for full 
+backwards-compatibility with IJ1) simmer.
+
+Ciao,
+Dscho
+
+
+
+
+From schindelin at wisc.edu  Wed Sep 14 01:09:46 2011
+From: schindelin at wisc.edu (Johannes Schindelin)
+Date: Wed, 14 Sep 2011 08:09:46 +0200 (CEST)
+Subject: [ImageJ-devel] Progress on the Beanshell/macro front
+Message-ID: <alpine.DEB.1.00.1109140753240.11785@s15462909.onlinehome-server.info>
+
+Dear all,
+
+I now have a proof-of concept of the Macro interpreter based on Beanshell. 
+Note: it only supports the getDimensions() function for now. As described 
+earlier, the problem is that that function takes possibly 
+uninitialized variables by reference rather than values, which is fully 
+out of line with the syntax of Beanshell (or C or Java).
+
+Instead of forking Beanshell, I decided it'd be better to use javassist to 
+rewrite a few method calls here and there. I also wanted to make sure that 
+these modifications do not affect Beanshell itself, and I put a particular 
+focus on making it possible to load the Beanshell classes before doing the 
+Javassist modifications (because it would lead to nasty side effects 
+otherwise).
+
+My work so far can be seen on the 'scripts' topic branch of Fiji's mirror 
+of the ImageJ2 project:
+
+http://fiji.sc/cgi-bin/gitweb.cgi?p=imagej2/.git;a=shortlog;h=refs/heads/scripts
+
+Good night,
+Dscho
+
+
+
+
+From schindelin at wisc.edu  Wed Sep 14 13:58:01 2011
+From: schindelin at wisc.edu (Johannes Schindelin)
+Date: Wed, 14 Sep 2011 20:58:01 +0200 (CEST)
+Subject: [ImageJ-devel] Progress on the Beanshell/macro front
+In-Reply-To: <E3754220-3505-435A-B4B7-B1DC0A5275AA@nih.gov>
+References: <alpine.DEB.1.00.1109140753240.11785@s15462909.onlinehome-server.info>
+	<E3754220-3505-435A-B4B7-B1DC0A5275AA@nih.gov>
+Message-ID: <alpine.DEB.1.00.1109142042290.11785@s15462909.onlinehome-server.info>
+
+Dear Wayne,
+
+[re-Cc:ing the list, since I think that this issue is of broader 
+interest.]
+
+On Wed, 14 Sep 2011, Rasband, Wayne (NIH/NIMH) [E] wrote:
+
+> On Sep 14, 2011, at 2:09 AM, Johannes Schindelin wrote:
+> 
+> > I now have a proof-of concept of the Macro interpreter based on 
+> > Beanshell. Note: it only supports the getDimensions() function for 
+> > now. As described earlier, the problem is that that function takes 
+> > possibly uninitialized variables by reference rather than values, 
+> > which is fully out of line with the syntax of Beanshell (or C or 
+> > Java).
+> > 
+> > Instead of forking Beanshell, I decided it'd be better to use 
+> > javassist to rewrite a few method calls here and there. I also wanted 
+> > to make sure that these modifications do not affect Beanshell itself, 
+> > and I put a particular focus on making it possible to load the 
+> > Beanshell classes before doing the Javassist modifications (because it 
+> > would lead to nasty side effects otherwise).
+> 
+> Why would you want to base the macro interpreter on Beanshell? This is 
+> going to require a *lot* of work and the resulting Beanshell-based 
+> language is unlikely to be 100% backward compatible. I thought the plan 
+> for handling backward compatibility was to hand off legacy macros and 
+> plugins to IJ1.
+
+There are a lot of power users out there who need the macro language to 
+exist also in IJ2. So we cannot simply drop it.
+
+But the legacy macros will not handle IJ2 properly. So we need something 
+better.
+
+Also, the limitations of the Macro language are rather severe, not being 
+able to interact with the Java API. Now is the time to break that barrier.
+
+There is another rather big problem with the Macro language that I'd like 
+to address at the same time: the functions of the macro language are not 
+available to Java programmers. In many cases, one can work around that by 
+adding chunks of Java code (but there is no consistent way how to 
+translate calls to macro functions into Java code), but in some cases, it 
+is plainly impossible to do the same thing in Java which is very easy in 
+macros (because of the use of package-local methods and fields).
+
+As I suggested at multiple occasions, a properly designed macro interface 
+should have a 1:1 correspondence in the Java API. Because if you need to 
+be able to do something using macros, there is no good reason to believe 
+that the same functionality should be lacking from the Java-accessible 
+API.
+
+With the redesign, there will be finally a Java class that defines all the 
+macro functions, so we have that 1:1 correspondence not only in the usage, 
+but it will indeed be the very same code performing the actions, so there 
+is no room for inconsistencies between macros and plugins.
+
+Yes, it will be a lot of work, but I dare to hope that you will notify me 
+whenever you change something in the macro language so that I can take 
+care of the IJ2 version thereof.
+
+Unfortunately, given the architecture of the IJ1 Macro interpreter, I do 
+not see any chance to modify the IJ1 code such that it naturally 
+transforms into the IJ2 Macro interpreter. If you do see such a chance, 
+please enlighten me.
+
+Ciao,
+Johannes
+
+
+
+
+From ctrueden at wisc.edu  Wed Sep 14 17:12:35 2011
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Wed, 14 Sep 2011 17:12:35 -0500
+Subject: [ImageJ-devel] Progress on the Beanshell/macro front
+In-Reply-To: <alpine.DEB.1.00.1109142042290.11785@s15462909.onlinehome-server.info>
+References: <alpine.DEB.1.00.1109140753240.11785@s15462909.onlinehome-server.info>
+	<E3754220-3505-435A-B4B7-B1DC0A5275AA@nih.gov>
+	<alpine.DEB.1.00.1109142042290.11785@s15462909.onlinehome-server.info>
+Message-ID: <CADN69yk85x2qQFkS2zj4jLwFdoPx7XUfMZmVvrOP_mNU_HmM=A@mail.gmail.com>
+
+Hi Wayne,
+
+Why would you want to base the macro interpreter on Beanshell? This is going
+> to require a *lot* of work and the resulting Beanshell-based language is
+> unlikely to be 100% backward compatible. I thought the plan for handling
+> backward compatibility was to hand off legacy macros and plugins to IJ1.
+>
+
+The plan until recently was indeed to merely support IJ1 macros as-is,
+within the legacy layer. That is, existing macros would work as before, but
+no new IJ2 functionality would be accessible via macros. However, after
+hearing from people about how they would like to see the macro language
+truly work in IJ2 (e.g.,
+http://imagejdev.org/pipermail/imagej-devel/2011-September/000480.html),
+Johannes and I discussed whether another solution might be possible. As
+Johannes says, we already have a proof-of-concept Beanshell-based version of
+the macro language, so it is looking quite doable right now?not an enormous
+effort to develop or maintain. If it turns out to be a huge burden, we can
+fall back to our original strategy, but it is worth a try to make IJ2
+accessible via macros.
+
+Regards,
+Curtis
+
+On Wed, Sep 14, 2011 at 1:58 PM, Johannes Schindelin <schindelin at wisc.edu>wrote:
+
+> Dear Wayne,
+>
+> [re-Cc:ing the list, since I think that this issue is of broader
+> interest.]
+>
+> On Wed, 14 Sep 2011, Rasband, Wayne (NIH/NIMH) [E] wrote:
+>
+> > On Sep 14, 2011, at 2:09 AM, Johannes Schindelin wrote:
+> >
+> > > I now have a proof-of concept of the Macro interpreter based on
+> > > Beanshell. Note: it only supports the getDimensions() function for
+> > > now. As described earlier, the problem is that that function takes
+> > > possibly uninitialized variables by reference rather than values,
+> > > which is fully out of line with the syntax of Beanshell (or C or
+> > > Java).
+> > >
+> > > Instead of forking Beanshell, I decided it'd be better to use
+> > > javassist to rewrite a few method calls here and there. I also wanted
+> > > to make sure that these modifications do not affect Beanshell itself,
+> > > and I put a particular focus on making it possible to load the
+> > > Beanshell classes before doing the Javassist modifications (because it
+> > > would lead to nasty side effects otherwise).
+> >
+> > Why would you want to base the macro interpreter on Beanshell? This is
+> > going to require a *lot* of work and the resulting Beanshell-based
+> > language is unlikely to be 100% backward compatible. I thought the plan
+> > for handling backward compatibility was to hand off legacy macros and
+> > plugins to IJ1.
+>
+> There are a lot of power users out there who need the macro language to
+> exist also in IJ2. So we cannot simply drop it.
+>
+> But the legacy macros will not handle IJ2 properly. So we need something
+> better.
+>
+> Also, the limitations of the Macro language are rather severe, not being
+> able to interact with the Java API. Now is the time to break that barrier.
+>
+> There is another rather big problem with the Macro language that I'd like
+> to address at the same time: the functions of the macro language are not
+> available to Java programmers. In many cases, one can work around that by
+> adding chunks of Java code (but there is no consistent way how to
+> translate calls to macro functions into Java code), but in some cases, it
+> is plainly impossible to do the same thing in Java which is very easy in
+> macros (because of the use of package-local methods and fields).
+>
+> As I suggested at multiple occasions, a properly designed macro interface
+> should have a 1:1 correspondence in the Java API. Because if you need to
+> be able to do something using macros, there is no good reason to believe
+> that the same functionality should be lacking from the Java-accessible
+> API.
+>
+> With the redesign, there will be finally a Java class that defines all the
+> macro functions, so we have that 1:1 correspondence not only in the usage,
+> but it will indeed be the very same code performing the actions, so there
+> is no room for inconsistencies between macros and plugins.
+>
+> Yes, it will be a lot of work, but I dare to hope that you will notify me
+> whenever you change something in the macro language so that I can take
+> care of the IJ2 version thereof.
+>
+> Unfortunately, given the architecture of the IJ1 Macro interpreter, I do
+> not see any chance to modify the IJ1 code such that it naturally
+> transforms into the IJ2 Macro interpreter. If you do see such a chance,
+> please enlighten me.
+>
+> Ciao,
+> Johannes
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110914/5957ec7c/attachment.html>
+
+From jason at lifesci.dundee.ac.uk  Mon Sep 19 05:55:34 2011
+From: jason at lifesci.dundee.ac.uk (Jason Swedlow)
+Date: Mon, 19 Sep 2011 11:55:34 +0100
+Subject: [ImageJ-devel] Fwd: [ome-devel] Storing 6D and 7D in OME-XML &
+	OME-TIFF
+References: <B336A9B2-2BD4-4C91-B7EB-24D206F85C1C@lifesci.dundee.ac.uk>
+Message-ID: <5C5C9C53-EF93-477E-9D82-8BF150251D77@lifesci.dundee.ac.uk>
+
+Dear All-
+
+This is just FYI.  Please note that this is transitional.  We want to get towards an n-dim model, and will need to make sure this is compatible with what is happening in ImageJ.
+
+We'll be moving this into OME-TIFF and Bio-Formats, and then OMERO.  We'll be roadmapping this over the next month or so.
+
+Comments etc welcome, probably best on the OME Forums (http://www.openmicroscopy.org/community/).
+
+Cheers,
+
+Jason
+
+Begin forwarded message:
+
+> From: Andrew Patterson <ajpatterson at lifesci.dundee.ac.uk>
+> Date: 16 September 2011 15:02:47 GMT+01:00
+> To: OME-Users OME-Users <ome-users at lists.openmicroscopy.org.uk>, ome-devel at lists.openmicroscopy.org.uk
+> Subject: [ome-devel] Storing 6D and 7D in OME-XML & OME-TIFF
+> 
+> Hello,
+> 
+> We have been doing some further work on fitting data that requires more than 5 dimensions into the OME data model. Our plan in the long term is to move to using an N-dimensional model but this will take a large amount of work to the Bio-Formats, the OMERO server and clients. In the short term we have devised a solution we can put in place that will allow up to 7 dimensions in our existing model. We have called this the Modulo solution.
+> 
+> This solution relies on using the Z and T dimensions to each store an extra dimension. The description of the extra dimensions are stored in StructuredAnnotation so the data looks like 5-D data, and can thus be stored in the current OME-TIFF and OMERO server.
+> 
+> Full details and sample files are available at:
+> 
+> http://www.openmicroscopy.org/site/support/file-formats/6d-and-7d-storage
+> 
+> When the OME model moves to be N-dimensional we can upgrade data stored in this structure.
+> 
+> We hope this proposal will work for your data. 
+> 
+> We welcome your suggestions for further improvements as always. Comments can be emailed to us or left on our forums: 
+> http://www.openmicroscopy.org/community/
+> 
+> Thanks,
+> 
+> Andrew
+> 
+> ----
+> Andrew Patterson
+> ajpatterson at lifesci.dundee.ac.uk
+> Software Developer, Open Microscopy Environment
+> Wellcome Trust Centre for Gene Regulation and Expression, University of Dundee
+> 
+> 
+> _______________________________________________
+> ome-devel mailing list
+> ome-devel at lists.openmicroscopy.org.uk
+> http://lists.openmicroscopy.org.uk/mailman/listinfo/ome-devel
+
+
+
+**************************
+Wellcome Trust Centre for Gene Regulation & Expression
+College of Life Sciences
+MSI/WTB/JBC Complex
+University of Dundee
+Dow Street
+Dundee  DD1 5EH
+United Kingdom
+
+phone (01382) 385819
+Intl phone:  44 1382 385819 
+FAX   (01382) 388072 
+email: jason at lifesci.dundee.ac.uk
+
+Lab Page: http://www.lifesci.dundee.ac.uk/gre/staff/jason-swedlow
+Open Microscopy Environment: http://openmicroscopy.org
+**************************
+
+The University of Dundee is a Scottish Registered Charity, No. SC015096.
+
+
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110919/eb1fc714/attachment.html>
+
+From afraser at broadinstitute.org  Wed Sep 21 08:59:33 2011
+From: afraser at broadinstitute.org (Adam Fraser)
+Date: Wed, 21 Sep 2011 09:59:33 -0400
+Subject: [ImageJ-devel] Kanban
+Message-ID: <CANCtz6fQLfgJ2AZx0bUnm611PWzeM=k=QaO6DYM5uPdzQZyihA@mail.gmail.com>
+
+I was at a computational biology symposium yesterday and one of the speakers
+mentioned that his group has been using a methodology called Kanban with
+pretty excellent results.
+
+I found a good article about it here:
+http://www.agileproductdesign.com/blog/2009/kanban_over_simplified.html
+
+If you skip ahead to "Kanban development distilled", there's an image that
+should give you a good feel for the methodology. Kanban limits work in
+progress by giving you a set number of slots in each of a few development
+stages. Eg: 4 slots in the "development" stage means that only 4 things can
+be developed at a time. To start development on another task, you need to
+finish development on one of your existing tasks and move it to the next
+stage (if there's room).
+
+Anyway, it's an interesting concept that may not be
+immediately applicable to the work that we're all doing, but it's definitely
+something to be aware of.
+
+-Adam
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110921/9fd6b178/attachment.html>
+
+From eliceiri at wisc.edu  Wed Sep 21 09:21:42 2011
+From: eliceiri at wisc.edu (Kevin W Eliceiri)
+Date: Wed, 21 Sep 2011 09:21:42 -0500
+Subject: [ImageJ-devel] Kanban
+In-Reply-To: <CANCtz6fQLfgJ2AZx0bUnm611PWzeM=k=QaO6DYM5uPdzQZyihA@mail.gmail.com>
+References: <CANCtz6fQLfgJ2AZx0bUnm611PWzeM=k=QaO6DYM5uPdzQZyihA@mail.gmail.com>
+Message-ID: <74e0c0ef1eff0e.4e79aca6@wiscmail.wisc.edu>
+
+interesting Adam. What was the symposium about?
+
+best
+k
+
+On 09/21/11, Adam Fraser   wrote:
+> I was at a computational biology symposium yesterday and one of the speakers mentioned that his group has been using a methodology called Kanban with pretty excellent results.?
+> 
+> I found a good article about it here:?http://www.agileproductdesign.com/blog/2009/kanban_over_simplified.html
+> 
+> 
+> 
+> 
+> 
+> 
+> If you skip ahead to "Kanban development distilled", there&#39;s an image that should give you a good feel for the methodology. Kanban limits work in progress by giving you a set number of slots in each of a few development stages. Eg: 4 slots in the "development" stage means that only 4 things can be developed at a time. To start development on another task, you need to finish development on one of your existing tasks and move it to the next stage (if there&#39;s room).
+> 
+> 
+> 
+> 
+> 
+> 
+> Anyway, it&#39;s an interesting concept that may not be immediately?applicable?to the work that we&#39;re all doing, but it&#39;s definitely something to be aware of.
+> 
+> 
+> -Adam
+> 
+> 
+> 
+> 
+> 
+> 
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+
+--
+Kevin W. Eliceiri
+Director and Principal Investigator
+Laboratory for Optical and Computational Instrumentation (LOCI)
+http://www.loci.wisc.edu
+Departments of Molecular Biology and Biomedical Engineering
+Affiliate Investigator, Morgridge Institute for Research (MIR)
+Room 271 Animal Sciences
+1675 Observatory Drive
+Madison, WI 53706
+Phone: 608-263-6288
+Fax: 608-262-4570
+
+
+
+From gharris at mbl.edu  Wed Sep 21 10:59:51 2011
+From: gharris at mbl.edu (Grant B. Harris)
+Date: Wed, 21 Sep 2011 11:59:51 -0400
+Subject: [ImageJ-devel] CPU usage
+Message-ID: <4E7A09F7.8090008@mbl.edu>
+
+All --
+
+Anyone else seeing the CPU usage stuck at +12% ofter opening an image in 
+IJ2?  Or is it just me?
+(Related: has anyone tried profiling the app?  I'm having trouble doing 
+so in NetBeans... going to try VirtualVM next.)
+
+-- 
+Grant B. Harris
+---------------------------------------------------------
+Scientific Informatics Analyst, Cellular Dynamics Program
+Marine Biological Laboratory, Woods Hole, Mass. 02543
+gharris at mbl.edu
+
+
+
+
+From afraser at broadinstitute.org  Wed Sep 21 11:03:46 2011
+From: afraser at broadinstitute.org (Adam Fraser)
+Date: Wed, 21 Sep 2011 12:03:46 -0400
+Subject: [ImageJ-devel] CPU usage
+In-Reply-To: <4E7A09F7.8090008@mbl.edu>
+References: <4E7A09F7.8090008@mbl.edu>
+Message-ID: <CANCtz6eTwb3muChEKHOcCzNE86fqcFTm7VvrXBP7mkusm-yX=g@mail.gmail.com>
+
+Grant,
+
+Now that you mention it, yes I have noticed that it's been killing my
+battery if I leave it running.
+
+-Adam
+
+On Wed, Sep 21, 2011 at 11:59 AM, Grant B. Harris <gharris at mbl.edu> wrote:
+
+> All --
+>
+> Anyone else seeing the CPU usage stuck at +12% ofter opening an image in
+> IJ2?  Or is it just me?
+> (Related: has anyone tried profiling the app?  I'm having trouble doing so
+> in NetBeans... going to try VirtualVM next.)
+>
+> --
+> Grant B. Harris
+> ------------------------------**---------------------------
+> Scientific Informatics Analyst, Cellular Dynamics Program
+> Marine Biological Laboratory, Woods Hole, Mass. 02543
+> gharris at mbl.edu
+>
+>
+> ______________________________**_________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/**listinfo/imagej-devel<http://imagejdev.org/mailman/listinfo/imagej-devel>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110921/ef2f938c/attachment.html>
+
+From ctrueden at wisc.edu  Wed Sep 21 12:27:25 2011
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Wed, 21 Sep 2011 12:27:25 -0500
+Subject: [ImageJ-devel] CPU usage
+In-Reply-To: <4E7A09F7.8090008@mbl.edu>
+References: <4E7A09F7.8090008@mbl.edu>
+Message-ID: <CADN69ykg_Wiqgdm5mBDVPrB5_rNq_PTUyMa0roiEv7+31K3=1g@mail.gmail.com>
+
+Hi Grant,
+
+Anyone else seeing the CPU usage stuck at +12% ofter opening an image in
+> IJ2?  Or is it just me?
+>
+(Related: has anyone tried profiling the app?  I'm having trouble doing so
+> in NetBeans... going to try VirtualVM next.)
+>
+
+If you run ImageJ from the command line (see
+http://imagejdev.org/command-line) then press Ctrl+Pause (Ctrl+\ on
+non-Windows platforms) from the command prompt, you will get a full stack
+trace for all threads, which will be enlightening as to the cause.
+
+I just tested on my machine here and am seeing 100% CPU usage (of one CPU)
+on my system, after opening Blobs.
+
+The stack trace reveals that there is a recursive loop going on with the
+options synchronization. Relevant portion is:
+
+    at imagej.event.EventService.publish(EventService.java:72)
+    at imagej.event.Events.publish(Events.java:61)
+    at imagej.ext.options.OptionsPlugin.run(OptionsPlugin.java:116)
+    at imagej.ext.plugin.PluginModule.run(PluginModule.java:163)
+    at imagej.ext.options.OptionsService.setOption(OptionsService.java:178)
+    at imagej.ext.options.OptionsService.setOption(OptionsService.java:153)
+    at imagej.legacy.patches.PrefsMethods.set(PrefsMethods.java:90)
+    at ij.Prefs.set(Prefs.java:455)
+    at ij.Prefs.set(Prefs.java:461)
+    at
+imagej.legacy.OptionsSynchronizer.arrowOptions(OptionsSynchronizer.java:171)
+    at
+imagej.legacy.OptionsSynchronizer.updateIJ1SettingsFromIJ2(OptionsSynchronizer.java:82)
+    at imagej.legacy.LegacyService.updateIJ1Settings(LegacyService.java:143)
+    at imagej.legacy.LegacyService$2.onEvent(LegacyService.java:194)
+    at imagej.legacy.LegacyService$2.onEvent(LegacyService.java:190)
+    at
+org.bushe.swing.event.ThreadSafeEventService.publish(ThreadSafeEventService.java:971)
+    at
+org.bushe.swing.event.ThreadSafeEventService.publish(ThreadSafeEventService.java:904)
+    at imagej.event.EventService.publish(EventService.java:72)
+    at imagej.event.Events.publish(Events.java:61)
+    at imagej.ext.options.OptionsPlugin.run(OptionsPlugin.java:116)
+    at imagej.ext.plugin.PluginModule.run(PluginModule.java:163)
+    at imagej.ext.options.OptionsService.setOption(OptionsService.java:178)
+    at imagej.ext.options.OptionsService.setOption(OptionsService.java:153)
+    at imagej.legacy.patches.PrefsMethods.set(PrefsMethods.java:90)
+    at ij.Prefs.set(Prefs.java:455)
+    at ij.Prefs.set(Prefs.java:461)
+    at
+imagej.legacy.OptionsSynchronizer.arrowOptions(OptionsSynchronizer.java:171)
+    at
+imagej.legacy.OptionsSynchronizer.updateIJ1SettingsFromIJ2(OptionsSynchronizer.java:82)
+    at imagej.legacy.LegacyService.updateIJ1Settings(LegacyService.java:143)
+    at imagej.legacy.LegacyService$2.onEvent(LegacyService.java:194)
+    at imagej.legacy.LegacyService$2.onEvent(LegacyService.java:190)
+    at
+org.bushe.swing.event.ThreadSafeEventService.publish(ThreadSafeEventService.java:971)
+
+Barry is out today but I will investigate this afternoon and hopefully have
+a fix soon.
+
+-Curtis
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110921/c6343a93/attachment.html>
+
+From ctrueden at wisc.edu  Wed Sep 21 12:31:12 2011
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Wed, 21 Sep 2011 12:31:12 -0500
+Subject: [ImageJ-devel] CPU usage
+In-Reply-To: <CANCtz6eTwb3muChEKHOcCzNE86fqcFTm7VvrXBP7mkusm-yX=g@mail.gmail.com>
+References: <4E7A09F7.8090008@mbl.edu>
+	<CANCtz6eTwb3muChEKHOcCzNE86fqcFTm7VvrXBP7mkusm-yX=g@mail.gmail.com>
+Message-ID: <CADN69ykzDz45YwfOY-JVfbEDkTSw_8rdshYrUXwPJb0z+6w3Ew@mail.gmail.com>
+
+Hi Adam,
+
+Now that you mention it, yes I have noticed that it's been killing my
+> battery if I leave it running.
+>
+
+Have you tried iStat Menus? It adds very useful monitoring widgets to the
+system tray. With its CPU usage monitor, you can avoid accidentally draining
+your battery due to unexpectedly high CPU usage. Unfortunately, v2 is the
+last free version, but you can still find it for download from various
+places online.
+
+-Curtis
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110921/43fdd577/attachment.html>
+
+From afraser at broadinstitute.org  Wed Sep 21 13:44:21 2011
+From: afraser at broadinstitute.org (Adam Fraser)
+Date: Wed, 21 Sep 2011 14:44:21 -0400
+Subject: [ImageJ-devel] CPU usage
+In-Reply-To: <CADN69ykzDz45YwfOY-JVfbEDkTSw_8rdshYrUXwPJb0z+6w3Ew@mail.gmail.com>
+References: <4E7A09F7.8090008@mbl.edu>
+	<CANCtz6eTwb3muChEKHOcCzNE86fqcFTm7VvrXBP7mkusm-yX=g@mail.gmail.com>
+	<CADN69ykzDz45YwfOY-JVfbEDkTSw_8rdshYrUXwPJb0z+6w3Ew@mail.gmail.com>
+Message-ID: <CANCtz6fK0SduXkAhagv8mb=Re=DuKqFZgLDTNqnUuaBSc+jkRw@mail.gmail.com>
+
+>
+> Have you tried iStat Menus?
+
+
+Yup, but just about as good of an indicator is the CPU fan kicking on while
+IJ2 is running and revving down when I kill it.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110921/c7374d68/attachment.html>
+
+From ctrueden at wisc.edu  Wed Sep 21 14:02:49 2011
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Wed, 21 Sep 2011 14:02:49 -0500
+Subject: [ImageJ-devel] CPU usage
+In-Reply-To: <CADN69ykg_Wiqgdm5mBDVPrB5_rNq_PTUyMa0roiEv7+31K3=1g@mail.gmail.com>
+References: <4E7A09F7.8090008@mbl.edu>
+	<CADN69ykg_Wiqgdm5mBDVPrB5_rNq_PTUyMa0roiEv7+31K3=1g@mail.gmail.com>
+Message-ID: <CADN69ymbP+Z-h0PMdNjQBk31pj=5KY_orP=xOzbb=pm6iYsGiQ@mail.gmail.com>
+
+Hi all,
+
+Barry is out today but I will investigate this afternoon and hopefully have
+> a fix soon.
+>
+
+I believe this issue is fixed in r3939. Please let me know if not.
+
+-Curtis
+
+
+On Wed, Sep 21, 2011 at 12:27 PM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+
+> Hi Grant,
+>
+>
+> Anyone else seeing the CPU usage stuck at +12% ofter opening an image in
+>> IJ2?  Or is it just me?
+>>
+> (Related: has anyone tried profiling the app?  I'm having trouble doing so
+>> in NetBeans... going to try VirtualVM next.)
+>>
+>
+> If you run ImageJ from the command line (see
+> http://imagejdev.org/command-line) then press Ctrl+Pause (Ctrl+\ on
+> non-Windows platforms) from the command prompt, you will get a full stack
+> trace for all threads, which will be enlightening as to the cause.
+>
+> I just tested on my machine here and am seeing 100% CPU usage (of one CPU)
+> on my system, after opening Blobs.
+>
+> The stack trace reveals that there is a recursive loop going on with the
+> options synchronization. Relevant portion is:
+>
+>     at imagej.event.EventService.publish(EventService.java:72)
+>     at imagej.event.Events.publish(Events.java:61)
+>     at imagej.ext.options.OptionsPlugin.run(OptionsPlugin.java:116)
+>     at imagej.ext.plugin.PluginModule.run(PluginModule.java:163)
+>     at imagej.ext.options.OptionsService.setOption(OptionsService.java:178)
+>     at imagej.ext.options.OptionsService.setOption(OptionsService.java:153)
+>     at imagej.legacy.patches.PrefsMethods.set(PrefsMethods.java:90)
+>     at ij.Prefs.set(Prefs.java:455)
+>     at ij.Prefs.set(Prefs.java:461)
+>     at
+> imagej.legacy.OptionsSynchronizer.arrowOptions(OptionsSynchronizer.java:171)
+>     at
+> imagej.legacy.OptionsSynchronizer.updateIJ1SettingsFromIJ2(OptionsSynchronizer.java:82)
+>     at
+> imagej.legacy.LegacyService.updateIJ1Settings(LegacyService.java:143)
+>     at imagej.legacy.LegacyService$2.onEvent(LegacyService.java:194)
+>     at imagej.legacy.LegacyService$2.onEvent(LegacyService.java:190)
+>     at
+> org.bushe.swing.event.ThreadSafeEventService.publish(ThreadSafeEventService.java:971)
+>     at
+> org.bushe.swing.event.ThreadSafeEventService.publish(ThreadSafeEventService.java:904)
+>     at imagej.event.EventService.publish(EventService.java:72)
+>     at imagej.event.Events.publish(Events.java:61)
+>     at imagej.ext.options.OptionsPlugin.run(OptionsPlugin.java:116)
+>     at imagej.ext.plugin.PluginModule.run(PluginModule.java:163)
+>     at imagej.ext.options.OptionsService.setOption(OptionsService.java:178)
+>     at imagej.ext.options.OptionsService.setOption(OptionsService.java:153)
+>     at imagej.legacy.patches.PrefsMethods.set(PrefsMethods.java:90)
+>     at ij.Prefs.set(Prefs.java:455)
+>     at ij.Prefs.set(Prefs.java:461)
+>     at
+> imagej.legacy.OptionsSynchronizer.arrowOptions(OptionsSynchronizer.java:171)
+>     at
+> imagej.legacy.OptionsSynchronizer.updateIJ1SettingsFromIJ2(OptionsSynchronizer.java:82)
+>     at
+> imagej.legacy.LegacyService.updateIJ1Settings(LegacyService.java:143)
+>     at imagej.legacy.LegacyService$2.onEvent(LegacyService.java:194)
+>     at imagej.legacy.LegacyService$2.onEvent(LegacyService.java:190)
+>     at
+> org.bushe.swing.event.ThreadSafeEventService.publish(ThreadSafeEventService.java:971)
+>
+> Barry is out today but I will investigate this afternoon and hopefully have
+> a fix soon.
+>
+> -Curtis
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110921/7903d0cd/attachment.html>
+
+From jason at lifesci.dundee.ac.uk  Wed Sep 21 13:35:16 2011
+From: jason at lifesci.dundee.ac.uk (Jason Swedlow)
+Date: Wed, 21 Sep 2011 19:35:16 +0100
+Subject: [ImageJ-devel] Kanban
+In-Reply-To: <74e0c0ef1eff0e.4e79aca6@wiscmail.wisc.edu>
+References: <CANCtz6fQLfgJ2AZx0bUnm611PWzeM=k=QaO6DYM5uPdzQZyihA@mail.gmail.com>
+	<74e0c0ef1eff0e.4e79aca6@wiscmail.wisc.edu>
+Message-ID: <181E4997-91BA-4660-9D80-0A71E46A9438@lifesci.dundee.ac.uk>
+
+...and coincidentally I stumbled across this....
+
+http://deli.aggiebradley.com/2011/09/17/the-second-way-to-skin-a-cat/
+
+Twitter is good for something.
+
+Cheers,
+
+Jason
+
+On 21 Sep 2011, at 15:21, Kevin W Eliceiri wrote:
+
+> interesting Adam. What was the symposium about?
+> 
+> best
+> k
+> 
+> On 09/21/11, Adam Fraser   wrote:
+>> I was at a computational biology symposium yesterday and one of the speakers mentioned that his group has been using a methodology called Kanban with pretty excellent results. 
+>> 
+>> I found a good article about it here: http://www.agileproductdesign.com/blog/2009/kanban_over_simplified.html
+>> 
+>> 
+>> 
+>> 
+>> 
+>> 
+>> If you skip ahead to "Kanban development distilled", there&#39;s an image that should give you a good feel for the methodology. Kanban limits work in progress by giving you a set number of slots in each of a few development stages. Eg: 4 slots in the "development" stage means that only 4 things can be developed at a time. To start development on another task, you need to finish development on one of your existing tasks and move it to the next stage (if there&#39;s room).
+>> 
+>> 
+>> 
+>> 
+>> 
+>> 
+>> Anyway, it&#39;s an interesting concept that may not be immediately applicable to the work that we&#39;re all doing, but it&#39;s definitely something to be aware of.
+>> 
+>> 
+>> -Adam
+>> 
+>> 
+>> 
+>> 
+>> 
+>> 
+>> _______________________________________________
+>> ImageJ-devel mailing list
+>> ImageJ-devel at imagejdev.org
+>> http://imagejdev.org/mailman/listinfo/imagej-devel
+> 
+> --
+> Kevin W. Eliceiri
+> Director and Principal Investigator
+> Laboratory for Optical and Computational Instrumentation (LOCI)
+> http://www.loci.wisc.edu
+> Departments of Molecular Biology and Biomedical Engineering
+> Affiliate Investigator, Morgridge Institute for Research (MIR)
+> Room 271 Animal Sciences
+> 1675 Observatory Drive
+> Madison, WI 53706
+> Phone: 608-263-6288
+> Fax: 608-262-4570
+> 
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+
+
+
+**************************
+Wellcome Trust Centre for Gene Regulation & Expression
+College of Life Sciences
+MSI/WTB/JBC Complex
+University of Dundee
+Dow Street
+Dundee  DD1 5EH
+United Kingdom
+
+phone (01382) 385819
+Intl phone:  44 1382 385819 
+FAX   (01382) 388072 
+email: jason at lifesci.dundee.ac.uk
+
+Lab Page: http://www.lifesci.dundee.ac.uk/gre/staff/jason-swedlow
+Open Microscopy Environment: http://openmicroscopy.org
+**************************
+
+The University of Dundee is a Scottish Registered Charity, No. SC015096.
+
+
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110921/12dfee22/attachment.html>
+
+From gharris at mbl.edu  Tue Sep 27 15:36:48 2011
+From: gharris at mbl.edu (Grant B. Harris)
+Date: Tue, 27 Sep 2011 16:36:48 -0400
+Subject: [ImageJ-devel] Javeleon
+Message-ID: <4E8233E0.2090305@mbl.edu>
+
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110927/6a57f9fe/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Tue Sep 27 17:26:07 2011
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Tue, 27 Sep 2011 17:26:07 -0500 (CDT)
+Subject: [ImageJ-devel] Javeleon
+In-Reply-To: <4E8233E0.2090305@mbl.edu>
+References: <4E8233E0.2090305@mbl.edu>
+Message-ID: <alpine.DEB.1.00.1109271725140.32316@s15462909.onlinehome-server.info>
+
+Hi,
+
+On Tue, 27 Sep 2011, Grant B. Harris wrote:
+
+> This could prove useful as part of an code editor/compiler...
+> 
+> "Javeleon is a small tool that boosts productivity by allowing you to 
+> see code changes in a running application while preserving all of the 
+> application's state. So, basically, developers can use Javeleon to speed 
+> up development by skipping the restart phase completely.... Previous 
+> releases of Javeleon came with out-of-the-box support for NetBeans 
+> Platform applications only. But, in the new 1.5 release, we?ve added 
+> beta support for standalone Java applications as well."?
+> 
+> See:?Who Said Runtime Class Reloading Is Hard in Java?
+
+Am I missing something? Javeleon is not free, let alone Open Source...
+
+Ciao,
+Dscho
+
+From gharris at mbl.edu  Tue Sep 27 18:56:05 2011
+From: gharris at mbl.edu (Grant B. Harris)
+Date: Tue, 27 Sep 2011 19:56:05 -0400
+Subject: [ImageJ-devel] Javeleon
+In-Reply-To: <alpine.DEB.1.00.1109271725140.32316@s15462909.onlinehome-server.info>
+References: <4E8233E0.2090305@mbl.edu>
+	<alpine.DEB.1.00.1109271725140.32316@s15462909.onlinehome-server.info>
+Message-ID: <4E826295.5070408@mbl.edu>
+
+Johannes,
+
+Yes, it would seem you are.  It is free.
+
+And while it is not open source, it could be a useful tool.
+
+-- Grant
+
+
+On 9/27/2011 6:26 PM, Johannes Schindelin wrote:
+> Hi,
+>
+> On Tue, 27 Sep 2011, Grant B. Harris wrote:
+>
+>> This could prove useful as part of an code editor/compiler...
+>>
+>> "Javeleon is a small tool that boosts productivity by allowing you to
+>> see code changes in a running application while preserving all of the
+>> application's state. So, basically, developers can use Javeleon to speed
+>> up development by skipping the restart phase completely.... Previous
+>> releases of Javeleon came with out-of-the-box support for NetBeans
+>> Platform applications only. But, in the new 1.5 release, we?ve added
+>> beta support for standalone Java applications as well." 
+>>
+>> See: Who Said Runtime Class Reloading Is Hard in Java?
+> Am I missing something? Javeleon is not free, let alone Open Source...
+>
+> Ciao,
+> Dscho
+
+
+
+From Johannes.Schindelin at gmx.de  Tue Sep 27 21:00:21 2011
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Tue, 27 Sep 2011 21:00:21 -0500 (CDT)
+Subject: [ImageJ-devel] Javeleon
+In-Reply-To: <4E826295.5070408@mbl.edu>
+References: <4E8233E0.2090305@mbl.edu>
+	<alpine.DEB.1.00.1109271725140.32316@s15462909.onlinehome-server.info>
+	<4E826295.5070408@mbl.edu>
+Message-ID: <alpine.DEB.1.00.1109272056550.3778@bonsai2>
+
+Hi Grant,
+
+On Tue, 27 Sep 2011, Grant B. Harris wrote:
+
+> Yes, it would seem you are.  It is free.
+
+Sorry, I assumed you know that I mean "free as in freedom" by the word 
+"free". If I cannot ship the tool with ImageJ2, it is not free to this 
+here developer's understanding.
+
+Ciao,
+Johannes
+
+P.S.: http://www.idallen.com/topposting.html :-)
+
+
+
+From afraser at broadinstitute.org  Wed Sep 28 09:00:28 2011
+From: afraser at broadinstitute.org (Adam Fraser)
+Date: Wed, 28 Sep 2011 10:00:28 -0400
+Subject: [ImageJ-devel] Javeleon
+In-Reply-To: <alpine.DEB.1.00.1109272056550.3778@bonsai2>
+References: <4E8233E0.2090305@mbl.edu>
+	<alpine.DEB.1.00.1109271725140.32316@s15462909.onlinehome-server.info>
+	<4E826295.5070408@mbl.edu> <alpine.DEB.1.00.1109272056550.3778@bonsai2>
+Message-ID: <CANCtz6f9Ew-ShR87=n4V8TzBEGCkXHzWsv+OzaC_bNR=m21zvQ@mail.gmail.com>
+
+Viva La Revoluci?n!
+
+On Tue, Sep 27, 2011 at 10:00 PM, Johannes Schindelin <
+Johannes.Schindelin at gmx.de> wrote:
+
+> Hi Grant,
+>
+> On Tue, 27 Sep 2011, Grant B. Harris wrote:
+>
+> > Yes, it would seem you are.  It is free.
+>
+> Sorry, I assumed you know that I mean "free as in freedom" by the word
+> "free". If I cannot ship the tool with ImageJ2, it is not free to this
+> here developer's understanding.
+>
+> Ciao,
+> Johannes
+>
+> P.S.: http://www.idallen.com/topposting.html :-)
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110928/e2cc15ec/attachment.html>
+

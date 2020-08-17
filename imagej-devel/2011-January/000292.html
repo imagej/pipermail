@@ -1,0 +1,170 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Fwd: OpenCL plugin
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Fwd%3A%20OpenCL%20plugin&In-Reply-To=%3CAANLkTimm2acDwPSCvXOPkm8DENrR%3DciBbTGGRJdrBP5u%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000291.html">
+   <LINK REL="Next"  HREF="000293.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Fwd: OpenCL plugin</H1>
+    <B>Rick Lentz</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Fwd%3A%20OpenCL%20plugin&In-Reply-To=%3CAANLkTimm2acDwPSCvXOPkm8DENrR%3DciBbTGGRJdrBP5u%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Fwd: OpenCL plugin">rwlentz at wisc.edu
+       </A><BR>
+    <I>Tue Jan 11 14:31:49 CST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000291.html">[ImageJ-devel] ImageOpener always giving me three channels when these is only one.
+</A></li>
+        <LI>Next message: <A HREF="000293.html">[ImageJ-devel] New Lanczos-Interpolation
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#292">[ date ]</a>
+              <a href="thread.html#292">[ thread ]</a>
+              <a href="subject.html#292">[ subject ]</a>
+              <a href="author.html#292">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Pol,
+
+  Thank you for your feedback regarding OpenCL in ImageJ.  Per your second
+question, there are some very minor changes needed to get your started on
+your development of ImageJ OpenCL plugins.  I have updated the source
+documentation to be reflective of the current state of the source available
+in the loci repository (
+<A HREF="http://dev.loci.wisc.edu/svn/software/branches/maven/projects/opencl-decon">http://dev.loci.wisc.edu/svn/software/branches/maven/projects/opencl-decon</A>).
+
+  If your refresh your download of the opencl-decon source, you may notice
+the addition of a README file.  Here is the text from that file:
+
+( Please ensure installation of OpenCL prior to running these programs )
+The source at
+<A HREF="http://dev.loci.wisc.edu/svn/software/branches/maven/projects/opencl-deconwas">http://dev.loci.wisc.edu/svn/software/branches/maven/projects/opencl-deconwas</A>
+developed to demonstrate successful leveraging of OpenCL within ImageJ
+using JOCL both locally and remotely (as a binary web service).
+
+The folder structure of the source consists of the following folders:
+src - Java and OpenCL source files (extension .cl)
+sourcedata - PSF and 3D data used as a small sample data set for the FHT3D
+Example.
+lib - libraries needed for classes using JOCL, ImageJ, and Hessian 4.0.7
+native - contains the dynamic libraries needed for runtime execution of
+OpenCL code on various operating systems
+
+Background:
+To use OpenCL from Java in ImageJ we leverage JOCL.  JOCL uses JNI to make
+calls into the OpenCL API.  The OpenCL code you write can also leverage JOCL
+to accelerate execution of ImageJ plugins from Java.
+
+Notice the files fht.cl and sobel.cl in the source (src) directory.  The
+Java code in provided in the examples compile these two files for execution
+on the OpenCL enabled device that is programmatically chosen at runtime.  It
+is runtime compilation of OpenCL that allows execution on any potential
+OpenCL enabled device.
+
+Start exploring the examples by viewing the developer comments in the file
+SobelFilterExample.java.  Notice the Main() method calls run() which use an
+awt.Image type as an input parameter.  Modify and run the Main() method as a
+Java application with the VM Arguments -Xmx1024m.
+
+  Without modification, SobelFilterExample.java loads an image from a web
+server, process it locally using OpenCL, and displays the results.  There is
+nothing novel about this example.  It simply allows runtime testing
+of several system configuration steps to ensure working configuration of
+JOCL and OpenCL native libraries.  Modify this example to suite your needs,
+but please ensure proper JOCL and OpenCL configuration before proceeding.
+
+Working within ImageJ: If developing an ImageJ plugin using OpenCL realize
+that programatic control is passed to your plugin inside the PlugIn (or
+PluginFilter) run() method.  An example of this can be found in
+src.demos.OpenCL_SobelFilter.java.  For this plugin to run within ImageJ,
+the JOCL jars and native libraries respective to the target platform will
+need to be available by the ImageJ classloader.   The supporting JOCL native
+libraries can be copied into the plugin directory within ImageJ to allow
+plugin implementations using OpenCL from Java to reference the installed
+native libraries provided by the OpenCL installation.
+
+Now that you have demonstrated use of OpenCL from Java and within ImageJ,
+you may wish to see an a compute intensive example demonstrating
+modification of an existing Java implementation that delegates a portion of
+its implementation to OpenCL.  Take a look at the developer comments in the
+FHT3D_3D_Deconvolution.java example to see what steps are used for brokering
+of data between Java and OpenCL between steps within an algorithm's
+implementation.
+
+Finally, the need may arise where the GPU compute capabilities you wish to
+leverage are not on the same computer that ImageJ is running on.  The
+FHTEJBService and Iterative_Deconvolve_3D_WS classes demonstrate how to
+remotely serve up the functionality leveraging standard, open source J2EE
+technologies.
+
+I will comment in a separate email regarding your first question.
+
+I am interested in following your progress.  Please feel free to contact me
+via Google chat, Skype or email if you run into any more configuration
+problems.
+
+Best Regards,
+
+Rick Lentz
+
+
+
+Hello,
+I am a PhD student working on image segmentation by texture analysis with an
+application on remote sensing images (Montpellier, France). So i have to
+process very large images (e.g. 15000*8000).
+All methods I developed are formed as plugin under ImageJ API that I really
+like, but not yet applicable on this sort of image.
+Recently, I tough to use finally my graphic card (Nvidia GTS240) which I
+think will help me a lot in my process. So after several search on the web,
+I found this (OpenCL plugin you wrote) great ! it's precisely what i need.
+So I decided to follow your tutorial to setup the environment but met some
+problems... :
+
+When launching makefile in &quot;~/NVIDIA_GPU_Computing_SDK/C/ &quot; and
+&quot;~/NVIDIA_GPU_Computing_SDK/OpenCL&quot; I had following error &quot;/usr/bin/ld:
+cannot find -lGL&quot;. Plus, I dont have the same demo files, maybe because of
+version ? (cudatoolkit_3.2.16_linux_64, gpucomputingsdk_3.2.16 and
+devdriver_3.2_linux_64_260.19.26 on Ubuntu 10.10). On the other side demos I
+have work perfectly (ooclDCT8x8, oclHistogram,...)
+Main problem is that the repository you indicate to get the example project
+(<A HREF="http://www.loci.wisc.edu/svn/decon">http://www.loci.wisc.edu/svn/decon</A>) doesn't work... &quot;
+<A HREF="http://dev.loci.wisc.edu/svn/software/branches/maven/projects/opencl-decon">http://dev.loci.wisc.edu/svn/software/branches/maven/projects/opencl-decon</A>&quot;
+repository works well. Is is the same ?
+
+Thanks a lot if you find time to answer me (and sorry for my english).
+And thanks you for work you are doing on ImageJ.
+Best regards,
+Pol Kennel
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20110111/8fde4862/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20110111/8fde4862/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000291.html">[ImageJ-devel] ImageOpener always giving me three channels when these is only one.
+</A></li>
+	<LI>Next message: <A HREF="000293.html">[ImageJ-devel] New Lanczos-Interpolation
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#292">[ date ]</a>
+              <a href="thread.html#292">[ thread ]</a>
+              <a href="subject.html#292">[ subject ]</a>
+              <a href="author.html#292">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

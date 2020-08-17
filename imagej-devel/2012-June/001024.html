@@ -1,0 +1,114 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Menuing system discussion
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Menuing%20system%20discussion&In-Reply-To=%3CCADN69y%3DN4ctPqO%3DFA1QDGaKzxQ6Jvj0_N88mWpJyvz1WFTqakg%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001031.html">
+   <LINK REL="Next"  HREF="001025.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Menuing system discussion</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Menuing%20system%20discussion&In-Reply-To=%3CCADN69y%3DN4ctPqO%3DFA1QDGaKzxQ6Jvj0_N88mWpJyvz1WFTqakg%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Menuing system discussion">ctrueden at wisc.edu
+       </A><BR>
+    <I>Mon Jun 11 14:14:08 CDT 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001031.html">[ImageJ-devel] was: KNIP dynamic ImageJ plugin loading
+</A></li>
+        <LI>Next message: <A HREF="001025.html">[ImageJ-devel] Menuing system discussion
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1024">[ date ]</a>
+              <a href="thread.html#1024">[ thread ]</a>
+              <a href="subject.html#1024">[ subject ]</a>
+              <a href="author.html#1024">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi everyone,
+
+Today Barry and I had a brief meeting about the ImageJ2 menuing system.
+(For a brief description of how it works, I posted a write-up on the
+ImageJ2 site at: <A HREF="http://developer.imagej.net/menuing-system">http://developer.imagej.net/menuing-system</A>).
+
+There are currently three issues with it:
+
+1) Correctness. There are currently bugs syncing multiple copies of a menu
+bar linked to the same ShadowMenu, as well as with checkbox menu items; see
+<A HREF="http://trac.imagej.net/ticket/1162">http://trac.imagej.net/ticket/1162</A> for details.
+
+2) Performance. Currently, on Mac OS X, we maintain one copy of the menus
+(i.e., one JMenuBar) per UI window. Constructing these copies is slow
+enough that there is a noticeable delay when a new image window pops up. We
+have a potential solution using the Application default menu bar (see
+<A HREF="http://trac.imagej.net/ticket/1161">http://trac.imagej.net/ticket/1161</A>) on the fix-menus branch, which avoids
+making these copies.
+
+3) Capabilities. The current philosophy is that each menu root exists only
+once with all of its state, including which menu items are checked, grayed
+out, etc. This could be a problem in certain circumstances, if the menu is
+supposed to reflect a different context per image, per script editor
+window, etc. For example, if the Image &gt; Type &gt; 8-bit menu item is supposed
+to be checked for an 8-bit image, but the 16-bit menu item should be
+checked for a 16-bit image, only one of those items will *really* be
+checked at any given time. Something (in this case, the TypeChangeService)
+must react to the active image being changed, updating the selection state
+for the modules in the Image &gt; Type menu, and then *all* copies of the menu
+change over accordingly. For non-top-level menu items, the user is
+blissfully ignorant of this process, but they would notice if e.g. a
+top-level menu item needed to be enabled or disabled based on the current
+context.
+
+Barry &amp; I agreed that solving issue #2 above is good enough for beta3,
+especially since it &quot;papers over&quot; the main issues with #1. That is, by
+avoiding clones of the menu bar, it matters less whether syncing between
+copies of the menu is working completely correctly&#8212;because we won't ever
+have copies of the menu to sync. But at some point, we should reconsider
+the issues mentioned in #3 above, and decide on whether the current
+approach is sufficient for everyone's needs. Two good candidates for
+testing the limits of the menuing system are the script editor, and context
+(i.e., right-click) menus.
+
+Regards,
+Curtis
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20120611/77eba4db/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20120611/77eba4db/attachment.html</A>&gt;
+</PRE>
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001031.html">[ImageJ-devel] was: KNIP dynamic ImageJ plugin loading
+</A></li>
+	<LI>Next message: <A HREF="001025.html">[ImageJ-devel] Menuing system discussion
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1024">[ date ]</a>
+              <a href="thread.html#1024">[ thread ]</a>
+              <a href="subject.html#1024">[ subject ]</a>
+              <a href="author.html#1024">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

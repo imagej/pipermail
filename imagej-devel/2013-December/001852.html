@@ -1,0 +1,130 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [VIGRA] Avian VM and Bio-Formats
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5BVIGRA%5D%20Avian%20VM%20and%20Bio-Formats&In-Reply-To=%3C52A5D2CD.4040303%40iwr.uni-heidelberg.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001836.html">
+   <LINK REL="Next"  HREF="001853.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [VIGRA] Avian VM and Bio-Formats</H1>
+    <B>Ullrich Koethe</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5BVIGRA%5D%20Avian%20VM%20and%20Bio-Formats&In-Reply-To=%3C52A5D2CD.4040303%40iwr.uni-heidelberg.de%3E"
+       TITLE="[ImageJ-devel] [VIGRA] Avian VM and Bio-Formats">ullrich.koethe at iwr.uni-heidelberg.de
+       </A><BR>
+    <I>Mon Dec  9 08:25:17 CST 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001836.html">[ImageJ-devel] [VIGRA] Avian VM and Bio-Formats
+</A></li>
+        <LI>Next message: <A HREF="001853.html">[ImageJ-devel] [VIGRA] Avian VM and Bio-Formats
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1852">[ date ]</a>
+              <a href="thread.html#1852">[ thread ]</a>
+              <a href="subject.html#1852">[ subject ]</a>
+              <a href="author.html#1852">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Johannes,
+
+ &gt;&gt; In vigra-imglib2 (branch 'wip'), 'mvn install' compiles and produces a
+ &gt;&gt; number of compiler warnings which seem to be uncritical on first glance,
+ &gt;&gt; but are confusingly flagged as &quot;[ERROR]&quot; in the maven output.
+ &gt;
+ &gt; Which ones? (Please just paste such errors when you encounter them, of
+ &gt; course I could reproduce, if only I had more time!)
+ &gt;
+
+These warnings are related to VIGRA itself, so there is no need for you 
+to act on them. I merely complained about the fact that warnings are 
+flagged as [ERROR] by maven. In fact, that's not quite precise: The 
+actual warning is correctly flagged as [WARNING], but the preceding 
+diagnostic lines which merely provide template instantiation context 
+(i.e. the call stack leading up to the warning) are flagged as [ERROR]. 
+It would be much better to flag them as [CONTEXT] or similar.
+
+[ERROR] In file included from 
+/home/ukoethe/src/vigra-imglib2/src/main/cxx/VigraImg3DUnsignedByte.cxx:2:0:
+...
+[ERROR] 
+/home/ukoethe/src/vigra-imglib2/src/main/cxx/VigraImg3DUnsignedByte.cxx:54:45: 
+   required from here
+[WARNING] 
+/home/ukoethe/vigra-git/vigra/include/vigra/multi_array.hxx:3194:55: 
+warning: conversion to 'int' from 'vigra::MultiArrayView&lt;2u, unsigned 
+char, vigra::StridedArrayTag&gt;::difference_type_1 {aka long int}' may 
+alter its value [-Wconversion]
+
+In the meantime, the error message produced by ./avian-run.sh changed. 
+But it looks like the same problem as before.
+
+java.lang.ExceptionInInitializerError
+   at net.imglib2.vigra.VigraImgFactory3DUnsignedByte.create (line 19)
+   at net.imglib2.vigra.VigraImgFactory3DUnsignedByte.create (line 14)
+   at io.scif.img.ImgOpener.openImg (line 301)
+   at io.scif.img.ImgOpener.openImg (line 217)
+   at io.scif.img.ImgOpener.openImg (line 200)
+   at Example.main (line 34)
+   at Example.main (line 22)
+caused by: java.lang.UnsatisfiedLinkError: library not found: 
+/home/ukoethe/src/vigra-imglib2/target/nar/vigra-imglib2-1.0.0-SNAPSHOT-amd64-Linux-gpp-jni/lib/amd64-Linux-gpp/jni/libvigra-imglib2-1.0.0-SNAPSHOT.so
+   at java.lang.Runtime.load
+   at java.lang.Runtime.load (line 32)
+   at java.lang.System.load (line 117)
+   at net.imglib2.vigra.NarHelper.loadLibrary (line 75)
+   at net.imglib2.vigra.VigraImg3DUnsignedByte.&lt;clinit&gt; (line 23)
+   at net.imglib2.vigra.VigraImgFactory3DUnsignedByte.create (line 19)
+   at net.imglib2.vigra.VigraImgFactory3DUnsignedByte.create (line 14)
+   at io.scif.img.ImgOpener.openImg (line 301)
+   at io.scif.img.ImgOpener.openImg (line 217)
+   at io.scif.img.ImgOpener.openImg (line 200)
+   at Example.main (line 34)
+   at Example.main (line 22)
+
+The library it complains about exists:
+
+ &gt;&gt; ls -l 
+/home/ukoethe/src/vigra-imglib2/target/nar/vigra-imglib2-1.0.0-SNAPSHOT-amd64-Linux-gpp-jni/lib/amd64-Linux-gpp/jni/libvigra-imglib2-1.0.0-SNAPSHOT.so
+
+-rwxr-xr-x 1 ukoethe ukoethe 122627 Dec  9 14:51 
+/home/ukoethe/src/vigra-imglib2/target/nar/vigra-imglib2-1.0.0-SNAPSHOT-amd64-Linux-gpp-jni/lib/amd64-Linux-gpp/jni/libvigra-imglib2-1.0.0-SNAPSHOT.so
+
+Best regards
+Ulli
+
+</PRE>
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001836.html">[ImageJ-devel] [VIGRA] Avian VM and Bio-Formats
+</A></li>
+	<LI>Next message: <A HREF="001853.html">[ImageJ-devel] [VIGRA] Avian VM and Bio-Formats
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1852">[ date ]</a>
+              <a href="thread.html#1852">[ thread ]</a>
+              <a href="subject.html#1852">[ subject ]</a>
+              <a href="author.html#1852">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

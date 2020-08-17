@@ -1,0 +1,196 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Bug in ImageJ2 ?
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Bug%20in%20ImageJ2%20%3F&In-Reply-To=%3CCADN69ymHRd5-FwUDD0L_U8wwHKAtphwfd7CiabQ%3D%3D3eaMWdMGA%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001215.html">
+   <LINK REL="Next"  HREF="001217.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Bug in ImageJ2 ?</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Bug%20in%20ImageJ2%20%3F&In-Reply-To=%3CCADN69ymHRd5-FwUDD0L_U8wwHKAtphwfd7CiabQ%3D%3D3eaMWdMGA%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Bug in ImageJ2 ?">ctrueden at wisc.edu
+       </A><BR>
+    <I>Wed Sep 12 15:15:03 CDT 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001215.html">[ImageJ-devel] ImageJ 2.0.0-beta4 released
+</A></li>
+        <LI>Next message: <A HREF="001217.html">[ImageJ-devel] IJ2 work/Histogram
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1216">[ date ]</a>
+              <a href="thread.html#1216">[ thread ]</a>
+              <a href="subject.html#1216">[ subject ]</a>
+              <a href="author.html#1216">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Michael,
+
+
+&gt;<i> There seems to be an issue with the InputHarvester and the SwingPanel if
+</I>&gt;<i> the object types of primitive java types are used as input parameters (e.g.
+</I>&gt;<i> Boolean instead of boolean).
+</I>
+
+Sorry for the delay in my reply. I fixed the bug shortly after sending my
+first mail, but was waiting to reply back until I did some more thorough
+investigation of the widget framework.
+
+In short, the NPE is fixed, and both plugins will work now.
+
+The long story is that despite that, there is one remaining issue of sorts
+with certain types of widgets. The toggle widget (with big B Booleans) is
+one of them, and the choice widget is another. The issue is that in some
+cases, the widget is not totally capable of reflecting the model state.
+
+In the case of Boolean, the widget model may begin with a null value, but
+the toggle widget is only capable of displaying false or true. It will
+display unchecked for null, and if the user presses OK right away, the
+Boolean will be null (the widget changes nothing right now). But if you
+check and then uncheck the box again, the parameter value goes from null to
+true, and then from true to false. There is no way to set it back to null.
+
+In the case of the choice widget, the model may begin with a value that is
+not on the list of allowed choices (again, null in particular is a big
+offender here). The choice widget immediately constrains the dropdown box
+to the first item on the list and overwrites the model. So the widget ends
+up being the reason the parameter doesn't end up with an (invalid) null
+value.
+
+This behavior is inconsistent, and ideally the model itself would enforce
+value constraints, and the widgets would not overwrite them.
+
+However, given the amount of time needed to correct this admittedly rather
+trivial inconsistency/deficiency, we are not going to worry about it for
+the time being.
+
+Please let us know if you have any other questions or problems with ImageJ2!
+
+Regards,
+Curtis
+
+
+On Thu, Aug 23, 2012 at 9:57 AM, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt; wrote:
+
+&gt;<i> Hi Michael,
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;&gt;<i> There seems to be an issue with the InputHarvester and the SwingPanel if
+</I>&gt;&gt;<i> the object types of primitive java types are used as input parameters (e.g.
+</I>&gt;&gt;<i> Boolean instead of boolean).
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Thanks for the report. It's definitely a bug due to our recent refactoring
+</I>&gt;<i> of the widget system. Both Boolean and boolean are supposed to work. I'll
+</I>&gt;<i> look into fixing it today.
+</I>&gt;<i>
+</I>&gt;<i> -Curtis
+</I>&gt;<i>
+</I>&gt;<i> P.S. Hopefully I will have time to respond to your ImgLib mail from
+</I>&gt;<i> yesterday, too. I really appreciate you taking the time to look at and
+</I>&gt;<i> improve the Projector logic. We did the minimum necessary at the time to
+</I>&gt;<i> get something working, but currently everything is planar, and there is no
+</I>&gt;<i> built-in (i.e., ImgLib2) zoom capability, which we will eventually need.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On Thu, Aug 23, 2012 at 8:24 AM, Michael Zinsmaier &lt;
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">michael.zinsmaier at gmx.de</A>&gt; wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i>  Hi Curtis,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I try currently to integrate the new imglib and ImageJ2 version (stuff
+</I>&gt;&gt;<i> from yesterday) into the KNIME ImageJ2 plugin.
+</I>&gt;&gt;<i> There seems to be an issue with the InputHarvester and the SwingPanel if
+</I>&gt;&gt;<i> the object types of primitive java types are
+</I>&gt;&gt;<i> used as input parameters (e.g. Boolean instead of boolean).
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> The following plugin works fine:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> @Plugin(menu = {@Menu(label = &quot;works&quot;)},
+</I>&gt;&gt;<i>          headless=true)
+</I>&gt;&gt;<i> public class Working&lt;T extends RealType&lt;T&gt;&gt; implements RunnablePlugin {
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>     @Parameter(type = ItemIO.INPUT)
+</I>&gt;&gt;<i>     private boolean test;
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>     @Parameter(type = ItemIO.OUTPUT)
+</I>&gt;&gt;<i>     private String output;
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>     public void run() {
+</I>&gt;&gt;<i>             if (test) {
+</I>&gt;&gt;<i>                     output = &quot;plugins can be defined as fragments of
+</I>&gt;&gt;<i> imagej.core&quot;;
+</I>&gt;&gt;<i>             }
+</I>&gt;&gt;<i>     }
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> }
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> while this plugin (Boolean instead of boolean) cannot be executed and
+</I>&gt;&gt;<i> results in a null pointer exception.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> @Plugin(menu = {@Menu(label = &quot;works not&quot;)},
+</I>&gt;&gt;<i>          headless=true)
+</I>&gt;&gt;<i> public class NotWorking&lt;T extends RealType&lt;T&gt;&gt; implements RunnablePlugin {
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>     @Parameter(type = ItemIO.INPUT)
+</I>&gt;&gt;<i>     private Boolean test;
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>     @Parameter(type = ItemIO.OUTPUT)
+</I>&gt;&gt;<i>     private String output;
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>     public void run() {
+</I>&gt;&gt;<i>             if (test) {
+</I>&gt;&gt;<i>                     output = &quot;plugins can be defined as fragments of
+</I>&gt;&gt;<i> imagej.core&quot;;
+</I>&gt;&gt;<i>             }
+</I>&gt;&gt;<i>     }
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> }
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Are only primitive types supported or is it a bug?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Regards
+</I>&gt;&gt;<i> Michael
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20120912/17995c24/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20120912/17995c24/attachment.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001215.html">[ImageJ-devel] ImageJ 2.0.0-beta4 released
+</A></li>
+	<LI>Next message: <A HREF="001217.html">[ImageJ-devel] IJ2 work/Histogram
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1216">[ date ]</a>
+              <a href="thread.html#1216">[ thread ]</a>
+              <a href="subject.html#1216">[ subject ]</a>
+              <a href="author.html#1216">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,195 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Bug in creation of CompositeXYProjectors in DefaultDatasetView
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Bug%20in%20creation%20of%20CompositeXYProjectors%20in%0A%20DefaultDatasetView&In-Reply-To=%3C51E4387E.1050609%40wisc.edu%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001692.html">
+   <LINK REL="Next"  HREF="001696.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Bug in creation of CompositeXYProjectors in DefaultDatasetView</H1>
+    <B>Aivar Grislis</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Bug%20in%20creation%20of%20CompositeXYProjectors%20in%0A%20DefaultDatasetView&In-Reply-To=%3C51E4387E.1050609%40wisc.edu%3E"
+       TITLE="[ImageJ-devel] Bug in creation of CompositeXYProjectors in DefaultDatasetView">grislis at wisc.edu
+       </A><BR>
+    <I>Mon Jul 15 12:59:26 CDT 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001692.html">[ImageJ-devel] Bug in creation of CompositeXYProjectors in	DefaultDatasetView
+</A></li>
+        <LI>Next message: <A HREF="001696.html">[ImageJ-devel] Bug in creation of CompositeXYProjectors in	DefaultDatasetView
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1693">[ date ]</a>
+              <a href="thread.html#1693">[ thread ]</a>
+              <a href="subject.html#1693">[ subject ]</a>
+              <a href="author.html#1693">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i> I have an ImgPlus backed by an RGB PlanarImg of UnsignedByteType and 
+</I>&gt;<i> ARGBType.alpha(value) is 255 for all of them, so aSum is 765. It would 
+</I>&gt;<i> appear that the correct solution would be to divide aSum by 3.
+</I>Isn't it unusual to define an alpha for each color component, generally 
+you have a single A associated with a combined RGB?  So averaging the 
+three alphas might make sense here, because I think they should all be 
+the same value.
+&gt;<i> In addition, there's no scaling of the individual red, green and blue 
+</I>&gt;<i> values by their channel's alpha. If the input were two index-color 
+</I>&gt;<i> images, each of which had different alphas, the code should multiply 
+</I>&gt;<i> the r, g and b values by the alphas before summing and then divide by 
+</I>&gt;<i> the total alpha in the end. The alpha in this case *should* be the sum 
+</I>&gt;<i> of alphas divided by the number of channels.
+</I>I think alpha processing is more cumulative, done layer by layer in some 
+defined layer order.  For a given pixel say the current output pixel 
+value is ARGB1 and you are compositing a second image with value ARGB2 
+on top of it:  For the red channel the output color should be ((255 - 
+alpha(ARGB2)) * red(ARGB1) + alpha(ARGB2) * red(ARGB2)) / 255.  The 
+alpha of ARGB1 is not involved.
+
+In other words, if you add a layer that is completely opaque you no 
+longer have to consider any of the colors or alpha values underneath it.
+
+
+I think the bigger issue here is this code is specifically designed to 
+composite red, green and blue image layers.  It's a special case since 
+for a given pixel the red comes from the red layer, blue from blue 
+layer, and green from green layer.  These layers shouldn't be completely 
+opaque, since the colors wouldn't combine at all then or completely 
+transparent since then they wouldn't contribute any color.  I don't 
+think transparency is useful here.
+
+It's also possible that a multichannel image with &gt; 3 channels is being 
+displayed with more color channels, namely cyan, magenta, and yellow.  
+The code here is designed to stop overflow, but I'm not convinced those 
+extended color channels would combine meaningfully.
+
+Aivar
+
+&gt;<i> In addition, there's no scaling of the individual red, green and blue 
+</I>&gt;<i> values by their channel's alpha. If the input were two index-color 
+</I>&gt;<i> images, each of which had different alphas, the code should multiply 
+</I>&gt;<i> the r, g and b values by the alphas before summing and then divide by 
+</I>&gt;<i> the total alpha in the end. The alpha in this case *should* be the sum 
+</I>&gt;<i> of alphas divided by the number of channels.
+</I>I think alpha processing is cumulative layer by layer.
+
+This brings up some interesting questions:
+
+1) If the first, bottom-most layer is transparent, what color should 
+show through?  Black, white?  Or perhaps it's best to ignore this base 
+layer transparency.
+
+2) If you wanted to composite several transparent images, how do you 
+calculate the transparency of the composite?  I'm not sure this is 
+something we need to do.
+
+Aivar
+
+
+On 7/15/13 10:31 AM, Lee Kamentsky wrote:
+&gt;<i> Hi all,
+</I>&gt;<i> I'm looking at the code for net.imglib2.display.CompositeXYProjector 
+</I>&gt;<i> and as I step through it, it's clear that the alpha calculation isn't 
+</I>&gt;<i> being handled correctly. Here's the code as it stands now, line 190 
+</I>&gt;<i> roughly:
+</I>&gt;<i>
+</I>&gt;<i> for ( int i = 0; i &lt; size; i++ )
+</I>&gt;<i> {
+</I>&gt;<i> sourceRandomAccess.setPosition( currentPositions[ i ], dimIndex );
+</I>&gt;<i> currentConverters[ i ].convert( sourceRandomAccess.get(), bi );
+</I>&gt;<i> // accumulate converted result
+</I>&gt;<i> final int value = bi.get();
+</I>&gt;<i> final int a = ARGBType.alpha( value );
+</I>&gt;<i> final int r = ARGBType.red( value );
+</I>&gt;<i> final int g = ARGBType.green( value );
+</I>&gt;<i> final int b = ARGBType.blue( value );
+</I>&gt;<i> aSum += a;
+</I>&gt;<i> rSum += r;
+</I>&gt;<i> gSum += g;
+</I>&gt;<i> bSum += b;
+</I>&gt;<i> }
+</I>&gt;<i> if ( aSum &gt; 255 )
+</I>&gt;<i> aSum = 255;
+</I>&gt;<i> if ( rSum &gt; 255 )
+</I>&gt;<i> rSum = 255;
+</I>&gt;<i> if ( gSum &gt; 255 )
+</I>&gt;<i> gSum = 255;
+</I>&gt;<i> if ( bSum &gt; 255 )
+</I>&gt;<i> bSum = 255;
+</I>&gt;<i> targetCursor.get().set( ARGBType.rgba( rSum, gSum, bSum, aSum ) );
+</I>&gt;<i>
+</I>&gt;<i> I have an ImgPlus backed by an RGB PlanarImg of UnsignedByteType and 
+</I>&gt;<i> ARGBType.alpha(value) is 255 for all of them, so aSum is 765. It would 
+</I>&gt;<i> appear that the correct solution would be to divide aSum by 3. In 
+</I>&gt;<i> addition, there's no scaling of the individual red, green and blue 
+</I>&gt;<i> values by their channel's alpha. If the input were two index-color 
+</I>&gt;<i> images, each of which had different alphas, the code should multiply 
+</I>&gt;<i> the r, g and b values by the alphas before summing and then divide by 
+</I>&gt;<i> the total alpha in the end. The alpha in this case *should* be the sum 
+</I>&gt;<i> of alphas divided by the number of channels.
+</I>&gt;<i>
+</I>&gt;<i> However, I think the problem is deeper than that. For an RGB ImgPlus, 
+</I>&gt;<i> there are three LUTs and each of them has an alpha of 255, but that 
+</I>&gt;<i> alpha only applies to one of the colors in the LUT. When you're 
+</I>&gt;<i> compositing images and weighing them equally, if two are black and one 
+</I>&gt;<i> is white, then the result is 1/3 of the white intensity - if you 
+</I>&gt;<i> translate that to red, green and blue images, the resulting intensity 
+</I>&gt;<i> will be 1/3 of that desired. This might sound weird, but the only 
+</I>&gt;<i> solution that works out mathematically is for the defaultLUTs in the 
+</I>&gt;<i> DefaultDatasetView to use color tables that return values that are 3x 
+</I>&gt;<i> those of ColorTables.RED, GREEN and BLUE. Thinking about it, I'm 
+</I>&gt;<i> afraid this *is* the correct model and each channel really is 3x 
+</I>&gt;<i> brighter than possible.
+</I>&gt;<i>
+</I>&gt;<i> It took me quite a bit of back and forth to come up with the above... 
+</I>&gt;<i> I hope you all understand what I'm saying and understand the problem 
+</I>&gt;<i> and counter-intuitive solution and have the patience to follow it. 
+</I>&gt;<i> Dscho, if you made it this far - you're the mathematician, what's your 
+</I>&gt;<i> take?
+</I>&gt;<i>
+</I>&gt;<i> --Lee
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20130715/763580c1/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20130715/763580c1/attachment.html</A>&gt;
+</PRE>
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001692.html">[ImageJ-devel] Bug in creation of CompositeXYProjectors in	DefaultDatasetView
+</A></li>
+	<LI>Next message: <A HREF="001696.html">[ImageJ-devel] Bug in creation of CompositeXYProjectors in	DefaultDatasetView
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1693">[ date ]</a>
+              <a href="thread.html#1693">[ thread ]</a>
+              <a href="subject.html#1693">[ subject ]</a>
+              <a href="author.html#1693">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

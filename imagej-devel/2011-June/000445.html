@@ -1,0 +1,126 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Overriding min, max and choices at runtime
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Overriding%20min%2C%20max%20and%20choices%20at%20runtime&In-Reply-To=%3Calpine.DEB.1.00.1106210009040.21756%40bonsai2%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000444.html">
+   <LINK REL="Next"  HREF="000449.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Overriding min, max and choices at runtime</H1>
+    <B>Johannes Schindelin</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Overriding%20min%2C%20max%20and%20choices%20at%20runtime&In-Reply-To=%3Calpine.DEB.1.00.1106210009040.21756%40bonsai2%3E"
+       TITLE="[ImageJ-devel] Overriding min, max and choices at runtime">Johannes.Schindelin at gmx.de
+       </A><BR>
+    <I>Mon Jun 20 17:25:39 CDT 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000444.html">[ImageJ-devel] Overriding min, max and choices at runtime
+</A></li>
+        <LI>Next message: <A HREF="000449.html">[ImageJ-devel] ImageJ2 and OME ROI models
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#445">[ date ]</a>
+              <a href="thread.html#445">[ thread ]</a>
+              <a href="subject.html#445">[ subject ]</a>
+              <a href="author.html#445">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+On Mon, 20 Jun 2011, Grant B. Harris wrote:
+
+&gt;<i> Can we not, alternately, create a plugin that doesn't use @Parameters?&#160;
+</I>&gt;<i> This is possible, is it not? I can imagine someone wanting to build a 
+</I>&gt;<i> plugin that has some crazy custom input widgets...
+</I>
+The idea of @Parameter was to simplify implementations of plugins. If the 
+design still simplifies matters even when you want to allow callbacks then 
+that should be the preferred method. If it complicates things, it should 
+not be used in that case.
+
+Having said that, I could imagine that something like
+
+	@Parameter(getMin = &quot;getMinValue&quot;)
+	public double value;
+
+	...
+
+	public double getMinValue() {
+		return image == null ? 0 : -image.getWidth();
+	}
+
+could be easy enough. I am just afraid that we'll have method creep that 
+way (remember: every method has at least 4 lines and you might need a 
+couple of callbacks per parameter), and that it might be a better idea to 
+have something like
+
+	@Parameter(getLimits = &quot;getLimitsValue&quot;)
+	public double limits;
+
+	...
+
+	public void getLimitsValue(DoubleLimits limits) {
+		if (image == null)
+			return;
+		limits.min = -image.getWidth();
+		limits.max = image.getWidth();
+		limits.step = 1;
+	}
+
+with a class
+
+	public class DoubleLimits {
+		public double min, max, step;
+	}
+
+might be more appropriate... Hmm?
+
+(One could also think of automatic getLimits&lt;name&gt;() methods, i.e. when 
+there is a parameter called &quot;grant&quot; and there exists a method 
+getLimitsGrant() it gets called, but that would be a bit too magic for my 
+liking; it's not intuitive.)
+
+&gt;<i> Another idea... could there not be a way to intercept the InputPanel 
+</I>&gt;<i> after creation, modify it (and then one would need to intercept the 
+</I>&gt;<i> 'harvesting' step ...).... Hmmm...
+</I>
+I am afraid that these plugins would not be useful outside GUIs. For 
+example, if you would want to concoct a macro, say, in a web browser, and 
+run it inside an OMERO database on hundreds of thousands of images, then 
+there would not be an InputPanel.
+
+(Of course we could repeat ImageJ's design of making GUI elements 
+mandatory even for offline processing, but that design imposes rather 
+serious limitations IMO. In general, processing should not be thought of 
+as GUI centric, otherwise there is no proper separation of concerns.)
+
+Ciao,
+Dscho
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000444.html">[ImageJ-devel] Overriding min, max and choices at runtime
+</A></li>
+	<LI>Next message: <A HREF="000449.html">[ImageJ-devel] ImageJ2 and OME ROI models
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#445">[ date ]</a>
+              <a href="thread.html#445">[ thread ]</a>
+              <a href="subject.html#445">[ subject ]</a>
+              <a href="author.html#445">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

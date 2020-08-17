@@ -1,0 +1,138 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] ImageOpener always giving me three channels when these is only one.
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImageOpener%20always%20giving%20me%20three%20channels%20when%0A%20these%20is%20only%20one.&In-Reply-To=%3CAANLkTi%3Dak%3DWTD%2B9O%3DiWdSJH3L7hYheiE1u%3D0Ej2G7MMx%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000289.html">
+   <LINK REL="Next"  HREF="000291.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] ImageOpener always giving me three channels when these is only one.</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImageOpener%20always%20giving%20me%20three%20channels%20when%0A%20these%20is%20only%20one.&In-Reply-To=%3CAANLkTi%3Dak%3DWTD%2B9O%3DiWdSJH3L7hYheiE1u%3D0Ej2G7MMx%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] ImageOpener always giving me three channels when these is only one.">ctrueden at wisc.edu
+       </A><BR>
+    <I>Mon Jan 10 12:16:14 CST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000289.html">[ImageJ-devel] ImageCanvas Rotation in ImageJ2.0 ?
+</A></li>
+        <LI>Next message: <A HREF="000291.html">[ImageJ-devel] ImageOpener always giving me three channels when these is only one.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#290">[ date ]</a>
+              <a href="thread.html#290">[ thread ]</a>
+              <a href="subject.html#290">[ subject ]</a>
+              <a href="author.html#290">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+The problem is how to tell apart a greyscale with a viewing LUT (underlying
+&gt;<i> numeric, indexing a palette) from one with an unordered palette (indexed).
+</I>&gt;<i> One way could be to implicitly record this at creation time (let's say if
+</I>&gt;<i> saved as GIF, or after applying some colour reduction) by adding a flag
+</I>&gt;<i> indicating so. But of course, all externally created images would not have
+</I>&gt;<i> this tag.
+</I>&gt;<i>
+</I>
+I know this thread is a bit old now, but I wanted to make one comment about
+differentiating between what Gabriel calls &quot;underlying numeric, indexing a
+palette&quot; (i.e., color table for visualization) and &quot;unordered palette&quot;
+(i.e., color table identifying actual measured values).
+
+Bio-Formats can report, for a given indexed dataset, which of these it
+believes the data to be, via a method called &quot;isFalseColor().&quot; If the data
+isFalseColor(), then its color table is merely for visualization. If
+!isFalseColor(), then the true data is represented in the table values.
+
+Right now, the false color flag is format-dependent. That is, we know
+certain formats generally save the color table for visualization. As of this
+writing, the following formats are reported as using false color indexing:
+
+:<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">curtis at rook</A>~/code/LOCI/software/components/bio-formats/src/loci/formats/in
+</I>grep falseColor *.java | grep true
+BioRadReader.java:    core[0].falseColor = true;
+LeicaHandler.java:        coreMeta.falseColor = true;
+LeicaReader.java:      core[i].falseColor = true;
+NativeND2Reader.java:        core[i].falseColor = true;
+OMEXMLReader.java:      core[i].falseColor = true;
+TCSReader.java:    core[0].falseColor = true;
+ZeissZVIReader.java:    core[0].falseColor = true;
+
+I agree with Gabriel that it would be nice if open standards (e.g.,
+OME-TIFF) supported indexed color, as well as a flag to differentiate,
+rather than merely using a convention. But for proprietary formats, this
+heuristic has worked fairly well so far.
+
+-Curtis
+
+On Mon, Dec 13, 2010 at 4:35 AM, Gabriel Landini &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">G.Landini at bham.ac.uk</A>&gt;wrote:
+
+&gt;<i> On Monday 13 December 2010 10:52:34 Johannes Schindelin wrote:
+</I>&gt;<i> &gt; IMHO an index-color image is _not_ of a numeric type. So to properly
+</I>&gt;<i> &gt; support index-color images, one would need to make a &quot;CategoricalType&quot;
+</I>&gt;<i> &gt; that still uses bytes or shorts, but that cannot add/multiply/whatever.
+</I>&gt;<i>
+</I>&gt;<i> Sure.
+</I>&gt;<i>
+</I>&gt;<i> &gt; OTOH if the LUT is just a view mode (as it should always be seen in
+</I>&gt;<i> &gt; scientific imaging), then the LUT is not part of the image and should not
+</I>&gt;<i> &gt; be saved in the first place.
+</I>&gt;<i>
+</I>&gt;<i> I agree here too, but most people will want to save greyscale images with a
+</I>&gt;<i> viewing palette while preserving the underlying data.
+</I>&gt;<i>
+</I>&gt;<i> The problem is how to tell apart a greyscale with a viewing LUT (underlying
+</I>&gt;<i> numeric, indexing a palette) from one with an unordered palette (indexed).
+</I>&gt;<i> One way could be to implicitly record this at creation time (let's say if
+</I>&gt;<i> saved as GIF, or after applying some colour reduction) by adding a flag
+</I>&gt;<i> indicating so. But of course, all externally created images would not have
+</I>&gt;<i> this tag.
+</I>&gt;<i>
+</I>&gt;<i> But going back to the original problem, if the palette -at file creation
+</I>&gt;<i> time-
+</I>&gt;<i> is the Grays.lut, then it should be saved without a palette. I wonder if
+</I>&gt;<i> this
+</I>&gt;<i> would solve the reported problem.
+</I>&gt;<i>
+</I>&gt;<i> Cheers
+</I>&gt;<i>
+</I>&gt;<i> Gabriel
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagejdev.org</A>
+</I>&gt;<i> <A HREF="http://imagejdev.org/mailman/listinfo/imagej-devel">http://imagejdev.org/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20110110/d2905cfd/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20110110/d2905cfd/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000289.html">[ImageJ-devel] ImageCanvas Rotation in ImageJ2.0 ?
+</A></li>
+	<LI>Next message: <A HREF="000291.html">[ImageJ-devel] ImageOpener always giving me three channels when these is only one.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#290">[ date ]</a>
+              <a href="thread.html#290">[ thread ]</a>
+              <a href="subject.html#290">[ subject ]</a>
+              <a href="author.html#290">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

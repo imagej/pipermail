@@ -1,0 +1,148 @@
+<tt>
+&lt;div&nbsp;dir=&quot;ltr&quot;&gt;Good&nbsp;catch&nbsp;Johannes!&nbsp;I&nbsp;miss&nbsp;you&nbsp;and&nbsp;the&nbsp;rest&nbsp;of&nbsp;the&nbsp;gang&nbsp;too.&nbsp;Remember&nbsp;I&#39;ll&nbsp;always&nbsp;be&nbsp;around&nbsp;until&nbsp;you&#39;ve&nbsp;closed&nbsp;all&nbsp;the&nbsp;tickets&nbsp;I&nbsp;ever&nbsp;filed.&nbsp;:)&nbsp;Happy&nbsp;holidays&nbsp;and&nbsp;best&nbsp;wishes&nbsp;to&nbsp;the&nbsp;ImageJ2&nbsp;team.&lt;/div&gt;<br>
+&lt;div&nbsp;class=&quot;gmail_extra&quot;&gt;&lt;br&gt;&lt;br&gt;&lt;div&nbsp;class=&quot;gmail_quote&quot;&gt;On&nbsp;Fri,&nbsp;Dec&nbsp;13,&nbsp;2013&nbsp;at&nbsp;11:12&nbsp;PM,&nbsp;Johannes&nbsp;Schindelin&nbsp;&lt;span&nbsp;dir=&quot;ltr&quot;&gt;&lt;&lt;a&nbsp;href=&quot;mailto:Johannes.Schindelin@gmx.de&quot;&nbsp;target=&quot;_blank&quot;&gt;Johannes.Schindelin@gmx.de&lt;/a&gt;&gt;&lt;/span&gt;&nbsp;wrote:&lt;br&gt;<br>
+&lt;blockquote&nbsp;class=&quot;gmail_quote&quot;&nbsp;style=&quot;margin:0&nbsp;0&nbsp;0&nbsp;.8ex;border-left:1px&nbsp;#ccc&nbsp;solid;padding-left:1ex&quot;&gt;Hi&nbsp;all,&lt;br&gt;<br>
+&lt;br&gt;<br>
+I&nbsp;dedicate&nbsp;this&nbsp;mail&nbsp;to&nbsp;Barry&nbsp;because&nbsp;he&nbsp;reported&nbsp;the&nbsp;issue&nbsp;first,&nbsp;and&lt;br&gt;<br>
+besides,&nbsp;I&nbsp;miss&nbsp;him&nbsp;;-)&lt;br&gt;<br>
+&lt;br&gt;<br>
+The&nbsp;issue&nbsp;Barry&nbsp;pointed&nbsp;out&nbsp;earlier,&nbsp;on&nbsp;Ubuntu,&nbsp;was&nbsp;that&nbsp;ImageJ2&nbsp;started&lt;br&gt;<br>
+behaving&nbsp;strangely&nbsp;with&nbsp;regards&nbsp;to&nbsp;the&nbsp;menu:&nbsp;as&nbsp;soon&nbsp;as&nbsp;the&nbsp;mouse&nbsp;was&lt;br&gt;<br>
+hovering&nbsp;over&nbsp;the&nbsp;tool&nbsp;bar,&nbsp;the&nbsp;menu&nbsp;would&nbsp;go&nbsp;away.&lt;br&gt;<br>
+&lt;br&gt;<br>
+Back&nbsp;then,&nbsp;I&nbsp;could&nbsp;not&nbsp;reproduce&nbsp;the&nbsp;issue,&nbsp;but&nbsp;today&nbsp;I&nbsp;could,&nbsp;so&nbsp;I&nbsp;went&lt;br&gt;<br>
+on&nbsp;a&nbsp;hunt,&nbsp;and&nbsp;here&nbsp;is&nbsp;the&nbsp;write-up&nbsp;for&nbsp;everybody&nbsp;to&nbsp;enjoy:&lt;br&gt;<br>
+&lt;br&gt;<br>
+First&nbsp;of&nbsp;all,&nbsp;I&nbsp;figured&nbsp;that&nbsp;I&nbsp;should&nbsp;find&nbsp;out&nbsp;whether&nbsp;some&nbsp;strange&nbsp;AWT&lt;br&gt;<br>
+events&nbsp;were&nbsp;processed,&nbsp;so&nbsp;I&nbsp;fired&nbsp;up&nbsp;Eclipse&nbsp;--&nbsp;because&nbsp;I&nbsp;wanted&nbsp;to&nbsp;use&lt;br&gt;<br>
+Eclipse&#39;s&nbsp;debugger&nbsp;to&nbsp;investigate&nbsp;the&nbsp;issue&nbsp;--&nbsp;and&nbsp;added&nbsp;this&nbsp;code&nbsp;to&nbsp;the&lt;br&gt;<br>
+end&nbsp;of&nbsp;AbstractSwingUI#createUI():&lt;br&gt;<br>
+&lt;br&gt;<br>
+--&nbsp;snip&nbsp;--&lt;br&gt;<br>
+Toolkit.getDefaultToolkit().addAWTEventListener(new&nbsp;AWTEventListener()&nbsp;{&lt;br&gt;<br>
+&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;@Override&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;public&nbsp;void&nbsp;eventDispatched(AWTEvent&nbsp;event)&nbsp;{&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;System.err.println(&quot;event:&nbsp;&quot;&nbsp;+&nbsp;event);&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;}&lt;br&gt;<br>
+},&nbsp;-1);&lt;br&gt;<br>
+--&nbsp;snap&nbsp;--&lt;br&gt;<br>
+&lt;br&gt;<br>
+Basically,&nbsp;this&nbsp;code&nbsp;asks&nbsp;Java&nbsp;to&nbsp;output&nbsp;all&nbsp;the&nbsp;UI&nbsp;events&nbsp;as&nbsp;they&lt;br&gt;<br>
+happen.&lt;br&gt;<br>
+&lt;br&gt;<br>
+Then,&nbsp;I&nbsp;set&nbsp;a&nbsp;breakpoint&nbsp;on&nbsp;the&nbsp;first&nbsp;line&nbsp;and&nbsp;started&nbsp;ImageJ2&nbsp;in&nbsp;debug&lt;br&gt;<br>
+mode.&nbsp;A&nbsp;little-known&nbsp;gem&nbsp;is&nbsp;that&nbsp;Eclipse&#39;s&nbsp;Console&nbsp;window&nbsp;not&nbsp;only&nbsp;shows&lt;br&gt;<br>
+the&nbsp;standard&nbsp;output&nbsp;and&nbsp;standard&nbsp;error&nbsp;stream&nbsp;of&nbsp;the&nbsp;debugged&nbsp;program,&lt;br&gt;<br>
+but&nbsp;also&nbsp;accepts&nbsp;the&nbsp;standard&nbsp;input.&nbsp;I&nbsp;used&nbsp;this&nbsp;fact&nbsp;by&nbsp;adding&nbsp;some&lt;br&gt;<br>
+empty&nbsp;lines&nbsp;(simply&nbsp;focusing&nbsp;the&nbsp;Console&nbsp;window&nbsp;and&nbsp;hitting&nbsp;the&nbsp;Return&lt;br&gt;<br>
+key&nbsp;a&nbsp;couple&nbsp;of&nbsp;times)&nbsp;as&nbsp;soon&nbsp;as&nbsp;the&nbsp;main&nbsp;window&nbsp;was&nbsp;visible&nbsp;because&lt;br&gt;<br>
+the&nbsp;events&nbsp;that&nbsp;had&nbsp;been&nbsp;shown&nbsp;so&nbsp;far&nbsp;could&nbsp;not&nbsp;be&nbsp;responsible&nbsp;(or&nbsp;so&nbsp;I&lt;br&gt;<br>
+thought).&lt;br&gt;<br>
+&lt;br&gt;<br>
+But&nbsp;after&nbsp;moving&nbsp;the&nbsp;mouse&nbsp;over&nbsp;the&nbsp;toolbar&nbsp;(and&nbsp;the&nbsp;menu&nbsp;bar&lt;br&gt;<br>
+vanishing),&nbsp;really&nbsp;only&nbsp;the&nbsp;obvious&nbsp;events&nbsp;were&nbsp;shown:&nbsp;mouse&nbsp;enter,&lt;br&gt;<br>
+mouse&nbsp;moves&nbsp;(and&nbsp;then&nbsp;mouse&nbsp;leave).&lt;br&gt;<br>
+&lt;br&gt;<br>
+So&nbsp;I&nbsp;imagined&nbsp;that&nbsp;another&nbsp;way&nbsp;to&nbsp;debug&nbsp;the&nbsp;issue&nbsp;might&nbsp;be&nbsp;to&nbsp;look&lt;br&gt;<br>
+whether&nbsp;there&nbsp;actually&nbsp;*was*&nbsp;a&nbsp;menu&nbsp;bar&nbsp;still&nbsp;when&nbsp;the&nbsp;tool&nbsp;bar&nbsp;was&lt;br&gt;<br>
+painted&nbsp;after&nbsp;the&nbsp;mouse&nbsp;entered&nbsp;the&nbsp;main&nbsp;window.&lt;br&gt;<br>
+&lt;br&gt;<br>
+To&nbsp;this&nbsp;end,&nbsp;I&nbsp;patched&nbsp;in&nbsp;a&nbsp;paintComponent&nbsp;method&nbsp;into&nbsp;the&nbsp;SwingToolBar&lt;br&gt;<br>
+class:&lt;br&gt;<br>
+&lt;br&gt;<br>
+--&nbsp;snip&nbsp;--&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;@Override&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;public&nbsp;void&nbsp;paintComponent(final&nbsp;Graphics&nbsp;g)&nbsp;{&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;Container&nbsp;c&nbsp;=&nbsp;getParent();&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;c&nbsp;=&nbsp;c.getParent();&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;c&nbsp;=&nbsp;c.getParent();&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;c&nbsp;=&nbsp;c.getParent();&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;System.err.println(c);&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;System.err.println(((JFrame)c).getJMenuBar());&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;super.paintComponent(g);&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;}&lt;br&gt;<br>
+--&nbsp;snap&nbsp;--&lt;br&gt;<br>
+&lt;br&gt;<br>
+Of&nbsp;course,&nbsp;that&nbsp;was&nbsp;not&nbsp;the&nbsp;initial&nbsp;version.&nbsp;The&nbsp;initial&nbsp;version&nbsp;assumed&lt;br&gt;<br>
+that&nbsp;already&nbsp;the&nbsp;direct&nbsp;parent&nbsp;container&nbsp;of&nbsp;the&nbsp;tool&nbsp;bar&nbsp;would&nbsp;be&nbsp;the&lt;br&gt;<br>
+JFrame,&nbsp;and&nbsp;in&nbsp;hindsight,&nbsp;I&#39;d&nbsp;better&nbsp;have&nbsp;written&nbsp;something&nbsp;like:&lt;br&gt;<br>
+&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;Container&nbsp;c&nbsp;=&nbsp;getParent();&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;while&nbsp;(c&nbsp;!=&nbsp;null&nbsp;&amp;&amp;&nbsp;!(c&nbsp;instanceof&nbsp;JFrame))&nbsp;{&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;c&nbsp;=&nbsp;c.getParent();&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;}&lt;br&gt;<br>
+&lt;br&gt;<br>
+but&nbsp;hindsight&nbsp;is&nbsp;20/20&nbsp;and&nbsp;I&nbsp;did&nbsp;not&nbsp;have&nbsp;the&nbsp;luxury&nbsp;of&nbsp;that&nbsp;yet.&lt;br&gt;<br>
+However,&nbsp;I&nbsp;had&nbsp;the&nbsp;luxury&nbsp;of&nbsp;incremental&nbsp;compilation&nbsp;(as&nbsp;performed&nbsp;by&lt;br&gt;<br>
+Eclipse,&nbsp;one&nbsp;of&nbsp;the&nbsp;few&nbsp;things&nbsp;I&nbsp;really&nbsp;like&nbsp;about&nbsp;Eclipse):&nbsp;I&nbsp;could&nbsp;set&lt;br&gt;<br>
+a&nbsp;breakpoint&nbsp;on&nbsp;the&nbsp;&quot;System.err.println(c);&quot;&nbsp;call,&nbsp;launch&nbsp;ImageJ2&nbsp;in&nbsp;debug&lt;br&gt;<br>
+mode,&nbsp;and&nbsp;then&nbsp;insert&nbsp;the&nbsp;&quot;c&nbsp;=&nbsp;c.getParent();&quot;&nbsp;lines&nbsp;one&nbsp;by&nbsp;one,&nbsp;saving&lt;br&gt;<br>
+them,&nbsp;which&nbsp;would&nbsp;trigger&nbsp;Eclipse&#39;s&nbsp;incremental&nbsp;compiler&nbsp;and&nbsp;move&lt;br&gt;<br>
+execution&nbsp;back&nbsp;to&nbsp;the&nbsp;first&nbsp;line&nbsp;of&nbsp;the&nbsp;method,&nbsp;until&nbsp;I&nbsp;had&nbsp;the&nbsp;right&lt;br&gt;<br>
+amount.&lt;br&gt;<br>
+&lt;br&gt;<br>
+And&nbsp;sure&nbsp;enough,&nbsp;the&nbsp;first&nbsp;time&nbsp;round,&nbsp;there&nbsp;was&nbsp;a&nbsp;menu&nbsp;bar,&nbsp;but&nbsp;after&lt;br&gt;<br>
+moving&nbsp;the&nbsp;mouse&nbsp;over&nbsp;the&nbsp;main&nbsp;window&nbsp;the&nbsp;menu&nbsp;bar&nbsp;was&nbsp;null!&lt;br&gt;<br>
+&lt;br&gt;<br>
+Therefore&nbsp;the&nbsp;next&nbsp;step&nbsp;was&nbsp;to&nbsp;find&nbsp;out&nbsp;when&nbsp;it&nbsp;was&nbsp;set&nbsp;to&nbsp;null.&nbsp;To&nbsp;find&lt;br&gt;<br>
+out,&nbsp;I&nbsp;edited&nbsp;the&nbsp;SwingApplicationFrame&nbsp;class&nbsp;(which&nbsp;I&nbsp;found&nbsp;out&nbsp;from&lt;br&gt;<br>
+inspecting&nbsp;the&nbsp;&quot;c&quot;&nbsp;variable&nbsp;in&nbsp;the&nbsp;SwingToolBar#paintComponent(Graphics)&lt;br&gt;<br>
+method&nbsp;above)&nbsp;like&nbsp;so:&lt;br&gt;<br>
+&lt;br&gt;<br>
+--&nbsp;snip&nbsp;--&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;@Override&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;public&nbsp;void&nbsp;setJMenuBar(final&nbsp;JMenuBar&nbsp;bar)&nbsp;{&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;super.setJMenuBar(bar);&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;}&lt;br&gt;<br>
+--&nbsp;snap&nbsp;--&lt;br&gt;<br>
+&lt;br&gt;<br>
+and&nbsp;--&nbsp;you&nbsp;probably&nbsp;guessed&nbsp;it&nbsp;by&nbsp;now&nbsp;--&nbsp;added&nbsp;a&nbsp;breakpoint&nbsp;on&nbsp;the&lt;br&gt;<br>
+&quot;super.setJMenuBar(bar);&quot;&nbsp;line.&lt;br&gt;<br>
+&lt;br&gt;<br>
+It&nbsp;turns&nbsp;out&nbsp;that&nbsp;it&nbsp;is&nbsp;called&nbsp;the&nbsp;first&nbsp;time&nbsp;from&lt;br&gt;<br>
+AbstractSwingUI#createUI(),&nbsp;as&nbsp;expected,&nbsp;but&nbsp;then&nbsp;--&nbsp;unexpectedly&nbsp;--&lt;br&gt;<br>
+from&nbsp;MacOSXPlatform#onEvent(WinActivatedEvent)!&nbsp;On&nbsp;Linux,&nbsp;no&nbsp;less...&lt;br&gt;<br>
+&lt;br&gt;<br>
+There&nbsp;we&nbsp;have&nbsp;the&nbsp;culprit.&nbsp;As&nbsp;I&nbsp;found&nbsp;out&nbsp;by&nbsp;inserting&lt;br&gt;<br>
+&lt;br&gt;<br>
+--&nbsp;snip&nbsp;--&lt;br&gt;<br>
+if&nbsp;(c.getName().endsWith(&quot;WinActivatedEvent&quot;))&nbsp;{&lt;br&gt;<br>
+ &nbsp; &nbsp; &nbsp; &nbsp;System.err.println();&lt;br&gt;<br>
+}&lt;br&gt;<br>
+--&nbsp;snap&nbsp;--&lt;br&gt;<br>
+&lt;br&gt;<br>
+into&nbsp;the&nbsp;DefaultEventService#subscribe(Class,&nbsp;EventSubscriber)&nbsp;method&lt;br&gt;<br>
+and&nbsp;--&nbsp;you&nbsp;probably&nbsp;guessed&nbsp;that&nbsp;again&nbsp;--&nbsp;setting&nbsp;a&nbsp;breakpoint&nbsp;on&nbsp;the&lt;br&gt;<br>
+&quot;System.err.println();&quot;&nbsp;line&nbsp;(after&nbsp;importing&nbsp;scijava-common&nbsp;into&nbsp;the&lt;br&gt;<br>
+Eclipse&nbsp;workspace&nbsp;and&nbsp;adjusting&nbsp;ImageJ2&#39;s&nbsp;pom.xml&nbsp;to&nbsp;set&nbsp;the&lt;br&gt;<br>
+scijava-common.version&nbsp;property&nbsp;to&nbsp;point&nbsp;to&nbsp;the&nbsp;checked&nbsp;out&nbsp;version),&lt;br&gt;<br>
+MacOSXPlatform&nbsp;is&nbsp;registered&nbsp;as&nbsp;an&nbsp;event&nbsp;listener.&lt;br&gt;<br>
+&lt;br&gt;<br>
+This&nbsp;is&nbsp;the&nbsp;consequence&nbsp;of&nbsp;some&nbsp;subtle,&nbsp;recent&nbsp;change&nbsp;that&nbsp;at&nbsp;the&nbsp;same&lt;br&gt;<br>
+time&nbsp;a&nbsp;Context&nbsp;is&nbsp;injected,&nbsp;the&nbsp;class&nbsp;is&nbsp;also&nbsp;automatically&nbsp;registered&lt;br&gt;<br>
+as&nbsp;event&nbsp;listener&nbsp;if&nbsp;it&nbsp;has&nbsp;@EventHandler-annotated&nbsp;methods).&lt;br&gt;<br>
+&lt;br&gt;<br>
+Now,&nbsp;MacOSXPlatform&#39;s&nbsp;onEvent()&nbsp;method&nbsp;does&nbsp;not&nbsp;verify&nbsp;that&nbsp;the&nbsp;current&lt;br&gt;<br>
+platform&nbsp;is&nbsp;actually&nbsp;MacOSX,&nbsp;nor&nbsp;does&nbsp;the&nbsp;EventService&nbsp;&quot;forget&quot;&nbsp;the&lt;br&gt;<br>
+MacOSXPlatform&nbsp;as&nbsp;one&nbsp;would&nbsp;expect&nbsp;when&nbsp;the&nbsp;MacOSXPlatform&nbsp;is&lt;br&gt;<br>
+garbage-collected&nbsp;after&nbsp;it&nbsp;has&nbsp;been&nbsp;determined&nbsp;that&nbsp;it&nbsp;does&nbsp;not&nbsp;match&lt;br&gt;<br>
+the&nbsp;current&nbsp;platform&nbsp;because&nbsp;the&nbsp;PlatformService&nbsp;is&nbsp;now&nbsp;a&lt;br&gt;<br>
+SingletonService&nbsp;that&nbsp;does&nbsp;not&nbsp;let&nbsp;go&nbsp;of&nbsp;its&nbsp;instances...&lt;br&gt;<br>
+&lt;br&gt;<br>
+So&nbsp;we&nbsp;actually&nbsp;need&nbsp;two&nbsp;changes&nbsp;to&nbsp;fix&nbsp;this:&lt;br&gt;<br>
+&lt;br&gt;<br>
+1)&nbsp;MacOSXPlatform#onEvent(WinActivatedEvent)&nbsp;needs&nbsp;to&nbsp;be&nbsp;safe,&nbsp;and&lt;br&gt;<br>
+&lt;br&gt;<br>
+2)&nbsp;the&nbsp;DefaultPlatformService&nbsp;must&nbsp;not&nbsp;keep&nbsp;references&nbsp;to&nbsp;Platform&lt;br&gt;<br>
+instances&nbsp;that&nbsp;are&nbsp;not&nbsp;applicable&nbsp;to&nbsp;the&nbsp;currently-running&nbsp;platform.&lt;br&gt;<br>
+&lt;br&gt;<br>
+&lt;a&nbsp;href=&quot;https://github.com/imagej/imagej/commit/c814f4b0&quot;&nbsp;target=&quot;_blank&quot;&gt;https://github.com/imagej/imagej/commit/c814f4b0&lt;/a&gt;&nbsp;addresses&nbsp;1)&nbsp;while&lt;br&gt;<br>
+&lt;a&nbsp;href=&quot;https://github.com/scijava/scijava-common/commit/46f64db2&quot;&nbsp;target=&quot;_blank&quot;&gt;https://github.com/scijava/scijava-common/commit/46f64db2&lt;/a&gt;&nbsp;and&lt;br&gt;<br>
+&lt;a&nbsp;href=&quot;https://github.com/scijava/scijava-common/commit/522f524&quot;&nbsp;target=&quot;_blank&quot;&gt;https://github.com/scijava/scijava-common/commit/522f524&lt;/a&gt;&nbsp;address&nbsp;2)&lt;br&gt;<br>
+&lt;br&gt;<br>
+Ciao,&lt;br&gt;<br>
+Dscho&lt;br&gt;<br>
+&lt;/blockquote&gt;&lt;/div&gt;&lt;br&gt;&lt;/div&gt;<br>
+
+</tt>

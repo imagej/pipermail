@@ -1,0 +1,336 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [fiji-devel] saving images with imglib2-io
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20saving%20images%20with%20imglib2-io&In-Reply-To=%3C4F5A009C.3050504%40mpi-cbg.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000622.html">
+   <LINK REL="Next"  HREF="000619.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [fiji-devel] saving images with imglib2-io</H1>
+    <B>Tobias Pietzsch</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20saving%20images%20with%20imglib2-io&In-Reply-To=%3C4F5A009C.3050504%40mpi-cbg.de%3E"
+       TITLE="[ImageJ-devel] [fiji-devel] saving images with imglib2-io">pietzsch at mpi-cbg.de
+       </A><BR>
+    <I>Fri Mar  9 07:07:40 CST 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000622.html">[ImageJ-devel] [fiji-devel] saving images with imglib2-io
+</A></li>
+        <LI>Next message: <A HREF="000619.html">[ImageJ-devel] GitHub SSH key audit required
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#624">[ date ]</a>
+              <a href="thread.html#624">[ thread ]</a>
+              <a href="subject.html#624">[ subject ]</a>
+              <a href="author.html#624">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Curtis,
+
+&gt;<i> 4) Are there means to not only consider RealType? Maybe we could
+</I>&gt;<i> think of a way where it is enough to have just a NativeType that is
+</I>&gt;<i> able to project itself into a java basic type array?
+</I>&gt;<i>
+</I>...
+&gt;<i>
+</I>&gt;<i> Perhaps another way of handling it would be to create a wrapper
+</I>&gt;<i> class in ImgLib that converts NativeTypes to a particular sort of
+</I>&gt;<i> RealType, without making a copy of the data, sort of like Views does
+</I>&gt;<i> for geometric transformations. Would that solve it?
+</I>
+A framework to do this is already in place (at least partially) in the
+net.imglib2.converter[.sampler] package. For instance, you can use
+ConvertedRandomAccessible with a RealFloatSamplerConverter to convert
+any RealType&lt;T&gt; to FloatType on the fly.
+
+The cool thing is, that it works both ways, so this could also be used
+for reading back the images...
+
+It is not complete, and there are still open problems, e.g., addressing
+NativeTypes with numEntities!=1. I just wanted to mention that something
+similar to what you are looking for exists. So if you choose to progress
+in that direction, it would be good, to do it in a common framework. If
+I can help with adapting SamplerConverter to your needs, just let me
+know.
+
+best regards,
+Tobias
+
+
+On 03/08/2012 09:48 PM, Curtis Rueden wrote:
+&gt;<i> Hi Steffi,
+</I>&gt;<i>
+</I>&gt;<i> Thanks for the feedback!
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> 1) We should maybe not only do this for Img, but actually for any
+</I>&gt;<i> RandomAccessibleInterval&lt;NativeType&gt;. In this way we will be able to
+</I>&gt;<i>  write Img, Views, anything that is rectangular. The source code will
+</I>&gt;<i>  be just the same ...
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> This is a good idea. However, there are some obstacles. In
+</I>&gt;<i> particular, ImgPlus currently wraps an Img, and provides structural
+</I>&gt;<i> metadata (in particular, axis labels) that is very useful for
+</I>&gt;<i> writing multidimensional data correctly. We could expand ImgPlus to
+</I>&gt;<i> wrap any RandomAccessibleInterval but it will require some thought.
+</I>&gt;<i>
+</I>&gt;<i> For now, we have filed a ticket for this work, to serve as a
+</I>&gt;<i> reminder: <A HREF="http://trac.imagej.net/ticket/1063">http://trac.imagej.net/ticket/1063</A>
+</I>&gt;<i>
+</I>&gt;<i> Steffi, you've been CCed on the ticket, so will receive updates
+</I>&gt;<i> if/when we make any progress on it.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> 2) Also thinking along those lines (and more into the future), is
+</I>&gt;<i> there maybe any way to write/read sparse data, i.e. a list of
+</I>&gt;<i> coordinates and associated values (net.imglib2.collection)?
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Writing sparse data would be quite difficult, as Bio-Formats does
+</I>&gt;<i> not really have an API for that. We could write zeroes or NaNs or
+</I>&gt;<i> other dummy value for all missing data, but that's not really very
+</I>&gt;<i> efficient. It would probably be easiest to implement a different
+</I>&gt;<i> saver to deal with this sort of data.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> 3) Another issue will soon be planes that are too big to hold them
+</I>&gt;<i> in one java array, do you have means to write/read them? The CellImg
+</I>&gt;<i>  will be able to hold them, and according to Stephan Saalfeld it will
+</I>&gt;<i>  not take much longer until electron microscopy will produce such
+</I>&gt;<i> images. The current limit of java arrays is 2^31-1 entries which
+</I>&gt;<i> means ~46000x46000 pixels per plane.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> At the API level, Bio-Formats already supports writing of extremely
+</I>&gt;<i> large image planes, in that you can write out data a tile at a time.
+</I>&gt;<i> However, this capability is only functional for a subset of formats
+</I>&gt;<i> (TIFF in particular). Of course, we will need to update the ImgSaver
+</I>&gt;<i> to handle cases where the byte array would be too large, by splitting
+</I>&gt;<i> the data into tiles.
+</I>&gt;<i>
+</I>&gt;<i> 4) Are there means to not only consider RealType? Maybe we could
+</I>&gt;<i> think of a way where it is enough to have just a NativeType that is
+</I>&gt;<i> able to project itself into a java basic type array?
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> As long as there is an API to express the NativeType as a java basic
+</I>&gt;<i> type array, then yes, we could write it out. But it may be
+</I>&gt;<i> misleading. For example, let's say a particular NativeType can be
+</I>&gt;<i> coerced into a double[] per plane. Then Bio-Formats will convert the
+</I>&gt;<i> double[] to a byte[], set the pixel type to FLOAT64, and write it
+</I>&gt;<i> out. But &quot;FLOAT64&quot; may not really accurately describe what that data
+</I>&gt;<i> is.
+</I>&gt;<i>
+</I>&gt;<i> Really, the only supported types that Bio-Formats can do right now
+</I>&gt;<i> are: int8, uint8, int16, uint16, int32, uint32, float32, float64.
+</I>&gt;<i>
+</I>&gt;<i> Perhaps another way of handling it would be to create a wrapper
+</I>&gt;<i> class in ImgLib that converts NativeTypes to a particular sort of
+</I>&gt;<i> RealType, without making a copy of the data, sort of like Views does
+</I>&gt;<i> for geometric transformations. Would that solve it?
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> 5) What also crossed my mind were Non-Native-Types and if we should
+</I>&gt;<i> somehow consider them at all. A generic but I guess slow and
+</I>&gt;<i> inefficient method would be to serialize each pixel individually?
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Again, as long as the data can be expressed as a primitive array, it
+</I>&gt;<i> may be doable. Or we can use the wrapper approach described above. I
+</I>&gt;<i> agree that the ultimate solution of serializing each pixel would
+</I>&gt;<i> work&#8212;although beware Java serialization's transient nature. If you
+</I>&gt;<i> serialize an object, and then try to read it back in with a newer
+</I>&gt;<i> version of that class, it won't work. So Java serialization is
+</I>&gt;<i> dangerous for this type of persistence.
+</I>&gt;<i>
+</I>&gt;<i> Regards, Curtis
+</I>&gt;<i>
+</I>&gt;<i> P.S. Mark now has an initial working version of the PlanarImg case:
+</I>&gt;<i> <A HREF="https://github.com/ctrueden/bioformats/blob/imglib-io/components/scifio/src/ome/scifio/img/ImgSaver.java">https://github.com/ctrueden/bioformats/blob/imglib-io/components/scifio/src/ome/scifio/img/ImgSaver.java</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On Wed, Mar 7, 2012 at 2:13 PM, Stephan Preibisch
+</I>&gt;<i> &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">stephan.preibisch at gmx.de</A> &lt;mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">stephan.preibisch at gmx.de</A>&gt;&gt; wrote:
+</I>&gt;<i>
+</I>&gt;<i> Hi Curtis &amp; Mark,
+</I>&gt;<i>
+</I>&gt;<i> first of all thanks a lot for caring about this important issue. I
+</I>&gt;<i> felt this was always one of the really important things lacking in
+</I>&gt;<i> ImgLib. I just had a look into the source code, and it looks like a
+</I>&gt;<i> great start. You are right, extracting planes from other sources than
+</I>&gt;<i> PlanarImg will not be a big deal.
+</I>&gt;<i>
+</I>&gt;<i> I have 5 questions/comments that we might want to think about now or
+</I>&gt;<i>  later:
+</I>&gt;<i>
+</I>&gt;<i> 1) We should maybe not only do this for Img, but actually for any
+</I>&gt;<i> RandomAccessibleInterval&lt;NativeType&gt;. In this way we will be able to
+</I>&gt;<i>  write Img, Views, anything that is rectangular. The source code will
+</I>&gt;<i>  be just the same ... 2) Also thinking along those lines (and more
+</I>&gt;<i> into the future), is there maybe any way to write/read sparse data,
+</I>&gt;<i> i.e. a list of coordinates and associated values
+</I>&gt;<i> (net.imglib2.collection)? 3) Another issue will soon be planes that
+</I>&gt;<i> are too big to hold them in one java array, do you have means to
+</I>&gt;<i> write/read them? The CellImg will be able to hold them, and
+</I>&gt;<i> according to Stephan Saalfeld it will not take much longer until
+</I>&gt;<i> electron microscopy will produce such images. The current limit of
+</I>&gt;<i> java arrays is 2^31-1 entries which means ~46000x46000 pixels per
+</I>&gt;<i> plane. 4) Are there means to not only consider RealType? Maybe we
+</I>&gt;<i> could think of a way where it is enough to have just a NativeType
+</I>&gt;<i> that is able to project itself into a java basic type array? 5) What
+</I>&gt;<i> also crossed my mind were Non-Native-Types and if we should somehow
+</I>&gt;<i> consider them at all. A generic but I guess slow and inefficient
+</I>&gt;<i> method would be to serialize each pixel individually?
+</I>&gt;<i>
+</I>&gt;<i> Regarding the related topic: I completely agree. Merging imglib2-io
+</I>&gt;<i> with Bioformats seems like just the right thing to do. It is anyway
+</I>&gt;<i> useless without bioformats :)
+</I>&gt;<i>
+</I>&gt;<i> Nice greetings! Steffi
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On Mar 6, 2012, at 19:45 , Curtis Rueden wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> Hi Steffi &amp; everyone,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> But Mark, maybe we should talk about the saver?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> The work on ImgSaver is now being done in the imglib-io branch of
+</I>&gt;&gt;<i> my Bio-Formats Git repository:
+</I>&gt;&gt;<i> <A HREF="https://github.com/ctrueden/bioformats/tree/imglib-io">https://github.com/ctrueden/bioformats/tree/imglib-io</A>
+</I>&gt;&gt;<i> <A HREF="https://github.com/ctrueden/bioformats/tree/imglib-io/components/scifio/src/ome/scifio/img">https://github.com/ctrueden/bioformats/tree/imglib-io/components/scifio/src/ome/scifio/img</A>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I><A HREF="https://github.com/ctrueden/bioformats/blob/imglib-io/components/scifio/src/ome/scifio/img/ImgSaver.java">https://github.com/ctrueden/bioformats/blob/imglib-io/components/scifio/src/ome/scifio/img/ImgSaver.java</A>
+&gt;&gt;<i>
+</I>&gt;&gt;<i> Currently, only a skeleton of the API exists, but Mark will be
+</I>&gt;&gt;<i> continuing work throughout this week. Initially, we decided to
+</I>&gt;&gt;<i> implement the special case for PlanarImg, which will provide good
+</I>&gt;&gt;<i> performance. We will add the more general case after that.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> On a related topic: we are hoping to merge the imglib-io project
+</I>&gt;&gt;<i> into scifio core. As discussed at the last hackathon, the
+</I>&gt;&gt;<i> scifio.jar library now depends on imglib2.jar, which has several
+</I>&gt;&gt;<i> advantages. It allows SCIFIO to share ImgLib2's dimensional axis
+</I>&gt;&gt;<i> enumeration (Axes &amp; AxisType), as well as pixel types. More
+</I>&gt;&gt;<i> importantly to end users, it enables SCIFIO to provide a
+</I>&gt;&gt;<i> high-level API for obtaining Img objects from a data source&#8212;if we
+</I>&gt;&gt;<i> merge imglib-io into scifio. Does this sound like a good plan?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Regards, Curtis
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> On Tue, Mar 6, 2012 at 5:38 PM, Stephan Preibisch
+</I>&gt;&gt;<i> &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">stephan.preibisch at gmx.de</A> &lt;mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">stephan.preibisch at gmx.de</A>&gt;&gt;
+</I>&gt;&gt;<i> wrote:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Hi Johannes,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I am not, I was just looking to add it to the examples, but this
+</I>&gt;&gt;<i> can wait.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> But Mark, maybe we should talk about the saver?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Bye bye, Steffi
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Am Mar 6, 2012 um 13:57 schrieb Johannes Schindelin
+</I>&gt;&gt;<i> &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">Johannes.Schindelin at gmx.de</A> &lt;mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">Johannes.Schindelin at gmx.de</A>&gt;&gt;:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Hi,
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> please also note that <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">imagej-devel at imagejdev.org</A>
+</I>&gt;&gt;<i> &lt;mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">imagej-devel at imagejdev.org</A>&gt; is now
+</I>&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">imagej-devel at imagej.net</A> &lt;mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">imagej-devel at imagej.net</A>&gt;.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> On Tue, 6 Mar 2012, Johannes Schindelin wrote:
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> On Tue, 6 Mar 2012, Stephan Preibisch wrote:
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i> I once implemented an n-dimensional saver for imglib1
+</I>&gt;&gt;<i> using the ImageJ
+</I>&gt;&gt;&gt;&gt;&gt;<i> tiff saver. I will try to port this one today, you will
+</I>&gt;&gt;<i> find it in
+</I>&gt;&gt;&gt;&gt;&gt;<i> ImageJFunctions.saveAsTIFFs.
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> Please don't. People will start to use it and it will be
+</I>&gt;&gt;<i> incompatible
+</I>&gt;&gt;&gt;&gt;<i> with the SCIFIO/Bio-Formats based ImgSaver. Hopefully you
+</I>&gt;&gt;<i> agree that 1)
+</I>&gt;&gt;&gt;&gt;<i> that would be bad and 2) the ImgSaver will be more
+</I>&gt;&gt;<i> powerful, supporting
+</I>&gt;&gt;&gt;&gt;<i> the complete Bio-Formats infrastructure.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> I realize that I sounded much harsher than intended. Just
+</I>&gt;&gt;<i> wanted to make
+</I>&gt;&gt;&gt;<i> sure that time is used efficiently.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> If you are in dear need of a saver *right now*, I recommend
+</I>&gt;&gt;<i> working with
+</I>&gt;&gt;&gt;<i> Mark Hiner on an interface so that users of your saver will
+</I>&gt;&gt;<i> transparently
+</I>&gt;&gt;&gt;<i> be using the scifio-based one when that is available.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Ciao, Dscho
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> -- Please avoid top-posting, and please make sure to
+</I>&gt;&gt;&gt;<i> reply-to-all!
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Mailing list web interface:
+</I>&gt;&gt;<i> <A HREF="http://groups.google.com/group/fiji-devel">http://groups.google.com/group/fiji-devel</A>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> -- Please avoid top-posting, and please make sure to reply-to-all!
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Mailing list web interface:
+</I>&gt;&gt;<i> <A HREF="http://groups.google.com/group/fiji-devel">http://groups.google.com/group/fiji-devel</A>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> _______________________________________________ ImageJ-devel
+</I>&gt;&gt;<i> mailing list <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;&gt;<i> &lt;mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>&gt;
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> -- Please avoid top-posting, and please make sure to reply-to-all!
+</I>&gt;<i>
+</I>&gt;<i> Mailing list web interface:
+</I>&gt;<i> <A HREF="http://groups.google.com/group/fiji-devel">http://groups.google.com/group/fiji-devel</A>
+</I>
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000622.html">[ImageJ-devel] [fiji-devel] saving images with imglib2-io
+</A></li>
+	<LI>Next message: <A HREF="000619.html">[ImageJ-devel] GitHub SSH key audit required
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#624">[ date ]</a>
+              <a href="thread.html#624">[ thread ]</a>
+              <a href="subject.html#624">[ subject ]</a>
+              <a href="author.html#624">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

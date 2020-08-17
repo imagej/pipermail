@@ -1,0 +1,3384 @@
+From Johannes.Schindelin at gmx.de  Wed Jan  1 17:34:53 2014
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Thu, 2 Jan 2014 00:34:53 +0100 (CET)
+Subject: [ImageJ-devel] [fiji-devel] Fiji updater operates on what
+ directories and what file types?
+In-Reply-To: <6892ECB54B992940B31DE659AC23A1A12710B938@PHSX10MB15.partners.org>
+References: <6892ECB54B992940B31DE659AC23A1A12710B50D@PHSX10MB15.partners.org>
+	<alpine.DEB.1.00.1312301821000.1191@s15462909.onlinehome-server.info>
+	<6892ECB54B992940B31DE659AC23A1A12710B938@PHSX10MB15.partners.org>
+Message-ID: <alpine.DEB.1.00.1401020027460.1191@s15462909.onlinehome-server.info>
+
+Hi Joseph Collin,
+
+On Tue, 31 Dec 2013, Poczatek, Joseph Collin wrote:
+
+> > Almost correct. The file extensions accepted are dependent on the
+> > top-level directory. In plugins/ for example, .class, .jar, .ijm and
+> > script extensions are allowed, but not .lut. In luts/, only .lut are
+> > allowed. In lib/ (which you did not mention), there is no limitation
+> > on file extensions.
+> >
+> > This restrictions are not for dictatorship reasons, BTW, but to
+> > prevent surprises from incorrect usage of the updater.
+>
+> Ok, that makes sense. I didn't mention lib/ because it isn't in a fresh
+> Fiji install. Is it deprecated, or is it sticking around?
+
+It is not used by default because we do not ship any platform-dependent
+libraries by default. But it is added to the java.library.path (to be
+precise, a platform-dependent subdirectory is added) so that it is
+possible to ship platform-dependent libraries from update sites.
+
+> >> Am I correct? What I was attempting was to push a 1-2 bash script
+> >> that was just "ImageJ-linux64 --all-my-special-args..." and having no
+> >> extension or .sh didn't take.
+> >
+> > Bash scripts cannot be executed by ImageJ, hence it does not make too
+> > much sense for the updater to ship them. Having said that, you could
+> > upload them into, say, lib/.
+> 
+> Couldn't you say the same thing about Fiji shipping with a .desktop
+> file?
+
+It does not ship with a .desktop file. It generates it upon startup in
+Linux. (To be precise, the ImageJ launcher does.)
+
+> It's an analogous situation I think. We just want to make it easy to
+> launch Fiji in a certain way.
+
+You are welcome to do that, bash scripts are not the way, however. A
+better way would be to patch the ImageJ launcher to make it possible to
+ship *limited* configuration via update sites that affects the way Fiji is
+started.
+
+So far, I am quite doubtful, however, that such a support is needed. I
+might be wrong, but then, I have not been graced with the information
+about the intended use case requiring those bash scripts.
+
+Ciao,
+Johannes
+
+
+From alhaj.safa at yahoo.com  Thu Jan  2 12:21:50 2014
+From: alhaj.safa at yahoo.com (Safaa Al-Haj Saleh)
+Date: Thu, 2 Jan 2014 10:21:50 -0800 (PST)
+Subject: [ImageJ-devel] K-means clustering plugin
+Message-ID: <1388686910.1674.YahooMailNeo@web160801.mail.bf1.yahoo.com>
+
+Hi all,
+
+I have installed "ij_clustering.jar" that contains KMeansClustering plugin. I am trying to call this plugin from java code as the following:
+
+IJ.runPlugIn(imp,"KMeansClustering","");
+
+
+or using?
+
+IJ.run(imp,"k-means Clustering","number=2 cluster=0.00010000 enable randomization=176");
+to run the installed plugin from imageJ menus.
+
+The problem is that the resulted image is not clustered at all (i.e. it remains the same). I think the third parameter (arg) should be set in the first command, but I have no idea how to set it.
+
+My point is that how to run installed imageJ plugins in my java code?
+
+
+Regards,
+Safaa
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140102/1b6b2500/attachment.html>
+
+From rasbandw at mail.nih.gov  Thu Jan  2 13:26:13 2014
+From: rasbandw at mail.nih.gov (Rasband, Wayne (NIH/NIMH) [E])
+Date: Thu, 2 Jan 2014 19:26:13 +0000
+Subject: [ImageJ-devel] K-means clustering plugin
+In-Reply-To: <1388686910.1674.YahooMailNeo@web160801.mail.bf1.yahoo.com>
+References: <1388686910.1674.YahooMailNeo@web160801.mail.bf1.yahoo.com>
+Message-ID: <C2B10E0D-F4B4-4E05-91FC-CED88129B2C6@nih.gov>
+
+On Jan 2, 2014, at 1:21 PM, Safaa Al-Haj Saleh wrote:
+
+> Hi all,
+> 
+> I have installed "ij_clustering.jar" that contains KMeansClustering plugin. I am trying to call this plugin from java code as the following:
+> 
+> IJ.runPlugIn(imp,"KMeansClustering","");
+> 
+> or using 
+> 
+> IJ.run(imp,"k-means Clustering","number=2 cluster=0.00010000 enable randomization=176");
+> to run the installed plugin from imageJ menus.
+> 
+> The problem is that the resulted image is not clustered at all (i.e. it remains the same). I think the third parameter (arg) should be set in the first command, but I have no idea how to set it.
+> 
+> My point is that how to run installed imageJ plugins in my java code?
+
+You can get the code needed to run the plugin by running the Plugins>Segmentation>KMeansClustering command with the recorder (Plugins>Macros>Record) running. This is what I get when I run the KMeansClustering command (using default settings) with the recorder running in JavaScript mode:
+
+imp = IJ.getImage();
+IJ.run(imp, "k-means Clustering ...", "number_of_clusters=4 cluster_center_tolerance=0.00010000 enable_randomization_seed randomization_seed=48");
+
+I get the same results by running this code as I do when running the menu command. Note that there should not be any line breaks in the second line of code.
+
+-wayne
+
+
+
+From Johannes.Schindelin at gmx.de  Thu Jan  2 14:25:49 2014
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Thu, 2 Jan 2014 21:25:49 +0100 (CET)
+Subject: [ImageJ-devel] K-means clustering plugin
+In-Reply-To: <1388686910.1674.YahooMailNeo@web160801.mail.bf1.yahoo.com>
+References: <1388686910.1674.YahooMailNeo@web160801.mail.bf1.yahoo.com>
+Message-ID: <alpine.DEB.1.00.1401022123030.1191@s15462909.onlinehome-server.info>
+
+Hi Safaa,
+
+On Thu, 2 Jan 2014, Safaa Al-Haj Saleh wrote:
+
+> I have installed "ij_clustering.jar" that contains KMeansClustering
+> plugin.
+
+The ij_clustering.jar is an ImageJ 1.x plugin. The imagej-devel mailing
+list is used by the ImageJ2 developers to discuss archtectural and design
+questions of ImageJ 2.
+
+I probably forgot to mention the exact mailing list address when I
+suggested that you address your mail to the ImageJ mailing list. The
+correct mailing list address is imagej at list.nih.gov.
+
+And you might want to Cc: the author of the ij_clustering.jar plugin, too.
+If I remember correctly, it is Jarek Sacha, but I'll leave the
+verification of this hypothesis to your research (Google should be helpful
+in this instance).
+
+Ciao,
+Johannes
+
+
+From jpoczatek at rics.bwh.harvard.edu  Fri Jan  3 10:16:06 2014
+From: jpoczatek at rics.bwh.harvard.edu (Poczatek, Joseph Collin)
+Date: Fri, 3 Jan 2014 16:16:06 +0000
+Subject: [ImageJ-devel] [fiji-devel] Custom starting of Fiji (was Fiji
+ updater operates on what directories and what file types?)
+References: <6892ECB54B992940B31DE659AC23A1A12710B50D@PHSX10MB15.partners.org>
+	<alpine.DEB.1.00.1312301821000.1191@s15462909.onlinehome-server.info>
+	<6892ECB54B992940B31DE659AC23A1A12710B938@PHSX10MB15.partners.org>
+	<alpine.DEB.1.00.1401020027460.1191@s15462909.onlinehome-server.info>
+Message-ID: <6892ECB54B992940B31DE659AC23A1A12710C461@PHSX10MB15.partners.org>
+
+Hi Johannes,
+
+Thanks for indulging me in this conversation.
+
+
+
+Couldn't you say the same thing about Fiji shipping with a .desktop
+file?
+
+
+
+It does not ship with a .desktop file. It generates it upon startup in
+Linux. (To be precise, the ImageJ launcher does.)
+
+
+That makes more sense, and I should have realized that looking at the executable path in the .desktop file. Maybe I should think about having the scripts generated...
+
+
+
+You are welcome to do that, bash scripts are not the way, however. A
+better way would be to patch the ImageJ launcher to make it possible to
+ship *limited* configuration via update sites that affects the way Fiji is
+started.
+
+
+I can see that making sense in that it's cross platform (since the launcher is cross platform), but I can't see how that would get you any granularity. Meaning I want to start fiji in say 2 ways that would be equivalent to:
+ImageJ-launcher -flagA
+ImageJ-launcher -flagB
+And not overshadow starting with no flags.
+
+
+
+So far, I am quite doubtful, however, that such a support is needed. I
+might be wrong, but then, I have not been graced with the information
+about the intended use case requiring those bash scripts.
+
+
+Ok, I was trying to keep my questions narrowly focused, but I guess I ended up too vague. This is related to a conversation on the list from this spring (*) about nrrd files and handleExtraFileTypes. I agree that what I'm doing isn't the cleanest/best but I think it's the lesser evil given all the following facts/constraints (and the ones I forgot):
+
+- I need to bypass the standard IJ-io/extraFileTypes/LOCI chain and pass a file arg directly to our plugin. Which is called OpenMIMS (**) btw.
+
+- Architecturally our plugin has gotten a little cluttered over the years and while we're trying to refactor things, I don't have the man power to refactor out our file readers right now.
+
+- Besides myself I would say that all our users use Fiji without starting OpenMIMS <1% of the time. So they don't really want to start Fiji per se.
+
+- I seem to be categorically incapable of keeping even all the Fiji installs in the lab up-to-date/symmetric, let alone those outside the lab, so why not take advantage of the updater?
+
+- Like I mentioned above there are 2 ways (sets of flags) we start our plugin with. So we would need 2 "executables".
+
+- Our "users demand" a high level of symmetry between at least Linux and OsX in terms of how OpenMIMS/Fiji runs. For example breaking the "one instance of an application" constraint on OsX. And if I have to do crazy things like that, best to have a parallel way of starting Fiji, right? (I know I need more than just a bash script.)
+
+- I'm not stepping on/overshadowing any part of Fiji. Or forcing any of this to be used.
+
+- Even if I make a mess of things or get to the point I can undo this kludge, the updater makes it a lot easier to back out.
+
+So in conclusion, yes I agree that it's not the best but it's probably manageable.
+
+Cheers,
+Collin
+
+(*) http://imagej.1557.x6.nabble.com/Fiji-the-nrrd-file-format-and-HandleExtraFileTypes-td5002602.html
+
+(**)
+http://nrims.harvard.edu/about-mims
+http://nrims.partners.org/wiki/index.php/OpenMIMS_Manual
+
+
+
+
+
+The information in this e-mail is intended only for the person to whom it is
+addressed. If you believe this e-mail was sent to you in error and the e-mail
+contains patient information, please contact the Partners Compliance HelpLine at
+http://www.partners.org/complianceline . If the e-mail was sent to you in error
+but does not contain patient information, please contact the sender and properly
+dispose of the e-mail.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140103/2c4950ca/attachment.html>
+
+From jru at stowers.org  Fri Jan  3 11:09:32 2014
+From: jru at stowers.org (Unruh, Jay)
+Date: Fri, 3 Jan 2014 17:09:32 +0000
+Subject: [ImageJ-devel] [fiji-devel] Custom starting of Fiji (was Fiji
+ updater operates on what directories and what file types?)
+In-Reply-To: <6892ECB54B992940B31DE659AC23A1A12710C461@PHSX10MB15.partners.org>
+References: <6892ECB54B992940B31DE659AC23A1A12710B50D@PHSX10MB15.partners.org>
+	<alpine.DEB.1.00.1312301821000.1191@s15462909.onlinehome-server.info>
+	<6892ECB54B992940B31DE659AC23A1A12710B938@PHSX10MB15.partners.org>
+	<alpine.DEB.1.00.1401020027460.1191@s15462909.onlinehome-server.info>
+	<6892ECB54B992940B31DE659AC23A1A12710C461@PHSX10MB15.partners.org>
+Message-ID: <275DB4592472454787932C0036105466032FEA4D@MBSRV01.sgc.loc>
+
+I would add to this conversation that it would be very useful for other developers to see what Collin has developed in terms of the Fiji launcher script.  I have had situations where I wanted to launch in a custom way not provided by the built-in launcher.  No reason to figure this out if Collin already has.  Collin could label it "experimental" to prevent na?ve users from accidentally using it.  Most of my plugins fall into the "experimental" category anyway-if they didn't I probably wouldn't rely so much on ImageJ.
+
+Jay
+
+From: imagej-devel-bounces at imagej.net [mailto:imagej-devel-bounces at imagej.net] On Behalf Of Poczatek, Joseph Collin
+Sent: Friday, January 03, 2014 10:16 AM
+To: Johannes Schindelin
+Cc: Fiji Developers; ImageJ Developers
+Subject: Re: [ImageJ-devel] [fiji-devel] Custom starting of Fiji (was Fiji updater operates on what directories and what file types?)
+
+Hi Johannes,
+
+Thanks for indulging me in this conversation.
+
+
+
+
+
+
+Couldn't you say the same thing about Fiji shipping with a .desktop
+
+file?
+
+
+
+It does not ship with a .desktop file. It generates it upon startup in
+
+Linux. (To be precise, the ImageJ launcher does.)
+That makes more sense, and I should have realized that looking at the executable path in the .desktop file. Maybe I should think about having the scripts generated...
+
+
+
+
+
+You are welcome to do that, bash scripts are not the way, however. A
+
+better way would be to patch the ImageJ launcher to make it possible to
+
+ship *limited* configuration via update sites that affects the way Fiji is
+
+started.
+
+I can see that making sense in that it's cross platform (since the launcher is cross platform), but I can't see how that would get you any granularity. Meaning I want to start fiji in say 2 ways that would be equivalent to:
+ImageJ-launcher -flagA
+ImageJ-launcher -flagB
+And not overshadow starting with no flags.
+
+
+
+
+
+So far, I am quite doubtful, however, that such a support is needed. I
+
+might be wrong, but then, I have not been graced with the information
+
+about the intended use case requiring those bash scripts.
+Ok, I was trying to keep my questions narrowly focused, but I guess I ended up too vague. This is related to a conversation on the list from this spring (*) about nrrd files and handleExtraFileTypes. I agree that what I'm doing isn't the cleanest/best but I think it's the lesser evil given all the following facts/constraints (and the ones I forgot):
+
+- I need to bypass the standard IJ-io/extraFileTypes/LOCI chain and pass a file arg directly to our plugin. Which is called OpenMIMS (**) btw.
+
+- Architecturally our plugin has gotten a little cluttered over the years and while we're trying to refactor things, I don't have the man power to refactor out our file readers right now.
+
+- Besides myself I would say that all our users use Fiji without starting OpenMIMS <1% of the time. So they don't really want to start Fiji per se.
+
+- I seem to be categorically incapable of keeping even all the Fiji installs in the lab up-to-date/symmetric, let alone those outside the lab, so why not take advantage of the updater?
+
+- Like I mentioned above there are 2 ways (sets of flags) we start our plugin with. So we would need 2 "executables".
+
+- Our "users demand" a high level of symmetry between at least Linux and OsX in terms of how OpenMIMS/Fiji runs. For example breaking the "one instance of an application" constraint on OsX. And if I have to do crazy things like that, best to have a parallel way of starting Fiji, right? (I know I need more than just a bash script.)
+
+- I'm not stepping on/overshadowing any part of Fiji. Or forcing any of this to be used.
+
+- Even if I make a mess of things or get to the point I can undo this kludge, the updater makes it a lot easier to back out.
+
+So in conclusion, yes I agree that it's not the best but it's probably manageable.
+
+Cheers,
+Collin
+
+(*) http://imagej.1557.x6.nabble.com/Fiji-the-nrrd-file-format-and-HandleExtraFileTypes-td5002602.html
+
+(**)
+http://nrims.harvard.edu/about-mims
+http://nrims.partners.org/wiki/index.php/OpenMIMS_Manual
+
+
+
+The information in this e-mail is intended only for the person to whom it is
+addressed. If you believe this e-mail was sent to you in error and the e-mail
+contains patient information, please contact the Partners Compliance HelpLine at
+http://www.partners.org/complianceline . If the e-mail was sent to you in error
+but does not contain patient information, please contact the sender and properly
+dispose of the e-mail.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140103/6a3888d8/attachment-0001.html>
+
+From horseb2 at yahoo.com  Sat Jan  4 19:00:12 2014
+From: horseb2 at yahoo.com (FriedK)
+Date: Sat, 4 Jan 2014 17:00:12 -0800 (PST)
+Subject: [ImageJ-devel] Interactive 3D Surface Plot - Data Export
+Message-ID: <1388883612164-318.post@n6.nabble.com>
+
+Hello,
+
+i am very interested in this function. An export format for any 3D program
+would be nice like .stl .dxf or point-cloud. I really like the interactive
+viewer and would like to print exactly what i see in 3D.
+Is is hard to program something like that?
+I saw that the 3d viewer has the possibility, but how do i bring the plot
+into the viewer ?
+
+Thank you so much for it. This program and the plugins rock !!
+Thank you for the help.
+
+*Everyone who helps will get special material (toys, posters, videos,) from
+the resulting work ,-)*
+
+
+
+--
+View this message in context: http://imagej-devel.54429.x6.nabble.com/Interactive-3D-Surface-Plot-Data-Export-tp318.html
+Sent from the ImageJ-devel mailing list archive at Nabble.com.
+
+
+From incardon at mpi-cbg.de  Mon Jan  6 09:08:16 2014
+From: incardon at mpi-cbg.de (incardon at mpi-cbg.de)
+Date: Mon, 6 Jan 2014 16:08:16 +0100 (MET)
+Subject: [ImageJ-devel] ImgLib2
+Message-ID: <41111.10.1.46.254.1389020896.squirrel@webmail.mpi-cbg.de>
+
+
+
+I was trying to save an
+
+
+Img<ARGBType>
+
+but I did not find a good way.
+
+Also trying to show with
+
+ImageJFunctions.show(out)
+
+and saving from Fiji it crash
+
+How I can save an Img<ARGBType> ?
+
+Cheers
+Pietro
+
+
+
+
+From incardon at mpi-cbg.de  Mon Jan  6 09:11:49 2014
+From: incardon at mpi-cbg.de (incardon at mpi-cbg.de)
+Date: Mon, 6 Jan 2014 16:11:49 +0100 (MET)
+Subject: [ImageJ-devel] ImgLib2
+Message-ID: <41146.10.1.46.254.1389021109.squirrel@webmail.mpi-cbg.de>
+
+I was trying to save an
+
+
+Img<ARGBType>
+
+but I did not find a good way.
+
+Also trying to show with
+
+ImageJFunctions.show(out)
+
+and saving from Fiji it crash
+
+How I can save an Img<ARGBType> ?
+
+Cheers
+Pietro
+
+
+
+From Johannes.Schindelin at gmx.de  Mon Jan  6 10:14:35 2014
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Mon, 6 Jan 2014 17:14:35 +0100 (CET)
+Subject: [ImageJ-devel] [fiji-devel] Export interactive 3d surface plot
+	for 3d print
+In-Reply-To: <3e130a82-66a6-4578-a104-7ad92992b854@googlegroups.com>,
+	<1388883612164-318.post@n6.nabble.com>
+References: <3e130a82-66a6-4578-a104-7ad92992b854@googlegroups.com>
+Message-ID: <alpine.DEB.1.00.1401061709420.20365@s15462909.onlinehome-server.info>
+
+Hi Dan, or FriedK,
+
+On Sat, 4 Jan 2014, Dan Knight wrote:
+
+> i am very interested in this function. An export format for any 3D program 
+> would be nice like .stl .dxf or point-cloud.
+
+The problem is that the Interactive 3D Plot does not expose any API to
+that end.
+
+You might have more luck with the 3D Viewer: it purportedly has a 2D
+surface plot option (it should say "mode" or some such and default to
+"volume") but last time I tried, it did not work.
+
+The author of the 3D Viewer is Cc:ed.
+
+Ciao,
+Johannes
+
+
+From horseb2 at yahoo.com  Mon Jan  6 13:19:16 2014
+From: horseb2 at yahoo.com (FriedK)
+Date: Mon, 6 Jan 2014 11:19:16 -0800 (PST)
+Subject: [ImageJ-devel] [fiji-devel] Export interactive 3d surface plot
+	for 3d print
+In-Reply-To: <alpine.DEB.1.00.1401061709420.20365@s15462909.onlinehome-server.info>
+References: <alpine.DEB.1.00.1401061709420.20365@s15462909.onlinehome-server.info>
+Message-ID: <1389035956983-322.post@n6.nabble.com>
+
+Hallo Johannes,
+
+ich bin der Fried ^_^
+
+Thank you for your response.
+So far i figured that the interactive 3d surface plot just looks like what i
+want (actually super nice).
+
+The 3D Viewer has the export function i need, just there seems to be
+something i can`t figure out.
+Perhaps the files i am using are to high res so i changed them, tried also
+the temp files, but i can`t see a 3d view.
+
+Then i saw that images are loaded but way to big. I can move them around and
+see perhaps a corner or a face, but everything rotates like i`m in the
+center of the mesh. 
+
+I would like to send u pictures and perhaps win your interest =) 
+The thing i am working on is so amazing ! Unfortunately i can`t post it
+officially.
+
+Many Thanks
+
+
+
+--
+View this message in context: http://imagej-devel.54429.x6.nabble.com/Re-fiji-devel-Export-interactive-3d-surface-plot-for-3d-print-tp321p322.html
+Sent from the ImageJ-devel mailing list archive at Nabble.com.
+
+
+From incardon at mpi-cbg.de  Tue Jan  7 04:58:01 2014
+From: incardon at mpi-cbg.de (incardon at mpi-cbg.de)
+Date: Tue, 7 Jan 2014 11:58:01 +0100 (MET)
+Subject: [ImageJ-devel] ImgLib2
+Message-ID: <56227.10.1.46.254.1389092281.squirrel@webmail.mpi-cbg.de>
+
+
+
+I was trying to save an
+
+
+Img<ARGBType>
+
+but I did not find a good way.
+
+Also trying to show with
+
+ImageJFunctions.show(out)
+
+and saving from Fiji it crash
+
+How I can save an Img<ARGBType> ?
+
+Cheers
+Pietro
+
+
+
+
+From bugzilla at fiji.sc  Tue Jan  7 09:15:03 2014
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Tue, 07 Jan 2014 15:15:03 +0000
+Subject: [ImageJ-devel] [Bug 691] New: Modern Mode (IJ2) fails to load DICOM
+Message-ID: <bug-691-194@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=691
+
+            Bug ID: 691
+           Summary: Modern Mode (IJ2) fails to load DICOM
+    Classification: Unclassified
+           Product: Fiji
+           Version: unspecified
+          Hardware: PC
+                OS: Windows
+            Status: NEW
+          Severity: normal
+          Priority: P5
+         Component: ImageJ2
+          Assignee: imagej-devel at imagej.net
+          Reporter: cheeney at materprivate.ie
+
+Created attachment 127
+  --> http://fiji.sc/bugzilla/attachment.cgi?id=127&action=edit
+Screenshot
+
+Using Fiji (1.48o) downloaded today (07Jan14) on 32bit JRE (1.6.0_24).
+
+Modern mode either doesn't read the DICOM header correctly, or if it does, then
+it misreads the DICOM image data.
+
+Switching back to legacy mode, and the image is read and rendered correctly.
+
+See attached screenshot for example.
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140107/8a7fa0bb/attachment.html>
+
+From pietzsch at mpi-cbg.de  Tue Jan  7 10:06:10 2014
+From: pietzsch at mpi-cbg.de (Tobias Pietzsch)
+Date: Tue, 7 Jan 2014 17:06:10 +0100
+Subject: [ImageJ-devel] ImgLib2
+In-Reply-To: <41146.10.1.46.254.1389021109.squirrel@webmail.mpi-cbg.de>
+References: <41146.10.1.46.254.1389021109.squirrel@webmail.mpi-cbg.de>
+Message-ID: <0794D3F0-A4C5-4F2C-903C-83C0DE3F8DD7@mpi-cbg.de>
+
+Hi Pietro,
+
+Unfortunately, I also don't know how to save it best using the ImgSaver. Maybe one of the scifio guys can answer that.
+
+Via Fiji, it should work like this:
+If you do ImageJFunctions.show(out), it will be displayed in Fiji as a virtual ImgPlus.
+You can Image>Duplicate... this image to get a (non-virtual) copy. You should be able to save that from Fiji.
+
+best regards,
+Tobias
+
+On Jan 6, 2014, at 4:11 PM, incardon at mpi-cbg.de wrote:
+
+> I was trying to save an
+> 
+> 
+> Img<ARGBType>
+> 
+> but I did not find a good way.
+> 
+> Also trying to show with
+> 
+> ImageJFunctions.show(out)
+> 
+> and saving from Fiji it crash
+> 
+> How I can save an Img<ARGBType> ?
+> 
+> Cheers
+> Pietro
+> 
+> 
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140107/624c3df7/attachment.pgp>
+
+From ctrueden at wisc.edu  Tue Jan  7 11:27:43 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Tue, 7 Jan 2014 11:27:43 -0600
+Subject: [ImageJ-devel] ImgLib2
+In-Reply-To: <0794D3F0-A4C5-4F2C-903C-83C0DE3F8DD7@mpi-cbg.de>
+References: <41146.10.1.46.254.1389021109.squirrel@webmail.mpi-cbg.de>
+	<0794D3F0-A4C5-4F2C-903C-83C0DE3F8DD7@mpi-cbg.de>
+Message-ID: <CADN69ynDP3pa0UY4ZOxq4f2g1jBXGgH+wouEpOMwWcHaopyU8w@mail.gmail.com>
+
+Hi Pietro and Tobias,
+
+> Unfortunately, I also don't know how to save it best using the
+> ImgSaver. Maybe one of the scifio guys can answer that.
+
+We have not focused on ARGBType at all in SCIFIO because we do not use that
+type in ImageJ2. If people want to discuss their use cases for ARGBType we
+may reconsider, but right now everything in ImageJ2 is done as a composite
+image using e.g. UnsignedByteType with a "CHANNEL" dimension.
+
+And as always, patches welcome!
+
+Regards,
+Curtis
+
+
+On Tue, Jan 7, 2014 at 10:06 AM, Tobias Pietzsch <pietzsch at mpi-cbg.de>wrote:
+
+> Hi Pietro,
+>
+> Unfortunately, I also don't know how to save it best using the ImgSaver.
+> Maybe one of the scifio guys can answer that.
+>
+> Via Fiji, it should work like this:
+> If you do ImageJFunctions.show(out), it will be displayed in Fiji as a
+> virtual ImgPlus.
+> You can Image>Duplicate... this image to get a (non-virtual) copy. You
+> should be able to save that from Fiji.
+>
+> best regards,
+> Tobias
+>
+> On Jan 6, 2014, at 4:11 PM, incardon at mpi-cbg.de wrote:
+>
+> > I was trying to save an
+> >
+> >
+> > Img<ARGBType>
+> >
+> > but I did not find a good way.
+> >
+> > Also trying to show with
+> >
+> > ImageJFunctions.show(out)
+> >
+> > and saving from Fiji it crash
+> >
+> > How I can save an Img<ARGBType> ?
+> >
+> > Cheers
+> > Pietro
+> >
+> >
+> > _______________________________________________
+> > ImageJ-devel mailing list
+> > ImageJ-devel at imagej.net
+> > http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140107/35697745/attachment.html>
+
+From redazeo at gmail.com  Mon Jan  6 13:29:32 2014
+From: redazeo at gmail.com (Dan Knight)
+Date: Mon, 6 Jan 2014 11:29:32 -0800 (PST)
+Subject: [ImageJ-devel] [fiji-devel] Export interactive 3d surface plot
+	for 3d print
+In-Reply-To: <alpine.DEB.1.00.1401061709420.20365@s15462909.onlinehome-server.info>
+References: <3e130a82-66a6-4578-a104-7ad92992b854@googlegroups.com>
+	<alpine.DEB.1.00.1401061709420.20365@s15462909.onlinehome-server.info>
+Message-ID: <b4fc1683-73cc-412b-bc36-470f510c3fa9@googlegroups.com>
+
+Hallo Johannes, 
+
+ich bin der Fried ^_^ 
+
+Thank you for your response. 
+So far i figured that the interactive 3d surface plot just looks like what 
+i want (actually super nice). 
+
+The 3D Viewer has the export function i need, just there seems to be 
+something i can`t figure out. 
+Perhaps the files i am using are to high res so i changed them, tried also 
+the temp files, but i can`t see a 3d view. 
+
+Then i saw that images are loaded but way to big. I can move them around 
+and see perhaps a corner or a face, but everything rotates like i`m in the 
+center of the mesh. 
+
+I would like to send u pictures and perhaps win your interest =) 
+The thing i am working on is so amazing ! Unfortunately i can`t post it 
+officially. 
+
+Many Thanks 
+
+ps: where should i reply here or in the imagej forum..im confuzed =/
+
+
+On Monday, January 6, 2014 8:14:35 AM UTC-8, Johannes Schindelin wrote:
+>
+> Hi Dan, or FriedK, 
+>
+> On Sat, 4 Jan 2014, Dan Knight wrote: 
+>
+> > i am very interested in this function. An export format for any 3D 
+> program 
+> > would be nice like .stl .dxf or point-cloud. 
+>
+> The problem is that the Interactive 3D Plot does not expose any API to 
+> that end. 
+>
+> You might have more luck with the 3D Viewer: it purportedly has a 2D 
+> surface plot option (it should say "mode" or some such and default to 
+> "volume") but last time I tried, it did not work. 
+>
+> The author of the 3D Viewer is Cc:ed. 
+>
+> Ciao, 
+> Johannes 
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140106/795359e7/attachment.html>
+
+From bugzilla at fiji.sc  Wed Jan  8 09:16:05 2014
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Wed, 08 Jan 2014 15:16:05 +0000
+Subject: [ImageJ-devel] [Bug 691] Modern Mode (IJ2) fails to load DICOM
+In-Reply-To: <bug-691-194@http.fiji.sc/bugzilla/>
+References: <bug-691-194@http.fiji.sc/bugzilla/>
+Message-ID: <bug-691-194-VhzzQZdTFK@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=691
+
+Mark Hiner <hinerm at gmail.com> changed:
+
+           What    |Removed                     |Added
+----------------------------------------------------------------------------
+                 CC|                            |hinerm at gmail.com
+
+--- Comment #1 from Mark Hiner <hinerm at gmail.com> ---
+Hi Conor. Thanks for reporting this issue. I'm guessing it's a bug in the DICOM
+format support of SCIFIO (https://github.com/scifio/scifio).
+
+All DICOM datasets I have access to are being read properly (in both pure IJ2 &
+Fiji's modern mode). So would it be possible for you to attach your dataset to
+this bug report? Then I can reproduce it locally and have a fix out shortly.
+
+Thanks!
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140108/78b45330/attachment.html>
+
+From bugzilla at fiji.sc  Wed Jan  8 10:44:32 2014
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Wed, 08 Jan 2014 16:44:32 +0000
+Subject: [ImageJ-devel] [Bug 691] Modern Mode (IJ2) fails to load DICOM
+In-Reply-To: <bug-691-194@http.fiji.sc/bugzilla/>
+References: <bug-691-194@http.fiji.sc/bugzilla/>
+Message-ID: <bug-691-194-2ieN38WbcG@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=691
+
+--- Comment #2 from Conor Heeney <cheeney at materprivate.ie> ---
+Created attachment 128
+  --> http://fiji.sc/bugzilla/attachment.cgi?id=128&action=edit
+DICOM test file
+
+created by Varian Medical Systems linear accelerator.
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140108/5f3d8b72/attachment.html>
+
+From bugzilla at fiji.sc  Wed Jan  8 10:46:38 2014
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Wed, 08 Jan 2014 16:46:38 +0000
+Subject: [ImageJ-devel] [Bug 691] Modern Mode (IJ2) fails to load DICOM
+In-Reply-To: <bug-691-194@http.fiji.sc/bugzilla/>
+References: <bug-691-194@http.fiji.sc/bugzilla/>
+Message-ID: <bug-691-194-3r313vVsFC@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=691
+
+--- Comment #3 from Conor Heeney <cheeney at materprivate.ie> ---
+Mark
+
+I've attached the DICOM file which was used in the screenshots.
+
+I've also taken the liberty of opening other DICOM files with IJ2 to see what
+happens.
+
+It's able to open Siemens CT files, however it takes approximately twice as
+long as legacy mode.
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140108/b2d37f30/attachment.html>
+
+From bugzilla at fiji.sc  Wed Jan  8 10:57:14 2014
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Wed, 08 Jan 2014 16:57:14 +0000
+Subject: [ImageJ-devel] [Bug 692] New: Window and level tool isn't
+	interactive
+Message-ID: <bug-692-194@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=692
+
+            Bug ID: 692
+           Summary: Window and level tool isn't interactive
+    Classification: Unclassified
+           Product: Fiji
+           Version: unspecified
+          Hardware: PC
+                OS: Windows
+            Status: NEW
+          Severity: minor
+          Priority: P5
+         Component: ImageJ2
+          Assignee: imagej-devel at imagej.net
+          Reporter: cheeney at materprivate.ie
+
+When changing the window and level in IJ2, it fails to update the image until
+the W&L dialog box is exited.
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140108/5c910382/attachment.html>
+
+From bugzilla at fiji.sc  Wed Jan  8 13:15:53 2014
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Wed, 08 Jan 2014 19:15:53 +0000
+Subject: [ImageJ-devel] [Bug 691] Modern Mode (IJ2) fails to load DICOM
+In-Reply-To: <bug-691-194@http.fiji.sc/bugzilla/>
+References: <bug-691-194@http.fiji.sc/bugzilla/>
+Message-ID: <bug-691-194-qODBQtmobQ@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=691
+
+--- Comment #4 from Mark Hiner <hinerm at gmail.com> ---
+Conor, this should be fixed in SCIFIO as of this commit:
+https://github.com/scifio/scifio/commit/61527ff0303721b8946c8da2f375d5885810b4df
+
+I'll try to cut a bug fix release and upload it to Fiji today or tomorrow.
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140108/04586a32/attachment.html>
+
+From incardon at mpi-cbg.de  Thu Jan  9 03:37:00 2014
+From: incardon at mpi-cbg.de (incardon at mpi-cbg.de)
+Date: Thu, 9 Jan 2014 10:37:00 +0100 (MET)
+Subject: [ImageJ-devel] ImgLib2
+In-Reply-To: <0794D3F0-A4C5-4F2C-903C-83C0DE3F8DD7@mpi-cbg.de>
+References: <41146.10.1.46.254.1389021109.squirrel@webmail.mpi-cbg.de>
+	<0794D3F0-A4C5-4F2C-903C-83C0DE3F8DD7@mpi-cbg.de>
+Message-ID: <53309.10.1.46.254.1389260220.squirrel@webmail.mpi-cbg.de>
+
+Thanks it work
+
+
+> Hi Pietro,
+>
+> Unfortunately, I also don't know how to save it best using the ImgSaver.
+> Maybe one of the scifio guys can answer that.
+>
+> Via Fiji, it should work like this:
+> If you do ImageJFunctions.show(out), it will be displayed in Fiji as a
+> virtual ImgPlus.
+> You can Image>Duplicate... this image to get a (non-virtual) copy. You
+> should be able to save that from Fiji.
+>
+> best regards,
+> Tobias
+>
+> On Jan 6, 2014, at 4:11 PM, incardon at mpi-cbg.de wrote:
+>
+>> I was trying to save an
+>>
+>>
+>> Img<ARGBType>
+>>
+>> but I did not find a good way.
+>>
+>> Also trying to show with
+>>
+>> ImageJFunctions.show(out)
+>>
+>> and saving from Fiji it crash
+>>
+>> How I can save an Img<ARGBType> ?
+>>
+>> Cheers
+>> Pietro
+>>
+>>
+>> _______________________________________________
+>> ImageJ-devel mailing list
+>> ImageJ-devel at imagej.net
+>> http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+
+
+
+
+From bugzilla at fiji.sc  Fri Jan 10 11:42:44 2014
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Fri, 10 Jan 2014 17:42:44 +0000
+Subject: [ImageJ-devel] [Bug 691] Modern Mode (IJ2) fails to load DICOM
+In-Reply-To: <bug-691-194@http.fiji.sc/bugzilla/>
+References: <bug-691-194@http.fiji.sc/bugzilla/>
+Message-ID: <bug-691-194-8lIsmIQMRu@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=691
+
+Mark Hiner <hinerm at gmail.com> changed:
+
+           What    |Removed                     |Added
+----------------------------------------------------------------------------
+             Status|NEW                         |RESOLVED
+         Resolution|---                         |FIXED
+
+--- Comment #5 from Mark Hiner <hinerm at gmail.com> ---
+Uploaded SCIFIO 0.8.2 to Fiji. Looks like this dataset opens properly now in
+modern mode.
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140110/7648ca47/attachment.html>
+
+From alhaj.safa at yahoo.com  Sun Jan 12 13:54:37 2014
+From: alhaj.safa at yahoo.com (Safaa Al-Haj Saleh)
+Date: Sun, 12 Jan 2014 11:54:37 -0800 (PST)
+Subject: [ImageJ-devel] Getting green channel image when splitting channels
+Message-ID: <1389556477.79545.YahooMailNeo@web160804.mail.bf1.yahoo.com>
+
+Hi all,?
+
+I need to get the second channel (green) image after running "Split Channels" command in imageJ menu:
+
+? IJ.run(imp,"Split Channels","");
+
+
+when using "IJ.getImage()" I got the last image which is the third channel (blue).
+
+any help please?
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140112/24f048d3/attachment.html>
+
+From rasbandw at mail.nih.gov  Mon Jan 13 09:29:03 2014
+From: rasbandw at mail.nih.gov (Rasband, Wayne (NIH/NIMH) [E])
+Date: Mon, 13 Jan 2014 15:29:03 +0000
+Subject: [ImageJ-devel] Getting green channel image when splitting
+ channels
+In-Reply-To: <1389556477.79545.YahooMailNeo@web160804.mail.bf1.yahoo.com>
+References: <1389556477.79545.YahooMailNeo@web160804.mail.bf1.yahoo.com>
+Message-ID: <B4FF3A11-49F9-4005-9105-5F8A0ED712A7@nih.gov>
+
+On Jan 12, 2014, at 2:54 PM, Safaa Al-Haj Saleh wrote:
+
+> Hi all, 
+> 
+> I need to get the second channel (green) image after running "Split Channels" command in imageJ menu:
+> 
+>   IJ.run(imp,"Split Channels","");
+> 
+> when using "IJ.getImage()" I got the last image which is the third channel (blue).
+> 
+> any help please?
+
+Type "l" (Plugins>Utilities>Find Commands) to open the Command Finder. Type "split channels" in the search box and you will see that the "Split Channels" command is implemented by the ChannelSplitter class. Look at the source or API for this class and you will see that it has a split() method that you can use to get the second channel of an image.
+
+   greenChannel = ChannelSplitter.split(imp)[1];
+
+In the future, it would be better to direct ImageJ programming questions to the ImageJ mailing list (http://imagej.nih.gov/ij/list.html). The ImageJ-devel list is for technical and developer discussion of the ImageJ2 project. 
+
+-wayne
+
+
+
+From ctrueden at wisc.edu  Mon Jan 13 11:43:54 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Mon, 13 Jan 2014 11:43:54 -0600
+Subject: [ImageJ-devel] scijava-common newbie question
+In-Reply-To: <BD3B2A92-10D6-46D3-ADF8-5EB6C32E2635@mpi-cbg.de>
+References: <BD3B2A92-10D6-46D3-ADF8-5EB6C32E2635@mpi-cbg.de>
+Message-ID: <CADN69ymoZ3zOBeep0J40MTLcV8h7-7edyJ8zp0=R7HSwDRNV-w@mail.gmail.com>
+
+Hi Tobias,
+
+> Thus, it would be nice to have some user feedback on progress and
+> warnings etc. If the code is called from an IJ1 plugin, this should be
+> directed to IJ.log and the IJ progressbar. If the code is called from
+> other code, it should be directed to stdout. Currently I'm using my
+> own ProgressListener interface and IJ /  sysout implementations.
+> However this seems like the textbook example for LogService, so I
+> would like to replace my crooked reinvented wheel by a shiny new
+> scijava one :-)
+
+First, some comments on the current status:
+
+Personally, I am not 100% satisfied with the SciJava services relating to
+this area. There are two -- LogService and StatusService -- which were sort
+of modeled after the IJ1 user interface.
+
+LogService -- Log service is for application-level logging, for
+programmers, debugging, etc. Not user facing.
+
+The idea of "logging" is well established in software engineering. Though
+not universal, the five most common standard levels are ERROR, WARN, INFO,
+DEBUG and TRACE. Well, and NONE for nothing, of course. Most of the logging
+libraries like logback, log4j, and hence SLF4J (a logging facade) support
+those levels. You would think that SLF4J should already solve our logging
+woes and be sufficient, since it is a level of indirection allowing you to
+plug in whatever logging library you want. However, the dependency on
+slf4j-api is burdensome to downstream code. So to avoid that, SciJava
+implements its own LogService, which is a service of the context. We have
+an SLF4JLogService implementation, but by default we actually use a simple
+stderr one. That way, everyone can have what they want with it.
+
+StatusService -- For user-facing status update messages.
+
+ImageJ1 has the status bar, so to replicate that in ImageJ2 of course we
+needed a service to report such events. For now, the StatusService provides
+the same capabilities as IJ1: a message and a progress bar expressed as a
+fraction.
+
+The current thinking is to expand the StatusService into a TaskService or
+similar, which lets you registers tasks, with each task having a progress
+expressed as a fraction. And tasks could potentially be recursive, having
+subtasks with their own progress. I think this model would map much better
+to many existing complex operations -- e.g., the Fiji stitching plugins.
+
+> 1) A lot of the code lives in static methods. The correct (and only)
+> way to get the LogService in there is as a method parameter, right?
+
+Are you asking how to obtain a LogService for use in the BigDataViewer?
+
+The key is to have a Context. Once you have that, you can say:
+
+   LogService log = context.getService(LogService.class);
+
+There is also the @Parameter injection mechanism. You can write:
+
+   @Parameter
+   private LogService log;
+
+As an instance field of your class. Then, inject the context into an
+instance of your class:
+
+   context.inject(myBigDataViewer);
+
+Ultimately, you must either pass a Context and/or LogService in to the
+BigDataViewer somehow (via the constructor is a good DI mechanism), or else
+have each BigDataViewer create its own internal context.
+
+Alternately, with the StderrLogService implementation specifically, it does
+not actually require a Context. That is, you can just say "new
+StderrLogService();" and use it context free. That way, you could code the
+BDV to take an *optional* LogService in the constructor, and pass a "new
+StderrLogService();" in the case of a noargs constructor.
+
+> 2) Where do I instantiate the service? Probably in the respective IJ1
+> plugin, somthing like this: new Context(IJ1LogService.class) in the
+> constructor, and then context.inject(this) to fill a @Parameter
+> annotated LogService field. Is that about right?
+
+I guess I'd have to look at your code, to understand better what you are
+trying to do. It is rather silly to construct a SciJava Context solely for
+the purpose of extracting a particular LogService instance from it. The
+idea is that Contexts should be a bit larger in scope than that; ImageJ2
+itself has a context when it starts up, and ImageJ2 plugins can tap in to
+that context. They should almost never need to create new ones.
+
+For ImageJ1 plugins running in Fiji, note that Fiji does actually create an
+ImageJ2 context internally upon startup. You could probably tap into that,
+although we are still hammering out details of exactly how ImageJ1 and
+ImageJ2 should interact in many respects. Johannes is better equipped than
+me to comment on the current status and planned directions of the legacy
+layer.
+
+> 3) Is there something like a ProgressService which could be
+> implemented to set the IJ1 progressbar? (I had a quick look but
+> couldn't find one)
+
+The StatusService serves that purpose for the IJ2 progress bar. And as I
+explained above, we are planning to move into the more general idea of a
+TaskService which will cover the status bar and more (sort of like
+Eclipse's Tasks pane -- and VisBio had this too, actually!).
+
+But ATM those status events are not intercepted and published to ImageJ1 at
+all.
+
+My core question is: is BigDataViewer targeting ImageJ1? ImageJ2? Both? Or
+you're looking for advice on the best direction to go here -- pros, cons,
+etc.?
+
+Regards,
+Curtis
+
+
+On Tue, Dec 24, 2013 at 8:47 AM, Tobias Pietzsch <pietzsch at mpi-cbg.de>wrote:
+
+> Hi,
+>
+> after browsing around a bit in SCJ and IJ2 examples, I would like to apply
+> some of it in my BigDataViewer plugin. Before I do it all wrong, I thought
+> I ask for advice on best practices?
+>
+> My first application scenario is the following:
+> I have some code that exports from various sources to BigDataViewer's hdf5
+> based file format. There is stuff that can go wrong, and usually the export
+> takes some time. Thus, it would be nice to have some user feedback on
+> progress and warnings etc. If the code is called from an IJ1 plugin, this
+> should be directed to IJ.log and the IJ progressbar. If the code is called
+> from other code, it should be directed to stdout. Currently I'm using my
+> own ProgressListener interface and IJ /  sysout implementations.
+> However this seems like the textbook example for LogService, so I would
+> like to replace my crooked reinvented wheel by a shiny new scijava one :-)
+>
+> I'm a bit unclear on how to do it exactly:
+> 1) A lot of the code lives in static methods. The correct (and only) way
+> to get the LogService in there is as a method parameter, right?
+> 2) Where do I instantiate the service? Probably in the respective IJ1
+> plugin, somthing like this:
+>     new Context(IJ1LogService.class) in the constructor, and then
+>     context.inject(this) to fill a @Parameter annotated LogService field.
+>     Is that about right?
+> 3) Is there something like a ProgressService which could be implemented to
+> set the IJ1 progressbar? (I had a quick look but couldn't find one)
+>
+> thanks a lot for any pointers,
+> Tobias
+>
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140113/97a98bfb/attachment.html>
+
+From ctrueden at wisc.edu  Mon Jan 13 15:08:11 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Mon, 13 Jan 2014 15:08:11 -0600
+Subject: [ImageJ-devel] ImgLib2
+In-Reply-To: <56227.10.1.46.254.1389092281.squirrel@webmail.mpi-cbg.de>
+References: <56227.10.1.46.254.1389092281.squirrel@webmail.mpi-cbg.de>
+Message-ID: <CADN69ympgekxifW2Di216eresSWpuNZ_TRYj6QeGX_F5BV7h-A@mail.gmail.com>
+
+For the archives: see replies in a duplicate thread:
+http://imagej.net/pipermail/imagej-devel/2014-January/001893.html
+
+-Curtis
+
+
+On Tue, Jan 7, 2014 at 4:58 AM, <incardon at mpi-cbg.de> wrote:
+
+>
+>
+> I was trying to save an
+>
+>
+> Img<ARGBType>
+>
+> but I did not find a good way.
+>
+> Also trying to show with
+>
+> ImageJFunctions.show(out)
+>
+> and saving from Fiji it crash
+>
+> How I can save an Img<ARGBType> ?
+>
+> Cheers
+> Pietro
+>
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140113/30eec1e1/attachment.html>
+
+From ctrueden at wisc.edu  Mon Jan 13 16:28:15 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Mon, 13 Jan 2014 16:28:15 -0600
+Subject: [ImageJ-devel] ImageJ2 Question
+In-Reply-To: <231820E6-F1CC-469A-99EB-A88C7F5D6723@wisc.edu>
+References: <231820E6-F1CC-469A-99EB-A88C7F5D6723@wisc.edu>
+Message-ID: <CADN69ynimSE6=OZKAfPFARzvo4YN5HhYKQNvuFKLJ4PX5r+7=A@mail.gmail.com>
+
+Hi Jay,
+
+I am CCing the imagej-devel list, where these discussions should best take
+place for the public good.
+
+> I'm trying to incorporate ImageJ plugins/functionality into JEX. I got
+> an example working where I use an instance if ImageJ and the
+> .command() service to discover, get, and execute a command type
+> plugin. As I move forward I will be implementing widgets for each type
+> of input and provide my own ui and put the info into the CommandInfo
+> inputs, set the dataset and retrieve the output. I think this will
+> suffice for most of the commands that take a Dataset. Right?
+
+I think so. Though please note you will be the first guinea^H^H^H^H^Hperson
+to be implementing a full-blown custom UI with its own widgets. I have
+implemented four so far, though only one (Swing) is fully fleshed out; the
+others are incomplete prototypes.
+
+I am very happy to help resolve any issues you see in the imagej.ui design
+(UIService, UserInterface plugin type, etc.). Personally I am not satisfied
+with the design yet, but for the time being there are more pressing
+development priorities.
+
+> However, I am not sure how to build an ImageDisplay object (e.g., from
+> a tif file on disk) for use with plugins that require an
+> ImageDisplay object.
+
+At the moment there is some unfortunate casting.
+
+To wrap a Dataset in an ImageDisplay:
+ImageDisplay display = (ImageDisplay) ij.display().createDisplay(dataset);
+
+To wrap a Dataset in a DatasetView:
+DatasetView view = (DatasetView) ij.imageDisplay().createDataView(d);
+
+To wrap a DatasetView in an ImageDisplay:
+ImageDisplay display = (ImageDisplay) ij.display().createDisplay(view);
+
+But that should get you started, at least.
+
+> Is there a fundamental difference between plugin
+> commands that prefer to work with ImageDisplay objects (i.e. they only
+> alter how things are displayed? and not the underlying data? or maybe
+> commands that take ImageDisplay objects might need a roi object while
+> commands that use Datasets don't?)
+
+Yes:
+
+- A Dataset contains image pixels and metadata, but is stateless. E.g., it
+does not know the current plane being visualized.
+
+- A DatasetView wraps a Dataset and knows its current position (Localizable
+and Positionable in ImgLib2 terms). The idea is that the same data can be
+visualized simultaneously in different ways; e.g., a 3-view of
+cross-sections over different dimensions of a multi-dimensional dataset.
+ImgLib2 makes this sort of thing really feasible without copying any data
+around.
+
+- An ImageDisplay is a collection of DataViews (DatasetViews and/or
+OverlayViews). So if you want to show an image with some ROIs on it, or
+multiple images as tiles, the ImageDisplay can bind all that together into
+one thing.
+
+> For example, why does the "Rotate..." command take a Dataset while the
+> "Rotate Left" and "Rotate Right" commands take an ImageDisplay? If the
+> command takes and ImageDisplay, can the image operation still be
+> accomplished without displaying the image?
+
+We try to use the "minimal object type" for each operation; i.e., Dataset
+when possible. If ImageDisplay is required, it's almost always because
+there is some feature of the ImageDisplay API that is needed by the
+command. If DatasetView is required, it's probably because the command
+wants to know the current position of the visualization, or wants to
+manipulate the current canvas zoom or color scheme (all features of the
+view, not the data itself).
+
+If you look at the source of Rotate90DegreesLeft, you'll see that it asks
+the ImageDisplay for its current selection bounds. This is so that the
+rotation operation can process pixels inside only the current selection,
+such as a rectangle ROI.
+
+> Also, will plugins like TrackMate (is that the name? Also not sure if
+> this one is ImageJ2 ready... is it?) that may encompass a much larger
+> framework, be implemented as command plugins or will they be more
+> general modules.
+
+TrackMate is not yet an ImageJ2 command, but it will be. Right now it still
+targets ImageJ1. More generally, TrackMate is an API for programmatic
+tracking, with its own SciJava plugin types for segmentation and "linking"
+(i.e., joining segmented objects together into a graph).
+
+> If they are modules, can I still generally just ask
+> for the inputs, display the widgets to the user, pass the info, set
+> the Dataset, run them, and get outputs like for the command plugins
+> but just using the module service. Is it more hopeless than that?
+
+An ImageJ2 command is merely a type of ImageJ2 module. The code you have
+written for discovering the inputs and outputs of available modules applies
+equal to commands and to other modules.
+
+The only thing special about a command is that it is Java code which
+implements the Command interface and supports declaring the inputs and
+outputs via the @Parameter annotation. From the standpoint of an API
+consumer, you don't care at all about that, and can just interrogate the
+ModuleInfo for what you need, regardless of whether the module in question
+is a Command.
+
+> What is the general difference in paradigm I need to understand (if
+> any) in order to also incorporate these much larger/more involved
+> plugins?
+
+By "more involved" I assume you mean "more than just a single module."
+Because in terms of lines of code, it makes no difference. But often what
+will happen is that an extension such as TrackMate will end up consisting
+of several modules, possibly define other plugin types (such as "segmentor"
+and "linker"), and plugin implementations (e.g., "simple threshold" as a
+segementor, or "overlapping pixels" as a linker).
+
+But really, who cares? If TrackMate provides 18 modules, and your code
+discovers and exposes all available modules, you will provide 18
+TrackMate-related modules to your users. No worries there, right?
+
+> I always at least provide default values for each input of a plugin,
+> will I require any other preprocessing?
+
+Without getting very nitty-gritty, I couldn't say. Try it.
+
+> Can I get an example of how preprocessing and post processing are used
+> or their typical purpose for the types of plugins that I'm looking to
+> bring into JEX (image processing and quantification as opposed to
+> results table editing / preferences / image display settings / etc
+> plugins).
+
+Here is an example showing how to implement your own preprocessing plugin:
+
+
+https://github.com/imagej/imagej-tutorials/tree/master/custom-preprocessor-plugin
+
+Postprocessing plugins are analogous.
+
+That said, I am not sure whether you will need to implement any custom pre-
+or postprocessing steps. Perhaps.
+
+> I couldn't find and "all-inclusive" imagej.jar file on the website for
+> download so that I could just import a single jar into my project.
+
+Sorry, it is a little buried:
+
+  http://developer.imagej.net/faq#t22n213
+
+But that's rather intentional; using uber-JARs is fraught with peril, and
+it's better if you don't. Structure your project as a Maven project and let
+it manage your dependencies, and the need for an uber-JAR largely
+disappears.
+
+Regards,
+Curtis
+
+
+On Thu, Jan 9, 2014 at 1:26 PM, Jay Warrick <warrick at wisc.edu> wrote:
+
+> Hi Johannes,
+>
+> Let the annoying questions from me begin ;-)... I'm trying to incorporate
+> ImageJ plugins/functionality into JEX. I got an example working where I use
+> an instance if ImageJ and the .command() service to discover, get, and
+> execute a command type plugin. As I move forward I will be implementing
+> widgets for each type of input and provide my own ui and put the info into
+> the CommandInfo inputs, set the dataset and retrieve the output. I think
+> this will suffice for most of the commands that take a Dataset. Right?
+>
+> However, I am not sure how to build an ImageDisplay object (e.g., from a
+> tif file on disk) for use with plugins that require an ImageDisplay object.
+> Is there a fundamental difference between plugin commands that prefer to
+> work with ImageDisplay objects (i.e. they only alter how things are
+> displayed? and not the underlying data? or maybe commands that take
+> ImageDisplay objects might need a roi object while commands that use
+> Datasets don't?) Just trying to wrap my mind around the thinking so I can
+> craft a general way to work with these particular sets of commands. For
+> example, why does the "Rotate..." command take a Dataset while the "Rotate
+> Left" and "Rotate Right" commands take an ImageDisplay? If the command
+> takes and ImageDisplay, can the image operation still be accomplished
+> without displaying the image?
+>
+> Also, will plugins like TrackMate (is that the name? Also not sure if this
+> one is ImageJ2 ready... is it?) that may encompass a much larger framework,
+> be implemented as command plugins or will they be more general modules. If
+> they are modules, can I still generally just ask for the inputs, display
+> the widgets to the user, pass the info, set the Dataset, run them, and get
+> outputs like for the command plugins but just using the module service. Is
+> it more hopeless than that? What is the general difference in paradigm I
+> need to understand (if any) in order to also incorporate these much
+> larger/more involved plugins? If I always at least provide default values
+> for each input of a plugin, will I require any other preprocessing? Can I
+> get an example of how preprocessing and post processing are used or their
+> typical purpose for the types of plugins that I'm looking to bring into JEX
+> (image processing and quantification as opposed to results table editing /
+> preferences / image display settings / etc plugins).
+>
+> Thanks!!!!
+>
+> Jay
+
+
+
+On Thu, Jan 9, 2014 at 1:44 PM, Jay Warrick <warrick at wisc.edu> wrote:
+
+> Sorry for another one :-)
+>
+> I couldn't find and "all-inclusive" imagej.jar file on the website for
+> download so that I could just import a single jar into my project. I'm fine
+> with importing each separately if need be but figured you guys probably
+> have one somewhere. In one of your pages you refer to something of the sort
+> but I didn't see it on the linked download page currently.
+>
+> Thanks,
+>
+> Jay
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140113/a3c8952f/attachment.html>
+
+From ctrueden at wisc.edu  Mon Jan 13 16:41:57 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Mon, 13 Jan 2014 16:41:57 -0600
+Subject: [ImageJ-devel] ImageJ2 Question
+In-Reply-To: <CADN69ynimSE6=OZKAfPFARzvo4YN5HhYKQNvuFKLJ4PX5r+7=A@mail.gmail.com>
+References: <231820E6-F1CC-469A-99EB-A88C7F5D6723@wisc.edu>
+	<CADN69ynimSE6=OZKAfPFARzvo4YN5HhYKQNvuFKLJ4PX5r+7=A@mail.gmail.com>
+Message-ID: <CADN69ynP5mp5j7tHZBA_h5skWHVj1p5egzxnad+NbCefgbR19g@mail.gmail.com>
+
+Hi Jay,
+
+> http://developer.imagej.net/faq#t22n213
+
+A better URL is:
+http://developer.imagej.net/how-can-i-call-imagej-my-software
+
+Regards,
+Curtis
+
+
+On Mon, Jan 13, 2014 at 4:28 PM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+
+> Hi Jay,
+>
+> I am CCing the imagej-devel list, where these discussions should best take
+> place for the public good.
+>
+> > I'm trying to incorporate ImageJ plugins/functionality into JEX. I got
+> > an example working where I use an instance if ImageJ and the
+> > .command() service to discover, get, and execute a command type
+> > plugin. As I move forward I will be implementing widgets for each type
+> > of input and provide my own ui and put the info into the CommandInfo
+> > inputs, set the dataset and retrieve the output. I think this will
+> > suffice for most of the commands that take a Dataset. Right?
+>
+> I think so. Though please note you will be the first
+> guinea^H^H^H^H^Hperson to be implementing a full-blown custom UI with its
+> own widgets. I have implemented four so far, though only one (Swing) is
+> fully fleshed out; the others are incomplete prototypes.
+>
+> I am very happy to help resolve any issues you see in the imagej.ui design
+> (UIService, UserInterface plugin type, etc.). Personally I am not satisfied
+> with the design yet, but for the time being there are more pressing
+> development priorities.
+>
+> > However, I am not sure how to build an ImageDisplay object (e.g., from
+> > a tif file on disk) for use with plugins that require an
+> > ImageDisplay object.
+>
+> At the moment there is some unfortunate casting.
+>
+> To wrap a Dataset in an ImageDisplay:
+> ImageDisplay display = (ImageDisplay) ij.display().createDisplay(dataset);
+>
+>  To wrap a Dataset in a DatasetView:
+> DatasetView view = (DatasetView) ij.imageDisplay().createDataView(d);
+>
+> To wrap a DatasetView in an ImageDisplay:
+> ImageDisplay display = (ImageDisplay) ij.display().createDisplay(view);
+>
+> But that should get you started, at least.
+>
+> > Is there a fundamental difference between plugin
+> > commands that prefer to work with ImageDisplay objects (i.e. they only
+> > alter how things are displayed? and not the underlying data? or maybe
+> > commands that take ImageDisplay objects might need a roi object while
+> > commands that use Datasets don't?)
+>
+> Yes:
+>
+> - A Dataset contains image pixels and metadata, but is stateless. E.g., it
+> does not know the current plane being visualized.
+>
+> - A DatasetView wraps a Dataset and knows its current position
+> (Localizable and Positionable in ImgLib2 terms). The idea is that the same
+> data can be visualized simultaneously in different ways; e.g., a 3-view of
+> cross-sections over different dimensions of a multi-dimensional dataset.
+> ImgLib2 makes this sort of thing really feasible without copying any data
+> around.
+>
+> - An ImageDisplay is a collection of DataViews (DatasetViews and/or
+> OverlayViews). So if you want to show an image with some ROIs on it, or
+> multiple images as tiles, the ImageDisplay can bind all that together into
+> one thing.
+>
+> > For example, why does the "Rotate..." command take a Dataset while the
+> > "Rotate Left" and "Rotate Right" commands take an ImageDisplay? If the
+> > command takes and ImageDisplay, can the image operation still be
+> > accomplished without displaying the image?
+>
+> We try to use the "minimal object type" for each operation; i.e., Dataset
+> when possible. If ImageDisplay is required, it's almost always because
+> there is some feature of the ImageDisplay API that is needed by the
+> command. If DatasetView is required, it's probably because the command
+> wants to know the current position of the visualization, or wants to
+> manipulate the current canvas zoom or color scheme (all features of the
+> view, not the data itself).
+>
+> If you look at the source of Rotate90DegreesLeft, you'll see that it asks
+> the ImageDisplay for its current selection bounds. This is so that the
+> rotation operation can process pixels inside only the current selection,
+> such as a rectangle ROI.
+>
+> > Also, will plugins like TrackMate (is that the name? Also not sure if
+> > this one is ImageJ2 ready... is it?) that may encompass a much larger
+> > framework, be implemented as command plugins or will they be more
+> > general modules.
+>
+> TrackMate is not yet an ImageJ2 command, but it will be. Right now it
+> still targets ImageJ1. More generally, TrackMate is an API for programmatic
+> tracking, with its own SciJava plugin types for segmentation and "linking"
+> (i.e., joining segmented objects together into a graph).
+>
+> > If they are modules, can I still generally just ask
+> > for the inputs, display the widgets to the user, pass the info, set
+> > the Dataset, run them, and get outputs like for the command plugins
+> > but just using the module service. Is it more hopeless than that?
+>
+> An ImageJ2 command is merely a type of ImageJ2 module. The code you have
+> written for discovering the inputs and outputs of available modules applies
+> equal to commands and to other modules.
+>
+> The only thing special about a command is that it is Java code which
+> implements the Command interface and supports declaring the inputs and
+> outputs via the @Parameter annotation. From the standpoint of an API
+> consumer, you don't care at all about that, and can just interrogate the
+> ModuleInfo for what you need, regardless of whether the module in question
+> is a Command.
+>
+> > What is the general difference in paradigm I need to understand (if
+> > any) in order to also incorporate these much larger/more involved
+> > plugins?
+>
+>  By "more involved" I assume you mean "more than just a single module."
+> Because in terms of lines of code, it makes no difference. But often what
+> will happen is that an extension such as TrackMate will end up consisting
+> of several modules, possibly define other plugin types (such as "segmentor"
+> and "linker"), and plugin implementations (e.g., "simple threshold" as a
+> segementor, or "overlapping pixels" as a linker).
+>
+> But really, who cares? If TrackMate provides 18 modules, and your code
+> discovers and exposes all available modules, you will provide 18
+> TrackMate-related modules to your users. No worries there, right?
+>
+> > I always at least provide default values for each input of a plugin,
+> > will I require any other preprocessing?
+>
+> Without getting very nitty-gritty, I couldn't say. Try it.
+>
+> > Can I get an example of how preprocessing and post processing are used
+> > or their typical purpose for the types of plugins that I'm looking to
+> > bring into JEX (image processing and quantification as opposed to
+> > results table editing / preferences / image display settings / etc
+> > plugins).
+>
+> Here is an example showing how to implement your own preprocessing plugin:
+>
+>
+> https://github.com/imagej/imagej-tutorials/tree/master/custom-preprocessor-plugin
+>
+> Postprocessing plugins are analogous.
+>
+> That said, I am not sure whether you will need to implement any custom
+> pre- or postprocessing steps. Perhaps.
+>
+> > I couldn't find and "all-inclusive" imagej.jar file on the website for
+> > download so that I could just import a single jar into my project.
+>
+> Sorry, it is a little buried:
+>
+>   http://developer.imagej.net/faq#t22n213
+>
+> But that's rather intentional; using uber-JARs is fraught with peril, and
+> it's better if you don't. Structure your project as a Maven project and let
+> it manage your dependencies, and the need for an uber-JAR largely
+> disappears.
+>
+> Regards,
+> Curtis
+>
+>
+> On Thu, Jan 9, 2014 at 1:26 PM, Jay Warrick <warrick at wisc.edu> wrote:
+>
+>> Hi Johannes,
+>>
+>> Let the annoying questions from me begin ;-)... I'm trying to incorporate
+>> ImageJ plugins/functionality into JEX. I got an example working where I use
+>> an instance if ImageJ and the .command() service to discover, get, and
+>> execute a command type plugin. As I move forward I will be implementing
+>> widgets for each type of input and provide my own ui and put the info into
+>> the CommandInfo inputs, set the dataset and retrieve the output. I think
+>> this will suffice for most of the commands that take a Dataset. Right?
+>>
+>> However, I am not sure how to build an ImageDisplay object (e.g., from a
+>> tif file on disk) for use with plugins that require an ImageDisplay object.
+>> Is there a fundamental difference between plugin commands that prefer to
+>> work with ImageDisplay objects (i.e. they only alter how things are
+>> displayed? and not the underlying data? or maybe commands that take
+>> ImageDisplay objects might need a roi object while commands that use
+>> Datasets don't?) Just trying to wrap my mind around the thinking so I can
+>> craft a general way to work with these particular sets of commands. For
+>> example, why does the "Rotate..." command take a Dataset while the "Rotate
+>> Left" and "Rotate Right" commands take an ImageDisplay? If the command
+>> takes and ImageDisplay, can the image operation still be accomplished
+>> without displaying the image?
+>>
+>> Also, will plugins like TrackMate (is that the name? Also not sure if
+>> this one is ImageJ2 ready... is it?) that may encompass a much larger
+>> framework, be implemented as command plugins or will they be more general
+>> modules. If they are modules, can I still generally just ask for the
+>> inputs, display the widgets to the user, pass the info, set the Dataset,
+>> run them, and get outputs like for the command plugins but just using the
+>> module service. Is it more hopeless than that? What is the general
+>> difference in paradigm I need to understand (if any) in order to also
+>> incorporate these much larger/more involved plugins? If I always at least
+>> provide default values for each input of a plugin, will I require any other
+>> preprocessing? Can I get an example of how preprocessing and post
+>> processing are used or their typical purpose for the types of plugins that
+>> I'm looking to bring into JEX (image processing and quantification as
+>> opposed to results table editing / preferences / image display settings /
+>> etc plugins).
+>>
+>> Thanks!!!!
+>>
+>> Jay
+>
+>
+>
+> On Thu, Jan 9, 2014 at 1:44 PM, Jay Warrick <warrick at wisc.edu> wrote:
+>
+>> Sorry for another one :-)
+>>
+>> I couldn't find and "all-inclusive" imagej.jar file on the website for
+>> download so that I could just import a single jar into my project. I'm fine
+>> with importing each separately if need be but figured you guys probably
+>> have one somewhere. In one of your pages you refer to something of the sort
+>> but I didn't see it on the linked download page currently.
+>>
+>> Thanks,
+>>
+>> Jay
+>>
+>>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140113/00be1547/attachment-0001.html>
+
+From ctrueden at wisc.edu  Tue Jan 14 09:01:56 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Tue, 14 Jan 2014 09:01:56 -0600
+Subject: [ImageJ-devel] ImageJ2 Question
+In-Reply-To: <AD9A3F99-5B8E-4772-8254-9F51CC0C55E3@wisc.edu>
+References: <231820E6-F1CC-469A-99EB-A88C7F5D6723@wisc.edu>
+	<CADN69ynimSE6=OZKAfPFARzvo4YN5HhYKQNvuFKLJ4PX5r+7=A@mail.gmail.com>
+	<AD9A3F99-5B8E-4772-8254-9F51CC0C55E3@wisc.edu>
+Message-ID: <CADN69yk1U1+-h_fe81_7wLtRiMT5x8ciHs=gS2Jk6ghnLyOkqg@mail.gmail.com>
+
+Hi Jay,
+
+> The ImageJ2 team is doing a great job to make there code accessible.
+> Thanks for all the documentation and examples.
+
+I am glad to hear that. Definitely let us know of any weak and missing
+areas in the docs. Your perspective as you try to grok the codebase is
+really valuable in that regard.
+
+Thanks,
+Curtis
+
+
+On Tue, Jan 14, 2014 at 8:35 AM, Jay Warrick <warrick at wisc.edu> wrote:
+
+> Curtis,
+>
+> Thanks so much for the thorough reply. I have the Dataset-based commands
+> up and running in JEX with the widgets and all but it is only a small
+> subset of all the plugins. I'm excited to get the rest up and running.
+>
+> The ImageJ2 team is doing a great job to make there code accessible.
+> Thanks for all the documentation and examples.
+>
+> Regards,
+>
+> Jay
+>
+> On Jan 13, 2014, at 4:28 PM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+>
+> Hi Jay,
+>
+> I am CCing the imagej-devel list, where these discussions should best take
+> place for the public good.
+>
+> > I'm trying to incorporate ImageJ plugins/functionality into JEX. I got
+> > an example working where I use an instance if ImageJ and the
+> > .command() service to discover, get, and execute a command type
+> > plugin. As I move forward I will be implementing widgets for each type
+> > of input and provide my own ui and put the info into the CommandInfo
+> > inputs, set the dataset and retrieve the output. I think this will
+> > suffice for most of the commands that take a Dataset. Right?
+>
+> I think so. Though please note you will be the first
+> guinea^H^H^H^H^Hperson to be implementing a full-blown custom UI with its
+> own widgets. I have implemented four so far, though only one (Swing) is
+> fully fleshed out; the others are incomplete prototypes.
+>
+> I am very happy to help resolve any issues you see in the imagej.ui design
+> (UIService, UserInterface plugin type, etc.). Personally I am not satisfied
+> with the design yet, but for the time being there are more pressing
+> development priorities.
+>
+> > However, I am not sure how to build an ImageDisplay object (e.g., from
+> > a tif file on disk) for use with plugins that require an
+> > ImageDisplay object.
+>
+> At the moment there is some unfortunate casting.
+>
+> To wrap a Dataset in an ImageDisplay:
+> ImageDisplay display = (ImageDisplay) ij.display().createDisplay(dataset);
+>
+> To wrap a Dataset in a DatasetView:
+> DatasetView view = (DatasetView) ij.imageDisplay().createDataView(d);
+>
+> To wrap a DatasetView in an ImageDisplay:
+> ImageDisplay display = (ImageDisplay) ij.display().createDisplay(view);
+>
+> But that should get you started, at least.
+>
+> > Is there a fundamental difference between plugin
+> > commands that prefer to work with ImageDisplay objects (i.e. they only
+> > alter how things are displayed? and not the underlying data? or maybe
+> > commands that take ImageDisplay objects might need a roi object while
+> > commands that use Datasets don't?)
+>
+> Yes:
+>
+> - A Dataset contains image pixels and metadata, but is stateless. E.g., it
+> does not know the current plane being visualized.
+>
+> - A DatasetView wraps a Dataset and knows its current position
+> (Localizable and Positionable in ImgLib2 terms). The idea is that the same
+> data can be visualized simultaneously in different ways; e.g., a 3-view of
+> cross-sections over different dimensions of a multi-dimensional dataset.
+> ImgLib2 makes this sort of thing really feasible without copying any data
+> around.
+>
+> - An ImageDisplay is a collection of DataViews (DatasetViews and/or
+> OverlayViews). So if you want to show an image with some ROIs on it, or
+> multiple images as tiles, the ImageDisplay can bind all that together into
+> one thing.
+>
+> > For example, why does the "Rotate..." command take a Dataset while the
+> > "Rotate Left" and "Rotate Right" commands take an ImageDisplay? If the
+> > command takes and ImageDisplay, can the image operation still be
+> > accomplished without displaying the image?
+>
+> We try to use the "minimal object type" for each operation; i.e., Dataset
+> when possible. If ImageDisplay is required, it's almost always because
+> there is some feature of the ImageDisplay API that is needed by the
+> command. If DatasetView is required, it's probably because the command
+> wants to know the current position of the visualization, or wants to
+> manipulate the current canvas zoom or color scheme (all features of the
+> view, not the data itself).
+>
+> If you look at the source of Rotate90DegreesLeft, you'll see that it asks
+> the ImageDisplay for its current selection bounds. This is so that the
+> rotation operation can process pixels inside only the current selection,
+> such as a rectangle ROI.
+>
+> > Also, will plugins like TrackMate (is that the name? Also not sure if
+> > this one is ImageJ2 ready... is it?) that may encompass a much larger
+> > framework, be implemented as command plugins or will they be more
+> > general modules.
+>
+> TrackMate is not yet an ImageJ2 command, but it will be. Right now it
+> still targets ImageJ1. More generally, TrackMate is an API for programmatic
+> tracking, with its own SciJava plugin types for segmentation and "linking"
+> (i.e., joining segmented objects together into a graph).
+>
+> > If they are modules, can I still generally just ask
+> > for the inputs, display the widgets to the user, pass the info, set
+> > the Dataset, run them, and get outputs like for the command plugins
+> > but just using the module service. Is it more hopeless than that?
+>
+> An ImageJ2 command is merely a type of ImageJ2 module. The code you have
+> written for discovering the inputs and outputs of available modules applies
+> equal to commands and to other modules.
+>
+> The only thing special about a command is that it is Java code which
+> implements the Command interface and supports declaring the inputs and
+> outputs via the @Parameter annotation. From the standpoint of an API
+> consumer, you don't care at all about that, and can just interrogate the
+> ModuleInfo for what you need, regardless of whether the module in question
+> is a Command.
+>
+> > What is the general difference in paradigm I need to understand (if
+> > any) in order to also incorporate these much larger/more involved
+> > plugins?
+>
+> By "more involved" I assume you mean "more than just a single module."
+> Because in terms of lines of code, it makes no difference. But often what
+> will happen is that an extension such as TrackMate will end up consisting
+> of several modules, possibly define other plugin types (such as "segmentor"
+> and "linker"), and plugin implementations (e.g., "simple threshold" as a
+> segementor, or "overlapping pixels" as a linker).
+>
+> But really, who cares? If TrackMate provides 18 modules, and your code
+> discovers and exposes all available modules, you will provide 18
+> TrackMate-related modules to your users. No worries there, right?
+>
+> > I always at least provide default values for each input of a plugin,
+> > will I require any other preprocessing?
+>
+> Without getting very nitty-gritty, I couldn't say. Try it.
+>
+> > Can I get an example of how preprocessing and post processing are used
+> > or their typical purpose for the types of plugins that I'm looking to
+> > bring into JEX (image processing and quantification as opposed to
+> > results table editing / preferences / image display settings / etc
+> > plugins).
+>
+> Here is an example showing how to implement your own preprocessing plugin:
+>
+>
+> https://github.com/imagej/imagej-tutorials/tree/master/custom-preprocessor-plugin
+>
+> Postprocessing plugins are analogous.
+>
+> That said, I am not sure whether you will need to implement any custom
+> pre- or postprocessing steps. Perhaps.
+>
+> > I couldn't find and "all-inclusive" imagej.jar file on the website for
+> > download so that I could just import a single jar into my project.
+>
+> Sorry, it is a little buried:
+>
+>   http://developer.imagej.net/faq#t22n213
+>
+> But that's rather intentional; using uber-JARs is fraught with peril, and
+> it's better if you don't. Structure your project as a Maven project and let
+> it manage your dependencies, and the need for an uber-JAR largely
+> disappears.
+>
+> Regards,
+> Curtis
+>
+>
+> On Thu, Jan 9, 2014 at 1:26 PM, Jay Warrick <warrick at wisc.edu> wrote:
+>
+>> Hi Johannes,
+>>
+>> Let the annoying questions from me begin ;-)... I'm trying to incorporate
+>> ImageJ plugins/functionality into JEX. I got an example working where I use
+>> an instance if ImageJ and the .command() service to discover, get, and
+>> execute a command type plugin. As I move forward I will be implementing
+>> widgets for each type of input and provide my own ui and put the info into
+>> the CommandInfo inputs, set the dataset and retrieve the output. I think
+>> this will suffice for most of the commands that take a Dataset. Right?
+>>
+>> However, I am not sure how to build an ImageDisplay object (e.g., from a
+>> tif file on disk) for use with plugins that require an ImageDisplay object.
+>> Is there a fundamental difference between plugin commands that prefer to
+>> work with ImageDisplay objects (i.e. they only alter how things are
+>> displayed? and not the underlying data? or maybe commands that take
+>> ImageDisplay objects might need a roi object while commands that use
+>> Datasets don't?) Just trying to wrap my mind around the thinking so I can
+>> craft a general way to work with these particular sets of commands. For
+>> example, why does the "Rotate..." command take a Dataset while the "Rotate
+>> Left" and "Rotate Right" commands take an ImageDisplay? If the command
+>> takes and ImageDisplay, can the image operation still be accomplished
+>> without displaying the image?
+>>
+>> Also, will plugins like TrackMate (is that the name? Also not sure if
+>> this one is ImageJ2 ready... is it?) that may encompass a much larger
+>> framework, be implemented as command plugins or will they be more general
+>> modules. If they are modules, can I still generally just ask for the
+>> inputs, display the widgets to the user, pass the info, set the Dataset,
+>> run them, and get outputs like for the command plugins but just using the
+>> module service. Is it more hopeless than that? What is the general
+>> difference in paradigm I need to understand (if any) in order to also
+>> incorporate these much larger/more involved plugins? If I always at least
+>> provide default values for each input of a plugin, will I require any other
+>> preprocessing? Can I get an example of how preprocessing and post
+>> processing are used or their typical purpose for the types of plugins that
+>> I'm looking to bring into JEX (image processing and quantification as
+>> opposed to results table editing / preferences / image display settings /
+>> etc plugins).
+>>
+>> Thanks!!!!
+>>
+>> Jay
+>
+>
+>
+> On Thu, Jan 9, 2014 at 1:44 PM, Jay Warrick <warrick at wisc.edu> wrote:
+>
+>> Sorry for another one :-)
+>>
+>> I couldn't find and "all-inclusive" imagej.jar file on the website for
+>> download so that I could just import a single jar into my project. I'm fine
+>> with importing each separately if need be but figured you guys probably
+>> have one somewhere. In one of your pages you refer to something of the sort
+>> but I didn't see it on the linked download page currently.
+>>
+>> Thanks,
+>>
+>> Jay
+>>
+>>
+>
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140114/ca8ab807/attachment.html>
+
+From schindelin at wisc.edu  Wed Jan 15 11:35:11 2014
+From: schindelin at wisc.edu (Johannes Schindelin)
+Date: Wed, 15 Jan 2014 18:35:11 +0100 (CET)
+Subject: [ImageJ-devel] Speeding up Maven downloads using the ImageJ public
+	mirror
+Message-ID: <alpine.DEB.1.00.1401151806380.14982@s15462909.onlinehome-server.info>
+
+Hi Curtis,
+
+I got curious about the "remote proxy" feature of Nexus (which is used to
+serve ImageJ's Maven repository). For the benefit of other developers, let
+me write it up here:
+
+When clicking on the "Repositories" link on the left hand side menu of
+http://maven.imagej.net/ you see a lot of repositories with basically
+four types: "group", "hosted", "virtual" and "proxy":
+
+	http://maven.imagej.net/index.html#view-repositories
+
+The "hosted" ones are our repositories, to which we deploy: snapshots,
+releases and thirdparty (for dependencies we rely on that were not
+deployed anywhere yet).
+
+The "virtual" repositories are there only for compatibility and we could
+even switch them off because we do not support Maven 1 at all.
+
+The proxy repositories are interesting: when accessing them via Maven,
+they try to retrieve the desired artifacts from remote repositories and
+keep cached copies (eternally for release versions, 24 minutes for
+snapshots) so that they serve the artifacts from the cache until expired.
+
+The groups are just aggregating others, and the most important group is
+the "public" one: it offers a single, public-facing repository that serves
+*all* of the public repositories, including the proxy ones.
+
+Now, the real cool thing about it is that you can configure your local
+Maven to use the "public" group repository as a *mirror*, i.e. instead of
+looking here and there and everywhere for artifacts, it looks only at the
+"public" repository and lets that one worry about retrieving the
+artifacts. It also makes things faster because Maven will only have to
+look at one single repository rather than trying a couple of them.
+
+To configure the mirror, I added the <mirrors> section to my
+$HOME/.m2/settings.xml:
+
+-- snip --
+<settings>
+	...
+        <mirrors>
+                <mirror>
+                        <id>imagej-mirror</id>
+                        <name>ImageJ's public mirror repository</name>
+                        <url>http://maven.imagej.net/content/groups/public</url>
+                        <mirrorOf>*</mirrorOf>
+                </mirror>
+        </mirrors>
+	...
+</settings>
+-- snap --
+
+It is a pity that we cannot configure the mirror from the pom-scijava
+parent (which would have relieved every developer from having to configure
+the *exact* *same* thing on their computers), but at least it is easy
+enough.
+
+Maybe we should teach the imagej-maven-plugin to edit the user's
+configuration when the user asks for it?
+
+Ciao,
+Dscho
+
+
+From pietzsch at mpi-cbg.de  Thu Jan 16 20:15:15 2014
+From: pietzsch at mpi-cbg.de (Tobias Pietzsch)
+Date: Fri, 17 Jan 2014 03:15:15 +0100
+Subject: [ImageJ-devel] Help! - Maven/Eclipse problem with fiji.sc
+	dependencies
+Message-ID: <E68B9FAE-9B40-470F-8829-F9AFADEA2AC6@mpi-cbg.de>
+
+Hi,
+I'm having suddenly many "bad pom" errors in Eclipse.
+For the SpimViewer project, I narrowed it down to the following:
+If I remove all sc.fiji projects from the dependencies, it builds fine (except for compile errors related to classes in those missing dependencies)
+For me, the fiji.sc dependencies are
+		<dependency>
+			<groupId>sc.fiji</groupId>
+			<artifactId>SPIM_Opener</artifactId>
+			<version>2.0.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>sc.fiji</groupId>
+			<artifactId>SPIM_Registration</artifactId>
+			<version>2.0.0-SNAPSHOT</version>
+		</dependency>
+Enabling any of these causes trouble.
+
+From command line maven, everything builds fine.
+
+I made a new Eclipse workspace, cloned (only) the SpimViewer project into it and tried again. Same problem.
+I'm seeing errors like this one:
+
+ArtifactDescriptorException: Failed to read artifact descriptor for net.java.sezpoz:sezpoz:jar:${sezpoz.version}: ArtifactResolutionException: Failure to transfer net.java.sezpoz:sezpoz:pom:${sezpoz.version} from http://maven.imagej.net/content/repositories/releases was cached in the local repository, resolution will not be reattempted until the update interval of imagej.releases has elapsed or updates are forced. Original error: Could not transfer artifact net.java.sezpoz:sezpoz:pom:${sezpoz.version} from/to imagej.releases (http://maven.imagej.net/content/repositories/releases): Illegal character in path at index 78: http://maven.imagej.net/content/repositories/releases/net/java/sezpoz/sezpoz/${sezpoz.version}/sezpoz-${sezpoz.version}.pom	pom.xml	/SpimViewer	line 1	Maven Dependency Problem
+
+(Indeed, I have a directory .m2/repository/net/java/sezpoz/sezpoz/${sezpoz.version} now)
+
+The weird thing is that from the command line everything works.
+
+Does anyone have an idea what could be wrong? This basically stops me from working completely?
+
+thanks for any help,
+Tobias
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140117/6fe4cce1/attachment.html>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140117/6fe4cce1/attachment.pgp>
+
+From pietzsch at mpi-cbg.de  Thu Jan 16 20:28:34 2014
+From: pietzsch at mpi-cbg.de (Tobias Pietzsch)
+Date: Fri, 17 Jan 2014 03:28:34 +0100
+Subject: [ImageJ-devel] [fiji-devel] Help! - Maven/Eclipse problem with
+	fiji.sc dependencies
+In-Reply-To: <E68B9FAE-9B40-470F-8829-F9AFADEA2AC6@mpi-cbg.de>
+References: <E68B9FAE-9B40-470F-8829-F9AFADEA2AC6@mpi-cbg.de>
+Message-ID: <2297FCB0-A4E9-4092-8712-A4CB89200AF3@mpi-cbg.de>
+
+Hi,
+
+I just deleted my .m2 directory and let Eclipse download the internet again to fill it.
+The problem persists :(
+
+Tobias
+
+On Jan 17, 2014, at 3:15 AM, Tobias Pietzsch <pietzsch at mpi-cbg.de> wrote:
+
+> Hi,
+> I'm having suddenly many "bad pom" errors in Eclipse.
+> For the SpimViewer project, I narrowed it down to the following:
+> If I remove all sc.fiji projects from the dependencies, it builds fine (except for compile errors related to classes in those missing dependencies)
+> For me, the fiji.sc dependencies are
+> 		<dependency>
+> 			<groupId>sc.fiji</groupId>
+> 			<artifactId>SPIM_Opener</artifactId>
+> 			<version>2.0.0-SNAPSHOT</version>
+> 		</dependency>
+> 		<dependency>
+> 			<groupId>sc.fiji</groupId>
+> 			<artifactId>SPIM_Registration</artifactId>
+> 			<version>2.0.0-SNAPSHOT</version>
+> 		</dependency>
+> Enabling any of these causes trouble.
+> 
+> From command line maven, everything builds fine.
+> 
+> I made a new Eclipse workspace, cloned (only) the SpimViewer project into it and tried again. Same problem.
+> I'm seeing errors like this one:
+> 
+> ArtifactDescriptorException: Failed to read artifact descriptor for net.java.sezpoz:sezpoz:jar:${sezpoz.version}: ArtifactResolutionException: Failure to transfer net.java.sezpoz:sezpoz:pom:${sezpoz.version} from http://maven.imagej.net/content/repositories/releases was cached in the local repository, resolution will not be reattempted until the update interval of imagej.releases has elapsed or updates are forced. Original error: Could not transfer artifact net.java.sezpoz:sezpoz:pom:${sezpoz.version} from/to imagej.releases (http://maven.imagej.net/content/repositories/releases): Illegal character in path at index 78: http://maven.imagej.net/content/repositories/releases/net/java/sezpoz/sezpoz/${sezpoz.version}/sezpoz-${sezpoz.version}.pom	pom.xml	/SpimViewer	line 1	Maven Dependency Problem
+> 
+> (Indeed, I have a directory .m2/repository/net/java/sezpoz/sezpoz/${sezpoz.version} now)
+> 
+> The weird thing is that from the command line everything works.
+> 
+> Does anyone have an idea what could be wrong? This basically stops me from working completely?
+> 
+> thanks for any help,
+> Tobias
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140117/c9e51fc4/attachment.html>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140117/c9e51fc4/attachment.pgp>
+
+From stephan.preibisch at gmx.de  Thu Jan 16 20:31:15 2014
+From: stephan.preibisch at gmx.de (Stephan Preibisch)
+Date: Thu, 16 Jan 2014 21:31:15 -0500
+Subject: [ImageJ-devel] [fiji-devel] Help! - Maven/Eclipse problem with
+	fiji.sc dependencies
+In-Reply-To: <2297FCB0-A4E9-4092-8712-A4CB89200AF3@mpi-cbg.de>
+References: <E68B9FAE-9B40-470F-8829-F9AFADEA2AC6@mpi-cbg.de>
+	<2297FCB0-A4E9-4092-8712-A4CB89200AF3@mpi-cbg.de>
+Message-ID: <57ACD134-1764-40A6-AC9D-DCE331020095@gmx.de>
+
+Hi Tobias,
+
+that might be related to the fact that I externalized the SPIM_Registration I guess ... can you maybe try to just check out the git repository instead?
+
+https://github.com/fiji/spimreconstruction
+
+Steffi
+
+On Jan 16, 2014, at 21:28 , Tobias Pietzsch wrote:
+
+> Hi,
+> 
+> I just deleted my .m2 directory and let Eclipse download the internet again to fill it.
+> The problem persists :(
+> 
+> Tobias
+> 
+> On Jan 17, 2014, at 3:15 AM, Tobias Pietzsch <pietzsch at mpi-cbg.de> wrote:
+> 
+>> Hi,
+>> I'm having suddenly many "bad pom" errors in Eclipse.
+>> For the SpimViewer project, I narrowed it down to the following:
+>> If I remove all sc.fiji projects from the dependencies, it builds fine (except for compile errors related to classes in those missing dependencies)
+>> For me, the fiji.sc dependencies are
+>> 		<dependency>
+>> 			<groupId>sc.fiji</groupId>
+>> 			<artifactId>SPIM_Opener</artifactId>
+>> 			<version>2.0.0-SNAPSHOT</version>
+>> 		</dependency>
+>> 		<dependency>
+>> 			<groupId>sc.fiji</groupId>
+>> 			<artifactId>SPIM_Registration</artifactId>
+>> 			<version>2.0.0-SNAPSHOT</version>
+>> 		</dependency>
+>> Enabling any of these causes trouble.
+>> 
+>> From command line maven, everything builds fine.
+>> 
+>> I made a new Eclipse workspace, cloned (only) the SpimViewer project into it and tried again. Same problem.
+>> I'm seeing errors like this one:
+>> 
+>> ArtifactDescriptorException: Failed to read artifact descriptor for net.java.sezpoz:sezpoz:jar:${sezpoz.version}: ArtifactResolutionException: Failure to transfer net.java.sezpoz:sezpoz:pom:${sezpoz.version} from http://maven.imagej.net/content/repositories/releases was cached in the local repository, resolution will not be reattempted until the update interval of imagej.releases has elapsed or updates are forced. Original error: Could not transfer artifact net.java.sezpoz:sezpoz:pom:${sezpoz.version} from/to imagej.releases (http://maven.imagej.net/content/repositories/releases): Illegal character in path at index 78: http://maven.imagej.net/content/repositories/releases/net/java/sezpoz/sezpoz/${sezpoz.version}/sezpoz-${sezpoz.version}.pom	pom.xml	/SpimViewer	line 1	Maven Dependency Problem
+>> 
+>> (Indeed, I have a directory .m2/repository/net/java/sezpoz/sezpoz/${sezpoz.version} now)
+>> 
+>> The weird thing is that from the command line everything works.
+>> 
+>> Does anyone have an idea what could be wrong? This basically stops me from working completely?
+>> 
+>> thanks for any help,
+>> Tobias
+> 
+
+---
+
+Dr. Stephan Preibisch
+HFSP Fellow
+Robert H. Singer / Eugene Myers lab
+
+Albert Einstein College of Medicine / HHMI Janelia Farm / MPI-CBG
+
+email: stephan.preibisch at einstein.yu.edu / preibischs at janelia.hhmi.org / preibisch at mpi-cbg.de
+web: http://www.preibisch.net/
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140116/c87bb965/attachment-0001.html>
+
+From Johannes.Schindelin at gmx.de  Fri Jan 17 07:39:37 2014
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Fri, 17 Jan 2014 14:39:37 +0100 (CET)
+Subject: [ImageJ-devel] Help! - Maven/Eclipse problem with fiji.sc
+	dependencies
+In-Reply-To: <E68B9FAE-9B40-470F-8829-F9AFADEA2AC6@mpi-cbg.de>
+References: <E68B9FAE-9B40-470F-8829-F9AFADEA2AC6@mpi-cbg.de>
+Message-ID: <alpine.DEB.1.00.1401170714060.25936@bonsai2>
+
+Hi Tobias,
+
+On Fri, 17 Jan 2014, Tobias Pietzsch wrote:
+
+> ArtifactDescriptorException: Failed to read artifact descriptor for
+> net.java.sezpoz:sezpoz:jar:${sezpoz.version}:
+> ArtifactResolutionException: Failure to transfer
+> net.java.sezpoz:sezpoz:pom:${sezpoz.version} from
+> http://maven.imagej.net/content/repositories/releases was cached in the
+> local repository, resolution will not be reattempted until the update
+> interval of imagej.releases has elapsed or updates are forced.
+
+We do not use Sezpoz anymore. I can only imagine that m2e (i.e. Eclipse's
+Maven support) cached the need for it somewhere, or that one of your
+other dependencies does. The pom-scijava does not define the
+sezpoz.version anymore.
+
+A workaround would be to define sezpoz.version to 1.9-imagej, a proper
+solution would be to find out what is causing that dependency to be drawn
+in and update it accordingly.
+
+> The weird thing is that from the command line everything works.
+
+Command-line Maven is quite a bit more correct in its interpretation of
+the project configuration than m2e (or for that matter, than MiniMaven).
+
+Ciao,
+Johannes
+
+
+From pietzsch at mpi-cbg.de  Fri Jan 17 08:32:45 2014
+From: pietzsch at mpi-cbg.de (Tobias Pietzsch)
+Date: Fri, 17 Jan 2014 15:32:45 +0100
+Subject: [ImageJ-devel] Help! - Maven/Eclipse problem with fiji.sc
+	dependencies
+In-Reply-To: <alpine.DEB.1.00.1401170714060.25936@bonsai2>
+References: <E68B9FAE-9B40-470F-8829-F9AFADEA2AC6@mpi-cbg.de>
+	<alpine.DEB.1.00.1401170714060.25936@bonsai2>
+Message-ID: <1183C57D-A880-4F95-87F8-0F340E0D0419@mpi-cbg.de>
+
+Hi Johannes,
+
+thanks a lot for those pointers! I think I found it!
+I traced it down to pom-fiji. It still has this section https://github.com/fiji/fiji/blob/master/pom.xml#L165-180
+                <profile>
+                        <id>eclipse</id>
+                        <activation>
+                                <property>
+                                        <name>m2e.version</name>
+                                </property>
+                        </activation>
+                        <dependencies>
+                                <dependency>
+                                        <groupId>net.java.sezpoz</groupId>
+                                        <artifactId>sezpoz</artifactId>
+                                        <version>${sezpoz.version}</version>
+                                </dependency>
+                        </dependencies>
+                </profile>
+which pulls in sezpoz with the undefined version.
+I'm still working to put my setup back together into a working state, but that seems to be the cause of it.
+
+Btw, can you recommend a good way to trace through the pom dependency tree?
+I used a combination of Eclipse's "Effective pom", grep-ing in ~/.m2/repository, and pure luck? Are there better tools?
+
+best regards,
+Tobias
+
+
+On Jan 17, 2014, at 2:39 PM, Johannes Schindelin <Johannes.Schindelin at gmx.de> wrote:
+
+> Hi Tobias,
+> 
+> On Fri, 17 Jan 2014, Tobias Pietzsch wrote:
+> 
+>> ArtifactDescriptorException: Failed to read artifact descriptor for
+>> net.java.sezpoz:sezpoz:jar:${sezpoz.version}:
+>> ArtifactResolutionException: Failure to transfer
+>> net.java.sezpoz:sezpoz:pom:${sezpoz.version} from
+>> http://maven.imagej.net/content/repositories/releases was cached in the
+>> local repository, resolution will not be reattempted until the update
+>> interval of imagej.releases has elapsed or updates are forced.
+> 
+> We do not use Sezpoz anymore. I can only imagine that m2e (i.e. Eclipse's
+> Maven support) cached the need for it somewhere, or that one of your
+> other dependencies does. The pom-scijava does not define the
+> sezpoz.version anymore.
+> 
+> A workaround would be to define sezpoz.version to 1.9-imagej, a proper
+> solution would be to find out what is causing that dependency to be drawn
+> in and update it accordingly.
+> 
+>> The weird thing is that from the command line everything works.
+> 
+> Command-line Maven is quite a bit more correct in its interpretation of
+> the project configuration than m2e (or for that matter, than MiniMaven).
+> 
+> Ciao,
+> Johannes
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140117/ed8699b8/attachment.html>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140117/ed8699b8/attachment.pgp>
+
+From hinerm at gmail.com  Fri Jan 17 09:08:52 2014
+From: hinerm at gmail.com (Mark Hiner)
+Date: Fri, 17 Jan 2014 09:08:52 -0600
+Subject: [ImageJ-devel] [fiji-devel] Re: Help! - Maven/Eclipse problem
+	with fiji.sc dependencies
+In-Reply-To: <1183C57D-A880-4F95-87F8-0F340E0D0419@mpi-cbg.de>
+References: <E68B9FAE-9B40-470F-8829-F9AFADEA2AC6@mpi-cbg.de>
+	<alpine.DEB.1.00.1401170714060.25936@bonsai2>
+	<1183C57D-A880-4F95-87F8-0F340E0D0419@mpi-cbg.de>
+Message-ID: <CA+B=mGo3P9SA+9XvCNZyOHSvHLtgm0B3vFCMmRn1v-aGRgRVZQ@mail.gmail.com>
+
+Hi Tobias,
+
+On Fri, Jan 17, 2014 at 8:32 AM, Tobias Pietzsch <pietzsch at mpi-cbg.de>wrote:
+
+> Btw, can you recommend a good way to trace through the pom dependency tree?
+> I used a combination of Eclipse's "Effective pom", grep-ing in
+> ~/.m2/repository, and pure luck? Are there better tools?
+>
+
+Personally, I like to use the
+dependency:tree<http://maven.apache.org/plugins/maven-dependency-plugin/tree-mojo.html>plugin
+from the command line, and I prefer the "Dependency Hierarchy" in
+Eclipse (which is basically the same as dependency:tree, and perhaps easier
+to read).
+
+The Effective POM can be helpful, but I find it to be too much information
+when you're just trying to figure out dependencies.
+
+- Mark
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140117/1590b8eb/attachment.html>
+
+From pietzsch at mpi-cbg.de  Fri Jan 17 09:43:37 2014
+From: pietzsch at mpi-cbg.de (Tobias Pietzsch)
+Date: Fri, 17 Jan 2014 16:43:37 +0100
+Subject: [ImageJ-devel] [fiji-devel] Re: Help! - Maven/Eclipse problem
+	with fiji.sc dependencies
+In-Reply-To: <CA+B=mGo3P9SA+9XvCNZyOHSvHLtgm0B3vFCMmRn1v-aGRgRVZQ@mail.gmail.com>
+References: <E68B9FAE-9B40-470F-8829-F9AFADEA2AC6@mpi-cbg.de>
+	<alpine.DEB.1.00.1401170714060.25936@bonsai2>
+	<1183C57D-A880-4F95-87F8-0F340E0D0419@mpi-cbg.de>
+	<CA+B=mGo3P9SA+9XvCNZyOHSvHLtgm0B3vFCMmRn1v-aGRgRVZQ@mail.gmail.com>
+Message-ID: <2A6F9CF3-D271-40E6-87BF-7C3EB5F3473A@mpi-cbg.de>
+
+Hi Mark,
+
+thanks! I must be blind that I didn't notice the "Dependency Hierarchy" in Eclipse myself? Very cool.
+
+best regards,
+Tobias
+
+On Jan 17, 2014, at 4:08 PM, Mark Hiner <hinerm at gmail.com> wrote:
+
+> Hi Tobias,
+> 
+> On Fri, Jan 17, 2014 at 8:32 AM, Tobias Pietzsch <pietzsch at mpi-cbg.de> wrote:
+> Btw, can you recommend a good way to trace through the pom dependency tree?
+> I used a combination of Eclipse's "Effective pom", grep-ing in ~/.m2/repository, and pure luck? Are there better tools?
+> 
+> Personally, I like to use the dependency:tree plugin from the command line, and I prefer the "Dependency Hierarchy" in Eclipse (which is basically the same as dependency:tree, and perhaps easier to read).
+> 
+> The Effective POM can be helpful, but I find it to be too much information when you're just trying to figure out dependencies.
+> 
+> - Mark
+> 
+> -- 
+> -- 
+> Please avoid top-posting, and please make sure to reply-to-all!
+>  
+> Mailing list web interface: http://groups.google.com/group/fiji-devel
+>  
+> --- 
+> You received this message because you are subscribed to the Google Groups "Fiji-devel" group.
+> To unsubscribe from this group and stop receiving emails from it, send an email to fiji-devel+unsubscribe at googlegroups.com.
+> For more options, visit https://groups.google.com/groups/opt_out.
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140117/d87ee47d/attachment.html>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140117/d87ee47d/attachment.pgp>
+
+From ctrueden at wisc.edu  Fri Jan 17 09:46:21 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Fri, 17 Jan 2014 09:46:21 -0600
+Subject: [ImageJ-devel] [fiji-devel] Re: Help! - Maven/Eclipse problem
+	with fiji.sc dependencies
+In-Reply-To: <2A6F9CF3-D271-40E6-87BF-7C3EB5F3473A@mpi-cbg.de>
+References: <E68B9FAE-9B40-470F-8829-F9AFADEA2AC6@mpi-cbg.de>
+	<alpine.DEB.1.00.1401170714060.25936@bonsai2>
+	<1183C57D-A880-4F95-87F8-0F340E0D0419@mpi-cbg.de>
+	<CA+B=mGo3P9SA+9XvCNZyOHSvHLtgm0B3vFCMmRn1v-aGRgRVZQ@mail.gmail.com>
+	<2A6F9CF3-D271-40E6-87BF-7C3EB5F3473A@mpi-cbg.de>
+Message-ID: <CADN69y=cTAa2EMKVrgJ-iYrNftGiinchA4XUjApikLR=8oTkhA@mail.gmail.com>
+
+Hi Tobias, Mark & everyone,
+
+> I like to use the dependency:tree plugin from the command line
+
+So do I, but I want to caution that I have had problems with it in Maven
+3.x. I have seen it produce obviously wrong results in some cases. Not sure
+whether it is fixed with the latest versions of things, but be careful. I
+have not noticed any errors in Eclipse's Dependency Hierarchy, but I have
+also used it much less.
+
+Regards,
+Curtis
+
+
+On Fri, Jan 17, 2014 at 9:43 AM, Tobias Pietzsch <pietzsch at mpi-cbg.de>wrote:
+
+> Hi Mark,
+>
+> thanks! I must be blind that I didn't notice the "Dependency Hierarchy" in
+> Eclipse myself? Very cool.
+>
+> best regards,
+> Tobias
+>
+> On Jan 17, 2014, at 4:08 PM, Mark Hiner <hinerm at gmail.com> wrote:
+>
+> Hi Tobias,
+>
+> On Fri, Jan 17, 2014 at 8:32 AM, Tobias Pietzsch <pietzsch at mpi-cbg.de>wrote:
+>
+>> Btw, can you recommend a good way to trace through the pom dependency
+>> tree?
+>> I used a combination of Eclipse's "Effective pom", grep-ing in
+>> ~/.m2/repository, and pure luck? Are there better tools?
+>>
+>
+> Personally, I like to use the dependency:tree<http://maven.apache.org/plugins/maven-dependency-plugin/tree-mojo.html>plugin from the command line, and I prefer the "Dependency Hierarchy" in
+> Eclipse (which is basically the same as dependency:tree, and perhaps easier
+> to read).
+>
+> The Effective POM can be helpful, but I find it to be too much information
+> when you're just trying to figure out dependencies.
+>
+> - Mark
+>
+> --
+> --
+> Please avoid top-posting, and please make sure to reply-to-all!
+>
+> Mailing list web interface: http://groups.google.com/group/fiji-devel
+>
+> ---
+> You received this message because you are subscribed to the Google Groups
+> "Fiji-devel" group.
+> To unsubscribe from this group and stop receiving emails from it, send an
+> email to fiji-devel+unsubscribe at googlegroups.com.
+> For more options, visit https://groups.google.com/groups/opt_out.
+>
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140117/900a2a7f/attachment-0001.html>
+
+From ctrueden at wisc.edu  Fri Jan 17 11:23:04 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Fri, 17 Jan 2014 11:23:04 -0600
+Subject: [ImageJ-devel] Speeding up Maven downloads using the ImageJ
+	public mirror
+In-Reply-To: <alpine.DEB.1.00.1401151806380.14982@s15462909.onlinehome-server.info>
+References: <alpine.DEB.1.00.1401151806380.14982@s15462909.onlinehome-server.info>
+Message-ID: <CADN69yn479AedGkq=emDtOr4QVYCXPD9ySmi95Hanm70ozwk5g@mail.gmail.com>
+
+Hi Dscho and everyone,
+
+> It is a pity that we cannot configure the mirror from the pom-scijava
+> parent (which would have relieved every developer from having to
+> configure the *exact* *same* thing on their computers), but at least
+> it is easy enough.
+
+For what it's worth, what we *can* do is switch pom-scijava to use the
+ImageJ "public" group (http://maven.imagej.net/content/groups/public) as
+the sole repository. This means by default, everyone's Maven builds check
+only two repositories: Central and ImageJ public. Further, if/when we need
+to introduce access to additional repositories and/or remove obsolete ones,
+we don't have to hack the POM anymore; we can just update our Nexus
+configuration. That way everyone automatically benefits from such changes
+with no action required.
+
+Until recently, our Nexus was also misconfigured to not do proper
+bookkeeping: it was not updating its indices or emptying its trash. Now
+that I have things set up correctly, everything is kept up to date, and the
+mirror feature Johannes mentioned works for developers who care to
+configure it in their ~/.m2/settings.xml.
+
+Regards,
+Curtis
+
+
+On Wed, Jan 15, 2014 at 11:35 AM, Johannes Schindelin
+<schindelin at wisc.edu>wrote:
+
+> Hi Curtis,
+>
+> I got curious about the "remote proxy" feature of Nexus (which is used to
+> serve ImageJ's Maven repository). For the benefit of other developers, let
+> me write it up here:
+>
+> When clicking on the "Repositories" link on the left hand side menu of
+> http://maven.imagej.net/ you see a lot of repositories with basically
+> four types: "group", "hosted", "virtual" and "proxy":
+>
+>         http://maven.imagej.net/index.html#view-repositories
+>
+> The "hosted" ones are our repositories, to which we deploy: snapshots,
+> releases and thirdparty (for dependencies we rely on that were not
+> deployed anywhere yet).
+>
+> The "virtual" repositories are there only for compatibility and we could
+> even switch them off because we do not support Maven 1 at all.
+>
+> The proxy repositories are interesting: when accessing them via Maven,
+> they try to retrieve the desired artifacts from remote repositories and
+> keep cached copies (eternally for release versions, 24 minutes for
+> snapshots) so that they serve the artifacts from the cache until expired.
+>
+> The groups are just aggregating others, and the most important group is
+> the "public" one: it offers a single, public-facing repository that serves
+> *all* of the public repositories, including the proxy ones.
+>
+> Now, the real cool thing about it is that you can configure your local
+> Maven to use the "public" group repository as a *mirror*, i.e. instead of
+> looking here and there and everywhere for artifacts, it looks only at the
+> "public" repository and lets that one worry about retrieving the
+> artifacts. It also makes things faster because Maven will only have to
+> look at one single repository rather than trying a couple of them.
+>
+> To configure the mirror, I added the <mirrors> section to my
+> $HOME/.m2/settings.xml:
+>
+> -- snip --
+> <settings>
+>         ...
+>         <mirrors>
+>                 <mirror>
+>                         <id>imagej-mirror</id>
+>                         <name>ImageJ's public mirror repository</name>
+>                         <url>http://maven.imagej.net/content/groups/public
+> </url>
+>                         <mirrorOf>*</mirrorOf>
+>                 </mirror>
+>         </mirrors>
+>         ...
+> </settings>
+> -- snap --
+>
+> It is a pity that we cannot configure the mirror from the pom-scijava
+> parent (which would have relieved every developer from having to configure
+> the *exact* *same* thing on their computers), but at least it is easy
+> enough.
+>
+> Maybe we should teach the imagej-maven-plugin to edit the user's
+> configuration when the user asks for it?
+>
+> Ciao,
+> Dscho
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140117/ce56828f/attachment.html>
+
+From hinerm at gmail.com  Fri Jan 17 13:17:53 2014
+From: hinerm at gmail.com (Mark Hiner)
+Date: Fri, 17 Jan 2014 13:17:53 -0600
+Subject: [ImageJ-devel] [fiji-devel] Re: Help! - Maven/Eclipse problem
+	with fiji.sc dependencies
+In-Reply-To: <CADN69y=cTAa2EMKVrgJ-iYrNftGiinchA4XUjApikLR=8oTkhA@mail.gmail.com>
+References: <E68B9FAE-9B40-470F-8829-F9AFADEA2AC6@mpi-cbg.de>
+	<alpine.DEB.1.00.1401170714060.25936@bonsai2>
+	<1183C57D-A880-4F95-87F8-0F340E0D0419@mpi-cbg.de>
+	<CA+B=mGo3P9SA+9XvCNZyOHSvHLtgm0B3vFCMmRn1v-aGRgRVZQ@mail.gmail.com>
+	<2A6F9CF3-D271-40E6-87BF-7C3EB5F3473A@mpi-cbg.de>
+	<CADN69y=cTAa2EMKVrgJ-iYrNftGiinchA4XUjApikLR=8oTkhA@mail.gmail.com>
+Message-ID: <CA+B=mGom_TkPY1MxhmgYWD-cGjSeVZ1p4Y5_MF40k_VwbJHWPg@mail.gmail.com>
+
+Hi Tobias,
+
+A workaround would be to define sezpoz.version to 1.9-imagej, a proper
+> solution would be to find out what is causing that dependency to be drawn
+> in and update it accordingly.
+>
+
+I believe problem here is a leftover m2e profile
+hack<https://github.com/fiji/fiji/blob/master/pom.xml#L165>in
+pom-fiji. This causes the pom.xml to include a sezpoz dependency only
+in
+eclipse, at which point you got the observed failure that sezpoz.version is
+no longer defined. This effectively broke every project using pom-fiji in
+eclipse.
+
+Filed a PR <https://github.com/fiji/fiji/pull/65> with the fix. Since
+pom-fiji is purely snapshot based, as soon as the PR is merged, built and
+deployed, this issue should just go away.
+
+- Mark
+
+
+On Fri, Jan 17, 2014 at 9:46 AM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+
+> Hi Tobias, Mark & everyone,
+>
+> > I like to use the dependency:tree plugin from the command line
+>
+> So do I, but I want to caution that I have had problems with it in Maven
+> 3.x. I have seen it produce obviously wrong results in some cases. Not sure
+> whether it is fixed with the latest versions of things, but be careful. I
+> have not noticed any errors in Eclipse's Dependency Hierarchy, but I have
+> also used it much less.
+>
+> Regards,
+> Curtis
+>
+>
+> On Fri, Jan 17, 2014 at 9:43 AM, Tobias Pietzsch <pietzsch at mpi-cbg.de>wrote:
+>
+>> Hi Mark,
+>>
+>> thanks! I must be blind that I didn't notice the "Dependency Hierarchy"
+>> in Eclipse myself? Very cool.
+>>
+>> best regards,
+>> Tobias
+>>
+>> On Jan 17, 2014, at 4:08 PM, Mark Hiner <hinerm at gmail.com> wrote:
+>>
+>> Hi Tobias,
+>>
+>> On Fri, Jan 17, 2014 at 8:32 AM, Tobias Pietzsch <pietzsch at mpi-cbg.de>wrote:
+>>
+>>> Btw, can you recommend a good way to trace through the pom dependency
+>>> tree?
+>>> I used a combination of Eclipse's "Effective pom", grep-ing in
+>>> ~/.m2/repository, and pure luck? Are there better tools?
+>>>
+>>
+>> Personally, I like to use the dependency:tree<http://maven.apache.org/plugins/maven-dependency-plugin/tree-mojo.html>plugin from the command line, and I prefer the "Dependency Hierarchy" in
+>> Eclipse (which is basically the same as dependency:tree, and perhaps easier
+>> to read).
+>>
+>> The Effective POM can be helpful, but I find it to be too much
+>> information when you're just trying to figure out dependencies.
+>>
+>> - Mark
+>>
+>> --
+>> --
+>> Please avoid top-posting, and please make sure to reply-to-all!
+>>
+>> Mailing list web interface: http://groups.google.com/group/fiji-devel
+>>
+>> ---
+>> You received this message because you are subscribed to the Google Groups
+>> "Fiji-devel" group.
+>> To unsubscribe from this group and stop receiving emails from it, send an
+>> email to fiji-devel+unsubscribe at googlegroups.com.
+>> For more options, visit https://groups.google.com/groups/opt_out.
+>>
+>>
+>>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140117/cc19dae6/attachment.html>
+
+From schindelin at wisc.edu  Fri Jan 17 13:47:33 2014
+From: schindelin at wisc.edu (Johannes Schindelin)
+Date: Fri, 17 Jan 2014 20:47:33 +0100 (CET)
+Subject: [ImageJ-devel] Speeding up Maven downloads using the ImageJ
+ public mirror
+In-Reply-To: <CADN69yn479AedGkq=emDtOr4QVYCXPD9ySmi95Hanm70ozwk5g@mail.gmail.com>
+References: <alpine.DEB.1.00.1401151806380.14982@s15462909.onlinehome-server.info>
+	<CADN69yn479AedGkq=emDtOr4QVYCXPD9ySmi95Hanm70ozwk5g@mail.gmail.com>
+Message-ID: <alpine.DEB.1.00.1401172046570.14982@s15462909.onlinehome-server.info>
+
+Hi Curtis,
+
+On Fri, 17 Jan 2014, Curtis Rueden wrote:
+
+> Hi Dscho and everyone,
+> 
+> > It is a pity that we cannot configure the mirror from the pom-scijava
+> > parent (which would have relieved every developer from having to
+> > configure the *exact* *same* thing on their computers), but at least
+> > it is easy enough.
+> 
+> For what it's worth, what we *can* do is switch pom-scijava to use the
+> ImageJ "public" group (http://maven.imagej.net/content/groups/public) as
+> the sole repository.
+
+Good point!
+
+> Until recently, our Nexus was also misconfigured to not do proper
+> bookkeeping: it was not updating its indices or emptying its trash. Now
+> that I have things set up correctly, everything is kept up to date, and
+> the mirror feature Johannes mentioned works for developers who care to
+> configure it in their ~/.m2/settings.xml.
+
+Yep, and I can testify that it works like a charm.
+
+Ciao,
+Dscho
+
+
+From hinerm at gmail.com  Wed Jan 22 10:07:00 2014
+From: hinerm at gmail.com (Mark Hiner)
+Date: Wed, 22 Jan 2014 10:07:00 -0600
+Subject: [ImageJ-devel] Stitching - CompositeImage forces stack slices to
+	channel if < 7
+Message-ID: <CA+B=mGrexJ=pwk_D0CbHDjb1jZuPS87PVAgbT_baxOF11kzn6g@mail.gmail.com>
+
+Hi all,
+
+ I noticed today that on line 60 of
+CompositeImage<http://trac.imagej.net/browser/imagej/src/main/java/ij/CompositeImage.java?rev=5edb0e269f08a596c926bc171d516f7b3f85631f>,
+if the stack size is less than 7, the stack is converted to channels
+(coupled with lines 68-69).
+
+ This causes bizarre & inconsistent behavior (especially to scientist
+users), e.g. when stitching if there are more than 7 slices everything
+looks great, and less than 7 all of a sudden you get back a colored channel
+stack.
+
+  It's not clear to me why this code is necessary.. perhaps it should only
+be executed if the mode is set to COMPOSITE?
+
+  If this behavior is truly intended and necessary, then I think it is
+erroneous to use CompositeImage in the
+Stitching<https://github.com/fiji/Stitching>plugin.
+
+ What do others think?
+
+Thanks,
+Mark
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140122/dbc679e6/attachment.html>
+
+From schindelin at wisc.edu  Wed Jan 22 10:42:49 2014
+From: schindelin at wisc.edu (Johannes Schindelin)
+Date: Wed, 22 Jan 2014 17:42:49 +0100 (CET)
+Subject: [ImageJ-devel] Stitching - CompositeImage forces stack slices
+ to channel if < 7
+In-Reply-To: <CA+B=mGrexJ=pwk_D0CbHDjb1jZuPS87PVAgbT_baxOF11kzn6g@mail.gmail.com>
+References: <CA+B=mGrexJ=pwk_D0CbHDjb1jZuPS87PVAgbT_baxOF11kzn6g@mail.gmail.com>
+Message-ID: <alpine.DEB.1.00.1401221739430.14982@s15462909.onlinehome-server.info>
+
+Hi Mark,
+
+On Wed, 22 Jan 2014, Mark Hiner wrote:
+
+>  I noticed today that on line 60 of
+> CompositeImage<http://trac.imagej.net/browser/imagej/src/main/java/ij/CompositeImage.java?rev=5edb0e269f08a596c926bc171d516f7b3f85631f>,
+> if the stack size is less than 7, the stack is converted to channels
+> (coupled with lines 68-69).
+
+... and the only way to fix it is to do it manually after constructing the
+CompositeImage. I actually stumbled over this part of the ImageJ 1.x
+source code quite a couple of times. Unfortunately, it is too late to fix
+it because people and plugins already rely on that surprising behavior.
+
+>  This causes bizarre & inconsistent behavior (especially to scientist
+>  users), e.g. when stitching if there are more than 7 slices everything
+>  looks great, and less than 7 all of a sudden you get back a colored
+>  channel stack.
+> 
+>   It's not clear to me why this code is necessary.. perhaps it should only
+> be executed if the mode is set to COMPOSITE?
+
+That's a good idea!
+
+How about adding the workaround to call setDimensions() *directly* after
+constructing (and saving the correct dimensions before) in any case?
+
+Ciao,
+Dscho
+
+
+From rasbandw at mail.nih.gov  Wed Jan 22 11:25:32 2014
+From: rasbandw at mail.nih.gov (Rasband, Wayne (NIH/NIMH) [E])
+Date: Wed, 22 Jan 2014 17:25:32 +0000
+Subject: [ImageJ-devel] Stitching - CompositeImage forces stack slices
+ to	channel if < 7
+In-Reply-To: <CA+B=mGrexJ=pwk_D0CbHDjb1jZuPS87PVAgbT_baxOF11kzn6g@mail.gmail.com>
+References: <CA+B=mGrexJ=pwk_D0CbHDjb1jZuPS87PVAgbT_baxOF11kzn6g@mail.gmail.com>
+Message-ID: <A650BCC7-46FE-43B9-AFC3-2A9BC09D5440@nih.gov>
+
+On Jan 22, 2014, at 11:07 AM, Mark Hiner wrote:
+
+> Hi all,
+> 
+>  I noticed today that on line 60 of CompositeImage, if the stack size is less than 7, the stack is converted to channels (coupled with lines 68-69).
+> 
+>  This causes bizarre & inconsistent behavior (especially to scientist users), e.g. when stitching if there are more than 7 slices everything looks great, and less than 7 all of a sudden you get back a colored channel stack.
+> 
+>   It's not clear to me why this code is necessary.. perhaps it should only be executed if the mode is set to COMPOSITE?
+> 
+>   If this behavior is truly intended and necessary, then I think it is erroneous to use CompositeImage in the Stitching plugin.
+
+In the latest ImageJ daily build (1.48q13), the CompositeImage constructor no longer converts
+stacks to channels when the number of slices is less than 8 if the mode is GRAYSCALE.
+
+-wayne
+
+
+
+From bugzilla at fiji.sc  Wed Jan 29 10:10:50 2014
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Wed, 29 Jan 2014 16:10:50 +0000
+Subject: [ImageJ-devel] [Bug 692] Window and level tool isn't interactive
+In-Reply-To: <bug-692-194@http.fiji.sc/bugzilla/>
+References: <bug-692-194@http.fiji.sc/bugzilla/>
+Message-ID: <bug-692-194-qzLqaaTkyp@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=692
+
+Curtis Rueden <ctrueden at wisc.edu> changed:
+
+           What    |Removed                     |Added
+----------------------------------------------------------------------------
+             Status|NEW                         |RESOLVED
+                 CC|                            |ctrueden at wisc.edu
+         Resolution|---                         |INVALID
+
+--- Comment #1 from Curtis Rueden <ctrueden at wisc.edu> ---
+Thanks for the report!
+
+The issue is that Window/Level is an interactive ImageJ1 plugin, being run in
+ImageJ2 via the legacy layer. IJ2's legacy layer does not support such
+interactivity well. Our strategy to deal with it has been to port such plugins
+to the ImageJ2 framework. We have such a port of Brightness/Contrast (though it
+needs work), which restores the interactivity. We also plan to do the same for
+Window/Level.
+
+See this ticket for details:
+http://trac.imagej.net/ticket/1613
+
+Closing this report, since the above ticket covers the issue.
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140129/e07c07c5/attachment.html>
+
+From ctrueden at wisc.edu  Fri Jan 31 01:23:27 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Fri, 31 Jan 2014 01:23:27 -0600
+Subject: [ImageJ-devel] Jenkins upgrade
+Message-ID: <CADN69ykywX5wKK4OeWWpNA-We+A6sKWWGDXONxX2vL-64nxBow@mail.gmail.com>
+
+Hi everyone,
+
+Yesterday we upgraded ImageJ's Jenkins to a much newer version [1]. The
+upgrade had some difficulties, but the problems are largely resolved now
+thanks to Johannes's efforts. There are only a couple of failing jobs left
+to address [2].
+
+We are now tracking the Jenkins Debian repository directly, so hopefully it
+will be easier to painlessly keep Jenkins more up to date henceforth.
+
+Please let us know if you notice any continuing problems with Jenkins.
+
+Regards,
+Curtis
+
+[1] We did this in an attempt to eliminate a problem we noticed where the
+SCM synchronizer jobs were getting stuck at a step near the end of the
+build. It appeared to be a bug in Jenkins where the build itself was not
+*quite* complete for an extended period of time, but Jenkins considered the
+build to be finished for the purposes of starting a new build. So multiple
+builds of the same job ended up executing concurrently, to unfortunate
+effect.
+
+[2] Jobs left to fix:
+* Saalfeld-MPICBG-Maven
+* Sholl-Analysis
+* ImageJ1-releases (Windows)
+
+The problem with Saalfeld-MPICBG-Maven will be fixed pending merge of this
+PR: https://github.com/axtimwalde/mpicbg/pull/7
+
+The other two are Java memory issues ("java.lang.OutOfMemoryError: PermGen
+space") which we will work on fixing tomorrow -- will likely be easy to
+fix:
+https://wiki.jenkins-ci.org/display/JENKINS/Builds+failing+with+OutOfMemoryErrors
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140131/6fc6a15a/attachment.html>
+
+From ctrueden at wisc.edu  Fri Jan 31 16:21:32 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Fri, 31 Jan 2014 16:21:32 -0600
+Subject: [ImageJ-devel] Problem with Exporting Runnable Jar
+In-Reply-To: <A2972754-E499-42FF-8681-447404122A4A@gmail.com>
+References: <A2972754-E499-42FF-8681-447404122A4A@gmail.com>
+Message-ID: <CADN69ynx4N_CrFHYeuDgrer3UCe9ufXOT4xTK6_-iKN2OmgCcQ@mail.gmail.com>
+
+Hi Jay,
+
+> I typically deploy JEX as a runnable jar via the Eclipse export.
+> However, the exported jar fails to run while the Eclipse project
+> encounters no such issue. The export process seems to break the IJ2
+> portion of the application making it impossible at the moment to
+> attempt to deploy the JEX version with the IJ2 enhancements. I've
+> isolated the issue to being purely related to the IJ2 set of jars that
+> I included into the project.
+
+This problem is almost certainly due to the fact that the SciJava Common
+plugin mechanism stores a file in each JAR at:
+/META-INF/json/org.scijava.plugin.Plugin. And when combining multiple JARs
+into an uber-JAR, those files need to be aggregated together rather than
+overwriting one another. We ran into the very same problem using the
+maven-assembly-plugin to build an uber-JAR. Our workaround is here:
+
+https://github.com/imagej/imagej/blob/imagej-2.0.0-beta-7.6/bin/gen-jar-with-deps.sh
+
+Which calls the AnnotationCombiner class from SciJava Common:
+https://github.com/scijava/scijava-common/blob/scijava-common-2.9.0/src/main/java/org/scijava/annotations/AnnotationCombiner.java
+
+In the future we will look into switching to maven-shade-plugin to create
+such an uber-JAR.
+
+But I still don't know if/how you can do that with Eclipse's "Export
+executable JAR" feature.
+
+> I also noticed that the during the successful eclipse run there is a
+> line which reads... [WARNING] Overridden plugin
+> ij.plugin.LutLoader("3-3-2 RGB") is blacklisted  Do you think there is
+> any connection?
+
+Nope, that warning is unrelated and can be safely ignored.
+
+> I know that Eclipse, when it exports a runnable jar, creates a
+> relatively non-standard jar hierarchy (jarinjar), which might be the
+> issue
+
+Hmm, in that case, it may be possible to improve SciJava Common to find
+such META-INF in nested JARs. Feel free to file a PR against scijava-common
+(https://github.com/scijava/scijava-common) for this feature if you really
+need it.
+
+To pursue that, you'd want to inspect your uber-JAR using the Java JAR
+command line tool (e.g., "jar tf myUberJar.jar") to see exactly what got
+put in there. Maybe unpack it ("jar xf myUberJar.jar") and then examine any
+nested JARs, as well.
+
+The relevant code in scijava-common is here:
+https://github.com/scijava/scijava-common/blob/scijava-common-2.9.0/src/main/java/org/scijava/annotations/Index.java#L130
+
+The code uses ClassLoader.getResources() to access all annotations within
+META-INF/json across all JAR files on the classpath. If Eclipse really
+embeds JARs inside other JARs, you'd have to smarten up that method to
+support that somehow, which would be an unfortunate addition in complexity.
+
+Easier would be to avoid using uber-JARs at all and instead just ship with
+all your JAR libraries separately. Then all the annotations will be
+discovered as expected.
+
+Or you could somehow run the AnnotationCombiner across all of your JARs
+when building your uber-JAR, perhaps using the maven-shade-plugin. If you
+structured JEX as a Maven project it would be relatively straightforward to
+use that, and do your releases from the command line, too.
+
+Sorry I can't be more helpful, but we really avoid doing things in ways
+that cannot be automated from the command line.
+
+Regards,
+Curtis
+
+
+
+On Mon, Jan 20, 2014 at 10:45 PM, Jay Warrick <jay.w.warrick at gmail.com>wrote:
+
+> Hi Guys,
+>
+> I have had some success with incorporating IJ2 plugins but ran into an
+> issue during deployment that I wonder if you have run into before. I
+> typically deploy JEX as a runnable jar via the Eclipse export. However, the
+> exported jar fails to run while the Eclipse project encounters no such
+> issue. The export process seems to break the IJ2 portion of the application
+> making it impossible at the moment to attempt to deploy the JEX version
+> with the IJ2 enhancements. I've isolated the issue to being purely related
+> to the IJ2 set of jars that I included into the project. I did this by
+> making a separate project with only IJ2 jars (which also includes the IJ1
+> jar) and a simple static main that uses IJ2 to run the "Fill" plugin on a
+> tif that is on my computer. The program runs successfully when run from
+> eclipse but produces an error when exported and run as a runnable jar. Here
+> is the script, the output from the Eclipse run, output from the jar run,
+> and list of imported jars for the simple test project. Note that I had to
+> add the "static{DefaultLegacyService.preinit();}" to the class to get
+> things to work in the presence of the IJ1 jar that is included.
+>
+>
+>
+>
+>
+>
+> Do you have any suggestions? I appears that it thinks that the
+> DefaultLUTService is invalid per "Caused by:
+> java.lang.IllegalArgumentException: Invalid service:
+> imagej.data.lut.DefaultLUTService". I also noticed that the during the
+> successful eclipse run there is a line which reads... [WARNING]
+> Overridden plugin ij.plugin.LutLoader("3-3-2 RGB") is blacklisted  Do you
+> think there is any connection?
+>
+> I know that Eclipse, when it exports a runnable jar, creates a relatively
+> non-standard jar hierarchy (jarinjar), which might be the issue given the "Caused
+> by: java.lang.IllegalArgumentException: URI is not hierarchical at
+> java.io.File.<init>(File.java:418)" error.
+>
+> I'm not well versed enough in maven or other such dependency management
+> systems to be able to export something for you to import (unless it is
+> super easy and I just don't know the correct menu options :-) But, in case
+> it helps, this is how I built the small test project. To import the jars, I
+> import the jar files as files directly into a package called lib so the jar
+> files are not just referenced but actually a part of the project (probably
+> not best practice but found it effective for our project and haven't had
+> issues with the other 25 jars that we use in the JEX project). Then I
+> configure the build path and "Add Jars" selecting the jars that are
+> imported into the project. During export, I choose to package required
+> libraries into generated jar.
+>
+> Thanks for any insight,
+>
+> Jay
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140131/fbe2324f/attachment.html>
+
+From ctrueden at wisc.edu  Fri Jan 31 16:50:41 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Fri, 31 Jan 2014 16:50:41 -0600
+Subject: [ImageJ-devel] Plugin Philosophy?
+In-Reply-To: <C98F5544-86AD-464F-AC5C-81A4E6968C18@gmail.com>
+References: <C98F5544-86AD-464F-AC5C-81A4E6968C18@gmail.com>
+Message-ID: <CADN69ykXsuT5BAVt1eXJdpj_4Q2Ddj_8pzCXiTnqPu7yzKEDMQ@mail.gmail.com>
+
+Hi Jay,
+
+> I have the bridge between JEX and IJ2 pretty well roughed together.
+
+That is great!
+
+> When the plugins have a service as a parameter, it often leaves vague
+> what that service will specifically provide for the function. For
+> example, the "Fill" plugin (i.e., the FillDataValues class) takes an
+> OptionsService as a parameter. But, when using the CommandService and
+> discovering this input, it is not obvious at all that the plugin is
+> really looking for a color with which to fill the specified region.
+
+That is an excellent point. Really, any object type can be annotated as an
+@Parameter input. In the example you gave, the Fill command should really
+annotate a ColorRGB as the input. And then to fill with the foreground
+color we should have a separate "FillWithForeground" command that takes the
+correct Options plugin as input (not just the OptionsService) and extracts
+the foreground from that and invokes the Fill command via its API.
+
+This sort of refactoring is straightforward but requires someone to observe
+specifically where the API is weak and file issues so that we can
+prioritize and track that effort.
+
+> This concept extrapolates somewhat as well to the use of an
+> ImageDisplay as an input, it appears that often an ImageDisplay object
+> is used to help specify both a Dataset and an image plane index.
+
+Absolutely, totally agreed. Again, making the commands more fine-grained
+and modular is certainly a goal.
+
+> Further, if I don't have an ImageJ2 ImageDisplay viewed, I can't
+> change the particular plane that is being operated on without creating
+> a one-off wrapper for this plugin to specify that information.
+> Likewise, if I create a widget to display every time an ImageDisplay
+> is asked for to ask for an image plane index, there are myriad other
+> properties that I would also need to provide widgets for if I want to
+> give the user flexibility for all the types of things that can be
+> learned from an ImageDisplay.
+
+Right, I don't think that's the way to go at all. The commands shipped with
+ImageJ2 need to be more low-level and fine-grained, with more
+"default-centric" commands that delegate to them using the current state of
+the ImageJ system (e.g., the currently active ImageDisplay).
+
+> The purpose of the "DataTransformPlugins" would be to do the actual
+> editing / grunt work while the "MenuPlugins" use the services and IJ2
+> ui elements to provide the "DataTransformPlugins" (and other plugins)
+> good guesses or standard choices for inputs to the algorithms and
+> could keep the behavior of IJ2 in sync with IJ1 as needed (e.g., the
+> Edit -> Fill menu option would fill with the IJ2 foreground color).
+
+Yep, that's essentially what I'm proposing above. We don't necessarily need
+separate interfaces, although there could be one or more marker interfaces
+for certain things (would need to cogitate further).
+
+> The DataTransformPlugins would then be much more straight forward for
+> groups such as myself, CellProfiler, Icy, and Knime to more
+> transparently present the algorithms of IJ2 to users in other ui's
+> (i.e., displaying widgets and borrowing or implementing services for
+> providing good initial guesses through our own "menus").
+
+Yes, although that is what the "headless" flag is for. Any module that
+declares itself usable headless should be able to be exposed in an external
+framework such as any of those you mentioned above. Of course, you can also
+filter based on the types of inputs the module requires. If it needs a
+FooBarFizzBob and you don't know what that is, then just exclude the module
+from your list.
+
+> In JEX, an object or data manager panel helps to keep the user aware
+> of all the objects they have at their disposal and provides a means by
+> which to select items for inputs to functions other than just active
+> windows etc.
+
+That is exactly the purpose of the SciJava ObjectService. It forms one of
+the central pillars of ImageJ2. All Datasets, DatasetViews, ImageDisplays,
+and many other kinds of objects floating around all get registered with the
+ObjectService (specifically, with its ObjectIndex). In fact, that is how
+ImageJ2's ObjectWidget (the final fall-back widget when no more appropriate
+widget can be found) knows what to populate into its drop-down list of
+choices. So I think we are most of the way there.
+
+> in the ROIManager, when you draw an ROI on an image you have to
+> specifically add it to the ROIManager instead of it showing
+> automatically.
+
+That is true in ImageJ1, but not ImageJ2. Try running ImageJ2's Overlay
+Manager and you'll see that *all* overlays you draw on every dataset are
+shown there.
+
+> This would provide a super easy way to keep track of items and supply
+> them to functions via selection and multi-selection (it could even be
+> its own widget... in fact this is much like the drop down in Knime
+> showing all the table columns on which to operate).
+
+Sure. I don't really have a good vision of how that UI would function, but
+I think it would be doable in the current ImageJ2 paradigm.
+
+> I feel like the context dependent nature of ImageJ is one reason why
+> the first version got so disorganized under the hood and why many of
+> the plugin implementations were so buggy or not obvious in how to be
+> used. I would love to see this reduced and maybe such a manager would
+> be a step in the right direction.
+
+Well, I think (though I'm certainly biased ;-) that ImageJ2 does a pretty
+good job in tracking the objects that exist thanks to the ObjectService.
+And it is designed to keep each application context separately
+encapsulated, in case multiple such contexts become necessary in the same
+JVM for any reason.
+
+Thanks very much for the detailed comments! I think your ideas are great,
+and I hope we can find time to refactor commands in those directions.
+
+We are currently using Trac (http://trac.imagej.net/) to track the ImageJ2
+issues, but I increasingly want to migrate everything to GitHub Issues
+(would be at https://github.com/imagej/imagej/issues). If I turn on the
+ImageJ GitHub Issues tracker, would you be comfortable filing some of these
+specific examples of commands being "not typed enough" as issues in there?
+
+Regards,
+Curtis
+
+
+On Fri, Jan 17, 2014 at 11:55 AM, Jay Warrick <jay.w.warrick at gmail.com>wrote:
+
+> Hi Guys,
+>
+> I have the bridge between JEX and IJ2 pretty well roughed together. Now
+> exploring for nuances and building up bridge in the area of ROIs. I had
+> some thoughts I wanted to share given my recent experience as a Guinea pig
+> in case they might help the ImageJ2 project as a whole. Sorry for the
+> length and feel free to copy whomever you wish. Let me know if any of these
+> avenues has potential that you would like to discuss further (I have some
+> more thoughts on ROIs :-). I know you all have a billion things that are of
+> higher priority so my hopes aren't high for seeing any of these things come
+> to be but I really do just hope to increase the impact of this software.
+> Any help I can provide as far as implementing related changes is also
+> available to you.
+>
+> When the plugins have a service as a parameter, it often leaves vague what
+> that service will specifically provide for the function. For example, the
+> "Fill" plugin (i.e., the FillDataValues class) takes an OptionsService as a
+> parameter. But, when using the CommandService and discovering this input,
+> it is not obvious at all that the plugin is really looking for a color with
+> which to fill the specified region. Likewise, but maybe to a lesser degree,
+> there are many potential properties/values/objects that could be supplied
+> by each service used as input parameters. In the case of the "Fill" plugin,
+> the user must change the foreground option of IJ2, which is also a plugin
+> (but not a command plugin), in order to change the fill color. Instead,
+> wouldn't it seem more appropriate to have a color input (e.g., a color
+> chooser widget) that is defaulted to the IJ2 foreground color. If I were to
+> implement my own OptionsService for using as an input to the function, I
+> would not know the small piece of information that my OptionsService would
+> actually need to provide to run successfully.
+>
+> This concept extrapolates somewhat as well to the use of an ImageDisplay
+> as an input, it appears that often an ImageDisplay object is used to help
+> specify both a Dataset and an image plane index. Couldn't the plugin take a
+> Dataset and a plane choice (i.e., 0,1,2,3,All) as inputs? The service could
+> provide a good guess (i.e., the current plane) but leaving the chosen plane
+> as an option for the user. This way, the required information for the
+> plugin to run is more transparent while still using the ui information.
+> Further, if I don't have an ImageJ2 ImageDisplay viewed, I can't change the
+> particular plane that is being operated on without creating a one-off
+> wrapper for this plugin to specify that information. Likewise, if I create
+> a widget to display every time an ImageDisplay is asked for to ask for an
+> image plane index, there are myriad other properties that I would also need
+> to provide widgets for if I want to give the user flexibility for all the
+> types of things that can be learned from an ImageDisplay. In general, most
+> of this information is ignored, which would again lead to an ambiguous
+> interface for plugins that need an ImageDisplay.
+>
+> I realize these examples don't cover the extent of cases that exist and,
+> in many cases, the plugins are meant to act on the ui itself and don't
+> really transform any data (e.g. contrast)... but what if the plugins shown
+> in the menu are (I'm trying to make up a new class so any overlap with
+> actual class names is inadvertent) "MenuPlugins" and the raw data
+> transforming operations or grunt work are implemented as
+> "DataTransformPlugins". The purpose of the "DataTransformPlugins" would be
+> to do the actual editing / grunt work while the "MenuPlugins" use the
+> services and IJ2 ui elements to provide the "DataTransformPlugins" (and
+> other plugins) good guesses or standard choices for inputs to the
+> algorithms and could keep the behavior of IJ2 in sync with IJ1 as needed
+> (e.g., the Edit -> Fill menu option would fill with the IJ2 foreground
+> color). The DataTransformPlugins would then be much more straight forward
+> for groups such as myself, CellProfiler, Icy, and Knime to more
+> transparently present the algorithms of IJ2 to users in other ui's (i.e.,
+> displaying widgets and borrowing or implementing services for providing
+> good initial guesses through our own "menus"). This could be done in a way
+> that people (e.g. Knime) that are using the current plugins, which I think
+> of more as "MenuPlugins", wouldn't be affected by the addition of the
+> intermediate implementation layer. In the case of the "Fill" plugin,
+> current use cases may even be enhanced by providing the same service
+> defaults as before but it might now show the color chooser widget,
+> providing more flexibility. I'd be happy to help if this seems feasible or
+> desired (which it may very well not be :-) as it is a small addition of a
+> middle man to what is already implemented for many things.
+>
+> This also brings up a personal desire I have for ImageJ2, which also means
+> next to nothing, but I have found it useful for JEX and thought I would
+> bring it up in case you wished to discuss it more. In JEX, an object or
+> data manager panel helps to keep the user aware of all the objects they
+> have at their disposal and provides a means by which to select items for
+> inputs to functions other than just active windows etc...  This should
+> include ROIs and Tables which I feel are currently second class citizens in
+> imagej. The result is that *too much of the current context needs to
+> discovered for functions to run rather than via outright specification*(e.g., creating color images from multiple open grayscale images, which
+> will be which R, G, and B? I've seen one implementation that uses the order
+> of the image windows to decide, good luck guessing right or remembering).
+> The ROIManager is something of a beginning for ROIs. However in the
+> ROIManager, when you draw an ROI on an image you have to specifically add
+> it to the ROIManager instead of it showing automatically. Thus, although it
+> is not part of the ROIManager it is still a potential input to a function.
+> Why not show all objects somewhere (e.g., a simple list organized by type).
+> This would provide a super easy way to keep track of items and supply them
+> to functions via selection and multi-selection (it could even be its own
+> widget... in fact this is much like the drop down in Knime showing all the
+> table columns on which to operate). I feel like the context dependent
+> nature of ImageJ is one reason why the first version got so disorganized
+> under the hood and why many of the plugin implementations were so buggy or
+> not obvious in how to be used. I would love to see this reduced and maybe
+> such a manager would be a step in the right direction.
+>
+> As always, thanks for taking the time to read and reply. I really
+> appreciate the work of the ImageJ2 team and these conversations. Look
+> forward to hearing from you.
+>
+> Regards,
+>
+> Jay
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20140131/4ca2c0c4/attachment-0001.html>
+

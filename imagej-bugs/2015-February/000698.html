@@ -1,0 +1,122 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-bugs] [Bug 990] Mac OS out of memory
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%20990%5D%20Mac%20OS%20out%20of%20memory&In-Reply-To=%3Cbug-990-19-8yA8A0pWEW%40http.fiji.sc/bugzilla/%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000734.html">
+   <LINK REL="Next"  HREF="000700.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-bugs] [Bug 990] Mac OS out of memory</H1>
+    <B>bugzilla at fiji.sc</B> 
+    <A HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%20990%5D%20Mac%20OS%20out%20of%20memory&In-Reply-To=%3Cbug-990-19-8yA8A0pWEW%40http.fiji.sc/bugzilla/%3E"
+       TITLE="[ImageJ-bugs] [Bug 990] Mac OS out of memory">bugzilla at fiji.sc
+       </A><BR>
+    <I>Sun Feb  8 20:39:47 CST 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000734.html">[ImageJ-bugs] [Bug 1002] Gaussian Blur Filter in headless mode	broken
+</A></li>
+        <LI>Next message: <A HREF="000700.html">[ImageJ-bugs] [Bug 906] java################### left in /tmp (Suse	Linux 13.1)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#698">[ date ]</a>
+              <a href="thread.html#698">[ thread ]</a>
+              <a href="subject.html#698">[ subject ]</a>
+              <a href="author.html#698">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE><A HREF="http://fiji.sc/bugzilla/show_bug.cgi?id=990">http://fiji.sc/bugzilla/show_bug.cgi?id=990</A>
+
+--- Comment #3 from Wayne Rasband &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">wsr at nih.gov</A>&gt; ---
+Hi Glen,
+
+I am not able to consistently reproduce this problem. Yesterday, when testing
+your macro, I noticed that sometimes not all memory was reclaimed after the
+macro finished and I ran the garbage collector by clicking on the status bar or
+&quot;Memory&quot; window. Today, however, the memory is always reclaimed after running
+the macro and clicking in the &quot;Memory&quot; window.
+
+The following version of your macro displays the &quot;Memory&quot; window and creates 10
+montages. The &quot;Make Montage&quot; macro is first so you can run it by clicking on
+&quot;Run&quot; in Fiji's script editor. Watch the &quot;Memory&quot; window as the macro runs and
+you will see that memory is reclaimed as needed or you click in the &quot;Memory&quot;
+window. This version of the macro also fixes a few problems with passing
+variables and it removes the 'grayopt' string, which was not seen by the Insert
+command because it was not passed correctly.
+
+
+  macro &quot;Make Montage [1]&quot; {
+     dir=getDirectory(&quot;Source&quot;);
+     n = 10; 
+     list=getFileList(dir);
+      for (i=0; i&lt;n; i++) {
+        montage = &quot;Montage-&quot;+(i+1)+&quot;/&quot;+n;
+        newImage(montage, &quot;16-bit composite-mode&quot;, 2048,2048,3,100,1);    
+        doCommand(&quot;Monitor Memory...&quot;);
+        x=0; y=0;
+        for (f=0; f&lt;list.length; f++) {
+           fpath=dir+list[f];
+           //open(fpath);
+           run(&quot;Bio-Formats Windowless Importer&quot;, &quot;open=&amp;fpath&quot;);
+           rename(&quot;Source&quot;);
+           run(&quot;Insert...&quot;, &quot;source=Source destination=&amp;montage x=&amp;x y=&amp;y&quot;);
+           close;
+           x += 1024;
+           if (x==2048) {
+              x = 0;
+              y += 1024;
+           }
+        }
+        close;
+     }
+  }
+
+  macro &quot;Make Stacks [2]&quot; {
+      target=getDirectory(&quot;Choose Directory&quot;);
+      newImage(&quot;HyperStack&quot;, &quot;16-bit ramp&quot;, 1024, 1024, 3,100,1);
+      for (s=0;s&lt;4;s++)
+          saveAs(&quot;Tiff&quot;,target+&quot;Stack000&quot;+s);
+  }
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-bugs/attachments/20150209/24091c87/attachment.html">http://imagej.net/pipermail/imagej-bugs/attachments/20150209/24091c87/attachment.html</A>&gt;
+</PRE>
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000734.html">[ImageJ-bugs] [Bug 1002] Gaussian Blur Filter in headless mode	broken
+</A></li>
+	<LI>Next message: <A HREF="000700.html">[ImageJ-bugs] [Bug 906] java################### left in /tmp (Suse	Linux 13.1)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#698">[ date ]</a>
+              <a href="thread.html#698">[ thread ]</a>
+              <a href="subject.html#698">[ subject ]</a>
+              <a href="author.html#698">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-bugs">More information about the Imagej-bugs
+mailing list</a><br>
+</body></html>

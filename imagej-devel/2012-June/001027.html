@@ -1,0 +1,225 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Crop behavior (was Re: Changes to the overlay	support)
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Crop%20behavior%20%28was%20Re%3A%20Changes%20to%20the%20overlay%0A%09support%29&In-Reply-To=%3CCADN69y%3DzMJ%3DT1ST28zK7mUb5SBh36i3SfQ3q-gkiK%2BotJOJe%2Bw%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001026.html">
+   <LINK REL="Next"  HREF="001032.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Crop behavior (was Re: Changes to the overlay	support)</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Crop%20behavior%20%28was%20Re%3A%20Changes%20to%20the%20overlay%0A%09support%29&In-Reply-To=%3CCADN69y%3DzMJ%3DT1ST28zK7mUb5SBh36i3SfQ3q-gkiK%2BotJOJe%2Bw%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Crop behavior (was Re: Changes to the overlay	support)">ctrueden at wisc.edu
+       </A><BR>
+    <I>Tue Jun 12 14:50:32 CDT 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001026.html">[ImageJ-devel] Menuing system discussion
+</A></li>
+        <LI>Next message: <A HREF="001032.html">[ImageJ-devel] Fwd: CompositeOverlay
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1027">[ date ]</a>
+              <a href="thread.html#1027">[ thread ]</a>
+              <a href="subject.html#1027">[ subject ]</a>
+              <a href="author.html#1027">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi all,
+
+I think this discussion should be on imagej-devel, in case anyone else is
+interested, and also for archival purposes, so I have CCed it.
+
+Regarding removal of clipped overlays... the other option is to leave in
+any overlay that partially overlaps the cropped region. Our image windows
+will become less ImageJ1-like once we fully support multiple datasets in
+the same display. There is no reason an overlay cannot occupy a part of the
+aggregate coordinate space outside of a particular dataset, after all.
+
+But Barry also has a good point that undo will fix any problems.
+
+Perhaps we could have two separate commands &quot;Quick Crop&quot; (with shortcut
+key) and &quot;Crop...&quot; which has the advanced options such as what to do with
+questionable overlays.
+
+-Curtis
+
+
+On Mon, Jun 11, 2012 at 10:32 PM, Barry DeZonia &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">bdezonia at gmail.com</A>&gt; wrote:
+
+&gt;<i> Lee, after reviewing your comments I think the most straightforward
+</I>&gt;<i> approach for crop is to only keep overlays completely contained in the crop
+</I>&gt;<i> region. If an important overlay is clipped and removed it should be
+</I>&gt;<i> restorable via undo. This of course requires that we have a fully
+</I>&gt;<i> functional undo capability.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On Thu, May 31, 2012 at 7:41 AM, Lee Kamentsky &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">leek at broadinstitute.org</A>&gt;wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i>  On 5/30/2012 5:44 PM, Barry DeZonia wrote:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Thanks for looking at this Lee.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>  Whether to use your crop image branch or not depends upon how we want
+</I>&gt;&gt;<i> crop to behave. Should it maintain all current overlays (picture a full
+</I>&gt;&gt;<i> size window with overlay outlines all across it but a small image inside
+</I>&gt;&gt;<i> it)? Or do we just want all overlays that are contained in the user
+</I>&gt;&gt;<i> specified region? Or all those that are contained or cross the user
+</I>&gt;&gt;<i> specified region (and the crossing overlays would be permanently edited to
+</I>&gt;&gt;<i> be clipped)? Anyone feel free to chime in here.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I am guessing that there's not much use for an overlay that falls
+</I>&gt;&gt;<i> completely outside of the cropped region. Overlays that span the clipping
+</I>&gt;&gt;<i> region are a problem, especially for display. If they aren't cropped, the
+</I>&gt;&gt;<i> window has to expand / scroll to show their edit handles (and calculations
+</I>&gt;&gt;<i> of the viewing extent have to be done over the interval of the image and
+</I>&gt;&gt;<i> overlays). If the overlays are cropped, then they change shape - difficult
+</I>&gt;&gt;<i> to implement and possibly frustrating to many users. I think that users
+</I>&gt;&gt;<i> might be a little upset if a cropping cut off a small corner of an
+</I>&gt;&gt;<i> important overlay and the overlay was removed because of that - so IMHO
+</I>&gt;&gt;<i> that's not a good behavior.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Related - an IterableRegionOfInterest.getIterableIntervalOverROI returns
+</I>&gt;&gt;<i> an IterableInterval. If you feed it a cropped image (a
+</I>&gt;&gt;<i> RandomAccessibleInterval), then the Interval of the IterableInterval should
+</I>&gt;&gt;<i> be the intersection of the interval of the cropped image
+</I>&gt;&gt;<i> and the IterableRegionOfInterest and the cursor should not throw an
+</I>&gt;&gt;<i> exception when it tries to set the position on the RandomAccessible outside
+</I>&gt;&gt;<i> of its interval. I'll file a bug for that and assign it to myself.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> On Wed, May 30, 2012 at 12:57 PM, Lee Kamentsky &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">leek at broadinstitute.org</A>&gt;wrote:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>  Hi Barry,
+</I>&gt;&gt;&gt;<i> For AbstractOverlay.min() and .max(), I intended for the interval to be
+</I>&gt;&gt;&gt;<i> from the pixel with the minimum coordinate value to the pixel with the
+</I>&gt;&gt;&gt;<i> maximum coordinate value (there's reasonable arguments for other
+</I>&gt;&gt;&gt;<i> definitions, though). IMHO, the default for min in AbstractOverlay should
+</I>&gt;&gt;&gt;<i> probably return the ceiling of the realMin and the max should return the
+</I>&gt;&gt;&gt;<i> floor of the realMax so that when you iterate through the pixels, all pixel
+</I>&gt;&gt;&gt;<i> coordinates will fall between the min and max. Otherwise, filling in the
+</I>&gt;&gt;&gt;<i> unsupported operations with reasonable defaults is a good idea - thanks for
+</I>&gt;&gt;&gt;<i> doing that.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> In BinaryMaskOverlay, I think the default constructor has to be there if
+</I>&gt;&gt;&gt;<i> deserialization is to work. I guess you need to do things in two steps and
+</I>&gt;&gt;&gt;<i> set the context after deserialization. The new format is perfectly ok and
+</I>&gt;&gt;&gt;<i> it's ok to break backward compatibility.
+</I>&gt;&gt;&gt;<i> BinaryMaskRegionOfInterest.duplicate() looks like it has an error. The
+</I>&gt;&gt;&gt;<i> original ROI might have an origin other than 0, so I think you need
+</I>&gt;&gt;&gt;<i> something like:
+</I>&gt;&gt;&gt;<i> newRoi.move(getRegionOfInterest().getOrigin());
+</I>&gt;&gt;&gt;<i> around line # 220
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> The comment in CompositeOverlay &quot;I think ROIS must have .duplicate()&quot;...
+</I>&gt;&gt;&gt;<i> That's not the worst idea, but it seems to me that you could implement
+</I>&gt;&gt;&gt;<i> duplicate() in the abstract base class by serializing yourself and then
+</I>&gt;&gt;&gt;<i> deserializing. You can always override it in some class where that's
+</I>&gt;&gt;&gt;<i> inefficient, but I'm guessing that the use case for .duplicate() is that
+</I>&gt;&gt;&gt;<i> the user is copying a handful of overlays from one place to another - the
+</I>&gt;&gt;&gt;<i> overhead for marshalling to and from a byte representation should be
+</I>&gt;&gt;&gt;<i> imperceptible. You definitely want to optimize the bitmask overlays to
+</I>&gt;&gt;&gt;<i> handle things like many particles.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> CropImage - that really stinks having to delete the overlays and then
+</I>&gt;&gt;&gt;<i> recreate them. I am guessing that you did this because JHotDraw doesn't
+</I>&gt;&gt;&gt;<i> move the handles for the currently selected object. I made a branch,
+</I>&gt;&gt;&gt;<i> &quot;lee_figure_selection_bugfix&quot;, and I modified
+</I>&gt;&gt;&gt;<i> OverlayFigureView.doUpdateFigure() to deselect the figure, modify it, then
+</I>&gt;&gt;&gt;<i> reselect it if appropriate. I changed CropImage to just move the overlays
+</I>&gt;&gt;&gt;<i> and it all seems to work. If you all want to take the change, fine, if not,
+</I>&gt;&gt;&gt;<i> go ahead and delete the branch.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Otherwise, thanks for taking over for me... let me know if you have any
+</I>&gt;&gt;&gt;<i> questions.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> On 5/29/2012 1:32 PM, Barry DeZonia wrote:
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Made a few more commits this morning to improve consistency.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> On Tue, May 29, 2012 at 11:19 AM, Lee Kamentsky &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">leek at broadinstitute.org</A>
+</I>&gt;&gt;&gt;<i> &gt; wrote:
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> On 5/29/2012 11:42 AM, Barry DeZonia wrote:
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i> Hi guys,
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i> FYI on Friday of last week I updated the RegionOfInterest classes to
+</I>&gt;&gt;&gt;&gt;&gt;<i> allow them to be moved. You can see the related changes at
+</I>&gt;&gt;&gt;&gt;&gt;<i> <A HREF="https://github.com/imagej/imglib/commit/7ad99450980ec0b73e1258ff80e65a23338f11d3">https://github.com/imagej/imglib/commit/7ad99450980ec0b73e1258ff80e65a23338f11d3</A>
+</I>&gt;&gt;&gt;&gt;&gt;<i> .
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i> And Lee I also updated the IJ2 Overlay classes to support this kind of
+</I>&gt;&gt;&gt;&gt;&gt;<i> functionality. See
+</I>&gt;&gt;&gt;&gt;&gt;<i> <A HREF="https://github.com/imagej/imagej/commit/192365bdbc3b77c02b348bfb1be6e8c18e03705d.">https://github.com/imagej/imagej/commit/192365bdbc3b77c02b348bfb1be6e8c18e03705d.</A>
+</I>&gt;&gt;&gt;&gt;&gt;<i> Note the duplicate() implementation needs to be improved but it is
+</I>&gt;&gt;&gt;&gt;&gt;<i> functional.
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i> Lee, one thing to note is that the BinaryMaskOverlay's writeExternal()
+</I>&gt;&gt;&gt;&gt;&gt;<i> code has been modified. The order of saved items is now different. Since we
+</I>&gt;&gt;&gt;&gt;&gt;<i> have yet to release IJ2 I assume I am able to change it. If not we may need
+</I>&gt;&gt;&gt;&gt;&gt;<i> to alter the order and do version checking on readExternal(). Please let me
+</I>&gt;&gt;&gt;&gt;&gt;<i> know if you think updating this implementation as it has been is
+</I>&gt;&gt;&gt;&gt;&gt;<i> problematic.
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i>  I don't have any dependencies on the format yet, so now is the time to
+</I>&gt;&gt;&gt;&gt;<i> change the format, at least for me.
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i> Also if either of you know of ways these changes violate original
+</I>&gt;&gt;&gt;&gt;&gt;<i> design constraints of the RegionOfInterest contract let me know. Thanks.
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i>  I'll see if I can review the changes today or tomorrow
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> --Lee
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20120612/1158f5c9/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20120612/1158f5c9/attachment.html</A>&gt;
+</PRE>
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001026.html">[ImageJ-devel] Menuing system discussion
+</A></li>
+	<LI>Next message: <A HREF="001032.html">[ImageJ-devel] Fwd: CompositeOverlay
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1027">[ date ]</a>
+              <a href="thread.html#1027">[ thread ]</a>
+              <a href="subject.html#1027">[ subject ]</a>
+              <a href="author.html#1027">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

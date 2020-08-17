@@ -1,0 +1,211 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [fiji-devel] creating io.scif.img.ImgOpener currently fails in Fiji
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20creating%20io.scif.img.ImgOpener%0A%20currently%20fails%20in%20Fiji&In-Reply-To=%3CCADN69y%3DhSUhmb9Juv3XFDtoCj%2Bk2th6hS4%3DP2iYk5uJXWniNhw%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002206.html">
+   <LINK REL="Next"  HREF="002210.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [fiji-devel] creating io.scif.img.ImgOpener currently fails in Fiji</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20creating%20io.scif.img.ImgOpener%0A%20currently%20fails%20in%20Fiji&In-Reply-To=%3CCADN69y%3DhSUhmb9Juv3XFDtoCj%2Bk2th6hS4%3DP2iYk5uJXWniNhw%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] [fiji-devel] creating io.scif.img.ImgOpener currently fails in Fiji">ctrueden at wisc.edu
+       </A><BR>
+    <I>Fri Aug 22 09:51:54 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002206.html">[ImageJ-devel] [fiji-devel] creating io.scif.img.ImgOpener currently fails in Fiji
+</A></li>
+        <LI>Next message: <A HREF="002210.html">[ImageJ-devel] [fiji-devel] creating io.scif.img.ImgOpener	currently fails in Fiji
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2207">[ date ]</a>
+              <a href="thread.html#2207">[ thread ]</a>
+              <a href="subject.html#2207">[ subject ]</a>
+              <a href="author.html#2207">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Tobias,
+
+&gt;<i> Except now all dependencies are not there anymore because now there
+</I>&gt;<i> are non-obvious (to me) implicit runtime dependencies.
+</I>&gt;<i>
+</I>&gt;<i> I find this unfortunate.
+</I>
+I agree that this is a two-edged sword. We have more types of plugins now,
+which can alter the runtime behavior in more ways, so of course it becomes
+possible for ill-behaved plugins to bring down the system.
+
+This is already true in ImageJ 1.x though, because it is extensible at
+runtime: any plugin class could have a static initializer block that hoses
+up the JVM however it can imagine. It is just easier to do now.
+
+IMO, it would not be worth it to eliminate these powerful extension points
+just because of this possibility. The flexibility gained outweighs any
+disadvantages.
+
+We have already taken great pains to mitigate the issue with services in
+the context: when you create a new ImgOpener without specifying an SJC
+context, it uses _only_ relevant service types: things that implement the
+SciJavaService and SCIFIOService interfaces. In other words: _not_
+ImageJServices or other service types. The reason LegacyService is being
+(erroneously!) pulled in here is due to a bug in the design of the SJC
+AppEventService, as I said. I introduced a &quot;LegacyAppEventService&quot; which is
+a SciJavaService but depends on the ImageJ LegacyService. Hence, any
+Context that asks for SciJavaServices now pulls in a DefaultLegacyService
+whenever the LegacyAppEventService is on the classpath. The fix is to stop
+doing that.
+
+Anyway, if it still bothers you that any ol' developer can add something to
+the classpath which hoses up your programs, then you can stop it: create a
+more carefully controlled SJC Context and pass that to the ImgOpener.
+Alternately, we could change ImgOpener to be even more conservative in
+which services it uses. Of course, there are downsides there: any
+additional file format plugins, codec plugins, etc., might not be work
+properly if they do not have access to the services they need.
+
+I am very open to ideas for mitigating the extensibility issues here.
+
+Regards,
+Curtis
+
+
+On Fri, Aug 22, 2014 at 9:35 AM, Tobias Pietzsch &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pietzsch at mpi-cbg.de</A>&gt;
+wrote:
+
+&gt;<i> Hi Johannes,
+</I>&gt;<i>
+</I>&gt;<i> On 22 Aug 2014, at 09:04, Johannes Schindelin &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">Johannes.Schindelin at gmx.de</A>&gt;
+</I>&gt;<i> wrote:
+</I>&gt;<i>
+</I>&gt;<i> Hi Tobias,
+</I>&gt;<i>
+</I>&gt;<i> On Fri, 22 Aug 2014, Tobias Pietzsch wrote:
+</I>&gt;<i>
+</I>&gt;<i> Currently
+</I>&gt;<i> new io.scif.img.ImgOpener();
+</I>&gt;<i> fails with
+</I>&gt;<i> java.lang.IllegalArgumentException: Invalid service:
+</I>&gt;<i> net.imagej.legacy.LegacyAppEventService
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Yep, the explanation is very easy:
+</I>&gt;<i>
+</I>&gt;<i> [...]
+</I>&gt;<i> Caused by: java.lang.UnsupportedOperationException: Cannot instantiate
+</I>&gt;<i> more than one DefaultLegacyService
+</I>&gt;<i> [&#8230;]
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> I missed that...
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> There is already a context, including a legacy service. Unfortunately, the
+</I>&gt;<i> best way to get at this context from an *ImageJ 1.x plugin* that I could
+</I>&gt;<i> come up with is:
+</I>&gt;<i>
+</I>&gt;<i> import org.scijava.Context;
+</I>&gt;<i>
+</I>&gt;<i> ...
+</I>&gt;<i>
+</I>&gt;<i> final Context context = (Context)
+</I>&gt;<i>  IJ.runPlugIn(Context.class.getName(), &quot;&quot;);
+</I>&gt;<i> final ImgOpener opener = new ImgOpener(context);
+</I>&gt;<i>
+</I>&gt;<i> (There is no way to make that more convenient without letting SCIFIO
+</I>&gt;<i> depend on ImageJ 1.x, which is of course a big no-no).
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> The problem with this solution you suggested is that it does not work in
+</I>&gt;<i> Eclipse:
+</I>&gt;<i> Exception in thread &quot;main&quot; java.lang.IllegalArgumentException: Invalid
+</I>&gt;<i> service: net.imagej.legacy.DefaultLegacyService
+</I>&gt;<i>
+</I>&gt;<i> As much as I understand the need for the runtime service discovery used by
+</I>&gt;<i> the scijava stack, there are certainly downsides to it.
+</I>&gt;<i> My feeling is that in some ways it undermines the advantages that we have
+</I>&gt;<i> gained by switching to maven.
+</I>&gt;<i> I can import a maven project into my Eclipse, and all the dependencies are
+</I>&gt;<i> there, explicitly and automatically, which is really very convenient.
+</I>&gt;<i> Except now all dependencies are not there anymore because now there are
+</I>&gt;<i> non-obvious (to me) implicit runtime dependencies.
+</I>&gt;<i> I find this unfortunate.
+</I>&gt;<i>
+</I>&gt;<i> That being said, I found a solution that works for now, both in Eclipse
+</I>&gt;<i> and in Fiji
+</I>&gt;<i>     final ImgOpener opener = new ImgOpener( new Context(
+</I>&gt;<i> SCIFIOService.class, AppService.class, StatusService.class ) );
+</I>&gt;<i> This avoids requiring the net.imagej.legacy.LegacyAppEventService.
+</I>&gt;<i> It seems to work, but I&#8217;m not sure: Are there any downsides to that?
+</I>&gt;<i>
+</I>&gt;<i> best regards,
+</I>&gt;<i> Tobias
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Of course, you could also turn your plugin into an ImageJ2 plugin -- which
+</I>&gt;<i> is handled properly in Fiji thanks to Fiji Just Being ImageJ2 -- and then
+</I>&gt;<i> it would become as easy as:
+</I>&gt;<i>
+</I>&gt;<i>  @Parameter
+</I>&gt;<i>  private IOService io;
+</I>&gt;<i>
+</I>&gt;<i>  ...
+</I>&gt;<i>   // use the IOService (which lets SCIFIO handle
+</I>&gt;<i>  // things) to open your dataset
+</I>&gt;<i>
+</I>&gt;<i> Ciao,
+</I>&gt;<i> Johannes
+</I>&gt;<i>
+</I>&gt;<i> --
+</I>&gt;<i> --
+</I>&gt;<i> Please avoid top-posting, and please make sure to reply-to-all!
+</I>&gt;<i>
+</I>&gt;<i> Mailing list web interface: <A HREF="http://groups.google.com/group/fiji-devel">http://groups.google.com/group/fiji-devel</A>
+</I>&gt;<i>
+</I>&gt;<i> ---
+</I>&gt;<i> You received this message because you are subscribed to the Google Groups
+</I>&gt;<i> &quot;Fiji-devel&quot; group.
+</I>&gt;<i> To unsubscribe from this group and stop receiving emails from it, send an
+</I>&gt;<i> email to <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">fiji-devel+unsubscribe at googlegroups.com.</A>
+</I>&gt;<i> For more options, visit <A HREF="https://groups.google.com/d/optout.">https://groups.google.com/d/optout.</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140822/022fef70/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20140822/022fef70/attachment-0001.html</A>&gt;
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002206.html">[ImageJ-devel] [fiji-devel] creating io.scif.img.ImgOpener currently fails in Fiji
+</A></li>
+	<LI>Next message: <A HREF="002210.html">[ImageJ-devel] [fiji-devel] creating io.scif.img.ImgOpener	currently fails in Fiji
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2207">[ date ]</a>
+              <a href="thread.html#2207">[ thread ]</a>
+              <a href="subject.html#2207">[ subject ]</a>
+              <a href="author.html#2207">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

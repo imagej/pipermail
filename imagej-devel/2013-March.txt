@@ -1,0 +1,1478 @@
+From Johannes.Schindelin at gmx.de  Sat Mar  2 19:58:36 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Sun, 3 Mar 2013 02:58:36 +0100 (CET)
+Subject: [ImageJ-devel] [fiji-devel] slow opening of tif files using
+ scifio-based ImgOpener
+In-Reply-To: <A0BB56BF-C408-4D12-971F-B95D63BB222D@mpi-cbg.de>
+References: <1F7E8677-98CF-4DB6-87A4-2D3E6AFCD1F9@mpi-cbg.de>
+	<20130206020847.GA22377@medusa>
+	<31AB18A8-D332-4662-A32B-0ECC2A6417D1@mpi-cbg.de>
+	<CAJj13__OTjTO8WL5Cv_kBBH3Er2fCFcPFgXp4Vqp1DyMXM_mig@mail.gmail.com>
+	<CADN69ym_AjoaJi3TN5T-_1PV54ECVpG=FkROZxS_hzLsJHH07g@mail.gmail.com>
+	<A0BB56BF-C408-4D12-971F-B95D63BB222D@mpi-cbg.de>
+Message-ID: <alpine.DEB.1.00.1303021823390.3794@s15462909.onlinehome-server.info>
+
+Hi Tobias,
+
+On Thu, 7 Feb 2013, Tobias Pietzsch wrote:
+
+> Ok, I tried the things you suggested as well as the setGroupFiles( false
+> ) suggested by Lee.
+
+I finally have some promising results to show. After writing a
+light-weight profile based on the ideas of OProfile, but backed by
+Javassist (hence it neither requires operating system support nor a
+special Java agent or other start-up parameters to the Java virtual
+machine), I could find a couple of bottlenecks, even if it seems that the
+most important bottleneck I found was obtaining thread-specific CPU tick
+counts (i.e. the profiling code itself that I subsequently replaced by
+global ticks, not as precise, but way lower impact).
+
+I performed all timings as best of 5 runs (which is a more meaningful
+value than the Median), 50 tif images, 10,000 other tif files in same
+directory. My current state can be found in the 'master' branch of
+git://github.com/dscho/TifBenchmark.
+
+The most surprising finding was that copying from planes into the
+ArrayContainer contributed substantially to the execution time. Using a
+PlanarContainer speeded that up.
+
+Another speed-up (and nice simplification of the code) was to use
+ByteBuffer instead of hand-coded byte array to float array. After
+switching off profiling, it turned out not to be that much of an
+improvement, though it does shave off about 200 milliseconds; given that
+the reference we try to reach is only ~120ms it might be an important
+improvement, still.
+
+You can find this change (not yet cleaned up) in the 'performance' branch
+of git://github.com/imagej/bioformats. I will work more on this branch.
+
+Together with setGroupFiles(false), I achieved a dramatic speed-up. The
+time is now dominated by createReader which initializes the Reader for
+every slice, which in turn creates a new OMEXMLMetadata (taking a whopping
+17 milliseconds every single time).
+
+This change is in the 'performance' branch of
+git://github.com/imagej/imglib. I will work more also on this branch.
+
+ArrayContainer (i.e. Tobias' original benchmark):	best of 5: 4,922 ms
+ByteBuffer, ArrayContainer:				best of 5: 4,838 ms
+PlanarContainer:					best of 5: 4,736 ms
+ByteBuffer, PlanarContainer:				best of 5: 4,540 ms
+PlanarContainer, setGroupFiles(true):			best of 5: 1,832 ms
+ByteBuffer, PlanarContainer, setGroupFiles(true):	best of 5: 1,629 ms
+ImageJ 1.x:						best of 5: 113 ms
+
+Down from a 44x slower code to 14x slower. Still nothing to laugh about,
+but an improvement.
+
+Ciao,
+Johannes
+
+P.S.: just to illustrate the impact on execution time by the profiling
+code itself: the ImageJ 1.x test runs 2ms longer (115ms instead of 113ms),
+the best ImgOpener runs 3,523ms instead of 1,629ms, more than double as
+long! Even when instrumenting the code but switching off the profiling
+(i.e. every method still has to test one public static boolean and then a
+local variable just before returning), the time was still 1,839ms, i.e.
+200ms slower. If you switch on thread-specific tick counting via the
+ThreadMXBean, ImageJ 1.x goes up to 568ms, and the best ImgOpener
+benchmark goes up to more than 100 seconds(!).
+
+
+From Johannes.Schindelin at gmx.de  Sun Mar  3 01:10:39 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Sun, 3 Mar 2013 08:10:39 +0100 (CET)
+Subject: [ImageJ-devel] [fiji-devel] slow opening of tif files using
+ scifio-based ImgOpener
+In-Reply-To: <alpine.DEB.1.00.1303021823390.3794@s15462909.onlinehome-server.info>
+References: <1F7E8677-98CF-4DB6-87A4-2D3E6AFCD1F9@mpi-cbg.de>
+	<20130206020847.GA22377@medusa>
+	<31AB18A8-D332-4662-A32B-0ECC2A6417D1@mpi-cbg.de>
+	<CAJj13__OTjTO8WL5Cv_kBBH3Er2fCFcPFgXp4Vqp1DyMXM_mig@mail.gmail.com>
+	<CADN69ym_AjoaJi3TN5T-_1PV54ECVpG=FkROZxS_hzLsJHH07g@mail.gmail.com>
+	<A0BB56BF-C408-4D12-971F-B95D63BB222D@mpi-cbg.de>
+	<alpine.DEB.1.00.1303021823390.3794@s15462909.onlinehome-server.info>
+Message-ID: <alpine.DEB.1.00.1303030724280.3794@s15462909.onlinehome-server.info>
+
+Hi,
+
+On Sun, 3 Mar 2013, Johannes Schindelin wrote:
+
+> ByteBuffer, PlanarContainer, setGroupFiles(true):	best of 5: 1,629 ms
+> ImageJ 1.x:						best of 5: 113 ms
+
+More progress.
+
+Switching on file mapping brought it down to 1,115ms:
+
+	https://github.com/dscho/TifBenchmark/commit/1ac041e8f4ce5d935151fcfb70023f67f2a086df
+
+A minor improvement to 1,097ms was achieved by switching the ImageReader
+from using the Location delegator to using the real thing instead:
+
+	https://github.com/imagej/bioformats/commit/2bbf001061d13882234d07cdbd8cdcbfb9778675
+
+Switching the ZeissTIFFReader (which tries very hard to claim that it is
+responsible to open the files) from using a delegator to the real
+CaseInsensitiveLocation brought it down to 957ms:
+
+	https://github.com/imagej/bioformats/commit/ce94a9e8647a2f786bba3045b005ec0973df5e83
+
+A real game changer was to disallow the ZeissTIFFReader to blow away the
+cache of the CaseInsensitiveLocation class *every* *single* *time*,
+bringing the time down to 317ms:
+
+	https://github.com/imagej/bioformats/commit/33447f50a51356cdc0609164002f0860c724d5e9
+
+My hunch is that there is serious room for improvement in the
+CaseInsensitiveLocation class. And probably even in the ZeissTIFFReader:
+there must be a nicer way to detect whether we are dealing with a Zeiss
+.tiff than to look at all files in the same directory, searching for files
+with a similar name -- and maybe even differ in capitalization, thanks
+Zeiss :-(.
+
+I could even imagine that with .tiff being such a common case with such a
+lot of subtypes that it will be *necessary* to add an own class of plugins
+for TIFF subtypes, so that the base TIFF reader can be chosen quickly as
+the one to use, without having to run through the complete list of readers
+when determining what is the correct reader. The subtype plugins would
+then have to implement a very fast test *after* we already know that it is
+a TIFF. Some of them could then even state that scanning through all the
+IFDs is not necessary (e.g. when it is detected that ImageJ 1.x wrote the
+file.).
+
+And finally, the profiling pointed out that I was right when I had a bad
+feeling about the #isThisType() method and wanted something less
+free-form, such as a combination of file extensions and patterns to match
+against the first kilobyte (much like the HandleExtraFileTypes class does
+it). Worse: the signature of isThisType() does not even allow sharing of a
+RandomAccessInputStream! And sure enough, a dominant part of the
+performance statistics are made up by opening gazillions of
+RandomAccessInputStreams, all for the exact same file, all reading pretty
+much the exact same bytes. Setting setAllowOpen(false) -- whose name I
+mistook as first to imply that we refuse to open files at all, hence
+preventing us from opening images altogether -- brings the time down to
+186ms:
+
+	https://github.com/dscho/TifBenchmark/commit/d10db689c36b668bb190b041f0582add33ef1990
+
+Summary so far: the target is to come close to 115ms [*1*]. I started out
+with code that took a whopping 4,922ms. With a couple of tricks and
+shortcuts, I got it down to 186ms, not quite the 43x improvement I hoped
+for, but a 26x improvement still [*2*].
+
+Ciao,
+Dscho
+
+P.S.: One thing I almost forgot to mention: initializing the logger takes
+quite some time. It is a one-time cost, sure, but it is quite noticable
+when the first slice is opened (hence I excluded the first run from the
+performance profiling for now). We might want to do something about that,
+e.g. constructing a super-light-weight logger a la scijava-common's
+StderrLogService by default.
+
+Footnote *1*: ImageJ 1.x' new ImagePlus(path) wrapped as a float Img). We
+will probably not be able to reach that goal because the ImgOpener is
+intended to handle many more file formats than just TIFF, and it should
+also open images which are valid as far as the TIFF specification is
+concerned but which ImageJ 1.x completely fails on.
+
+Footnote *2*: The changes to SCIFIO, ImgOpener and to TifBenchmark are not
+ready yet for prime time, unfortunately. For example, I doubt that it will
+be a good idea to force people to use PlanarContainers all the time. We
+need to accelerate ImgOpener with ArrayContainers because they will be the
+common case (much better performance than PlanarContainers, but too
+limited for truly large images). We need to teach SCIFIO to determine in a
+more intelligent way when file grouping does not make sense at all, and to
+switch it off in that case. The CaseInsensitiveLocation needs a *lot* of
+improvement, I haven't even touched it yet. We also need to teach SCIFIO
+to stop being stubborn and re-use the RandomAccessInputStream when it
+comes to the readers to determine whether they want to handle the image.
+Maybe that is not enough, even, and we have to re-design the complete
+strategy how readers are picked. One thing is utterly clear, though: in
+its current form, the ImgOpener is not fit for daily use.
+
+
+
+From schindelin at wisc.edu  Tue Mar  5 15:09:42 2013
+From: schindelin at wisc.edu (Johannes Schindelin)
+Date: Tue, 05 Mar 2013 22:09:42 +0100 (CET)
+Subject: [ImageJ-devel] Irregular CellContainers?
+Message-ID: <alpine.DEB.1.00.1303052156280.3794@s15462909.onlinehome-server.info>
+
+Hi Curtis & Tobias,
+
+I woke up last night having an idea I would like to hear your input on:
+one of the problems I see with CellContainer is that very often, you
+actually need not single pixels, but neighborhoods. So whenever you access
+neighborhoods at the margin of a cell container, you need to have the
+neighboring container in memory, too. It gets worst in corners, e.g. when
+you are in a corner of a 3d cube and need to have all neighboring pixels
+in a, say, 3x3x3 neighborhood, you will need 8 cubes.
+
+So how about having a cell container strategy where you do not slice up
+the complete RandomAccessibleInterval in equally-sized cubes, but into
+cubes smaller by a given margin and then "boxes" to fill the rest of the
+original cubes?
+
+Example: let's take a 16k x 16k x 4k volume, the current CellContainer may
+cut it into 1024 x 1024 x 1024 cubes. If we know that we want to work on 3
+x 3 x 3 neighborhoods, I now propose to cut further every such cube into a
+1021 x 1021 x 1021 cube, a 3 x 1021 x 1021, a 1021 x 3 x 1021, a 1021 x
+1021 x 3, a 3 x 3 x 1021, a 3 x 1021 x 3, a 1021 x 3 x 3 and a 3 x 3 x 3.
+
+That would allow us to require only one big cube (with relatively good
+performance opposed to smaller cubes) and a couple of smaller cubes at any
+time during convolution?
+
+Ciao,
+Dscho
+
+P.S.: I am not proposing to work on this now, but we could put it into
+http://fiji.sc/Project_Ideas?
+
+
+From leek at broadinstitute.org  Tue Mar  5 15:24:46 2013
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Tue, 05 Mar 2013 16:24:46 -0500
+Subject: [ImageJ-devel] Irregular CellContainers?
+In-Reply-To: <alpine.DEB.1.00.1303052156280.3794@s15462909.onlinehome-server.info>
+References: <alpine.DEB.1.00.1303052156280.3794@s15462909.onlinehome-server.info>
+Message-ID: <5136629f.6800310a.3b32.52cb@mx.google.com>
+
+On 3/5/2013 4:09 PM, Johannes Schindelin wrote:
+> Hi Curtis & Tobias,
+>
+> I woke up last night having an idea I would like to hear your input on:
+> one of the problems I see with CellContainer is that very often, you
+> actually need not single pixels, but neighborhoods. So whenever you access
+> neighborhoods at the margin of a cell container, you need to have the
+> neighboring container in memory, too. It gets worst in corners, e.g. when
+> you are in a corner of a 3d cube and need to have all neighboring pixels
+> in a, say, 3x3x3 neighborhood, you will need 8 cubes.
+>
+> So how about having a cell container strategy where you do not slice up
+> the complete RandomAccessibleInterval in equally-sized cubes, but into
+> cubes smaller by a given margin and then "boxes" to fill the rest of the
+> original cubes?
+>
+> Example: let's take a 16k x 16k x 4k volume, the current CellContainer may
+> cut it into 1024 x 1024 x 1024 cubes. If we know that we want to work on 3
+> x 3 x 3 neighborhoods, I now propose to cut further every such cube into a
+> 1021 x 1021 x 1021 cube, a 3 x 1021 x 1021, a 1021 x 3 x 1021, a 1021 x
+> 1021 x 3, a 3 x 3 x 1021, a 3 x 1021 x 3, a 1021 x 3 x 3 and a 3 x 3 x 3.
+Hmmm.... not so bad. An alternative might be to make the cubes bigger by 
+3 on each side, duplicating the data and use a dirty-flag strategy to 
+tell the alternate pixel owners to copy the overwritten data, e.g. when 
+switching cubes. I think there's less pixel-operation checking in that case.
+>
+> That would allow us to require only one big cube (with relatively good
+> performance opposed to smaller cubes) and a couple of smaller cubes at any
+> time during convolution?
+>
+> Ciao,
+> Dscho
+>
+> P.S.: I am not proposing to work on this now, but we could put it into
+> http://fiji.sc/Project_Ideas?
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+
+
+
+From leek at broadinstitute.org  Fri Mar  8 07:37:02 2013
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Fri, 08 Mar 2013 08:37:02 -0500
+Subject: [ImageJ-devel] Connection time out on http://maven.imagej.net/
+Message-ID: <5139e981.c70be00a.7363.ffffbb38@mx.google.com>
+
+Hi guys,
+I'm having a little problem getting to the Maven repository this morning 
+- getting a connection timeout via HTTP to maven.imagej.net and when I 
+tracert to it, it looks like I'm dying at loci's building's router. Can 
+you reach under the desk and plug it back in please?
+
+Thx,
+Lee
+
+C:\Users\leek\cpdev\javabridge\CellProfiler>tracert maven.imagej.net
+
+Tracing route to maven.imagej.net [144.92.48.145]
+over a maximum of 30 hops:
+
+   1    <1 ms    <1 ms    <1 ms 7cc-7141-7010b-v29.broadinstitute.org 
+[69.173.114.3]
+   2    <1 ms    <1 ms    <1 ms  10.0.9.6
+   3    <1 ms    <1 ms    <1 ms 1sum-asr1006-v97.broadinstitute.org 
+[10.0.97.5]
+   4     1 ms     1 ms     2 ms nox1sumgw1-vl-681-nox-broad.nox.org 
+[207.210.143.157]
+   5    13 ms    13 ms    13 ms 
+nox1sumgw1-peer-nox-internet2-192-5-89-18.nox.org [192.5.89.18]
+   6    25 ms    22 ms    27 ms ae-7.10.rtr.chic.net.internet2.edu 
+[64.57.28.158]
+   7    27 ms    27 ms    31 ms r-peer-xe-3-1-0-980.net.wisc.edu 
+[144.92.233.118]
+   8    27 ms    27 ms    27 ms 
+r-cssc-b280c-9-core-vlan-1627.net.wisc.edu [146.151.175.61]
+   9    27 ms    27 ms    27 ms 
+r-animal-122a-1-core-vlan-2043.net.wisc.edu [146.151.167.41]
+  10     *        *        *     Request timed out.
+  11     *        *        *     Request timed out.
+
+
+From ctrueden at wisc.edu  Fri Mar  8 08:46:17 2013
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Fri, 8 Mar 2013 08:46:17 -0600
+Subject: [ImageJ-devel] Connection time out on http://maven.imagej.net/
+In-Reply-To: <5139e981.c70be00a.7363.ffffbb38@mx.google.com>
+References: <5139e981.c70be00a.7363.ffffbb38@mx.google.com>
+Message-ID: <CADN69ykRK5YViKbky-n5qHwr2+s-yR7Nq4sbZbmSUV3uN+9fuA@mail.gmail.com>
+
+Hi Lee,
+
+That machine needed a reboot so we scheduled it for 6am this morning,
+knowing problems like this were possible. I will be in the office within
+~30 minutes or so to give it a kick. (And hopefully also fix so that future
+reboots "just work".)
+
+Very sorry for the inconvenience!
+
+-Curtis
+ On Mar 8, 2013 7:37 AM, "Lee Kamentsky" <leek at broadinstitute.org> wrote:
+
+> Hi guys,
+> I'm having a little problem getting to the Maven repository this morning -
+> getting a connection timeout via HTTP to maven.imagej.net and when I
+> tracert to it, it looks like I'm dying at loci's building's router. Can you
+> reach under the desk and plug it back in please?
+>
+> Thx,
+> Lee
+>
+> C:\Users\leek\cpdev\**javabridge\CellProfiler>**tracert maven.imagej.net
+>
+> Tracing route to maven.imagej.net [144.92.48.145]
+> over a maximum of 30 hops:
+>
+>   1    <1 ms    <1 ms    <1 ms 7cc-7141-7010b-v29.**broadinstitute.org<http://7cc-7141-7010b-v29.broadinstitute.org>[69.173.114.3]
+>   2    <1 ms    <1 ms    <1 ms  10.0.9.6
+>   3    <1 ms    <1 ms    <1 ms 1sum-asr1006-v97.**broadinstitute.org<http://1sum-asr1006-v97.broadinstitute.org>[10.0.97.5]
+>   4     1 ms     1 ms     2 ms nox1sumgw1-vl-681-nox-broad.**nox.org<http://nox1sumgw1-vl-681-nox-broad.nox.org>[207.210.143.157]
+>   5    13 ms    13 ms    13 ms nox1sumgw1-peer-nox-internet2-**
+> 192-5-89-18.nox.org<http://nox1sumgw1-peer-nox-internet2-192-5-89-18.nox.org>[192.5.89.18]
+>   6    25 ms    22 ms    27 ms ae-7.10.rtr.chic.net.**internet2.edu<http://ae-7.10.rtr.chic.net.internet2.edu>[64.57.28.158]
+>   7    27 ms    27 ms    31 ms r-peer-xe-3-1-0-980.net.wisc.**edu<http://r-peer-xe-3-1-0-980.net.wisc.edu>[144.92.233.118]
+>   8    27 ms    27 ms    27 ms r-cssc-b280c-9-core-vlan-1627.**
+> net.wisc.edu <http://r-cssc-b280c-9-core-vlan-1627.net.wisc.edu>[146.151.175.61]
+>   9    27 ms    27 ms    27 ms r-animal-122a-1-core-vlan-**
+> 2043.net.wisc.edu <http://r-animal-122a-1-core-vlan-2043.net.wisc.edu>[146.151.167.41]
+>  10     *        *        *     Request timed out.
+>  11     *        *        *     Request timed out.
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130308/ee52e38d/attachment.html>
+
+From leek at broadinstitute.org  Fri Mar  8 08:52:16 2013
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Fri, 08 Mar 2013 09:52:16 -0500
+Subject: [ImageJ-devel] Connection time out on http://maven.imagej.net/
+In-Reply-To: <CADN69ykRK5YViKbky-n5qHwr2+s-yR7Nq4sbZbmSUV3uN+9fuA@mail.gmail.com>
+References: <5139e981.c70be00a.7363.ffffbb38@mx.google.com>
+	<CADN69ykRK5YViKbky-n5qHwr2+s-yR7Nq4sbZbmSUV3uN+9fuA@mail.gmail.com>
+Message-ID: <5139fb29.04bee00a.197e.72ed@mx.google.com>
+
+On 3/8/2013 9:46 AM, Curtis Rueden wrote:
+>
+> Hi Lee,
+>
+> That machine needed a reboot so we scheduled it for 6am this morning, 
+> knowing problems like this were possible. I will be in the office 
+> within ~30 minutes or so to give it a kick. (And hopefully also fix so 
+> that future reboots "just work".)
+>
+> Very sorry for the inconvenience!
+>
+NP - guess the lesson is that there is no 6 am on the internet. It was a 
+bug in our cluster farming code to have each CellProfiler instance look 
+for updates - the Maven compile should only be done once. Some of the 
+guys here launch a thousand jobs at once - lucky for all of us that our 
+cluster only allocates us a couple hundred slots or you'd get that 
+traffic all at once.
+
+Thanks, no rush really.
+>
+> -Curtis
+>
+> On Mar 8, 2013 7:37 AM, "Lee Kamentsky" <leek at broadinstitute.org 
+> <mailto:leek at broadinstitute.org>> wrote:
+>
+>     Hi guys,
+>     I'm having a little problem getting to the Maven repository this
+>     morning - getting a connection timeout via HTTP to
+>     maven.imagej.net <http://maven.imagej.net> and when I tracert to
+>     it, it looks like I'm dying at loci's building's router. Can you
+>     reach under the desk and plug it back in please?
+>
+>     Thx,
+>     Lee
+>
+>     C:\Users\leek\cpdev\javabridge\CellProfiler>tracert
+>     maven.imagej.net <http://maven.imagej.net>
+>
+>     Tracing route to maven.imagej.net <http://maven.imagej.net>
+>     [144.92.48.145]
+>     over a maximum of 30 hops:
+>
+>       1    <1 ms    <1 ms    <1 ms
+>     7cc-7141-7010b-v29.broadinstitute.org
+>     <http://7cc-7141-7010b-v29.broadinstitute.org> [69.173.114.3]
+>       2    <1 ms    <1 ms    <1 ms  10.0.9.6
+>       3    <1 ms    <1 ms    <1 ms 1sum-asr1006-v97.broadinstitute.org
+>     <http://1sum-asr1006-v97.broadinstitute.org> [10.0.97.5]
+>       4     1 ms     1 ms     2 ms nox1sumgw1-vl-681-nox-broad.nox.org
+>     <http://nox1sumgw1-vl-681-nox-broad.nox.org> [207.210.143.157]
+>       5    13 ms    13 ms    13 ms
+>     nox1sumgw1-peer-nox-internet2-192-5-89-18.nox.org
+>     <http://nox1sumgw1-peer-nox-internet2-192-5-89-18.nox.org>
+>     [192.5.89.18]
+>       6    25 ms    22 ms    27 ms ae-7.10.rtr.chic.net.internet2.edu
+>     <http://ae-7.10.rtr.chic.net.internet2.edu> [64.57.28.158]
+>       7    27 ms    27 ms    31 ms r-peer-xe-3-1-0-980.net.wisc.edu
+>     <http://r-peer-xe-3-1-0-980.net.wisc.edu> [144.92.233.118]
+>       8    27 ms    27 ms    27 ms
+>     r-cssc-b280c-9-core-vlan-1627.net.wisc.edu
+>     <http://r-cssc-b280c-9-core-vlan-1627.net.wisc.edu> [146.151.175.61]
+>       9    27 ms    27 ms    27 ms
+>     r-animal-122a-1-core-vlan-2043.net.wisc.edu
+>     <http://r-animal-122a-1-core-vlan-2043.net.wisc.edu> [146.151.167.41]
+>      10     *        *        *     Request timed out.
+>      11     *        *        *     Request timed out.
+>
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130308/da146bc2/attachment.html>
+
+From schindelin at wisc.edu  Fri Mar  8 08:53:47 2013
+From: schindelin at wisc.edu (Johannes Schindelin)
+Date: Fri, 08 Mar 2013 15:53:47 +0100 (CET)
+Subject: [ImageJ-devel] Connection time out on http://maven.imagej.net/
+In-Reply-To: <5139e981.c70be00a.7363.ffffbb38@mx.google.com>
+References: <5139e981.c70be00a.7363.ffffbb38@mx.google.com>
+Message-ID: <alpine.DEB.1.00.1303081552370.3794@s15462909.onlinehome-server.info>
+
+Hi Lee,
+
+On Fri, 8 Mar 2013, Lee Kamentsky wrote:
+
+> I'm having a little problem getting to the Maven repository this morning
+> - getting a connection timeout via HTTP to maven.imagej.net and when I
+> tracert to it, it looks like I'm dying at loci's building's router. Can
+> you reach under the desk and plug it back in please?
+
+The box had a scheduled reboot but did not come back online. Will
+investigate when I am in the building.
+
+Ciao,
+Dscho
+
+
+From ctrueden at wisc.edu  Fri Mar  8 10:17:40 2013
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Fri, 8 Mar 2013 10:17:40 -0600
+Subject: [ImageJ-devel] Connection time out on http://maven.imagej.net/
+In-Reply-To: <alpine.DEB.1.00.1303081552370.3794@s15462909.onlinehome-server.info>
+References: <5139e981.c70be00a.7363.ffffbb38@mx.google.com>
+	<alpine.DEB.1.00.1303081552370.3794@s15462909.onlinehome-server.info>
+Message-ID: <CADN69y=cQRULAeZN+Ji6CjO_Sr9j3UZ+Whg03eA7ZzmrsZE_KA@mail.gmail.com>
+
+Hi all,
+
+The issue has been resolved, and the ImageJ dev server is back online. Let
+us know if you notice any further service interruptions.
+
+Regards,
+Curtis
+
+
+On Fri, Mar 8, 2013 at 8:53 AM, Johannes Schindelin <schindelin at wisc.edu>wrote:
+
+> Hi Lee,
+>
+> On Fri, 8 Mar 2013, Lee Kamentsky wrote:
+>
+> > I'm having a little problem getting to the Maven repository this morning
+> > - getting a connection timeout via HTTP to maven.imagej.net and when I
+> > tracert to it, it looks like I'm dying at loci's building's router. Can
+> > you reach under the desk and plug it back in please?
+>
+> The box had a scheduled reboot but did not come back online. Will
+> investigate when I am in the building.
+>
+> Ciao,
+> Dscho
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130308/be824963/attachment-0001.html>
+
+From Johannes.Schindelin at gmx.de  Fri Mar 15 10:58:04 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Fri, 15 Mar 2013 16:58:04 +0100 (CET)
+Subject: [ImageJ-devel] [fiji-devel] ImageJ 2.0.0-beta5 released
+In-Reply-To: <kra6kdsniriwiylbryu281b0.1351144252015@email.android.com>
+References: <kra6kdsniriwiylbryu281b0.1351144252015@email.android.com>
+Message-ID: <alpine.DEB.1.00.1303151556260.3794@s15462909.onlinehome-server.info>
+
+Hi,
+
+On Wed, 24 Oct 2012, Stephan Saalfeld wrote:
+
+> Johannes Schindelin <Johannes.Schindelin at gmx.de> wrote:
+> 
+> >On Wed, 24 Oct 2012, Albert Cardona wrote:
+> >
+> >> 2012/10/24 Johannes Schindelin <Johannes.Schindelin at gmx.de>:
+> >> >
+> >> > On Wed, 24 Oct 2012, Albert Cardona wrote:
+> >> >
+> >> >> 2012/10/23 Barry DeZonia <bdezonia at gmail.com>:
+> >> >
+> >> > Note that "IJ" in ImageJ2 scripting refers to the current ImageJ
+> >> > context, i.e. an instance of imagej.ImageJ. It does *not* refer to the
+> >> > static class ij.IJ -- which would not make too much sense anyway,
+> >> > because we are most likely not able to support too many of that class'
+> >> > functions.
+> >>
+> >> the ij.jar is a jar and is included in ImageJ2. I understand it may be
+> >> desirable to intercept some of its functionality such as IJ.log and
+> >> redirect it, but other than that, being a jar, one would except
+> >> beanshell and other scripting languages to load and use jars in the
+> >> classpath as usual.
+> >
+> >As in plain Java, if you have a local variable of the same name as a class
+> >you imported, the local variable takes precedence. You can always access
+> >the class by the full class name: ij.IJ.log("Hello, Albert");
+> >
+> >I am open to suggestions what might be a better name for the current
+> >ImageJ context (I considered "context", "this", "ImageJ", which all clash
+> >with existing entities even worse than "IJ"). It is still early enough to
+> >change things without much of a hassle.
+>
+> What about IJ2?
+
+I am torn. I really like it for its simplicity but I do not want to
+ingrain the "2" too much into our design.
+
+Ciao,
+Dscho
+
+
+From saalfeld at mpi-cbg.de  Fri Mar 15 11:14:07 2013
+From: saalfeld at mpi-cbg.de (Stephan Saalfeld)
+Date: Fri, 15 Mar 2013 17:14:07 +0100
+Subject: [ImageJ-devel] [fiji-devel] ImageJ 2.0.0-beta5 released
+In-Reply-To: <alpine.DEB.1.00.1303151556260.3794@s15462909.onlinehome-server.info>
+References: <kra6kdsniriwiylbryu281b0.1351144252015@email.android.com>
+	<alpine.DEB.1.00.1303151556260.3794@s15462909.onlinehome-server.info>
+Message-ID: <1363364047.13784.7.camel@saalfeld-thinkpad>
+
+Thanks for the reply :)---I still think that it is the best possible
+solution.
+
+Best,
+Stephan
+
+
+
+
+On Fri, 2013-03-15 at 16:58 +0100, Johannes Schindelin wrote: 
+> Hi,
+> 
+> On Wed, 24 Oct 2012, Stephan Saalfeld wrote:
+> 
+> > Johannes Schindelin <Johannes.Schindelin at gmx.de> wrote:
+> > 
+> > >On Wed, 24 Oct 2012, Albert Cardona wrote:
+> > >
+> > >> 2012/10/24 Johannes Schindelin <Johannes.Schindelin at gmx.de>:
+> > >> >
+> > >> > On Wed, 24 Oct 2012, Albert Cardona wrote:
+> > >> >
+> > >> >> 2012/10/23 Barry DeZonia <bdezonia at gmail.com>:
+> > >> >
+> > >> > Note that "IJ" in ImageJ2 scripting refers to the current ImageJ
+> > >> > context, i.e. an instance of imagej.ImageJ. It does *not* refer to the
+> > >> > static class ij.IJ -- which would not make too much sense anyway,
+> > >> > because we are most likely not able to support too many of that class'
+> > >> > functions.
+> > >>
+> > >> the ij.jar is a jar and is included in ImageJ2. I understand it may be
+> > >> desirable to intercept some of its functionality such as IJ.log and
+> > >> redirect it, but other than that, being a jar, one would except
+> > >> beanshell and other scripting languages to load and use jars in the
+> > >> classpath as usual.
+> > >
+> > >As in plain Java, if you have a local variable of the same name as a class
+> > >you imported, the local variable takes precedence. You can always access
+> > >the class by the full class name: ij.IJ.log("Hello, Albert");
+> > >
+> > >I am open to suggestions what might be a better name for the current
+> > >ImageJ context (I considered "context", "this", "ImageJ", which all clash
+> > >with existing entities even worse than "IJ"). It is still early enough to
+> > >change things without much of a hassle.
+> >
+> > What about IJ2?
+> 
+> I am torn. I really like it for its simplicity but I do not want to
+> ingrain the "2" too much into our design.
+> 
+> Ciao,
+> Dscho
+> 
+> -- 
+
+
+
+From schindelin at wisc.edu  Sun Mar 17 14:39:48 2013
+From: schindelin at wisc.edu (Johannes Schindelin)
+Date: Sun, 17 Mar 2013 20:39:48 +0100 (CET)
+Subject: [ImageJ-devel] Update site for Micro-Manager
+Message-ID: <alpine.DEB.1.00.1303172038260.13747@s15462909.onlinehome-server.info>
+
+Hi Nico,
+
+sorry for the long delay. I really would like to put in all the work
+necessary for you to be able to serve Micro-Manager from your own update
+site. It is even possible to make multiple update sites, such as a stable
+and an unstable one.
+
+Could you please remind me what your requirements are?
+
+Thanks!
+Johannes
+
+
+From trac at imagej.net  Tue Mar 19 11:23:40 2013
+From: trac at imagej.net (ImageJ)
+Date: Tue, 19 Mar 2013 16:23:40 +0000
+Subject: [ImageJ-devel] [ImageJ] #1553: Make it easier for non-core-IJ2
+ developers to respond to tickets
+In-Reply-To: <017.2879b6b5a3c5468e1ab729fe3fc3863b@imagej.net>
+References: <017.2879b6b5a3c5468e1ab729fe3fc3863b@imagej.net>
+Message-ID: <032.e8a909cb16fca957252f885571296eda@imagej.net>
+
+#1553: Make it easier for non-core-IJ2 developers to respond to tickets
+--------------------------+-----------------------------------
+ Reporter:  dscho         |       Owner:  dscho
+     Type:  defect        |      Status:  reviewing
+ Priority:  major         |   Milestone:  imagej2-b7-ndim-data
+Component:  Server Admin  |     Version:
+ Severity:  serious       |  Resolution:
+ Keywords:                |  Blocked By:
+ Blocking:                |
+--------------------------+-----------------------------------
+Changes (by bdezonia):
+
+ * status:  new => reviewing
+
+
+Comment:
+
+ dscho, please associated with some feature ticket
+
+-- 
+Ticket URL: <http://trac.imagej.net/ticket/1553#comment:1>
+ImageJ <http://trac.imagej.net>
+ImageJ core development
+
+
+From trac at imagej.net  Tue Mar 19 14:26:09 2013
+From: trac at imagej.net (ImageJ)
+Date: Tue, 19 Mar 2013 19:26:09 +0000
+Subject: [ImageJ-devel] [ImageJ] #1553: Make it easier for non-core-IJ2
+ developers to respond to tickets
+In-Reply-To: <017.2879b6b5a3c5468e1ab729fe3fc3863b@imagej.net>
+References: <017.2879b6b5a3c5468e1ab729fe3fc3863b@imagej.net>
+Message-ID: <032.80ef0aecfcfd6418a36e51e9100cf36d@imagej.net>
+
+#1553: Make it easier for non-core-IJ2 developers to respond to tickets
+--------------------------+-----------------------------------
+ Reporter:  dscho         |       Owner:  dscho
+     Type:  defect        |      Status:  reviewing
+ Priority:  major         |   Milestone:  imagej2-b7-ndim-data
+Component:  Server Admin  |     Version:
+ Severity:  serious       |  Resolution:
+ Keywords:                |  Blocked By:
+ Blocking:  33            |
+--------------------------+-----------------------------------
+Changes (by dscho):
+
+ * blocking:   => 33
+
+
+-- 
+Ticket URL: <http://trac.imagej.net/ticket/1553#comment:2>
+ImageJ <http://trac.imagej.net>
+ImageJ core development
+
+
+From trac at imagej.net  Tue Mar 19 14:41:36 2013
+From: trac at imagej.net (ImageJ)
+Date: Tue, 19 Mar 2013 19:41:36 +0000
+Subject: [ImageJ-devel] [ImageJ] #1553: Make it easier for non-core-IJ2
+ developers to respond to tickets
+In-Reply-To: <017.2879b6b5a3c5468e1ab729fe3fc3863b@imagej.net>
+References: <017.2879b6b5a3c5468e1ab729fe3fc3863b@imagej.net>
+Message-ID: <032.a237c1d981ecb9993b7228e6f98f8b2a@imagej.net>
+
+#1553: Make it easier for non-core-IJ2 developers to respond to tickets
+--------------------------+-----------------------------------
+ Reporter:  dscho         |       Owner:  dscho
+     Type:  defect        |      Status:  reviewing
+ Priority:  major         |   Milestone:  imagej2-b7-ndim-data
+Component:  Server Admin  |     Version:
+ Severity:  serious       |  Resolution:
+ Keywords:                |  Blocked By:
+ Blocking:  1705          |
+--------------------------+-----------------------------------
+Changes (by curtis):
+
+ * blocking:  33 => 1705
+
+
+Comment:
+
+ There is currently a very nasty problem with the Trac: certain functions
+ that are supposed to send emails silently do not do so.
+
+ Specifically, password requests are never sent (but the Trac reports no
+ errors). Similarly, I attempted to enable new user account registration,
+ but it also never sends the confirmation email necessary to greenlight a
+ new account.
+
+ It is probably sendmail being finicky about something due to permissions
+ or similar, but I am not sure which logs to check to diagnose this
+ problem.
+
+-- 
+Ticket URL: <http://trac.imagej.net/ticket/1553#comment:3>
+ImageJ <http://trac.imagej.net>
+ImageJ core development
+
+
+From trac at imagej.net  Tue Mar 19 14:43:50 2013
+From: trac at imagej.net (ImageJ)
+Date: Tue, 19 Mar 2013 19:43:50 +0000
+Subject: [ImageJ-devel] [ImageJ] #1553: Make it easier for non-core-IJ2
+ developers to respond to tickets
+In-Reply-To: <017.2879b6b5a3c5468e1ab729fe3fc3863b@imagej.net>
+References: <017.2879b6b5a3c5468e1ab729fe3fc3863b@imagej.net>
+Message-ID: <032.44e3124d1d756bfc8bb93aa18d1d2b21@imagej.net>
+
+#1553: Make it easier for non-core-IJ2 developers to respond to tickets
+--------------------------+-----------------------------------
+ Reporter:  dscho         |       Owner:  dscho
+     Type:  defect        |      Status:  reviewing
+ Priority:  major         |   Milestone:  imagej2-b7-ndim-data
+Component:  Server Admin  |     Version:
+ Severity:  serious       |  Resolution:
+ Keywords:                |  Blocked By:
+ Blocking:  1705          |
+--------------------------+-----------------------------------
+
+Comment (by curtis):
+
+ Also, ultimately, to close out this ticket, we need to set up
+ [https://oss.trac.surfsara.nl/email2trac email2trac].
+
+-- 
+Ticket URL: <http://trac.imagej.net/ticket/1553#comment:4>
+ImageJ <http://trac.imagej.net>
+ImageJ core development
+
+
+From trac at imagej.net  Tue Mar 19 14:44:49 2013
+From: trac at imagej.net (ImageJ)
+Date: Tue, 19 Mar 2013 19:44:49 +0000
+Subject: [ImageJ-devel] [ImageJ] #1553: Make it easier for non-core-IJ2
+ developers to respond to tickets
+In-Reply-To: <017.2879b6b5a3c5468e1ab729fe3fc3863b@imagej.net>
+References: <017.2879b6b5a3c5468e1ab729fe3fc3863b@imagej.net>
+Message-ID: <032.e3839baed72a9eefd7a6545890e43ba2@imagej.net>
+
+#1553: Make it easier for non-core-IJ2 developers to respond to tickets
+--------------------------+-----------------------------------
+ Reporter:  dscho         |       Owner:  dscho
+     Type:  defect        |      Status:  reviewing
+ Priority:  major         |   Milestone:  imagej2-b7-ndim-data
+Component:  Server Admin  |     Version:
+ Severity:  serious       |  Resolution:
+ Keywords:                |  Blocked By:
+ Blocking:  1705          |
+--------------------------+-----------------------------------
+
+Comment (by curtis):
+
+ Another option would be to migrate our entire ticket infrastructure over
+ to GitHub Issues. That would solve the openness problem completely, but at
+ the expense of functionality: we would lose our hierarchical feature-based
+ ticket classifications.
+
+-- 
+Ticket URL: <http://trac.imagej.net/ticket/1553#comment:5>
+ImageJ <http://trac.imagej.net>
+ImageJ core development
+
+
+From trac at imagej.net  Tue Mar 19 14:54:56 2013
+From: trac at imagej.net (ImageJ)
+Date: Tue, 19 Mar 2013 19:54:56 +0000
+Subject: [ImageJ-devel] [ImageJ] #1553: Make it easier for non-core-IJ2
+ developers to respond to tickets
+In-Reply-To: <017.2879b6b5a3c5468e1ab729fe3fc3863b@imagej.net>
+References: <017.2879b6b5a3c5468e1ab729fe3fc3863b@imagej.net>
+Message-ID: <032.b6835ecc4dd4a975395f3e04f39d43a1@imagej.net>
+
+#1553: Make it easier for non-core-IJ2 developers to respond to tickets
+--------------------------+-----------------------------------
+ Reporter:  dscho         |       Owner:  dscho
+     Type:  defect        |      Status:  reviewing
+ Priority:  major         |   Milestone:  imagej2-b7-ndim-data
+Component:  Server Admin  |     Version:
+ Severity:  serious       |  Resolution:
+ Keywords:                |  Blocked By:
+ Blocking:  1705          |
+--------------------------+-----------------------------------
+
+Comment (by dscho):
+
+ We would also be at the whim of the GitHub service which is in general
+ quite good but not always.
+
+-- 
+Ticket URL: <http://trac.imagej.net/ticket/1553#comment:6>
+ImageJ <http://trac.imagej.net>
+ImageJ core development
+
+
+From gharris at mbl.edu  Tue Mar 19 16:13:45 2013
+From: gharris at mbl.edu (Grant B. Harris)
+Date: Tue, 19 Mar 2013 17:13:45 -0400
+Subject: [ImageJ-devel] Regarding Preferences support for Multiple Instances,
+ Applications, and Versions
+Message-ID: <5148D509.2010008@mbl.edu>
+
+ImageJ2ers,
+
+We've recently run into the problem of having multiple versions of 
+MicroManager installed (for testing our plugins under different 
+versions).  This made me realize that there are some issues with ImageJ2 
+preferences that we may want to address.
+
+Right now, Prefs are stored in the userRoot() by Class<?> and name.
+
+I don't think that this allows us to support any of these scenarios:
+- multiple applications (that use the application framework)
+- multiple versions of the same application
+- multiple instances (contexts) of the same application
+
+I all of these cases, they will stomp on each other by reading/writing 
+the same Prefs.
+
+
+I'd like to propose an extension to the Prefs mechanism which follows:
+
+When an application launches, if it does not find a node for itself 
+(applicationA/v2.0), it could optionally copy or translate the values 
+from an old version node (applicationA/v2.0).  The Prefs class could 
+provide some helper methods for this.  The Prefs nodes could be 
+something like this:
+
+userRoot()
+     /applicationA
+         /v1.01
+             /...
+         /v1.02
+             /...
+      /applicationB
+         /v2.0
+             /...
+
+To deal with multiple instances (contexts) of the same application, it 
+might make sense to have the prefs stored by context (perhaps under a 
+node for application and a node for each version.  It seems that each 
+instance would need to have an identifier, and this identifier would 
+need to be set when the app. (re-)launches, perhaps using a command line 
+argument.
+
+While less common, the ability to have multiple instances (contexts) of 
+the same application can be useful in two use cases I can think of: 1) 
+running instances running headless on a server, 2) having multiple users 
+of an application on the same OS user account (like 'guest').  A context 
+identifier would also enable separate prefs settings for these situations.
+
+Using context identifiers, perhaps the Prefs nodes could be something 
+like this:
+
+userRoot()
+     /applicationA
+         /v1.01
+             /...
+             /cID1
+                 /...
+         /v1.02
+             /...
+      /applicationB
+         /v2.0
+             /cID1
+                 /...
+             /cID2
+                 /...
+
+For example, if a context identifier is provided, the app. would use the 
+nodes under /applicationA/v1.01/cID1... and if a context identifier is 
+not provided, the app. would use the nodes under /applicationA/v1.01/...
+
+Perhaps Prefs could be Contextual, and then use getTitle(), getVersion().
+(For the context, I suppose one kluge would be to add something to the 
+Title...)
+
+There may be some related issues, e.g. in ConfigFileParameters, this is 
+hardcoded: CONFIG_FILE = "ImageJ.cfg";
+
+Thoughts?  Ideas?
+
+(I've added this as an issue ticket in TRAC.)
+
+-- Grant
+
+
+
+From m.epping at arcor.de  Thu Mar 21 04:45:01 2013
+From: m.epping at arcor.de (Michael Epping)
+Date: Thu, 21 Mar 2013 10:45:01 +0100
+Subject: [ImageJ-devel] =?utf-8?q?Calibration_bug_when_rotating_an_image_b?=
+	=?utf-8?b?eSA5MMKw?=
+Message-ID: <514AD69D.5060503@arcor.de>
+
+Hello,
+I hope this is the right address to report a small bug.
+
+Problem:
+I use the calibration "Origin (pixels)" with different values for x and 
+y. When I rotate an image by 90?, pixel width and pixel height are 
+swapped as expected. But the origin stays the same.
+The attached code shows that only cal.pixelWidth and cal.pixelHeight are 
+swapped but not cal.xOrigin and cal.yOrigin.
+
+Code:
+ij.plugin.filter.Transformer
+
+public void run(ImageProcessor ip) {
+         if (arg.equals("fliph")) {
+             ip.flipHorizontal();
+             return;
+         }
+         if (arg.equals("flipv")) {
+             ip.flipVertical();
+             return;
+         }
+         if (arg.equals("right") || arg.equals("left")) {
+             StackProcessor sp = new StackProcessor(imp.getStack(), ip);
+             ImageStack s2 = null;
+             if (arg.equals("right"))
+                 s2 = sp.rotateRight();
+             else
+                 s2 = sp.rotateLeft();
+             Calibration cal = imp.getCalibration();
+             imp.setStack(null, s2);
+             double pixelWidth = cal.pixelWidth;
+             cal.pixelWidth = cal.pixelHeight;
+             cal.pixelHeight = pixelWidth;
+             return;
+         }
+
+
+From ctrueden at wisc.edu  Thu Mar 21 13:39:05 2013
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Thu, 21 Mar 2013 13:39:05 -0500
+Subject: [ImageJ-devel] Regarding Preferences support for Multiple
+ Instances, Applications, and Versions
+In-Reply-To: <5148D509.2010008@mbl.edu>
+References: <5148D509.2010008@mbl.edu>
+Message-ID: <CADN69yk+scxnsFs8UTzV5JrQMWTZsD8EPZmDrjZqEuHSpRZhXw@mail.gmail.com>
+
+Hi Grant,
+
+Thanks for bringing up this issue. I have added a comment to the
+corresponding Trac ticket:
+
+    http://trac.imagej.net/ticket/1706
+
+Regards,
+Curtis
+
+
+On Tue, Mar 19, 2013 at 4:13 PM, Grant B. Harris <gharris at mbl.edu> wrote:
+
+> ImageJ2ers,
+>
+> We've recently run into the problem of having multiple versions of
+> MicroManager installed (for testing our plugins under different versions).
+>  This made me realize that there are some issues with ImageJ2 preferences
+> that we may want to address.
+>
+> Right now, Prefs are stored in the userRoot() by Class<?> and name.
+>
+> I don't think that this allows us to support any of these scenarios:
+> - multiple applications (that use the application framework)
+> - multiple versions of the same application
+> - multiple instances (contexts) of the same application
+>
+> I all of these cases, they will stomp on each other by reading/writing the
+> same Prefs.
+>
+>
+> I'd like to propose an extension to the Prefs mechanism which follows:
+>
+> When an application launches, if it does not find a node for itself
+> (applicationA/v2.0), it could optionally copy or translate the values from
+> an old version node (applicationA/v2.0).  The Prefs class could provide
+> some helper methods for this.  The Prefs nodes could be something like this:
+>
+> userRoot()
+>     /applicationA
+>         /v1.01
+>             /...
+>         /v1.02
+>             /...
+>      /applicationB
+>         /v2.0
+>             /...
+>
+> To deal with multiple instances (contexts) of the same application, it
+> might make sense to have the prefs stored by context (perhaps under a node
+> for application and a node for each version.  It seems that each instance
+> would need to have an identifier, and this identifier would need to be set
+> when the app. (re-)launches, perhaps using a command line argument.
+>
+> While less common, the ability to have multiple instances (contexts) of
+> the same application can be useful in two use cases I can think of: 1)
+> running instances running headless on a server, 2) having multiple users of
+> an application on the same OS user account (like 'guest').  A context
+> identifier would also enable separate prefs settings for these situations.
+>
+> Using context identifiers, perhaps the Prefs nodes could be something like
+> this:
+>
+> userRoot()
+>     /applicationA
+>         /v1.01
+>             /...
+>             /cID1
+>                 /...
+>         /v1.02
+>             /...
+>      /applicationB
+>         /v2.0
+>             /cID1
+>                 /...
+>             /cID2
+>                 /...
+>
+> For example, if a context identifier is provided, the app. would use the
+> nodes under /applicationA/v1.01/cID1... and if a context identifier is not
+> provided, the app. would use the nodes under /applicationA/v1.01/...
+>
+> Perhaps Prefs could be Contextual, and then use getTitle(), getVersion().
+> (For the context, I suppose one kluge would be to add something to the
+> Title...)
+>
+> There may be some related issues, e.g. in ConfigFileParameters, this is
+> hardcoded: CONFIG_FILE = "ImageJ.cfg";
+>
+> Thoughts?  Ideas?
+>
+> (I've added this as an issue ticket in TRAC.)
+>
+> -- Grant
+>
+>
+> ______________________________**_________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/**listinfo/imagej-devel<http://imagej.net/mailman/listinfo/imagej-devel>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130321/b81c5852/attachment.html>
+
+From bdezonia at gmail.com  Thu Mar 21 16:21:03 2013
+From: bdezonia at gmail.com (Barry DeZonia)
+Date: Thu, 21 Mar 2013 16:21:03 -0500
+Subject: [ImageJ-devel]
+	=?iso-8859-1?q?Calibration_bug_when_rotating_an_im?=
+	=?iso-8859-1?q?age_by_90=B0?=
+In-Reply-To: <514AD69D.5060503@arcor.de>
+References: <514AD69D.5060503@arcor.de>
+Message-ID: <CAKcvfuTr_CeUseYbkArbESQ7tre0gsOyWF0=Gp8piLxeUDbfoQ@mail.gmail.com>
+
+Hi Michael,
+
+This is the email list for ImageJ2 development. We are happy to help people
+with issues with ImageJ1 here as well when we can. But in general questions
+pertaining to ImageJ1 are best directed to the ImageJ1 mailing list (
+http://rsbweb.nih.gov/ij/list.html) as it will get read by many more people.
+
+In this case I think you want the ImageJ1 code changed which is something
+we don't have the access to do. You should bring your issue to the
+attention of the primary ImageJ1 developer Wayne Rasband by posting your
+question on the list I've referenced above.
+
+
+On Thu, Mar 21, 2013 at 4:45 AM, Michael Epping <m.epping at arcor.de> wrote:
+
+> Hello,
+> I hope this is the right address to report a small bug.
+>
+> Problem:
+> I use the calibration "Origin (pixels)" with different values for x and y.
+> When I rotate an image by 90?, pixel width and pixel height are swapped as
+> expected. But the origin stays the same.
+> The attached code shows that only cal.pixelWidth and cal.pixelHeight are
+> swapped but not cal.xOrigin and cal.yOrigin.
+>
+> Code:
+> ij.plugin.filter.Transformer
+>
+> public void run(ImageProcessor ip) {
+>         if (arg.equals("fliph")) {
+>             ip.flipHorizontal();
+>             return;
+>         }
+>         if (arg.equals("flipv")) {
+>             ip.flipVertical();
+>             return;
+>         }
+>         if (arg.equals("right") || arg.equals("left")) {
+>             StackProcessor sp = new StackProcessor(imp.getStack(), ip);
+>             ImageStack s2 = null;
+>             if (arg.equals("right"))
+>                 s2 = sp.rotateRight();
+>             else
+>                 s2 = sp.rotateLeft();
+>             Calibration cal = imp.getCalibration();
+>             imp.setStack(null, s2);
+>             double pixelWidth = cal.pixelWidth;
+>             cal.pixelWidth = cal.pixelHeight;
+>             cal.pixelHeight = pixelWidth;
+>             return;
+>         }
+>
+> ______________________________**_________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/**listinfo/imagej-devel<http://imagej.net/mailman/listinfo/imagej-devel>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130321/f352b482/attachment.html>
+
+From rasbandw at mail.nih.gov  Thu Mar 21 19:46:59 2013
+From: rasbandw at mail.nih.gov (Rasband, Wayne (NIH/NIMH) [E])
+Date: Thu, 21 Mar 2013 20:46:59 -0400
+Subject: [ImageJ-devel]
+ =?iso-8859-1?q?Calibration_bug_when_rotating_an_im?=
+ =?iso-8859-1?q?age_by_90=B0?=
+In-Reply-To: <514AD69D.5060503@arcor.de>
+References: <514AD69D.5060503@arcor.de>
+Message-ID: <BA39FEE1-06B5-4390-B651-AEBA59766ED7@nih.gov>
+
+On Mar 21, 2013, at 5:45 AM, Michael Epping wrote:
+
+> Hello,
+> I hope this is the right address to report a small bug.
+> 
+> Problem:
+> I use the calibration "Origin (pixels)" with different values for x and 
+> y. When I rotate an image by 90?, pixel width and pixel height are 
+> swapped as expected. But the origin stays the same.
+> The attached code shows that only cal.pixelWidth and cal.pixelHeight are 
+> swapped but not cal.xOrigin and cal.yOrigin.
+
+This bug is fixed in the ImageJ 1.47n daily build. Upgrade by using the Help>Update ImageJ command and selecting "daily build" from the drop down menu.
+
+-wayne
+
+
+Code:
+> ij.plugin.filter.Transformer
+> 
+> public void run(ImageProcessor ip) {
+>         if (arg.equals("fliph")) {
+>             ip.flipHorizontal();
+>             return;
+>         }
+>         if (arg.equals("flipv")) {
+>             ip.flipVertical();
+>             return;
+>         }
+>         if (arg.equals("right") || arg.equals("left")) {
+>             StackProcessor sp = new StackProcessor(imp.getStack(), ip);
+>             ImageStack s2 = null;
+>             if (arg.equals("right"))
+>                 s2 = sp.rotateRight();
+>             else
+>                 s2 = sp.rotateLeft();
+>             Calibration cal = imp.getCalibration();
+>             imp.setStack(null, s2);
+>             double pixelWidth = cal.pixelWidth;
+>             cal.pixelWidth = cal.pixelHeight;
+>             cal.pixelHeight = pixelWidth;
+>             return;
+>         }
+> 
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+
+
+
+From Johannes.Schindelin at gmx.de  Sat Mar 23 11:06:31 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Sat, 23 Mar 2013 17:06:31 +0100 (CET)
+Subject: [ImageJ-devel] Git-SVN woes on Jenkins
+Message-ID: <alpine.DEB.1.00.1303231703440.13747@s15462909.onlinehome-server.info>
+
+Hi all,
+
+very sorry if you got the flurry of mails to the imagej-builds list. The
+problem was two-pronged:
+
+1) The custom Git installation I installed (custom because I really like
+my additions to Git for Windows and do not want to miss them on Linux)
+misses the dependency on liberror-perl and libsvn-perl. Therefore, these
+two packages were removed when I uninstalled the previous git.
+
+2) Due to the SSH flooding prevention on fiji.sc, the Jenkins server was
+locked out after trying to push too often within the same minute. I added
+an exception for the Jenkins server.
+
+Again, my apologies,
+Dscho
+
+
+From Johannes.Schindelin at gmx.de  Mon Mar 25 10:30:44 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Mon, 25 Mar 2013 16:30:44 +0100 (CET)
+Subject: [ImageJ-devel] Fiji website down
+Message-ID: <alpine.DEB.1.00.1303251625400.13747@s15462909.onlinehome-server.info>
+
+Dear fellow scientists,
+
+our trusty Fiji server in Dresden is not so trusty anymore, but instead
+met its end.
+
+The name 'fiji.sc' will soon be resolved to the same computer that hosts
+the read-only Fiji Wiki mirror (which will soon be *the* Fiji Wiki):
+fiji.imagej.net. It might take a while until the DNS settings trickled
+through to you. In the meantime, please use http://fiji.imagej.net/
+
+For those of you who still have not updated their bookmarks from
+pacific.mpi-cbg.de to fiji.sc in all those years, this is the time to do
+so.
+
+Such things always happen at the most inconvenient time, and this is not
+an exception. Please bear with us, we will need a little bit of time to
+get things half-way back to normal.
+
+Ciao,
+Johannes
+
+P.S.: My major priority is to get the Fiji Wiki back up. The update site
+should be next. The developer resources might not come back at all.
+
+
+From saalfeld at mpi-cbg.de  Mon Mar 25 15:45:28 2013
+From: saalfeld at mpi-cbg.de (Stephan Saalfeld)
+Date: Mon, 25 Mar 2013 21:45:28 +0100
+Subject: [ImageJ-devel] [fiji-devel] Fiji website down
+In-Reply-To: <alpine.DEB.1.00.1303251625400.13747@s15462909.onlinehome-server.info>
+References: <alpine.DEB.1.00.1303251625400.13747@s15462909.onlinehome-server.info>
+Message-ID: <1364244328.2179.44.camel@saalfeld-thinkpad>
+
+Hi Johannes,
+
+just now it seems that the server is back and running perfectly fine.  I
+am therefore curious to know what `met its end' means exactly.  Is the
+machine broken?  If so which parts?  Or did it just have a hick-up,
+crashed and needed a person pressing the power button to restart?  The
+latter would probably enable a much smoother transition.
+
+Thanks for working on it and for any information on the matter.
+
+Cheers,
+Stephan
+
+
+
+
+On Mon, 2013-03-25 at 16:30 +0100, Johannes Schindelin wrote: 
+> Dear fellow scientists,
+> 
+> our trusty Fiji server in Dresden is not so trusty anymore, but instead
+> met its end.
+> 
+> The name 'fiji.sc' will soon be resolved to the same computer that hosts
+> the read-only Fiji Wiki mirror (which will soon be *the* Fiji Wiki):
+> fiji.imagej.net. It might take a while until the DNS settings trickled
+> through to you. In the meantime, please use http://fiji.imagej.net/
+> 
+> For those of you who still have not updated their bookmarks from
+> pacific.mpi-cbg.de to fiji.sc in all those years, this is the time to do
+> so.
+> 
+> Such things always happen at the most inconvenient time, and this is not
+> an exception. Please bear with us, we will need a little bit of time to
+> get things half-way back to normal.
+> 
+> Ciao,
+> Johannes
+> 
+> P.S.: My major priority is to get the Fiji Wiki back up. The update site
+> should be next. The developer resources might not come back at all.
+> 
+> -- 
+
+
+
+From Johannes.Schindelin at gmx.de  Mon Mar 25 16:28:32 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Mon, 25 Mar 2013 22:28:32 +0100 (CET)
+Subject: [ImageJ-devel] [fiji-devel] Fiji website down
+In-Reply-To: <1364244328.2179.44.camel@saalfeld-thinkpad>
+References: <alpine.DEB.1.00.1303251625400.13747@s15462909.onlinehome-server.info>
+	<1364244328.2179.44.camel@saalfeld-thinkpad>
+Message-ID: <alpine.DEB.1.00.1303252210210.13747@s15462909.onlinehome-server.info>
+
+Hi Stephan,
+
+On Mon, 25 Mar 2013, Stephan Saalfeld wrote:
+
+> just now it seems that the server is back and running perfectly fine.
+
+Thank you for this implicit praise! It really means a lot to me.
+
+> I am therefore curious to know what `met its end' means exactly.
+
+What you see as "fiji.sc" is now another computer. The old computer is
+gone. It won't boot up, its warranty has expired, we will never hear its
+lovely humm.
+
+The hard disk of pacific.mpi-cbg.de (which served fiji.sc for the past ~2
+years) is now in a different computer that is the new pacific.mpi-cbg.de.
+Back when the MPI-CBG had an image processing facility, first headed by
+Jean-Yves Tinevez, then by yours truly, and then by Daniel James White, it
+was quite clear on whose budget the machine ran. This is no longer clear,
+and therefore the new server is just a temporary solution, put in place
+very quickly and helpfully by Matt Boes of the MPI-CBG's IT department.
+
+To resolve this unclear situation, Curtis Rueden and me worked on getting
+the Wiki and a couple of developer resources back up and running on a
+server hosted at LOCI in Madison.
+
+> Is the machine broken?  If so which parts?  Or did it just have a
+> hick-up, crashed and needed a person pressing the power button to
+> restart?  The latter would probably enable a much smoother transition.
+
+As I said, the machine does not boot up anymore. The hard disk might have
+problems because some operations are really slow.
+
+> Thanks for working on it and for any information on the matter.
+
+You are welcome. And as I said, thank you so much for the kind words.
+
+Ciao,
+Johannes
+
+
+From saalfeld at mpi-cbg.de  Mon Mar 25 17:16:46 2013
+From: saalfeld at mpi-cbg.de (Stephan Saalfeld)
+Date: Mon, 25 Mar 2013 23:16:46 +0100
+Subject: [ImageJ-devel] [fiji-devel] Fiji website down
+In-Reply-To: <alpine.DEB.1.00.1303252210210.13747@s15462909.onlinehome-server.info>
+References: <alpine.DEB.1.00.1303251625400.13747@s15462909.onlinehome-server.info>
+	<1364244328.2179.44.camel@saalfeld-thinkpad>
+	<alpine.DEB.1.00.1303252210210.13747@s15462909.onlinehome-server.info>
+Message-ID: <1364249806.2179.55.camel@saalfeld-thinkpad>
+
+Hi Johannes,
+
+thanks for clarifying and for your hard work to getting back into
+operation.  It's been relieving for me to see that the data is
+accessible and in place, probably saving many of us from painfully
+collecting distributed bits and pieces.
+
+I don't remember to having said anything extraordinarily kind (probably
+one of your jokes---huh?).  But here it is:
+
+Thanks a lot to you, Curtis and Matt for the hard work to getting
+fiji.sc back.
+
+Cheers,
+Stephan
+
+
+
+
+On Mon, 2013-03-25 at 22:28 +0100, Johannes Schindelin wrote: 
+> Hi Stephan,
+> 
+> On Mon, 25 Mar 2013, Stephan Saalfeld wrote:
+> 
+> > just now it seems that the server is back and running perfectly fine.
+> 
+> Thank you for this implicit praise! It really means a lot to me.
+> 
+> > I am therefore curious to know what `met its end' means exactly.
+> 
+> What you see as "fiji.sc" is now another computer. The old computer is
+> gone. It won't boot up, its warranty has expired, we will never hear its
+> lovely humm.
+> 
+> The hard disk of pacific.mpi-cbg.de (which served fiji.sc for the past ~2
+> years) is now in a different computer that is the new pacific.mpi-cbg.de.
+> Back when the MPI-CBG had an image processing facility, first headed by
+> Jean-Yves Tinevez, then by yours truly, and then by Daniel James White, it
+> was quite clear on whose budget the machine ran. This is no longer clear,
+> and therefore the new server is just a temporary solution, put in place
+> very quickly and helpfully by Matt Boes of the MPI-CBG's IT department.
+> 
+> To resolve this unclear situation, Curtis Rueden and me worked on getting
+> the Wiki and a couple of developer resources back up and running on a
+> server hosted at LOCI in Madison.
+> 
+> > Is the machine broken?  If so which parts?  Or did it just have a
+> > hick-up, crashed and needed a person pressing the power button to
+> > restart?  The latter would probably enable a much smoother transition.
+> 
+> As I said, the machine does not boot up anymore. The hard disk might have
+> problems because some operations are really slow.
+> 
+> > Thanks for working on it and for any information on the matter.
+> 
+> You are welcome. And as I said, thank you so much for the kind words.
+> 
+> Ciao,
+> Johannes
+
+
+

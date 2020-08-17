@@ -1,0 +1,115 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] @parameter choice update in component callback
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%40parameter%20choice%20update%20in%20component%20callback&In-Reply-To=%3Cweb-159836040%40univ-paris7.fr%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002673.html">
+   <LINK REL="Next"  HREF="002675.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] @parameter choice update in component callback</H1>
+    <B>Adrian Daerr</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%40parameter%20choice%20update%20in%20component%20callback&In-Reply-To=%3Cweb-159836040%40univ-paris7.fr%3E"
+       TITLE="[ImageJ-devel] @parameter choice update in component callback">adrian.daerr at univ-paris-diderot.fr
+       </A><BR>
+    <I>Mon Aug 24 09:07:22 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002673.html">[ImageJ-devel] @parameter choice update in component callback
+</A></li>
+        <LI>Next message: <A HREF="002675.html">[ImageJ-devel] @parameter choice update in component callback
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2674">[ date ]</a>
+              <a href="thread.html#2674">[ thread ]</a>
+              <a href="subject.html#2674">[ subject ]</a>
+              <a href="author.html#2674">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Curtis,
+
+&gt;&gt;<i> I have parameters a, b, c whose initialisation depend on a common
+</I>&gt;&gt;<i> calculation (depending on the image gotten through a previous
+</I>&gt;&gt;<i> @Parameter ImagePlus imp): can I do this calculation in the
+</I>&gt;&gt;<i> initialiser for the first parameter a, and then in the initialisers 
+</I>&gt;&gt;<i> of b and c rely on the fact that the calculation was already done ?
+</I>&gt;<i> 
+</I>&gt;<i> Perhaps simplest at the moment would be to give your command a 
+</I>&gt;<i> global initializer -- i.e., set the initializer method in the
+</I>&gt;<i> @Plugin annotation itself, rather than on specific parameters.
+</I>&gt;<i> The ImagePlus will be populated by a preprocessor _before_ the
+</I>&gt;<i> initialize method is called, so when your global initializer gets
+</I>&gt;<i> called you will already have access to the ImagePlus.
+</I>
+Thanks for the suggestion, which almost does the job, except that the 
+initialization also depends on a parameter
+
+@Parameter(persist = false) private RectangleOverlay roi;
+
+which appears to be populated only after the initializer is called 
+(its value is null in the initializer and valid in the run() method).
+
+I am not sure how to solve this: do I have to write a Preprocessor of 
+some sorts, or can the initializer 'manually' call the code which 
+normally harvest the RectangleOverlay parameter later on ? Somehow the 
+fact that ImagePlus is populated by a Preprocessor but 
+RectangleOverlay isn't, seems linked to issues that I mentionned in 
+another post[1], but even after some reading of the tutorials and the 
+scijava source code around org.scijava.command.CommandInfo my 
+understanding of how the plugin initialisation works is still poor.
+
+[1]
+(e.g. that the Overlay appears in the harvesting dialog, or that an 
+Exception is thrown because of the overlay after command execution)
+<A HREF="http://imagej-devel.54429.x6.nabble.com/Masking-Parameter-from-GUI-harvesting-td1098.html">http://imagej-devel.54429.x6.nabble.com/Masking-Parameter-from-GUI-harvesting-td1098.html</A>
+
+&gt;<i> But again, scijava/scijava-common#181 is very relevant here.
+</I>
+Would it make sense to distinguish (by an annotation ?) parameters 
+that are to be initialized from the context (i.e. services, active 
+image, roi etc), and whose lack should be immediately fatal to the 
+plugin (no UI harvesting, and in exchange can be assumed final for the 
+rest of the command execution), from parameters that, if they cannot 
+be populated from already available data, should be harvested through 
+a dialog (and may change several times) ?
+
+cheers,
+Adrian
+
+</PRE>
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002673.html">[ImageJ-devel] @parameter choice update in component callback
+</A></li>
+	<LI>Next message: <A HREF="002675.html">[ImageJ-devel] @parameter choice update in component callback
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2674">[ date ]</a>
+              <a href="thread.html#2674">[ thread ]</a>
+              <a href="subject.html#2674">[ subject ]</a>
+              <a href="author.html#2674">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

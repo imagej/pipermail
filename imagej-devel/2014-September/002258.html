@@ -1,0 +1,216 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] importing custom &quot;uncompressed&quot; libraries (i.e., no JAR)
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20importing%20custom%20%22uncompressed%22%20libraries%20%28i.e.%2C%0A%20no%20JAR%29&In-Reply-To=%3CCADN69y%3DB%2BOT%3DDNQcs4B2w8mgOYiBqx09A4BPxYe1T4U2yrtLow%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002240.html">
+   <LINK REL="Next"  HREF="002226.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] importing custom &quot;uncompressed&quot; libraries (i.e., no JAR)</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20importing%20custom%20%22uncompressed%22%20libraries%20%28i.e.%2C%0A%20no%20JAR%29&In-Reply-To=%3CCADN69y%3DB%2BOT%3DDNQcs4B2w8mgOYiBqx09A4BPxYe1T4U2yrtLow%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] importing custom &quot;uncompressed&quot; libraries (i.e., no JAR)">ctrueden at wisc.edu
+       </A><BR>
+    <I>Tue Sep 30 11:33:50 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002240.html">[ImageJ-devel] importing custom &quot;uncompressed&quot; libraries (i.e.,	no JAR)
+</A></li>
+        <LI>Next message: <A HREF="002226.html">[ImageJ-devel] Maven TrackMate Dependency Question
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2258">[ date ]</a>
+              <a href="thread.html#2258">[ thread ]</a>
+              <a href="subject.html#2258">[ subject ]</a>
+              <a href="author.html#2258">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Gaetano,
+
+&gt;<i> I created a small example that requires my library
+</I>
+Thanks for the working example. I did some digging, and here is what I
+discovered:
+
+- Vanilla ImageJ1 does not have a &quot;jars/&quot; folder, so unpacking your JAR
+there would not work in that scenario.
+
+- Having an unpacked directory structure in &quot;plugins/&quot; _does_ work, though.
+
+- The reason it doesn't work in ImageJ2 is because ImageJ2 recursively adds
+all subdirectories of all classpath directory elements to the effective
+classpath of the plugin class loader.
+
+- I discussed with Johannes, and he decided not to support unpacked class
+files anymore [1].
+
+Personally, I think there is a bug lurking there -- probably only the
+&quot;plugins/&quot; folder should have the recursive behavior described above -- but
+it is an edge case which we do not have time to fix right now. However, if
+you feel strongly about the issue, you are very welcome to submit a pull
+request addressing it!
+
+Otherwise, I'd encourage you to switch to an IDE, and/or JAR-based
+development model. Let us know if you need further guidance with it. See
+also: <A HREF="http://imagej.net/Development">http://imagej.net/Development</A>
+
+Regards,
+Curtis
+
+[1]
+<A HREF="http://code.imagej.net/chatlogs/imagejdev?times=prefix&amp;start-date=2014-09-26&amp;start-time=1500&amp;end-date=2014-09-26&amp;end-time=1700">http://code.imagej.net/chatlogs/imagejdev?times=prefix&amp;start-date=2014-09-26&amp;start-time=1500&amp;end-date=2014-09-26&amp;end-time=1700</A>
+
+On Tue, Sep 16, 2014 at 4:54 AM, Gaetano Impoco &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">gaetano at impoco.it</A>&gt; wrote:
+
+&gt;<i> Hi Curtis,
+</I>&gt;<i>
+</I>&gt;<i> &gt; Could you please provide a minimal, complete, verifiable example
+</I>&gt;<i> &gt; demonstrating the issue?
+</I>&gt;<i>
+</I>&gt;<i> I created a small example that requires my library (please, download it at
+</I>&gt;<i> <A HREF="http://www.impoco.it/files/gijLib.jar">http://www.impoco.it/files/gijLib.jar</A>)
+</I>&gt;<i>
+</I>&gt;<i> -------------
+</I>&gt;<i>
+</I>&gt;<i> import ij.*;
+</I>&gt;<i> import ij.process.*;
+</I>&gt;<i> import ij.plugin.filter.*;
+</I>&gt;<i> import java.awt.*;
+</I>&gt;<i> import java.awt.geom.*;
+</I>&gt;<i> import gijlib.binary.*;
+</I>&gt;<i> import gijlib.geom.*;
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> public class Example_ implements PlugInFilter
+</I>&gt;<i> {
+</I>&gt;<i>   public int setup(String arg, ImagePlus imp)
+</I>&gt;<i>   {
+</I>&gt;<i>     return DOES_8G;
+</I>&gt;<i>   }
+</I>&gt;<i>
+</I>&gt;<i>   public void run(ImageProcessor ip)
+</I>&gt;<i>   {
+</I>&gt;<i>     ContourFollower cf = new ContourFollower(ip);
+</I>&gt;<i>     if(cf.getNContours() != 1)
+</I>&gt;<i>     {
+</I>&gt;<i>       IJ.error(&quot;The input image should contain one and only one
+</I>&gt;<i> object!\nFound
+</I>&gt;<i> &quot;+cf.getNContours());
+</I>&gt;<i>       return;
+</I>&gt;<i>     }
+</I>&gt;<i>
+</I>&gt;<i>     Point[] contour = cf.getContour(0);
+</I>&gt;<i>     Point2D cHull[] = ConvexHull.grahamsScan(contour);
+</I>&gt;<i>
+</I>&gt;<i>     Line2D  diam    = PolygonUtilities.computeDiameter(cHull);
+</I>&gt;<i>     Line2D  odiam   = PolygonUtilities.computeOrthogonalDiameter(cHull,
+</I>&gt;<i> diam);
+</I>&gt;<i>     OrientedRectangle obbox = PolygonUtilities.computeBoundingRect(diam,
+</I>&gt;<i> odiam);
+</I>&gt;<i>   }
+</I>&gt;<i>
+</I>&gt;<i> }
+</I>&gt;<i>
+</I>&gt;<i> -------------
+</I>&gt;<i>
+</I>&gt;<i> When I put gijLib.jar in the &quot;jars&quot; directory and compile this class using
+</I>&gt;<i> the
+</I>&gt;<i> --javac option of the ij2 launcher, everything is ok. When I uncompress
+</I>&gt;<i> the JAR
+</I>&gt;<i> file into the &quot;jars&quot; directory, the compiler cannot find the classes in the
+</I>&gt;<i> library.
+</I>&gt;<i>
+</I>&gt;<i> Moreover, if I try to run a plugin that includes a class in the same
+</I>&gt;<i> directory
+</I>&gt;<i> (but not using packages) the compiler fails, as well. I avoid this problem
+</I>&gt;<i> using the option --class-path $HOME/Fiji.app/jars/
+</I>&gt;<i>
+</I>&gt;<i> Hope I gave enough information.
+</I>&gt;<i>
+</I>&gt;<i> Thank you
+</I>&gt;<i> Gaetano
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Quoting Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt;:
+</I>&gt;<i>
+</I>&gt;<i> &gt; Hi Gaetano,
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; &gt; In my brand new Fiji installation, I can import my library only if I
+</I>&gt;<i> &gt; &gt; archive all .class files into a JAR file.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; IIUC, what you describe is still supposed to work.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; <A HREF="http://imagej.net/Bug_reporting_best_practices">http://imagej.net/Bug_reporting_best_practices</A>
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Regards,
+</I>&gt;<i> &gt; Curtis
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; On Fri, Sep 12, 2014 at 6:05 AM, Gaetano Impoco &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">gaetano at impoco.it</A>&gt;
+</I>&gt;<i> wrote:
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; &gt; Dear all,
+</I>&gt;<i> &gt; &gt; I developed a custom library for my own convenience that used to work
+</I>&gt;<i> in
+</I>&gt;<i> &gt; &gt; ImageJ1.x. In my old IJ1 installation I used to add the library root
+</I>&gt;<i> &gt; &gt; directory
+</I>&gt;<i> &gt; &gt; to the Java CLASSPATH (using a simple bash script).
+</I>&gt;<i> &gt; &gt; In my brand new Fiji installation, I can import my library only if I
+</I>&gt;<i> &gt; &gt; archive all
+</I>&gt;<i> &gt; &gt; .class files into a JAR file. I would like to use JARs only for
+</I>&gt;<i> &gt; &gt; deployment. Is
+</I>&gt;<i> &gt; &gt; there any way to include the &quot;uncompressed&quot; (development version)
+</I>&gt;<i> library?
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> &gt; &gt; Thank you
+</I>&gt;<i> &gt; &gt; Gaetano
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> &gt; &gt; _______________________________________________
+</I>&gt;<i> &gt; &gt; ImageJ-devel mailing list
+</I>&gt;<i> &gt; &gt; <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> &gt; &gt; <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> &gt;
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140930/5f7abfaa/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20140930/5f7abfaa/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002240.html">[ImageJ-devel] importing custom &quot;uncompressed&quot; libraries (i.e.,	no JAR)
+</A></li>
+	<LI>Next message: <A HREF="002226.html">[ImageJ-devel] Maven TrackMate Dependency Question
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2258">[ date ]</a>
+              <a href="thread.html#2258">[ thread ]</a>
+              <a href="subject.html#2258">[ subject ]</a>
+              <a href="author.html#2258">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

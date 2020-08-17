@@ -1,0 +1,122 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] JHotDrawImageCanvas' +5 problem,	was Re: Maven 3 support
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20JHotDrawImageCanvas%27%20%2B5%20problem%2C%0A%09was%20Re%3A%20Maven%203%20support&In-Reply-To=%3CCADN69ym3%2BANC9%2B1%3Db36o2jVsuMu9aVyYYkS3afLww7R6drLXzA%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000608.html">
+   <LINK REL="Next"  HREF="000612.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] JHotDrawImageCanvas' +5 problem,	was Re: Maven 3 support</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20JHotDrawImageCanvas%27%20%2B5%20problem%2C%0A%09was%20Re%3A%20Maven%203%20support&In-Reply-To=%3CCADN69ym3%2BANC9%2B1%3Db36o2jVsuMu9aVyYYkS3afLww7R6drLXzA%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] JHotDrawImageCanvas' +5 problem,	was Re: Maven 3 support">ctrueden at wisc.edu
+       </A><BR>
+    <I>Thu Mar  1 15:27:05 CST 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000608.html">[ImageJ-devel] Jenkins build is back to normal : ImageJ #2788
+</A></li>
+        <LI>Next message: <A HREF="000612.html">[ImageJ-devel] [fiji-devel] saving images with imglib2-io
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#611">[ date ]</a>
+              <a href="thread.html#611">[ thread ]</a>
+              <a href="subject.html#611">[ subject ]</a>
+              <a href="author.html#611">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Dscho,
+
+However, JHotDrawImageCanvas actually contains a _JScrollPane_ whose
+&gt;<i> JViewport contains the DrawingView. And I strongly suggest that that
+</I>&gt;<i> JViewport has insets, defaulting to (2,2,2,2) or some such.
+</I>&gt;<i>
+</I>
+I changed the hack to be +1 pixel from the scroll pane size, which should
+hopefully be less sensitive to platform issues.
+
+  <A HREF="http://trac.imagej.net/changeset/5011">http://trac.imagej.net/changeset/5011</A>
+
+But it's still a hack, and unlike your change does not do anything about
+the menu bar.
+
+-Curtis
+
+
+On Tue, Feb 28, 2012 at 5:23 PM, Johannes Schindelin &lt;
+<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">Johannes.Schindelin at gmx.de</A>&gt; wrote:
+
+&gt;<i> Hi,
+</I>&gt;<i>
+</I>&gt;<i> On Tue, 28 Feb 2012, Curtis Rueden wrote:
+</I>&gt;<i>
+</I>&gt;<i> &gt; &gt; &gt; The crappy scroll bars have been a continuing nuisance. I think it
+</I>&gt;<i> &gt; &gt; &gt; may be a bug in JHotDraw.
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> &gt; &gt; Heh, I thought so, too... See: <A HREF="http://trac.imagej.net/ticket/1025">http://trac.imagej.net/ticket/1025</A>
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Does your fix eliminate the need for the &quot;+5 pixels&quot; hack then?
+</I>&gt;<i>
+</I>&gt;<i> I doubt it. My fix only triggers a re-layout after adding the menu bar (it
+</I>&gt;<i> does not even force an invalidation, so on Mac it actually does not change
+</I>&gt;<i> the layout at all).
+</I>&gt;<i>
+</I>&gt;<i> But let me try...
+</I>&gt;<i>
+</I>&gt;<i> *clicketyclick*
+</I>&gt;<i>
+</I>&gt;<i> Okay, it does not fix the problem.
+</I>&gt;<i>
+</I>&gt;<i> But reading the code, I have a hunch what is going wrong.
+</I>&gt;<i> JHotDrawImageCanvas overrides getPreferredSize() and returns the
+</I>&gt;<i> dimensions of the contained DrawingView's preferred size, enlarged by
+</I>&gt;<i> (5,5).
+</I>&gt;<i>
+</I>&gt;<i> However, JHotDrawImageCanvas actually contains a _JScrollPane_ whose
+</I>&gt;<i> JViewport contains the DrawingView. And I strongly suggest that that
+</I>&gt;<i> JViewport has insets, defaulting to (2,2,2,2) or some such.
+</I>&gt;<i>
+</I>&gt;<i> One thing that changes something is if I add this call just after
+</I>&gt;<i> instantiating the JScrollPane:
+</I>&gt;<i>
+</I>&gt;<i>        scrollPane.setBorder(new EmptyBorder(0, 0, 0, 0));
+</I>&gt;<i>
+</I>&gt;<i> Now I only need to add 1 per dimension...
+</I>&gt;<i>
+</I>&gt;<i> Leaving it as-is for now.
+</I>&gt;<i>
+</I>&gt;<i> Ciao,
+</I>&gt;<i> Dscho
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20120301/743ab654/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20120301/743ab654/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000608.html">[ImageJ-devel] Jenkins build is back to normal : ImageJ #2788
+</A></li>
+	<LI>Next message: <A HREF="000612.html">[ImageJ-devel] [fiji-devel] saving images with imglib2-io
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#611">[ date ]</a>
+              <a href="thread.html#611">[ thread ]</a>
+              <a href="subject.html#611">[ subject ]</a>
+              <a href="author.html#611">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

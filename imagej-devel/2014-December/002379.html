@@ -1,0 +1,770 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] How do I Perform an Image Convolution?
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20How%20do%20I%20Perform%20an%20Image%20Convolution%3F&In-Reply-To=%3C5E32D968-723A-4750-8E53-ABB75E6CCEE1%40dsuk.biz%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002378.html">
+   <LINK REL="Next"  HREF="002356.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] How do I Perform an Image Convolution?</H1>
+    <B>Michael Ellis</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20How%20do%20I%20Perform%20an%20Image%20Convolution%3F&In-Reply-To=%3C5E32D968-723A-4750-8E53-ABB75E6CCEE1%40dsuk.biz%3E"
+       TITLE="[ImageJ-devel] How do I Perform an Image Convolution?">michael.ellis at dsuk.biz
+       </A><BR>
+    <I>Fri Dec 19 02:45:05 CST 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002378.html">[ImageJ-devel] How do I Perform an Image Convolution?
+</A></li>
+        <LI>Next message: <A HREF="002356.html">[ImageJ-devel] [fiji-devel] moving to Java 7
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2379">[ date ]</a>
+              <a href="thread.html#2379">[ thread ]</a>
+              <a href="subject.html#2379">[ subject ]</a>
+              <a href="author.html#2379">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Dear Curtis,
+
+Thank you for your reply. It will be a couple of days before I am working on this again but thanks for the pointers.
+
+&#8212; Michael Ellis
+On 18 Dec 2014, at 22:28, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at WISC.EDU</A>&gt; wrote:
+
+&gt;<i> Hi Michael,
+</I>&gt;<i> 
+</I>&gt;<i> &gt; The Example6c has not been updated to reflect the new way of doing
+</I>&gt;<i> &gt; things.
+</I>&gt;<i> 
+</I>&gt;<i> Indeed. If you end up updating it, a pull request to that effect would be most welcome!
+</I>&gt;<i> 
+</I>&gt;<i> &gt; You previously pointed me at the ImageJ OPS library. Is that th best
+</I>&gt;<i> &gt; way of achieving the convolution?
+</I>&gt;<i> 
+</I>&gt;<i> The most future-proof, in that OPS is the direction we are going. However, at this point in time it won't be the smoothest ride, since the OPS library is still in incubation.
+</I>&gt;<i> 
+</I>&gt;<i> Furthermore, the main OPS convolve routine leans on the ImgLib2 FFTConvolution implementation, so if all you need is the low-level function, then OPS is probably not necessary for you.
+</I>&gt;<i> 
+</I>&gt;<i> &gt; [INFO] Restricted to JDK 1.6 yet com.sun:tools:jar:1.4.2:system
+</I>&gt;<i> &gt; contains com/sun/codemodel/internal/ClassType.class targeted to JDK
+</I>&gt;<i> &gt; 1.8
+</I>&gt;<i> 
+</I>&gt;<i> This was a bug in the Maven build configuration, addressed earlier this week. Should work with the latest master.
+</I>&gt;<i> 
+</I>&gt;<i> &gt; So what are the minimal hoops I need to jump though to setup ops such
+</I>&gt;<i> &gt; that the code below will compile? (I want to avoid dragging in any
+</I>&gt;<i> &gt; ImageJ 1 legacy code)
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt;         Img&lt;FloatType&gt; result = image.copy();
+</I>&gt;<i> &gt;         Op op = ops.op(&quot;convolve&quot;, result, image, templateInverse);
+</I>&gt;<i> 
+</I>&gt;<i> OPS does not depend on ImageJ1. (The only ImageJ2 component that does is called imagej-legacy, and is expressly for the purpose of backwards compatibility.)
+</I>&gt;<i> 
+</I>&gt;<i> Easiest would be to start with the &quot;using-ops&quot; tutorial project, and edit the code from there.
+</I>&gt;<i> 
+</I>&gt;<i> <A HREF="https://github.com/imagej/imagej-tutorials/tree/31a5771277682e5f1ef45112094d147539dc4bc7/using-ops">https://github.com/imagej/imagej-tutorials/tree/31a5771277682e5f1ef45112094d147539dc4bc7/using-ops</A>
+</I>&gt;<i> 
+</I>&gt;<i> FTR, you can invoke the routine with something like:
+</I>&gt;<i> 
+</I>&gt;<i>     Object result = ops.convolve(image, templateInverse);
+</I>&gt;<i> 
+</I>&gt;<i> However, in attempting a quick test of the convolve routine, I ran into some obstacles with the current code. My advice at the moment is to just use FFTConvolution directly for your needs.
+</I>&gt;<i> 
+</I>&gt;<i> &gt; For the record, I am suspicious about Java annotations!
+</I>&gt;<i> 
+</I>&gt;<i> I agree with your concerns: they do unfortunately obfuscate the execution flow. However, they also bring many advantages. In particular, the way we are using them provides: 1) a dependency injection mechanism without the need for any external configuration files; and 2) a very succinct syntax for parameterized commands. We are shooting for DRY (&quot;Don't Repeat Yourself&quot;) code here [1], not just in the core, but particularly for plugin developers [2].
+</I>&gt;<i> 
+</I>&gt;<i> I think the best way to counter the mystery surrounding the inner workings is to thoroughly document how things work.
+</I>&gt;<i> 
+</I>&gt;<i> Regards,
+</I>&gt;<i> Curtis
+</I>&gt;<i> 
+</I>&gt;<i> P.S. Related to FFTConvolution, see also these issues:
+</I>&gt;<i> * <A HREF="https://github.com/imglib/imglib2-algorithm-fft/pull/1">https://github.com/imglib/imglib2-algorithm-fft/pull/1</A>
+</I>&gt;<i> * <A HREF="https://github.com/imglib/imglib2/issues/61">https://github.com/imglib/imglib2/issues/61</A>
+</I>&gt;<i> * <A HREF="https://github.com/imagej/imagej-ops/issues/12">https://github.com/imagej/imagej-ops/issues/12</A>
+</I>&gt;<i> 
+</I>&gt;<i> [1] <A HREF="http://imagej.net/Philosophy#Convention_over_configuration">http://imagej.net/Philosophy#Convention_over_configuration</A>
+</I>&gt;<i> [2] Example: <A HREF="http://curtis.imagej.net/2013-03-15-imagej-research-paper/plugin-comparison.png">http://curtis.imagej.net/2013-03-15-imagej-research-paper/plugin-comparison.png</A>
+</I>&gt;<i> 
+</I>&gt;<i> On Wed, Dec 10, 2014 at 1:09 PM, Michael Ellis &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">michael.ellis at dsuk.biz</A>&gt; wrote:
+</I>&gt;<i> Curtis,
+</I>&gt;<i> 
+</I>&gt;<i> Thanks for this reply and I am now turning my attention to use of the FFT. 
+</I>&gt;<i> 
+</I>&gt;<i> It seems the FFT was moved from imglib2-algorithm to imglib2-algorithm-fft (due I think to licensing issues).
+</I>&gt;<i> 
+</I>&gt;<i> I need to achieve what is done in imglib2-tutorials/Example6c.java at master &#183; imglib/imglib2-tutorials
+</I>&gt;<i> 
+</I>&gt;<i> The Example6c has not been updated to reflect the new way of doing things. If I clone the imglib/imglib2-tutorials project I see the following are all deprecated.
+</I>&gt;<i> 
+</I>&gt;<i> import net.imglib2.algorithm.fft.FourierConvolution;
+</I>&gt;<i> import net.imglib2.algorithm.fft.FourierTransform;
+</I>&gt;<i> import net.imglib2.algorithm.fft.InverseFourierTransform;
+</I>&gt;<i> 
+</I>&gt;<i> I have managed to make progress and think I have got fourier and inverse fourier transforms working. So that just leaves the convolution.
+</I>&gt;<i> 
+</I>&gt;<i> You previously pointed me at the ImageJ OPS library. Is that th best way of achieving the convolution?
+</I>&gt;<i> 
+</I>&gt;<i> The ImageJ OPS example however depends on ImageJ. The ImageJ OPS test programs don&#8217;t help me either since the test classes do some magic wizardry that I do not understand at all i.e. with Contexts, Java annotations and some injection stuff.
+</I>&gt;<i> 
+</I>&gt;<i> So what are the minimal hoops I need to jump though to setup ops such that the code below will compile? (I want to avoid dragging in any ImageJ 1 legacy code)
+</I>&gt;<i> 
+</I>&gt;<i>         Img&lt;FloatType&gt; result = image.copy(); 
+</I>&gt;<i>         Op op = ops.op(&quot;convolve&quot;, result, image, templateInverse);
+</I>&gt;<i> 
+</I>&gt;<i> Also in downloading the ImageJ-Ops project and running maven compile, I get the following. I realise that I am at Java8 and that might be jumping the gun a bit, but Java 6 is well past its sell by date and if you are on a new Apple Mac, Java 6 is not a comfortable option.
+</I>&gt;<i> 
+</I>&gt;<i> [INFO] Restricted to JDK 1.6 yet com.sun:tools:jar:1.4.2:system contains com/sun/codemodel/internal/ClassType.class targeted to JDK 1.8
+</I>&gt;<i> [WARNING] Rule 1: org.apache.maven.plugins.enforcer.EnforceBytecodeVersion failed with message:
+</I>&gt;<i> Found Banned Dependency: com.sun:tools:jar:1.4.2
+</I>&gt;<i> 
+</I>&gt;<i> For the record, I am suspicious about Java annotations! *For me at least* They fro not help with trying to understand code as I cannot make out how to call the code in question. The feel rather like something layered on top of a language rather than an intrinsic built in.  They give me that uncomfortable feeling that C++ Standard Template Library did - and that gave me nightmares when it came time to debug code.
+</I>&gt;<i> 
+</I>&gt;<i> Thanks in anticipation of any light you can throw into my darkness!
+</I>&gt;<i> 
+</I>&gt;<i> &#8212; Michael Ellis
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i>  
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> On 5 Dec 2014, at 18:31, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at WISC.EDU</A>&gt; wrote:
+</I>&gt;<i> 
+</I>&gt;&gt;<i> Hi Michael,
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> &gt; It looks like there is a new FFT but the tutorials use the older
+</I>&gt;&gt;<i> &gt; version. 
+</I>&gt;&gt;<i> &gt; 
+</I>&gt;&gt;<i> &gt; What should I go with?
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> The library for doing FFT is imglib2-algorithm-fft:
+</I>&gt;&gt;<i>     <A HREF="https://github.com/imglib/imglib2-algorithm-fft">https://github.com/imglib/imglib2-algorithm-fft</A>
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> Regarding the &quot;new FFT&quot;, perhaps you refer to this?
+</I>&gt;&gt;<i>     <A HREF="https://github.com/imglib/imglib2-algorithm-fft/pull/1">https://github.com/imglib/imglib2-algorithm-fft/pull/1</A>
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> At the moment there are licensing issues with imglib2-algorithm-fft (it depends on the Mines JTK library which has a license incompatible with GPL). That PR addresses the issues by using the JTransforms library instead.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> You also might want to consider using the higher level ImageJ OPS library:
+</I>&gt;&gt;<i>     <A HREF="https://github.com/imagej/imagej-ops">https://github.com/imagej/imagej-ops</A>
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> Thanks to the efforts of Brian Northan, we are about to merge an OP wrapper for FFT:
+</I>&gt;&gt;<i>     <A HREF="https://github.com/imagej/imagej-ops/pull/76">https://github.com/imagej/imagej-ops/pull/76</A>
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> Note that these components are still in the 0.x incubation phase, meaning they do not have stable APIs. That said, we would really appreciate early adopters who can try out the code and help drive things in the right direction.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> We will be reviewing and merging these improvements over the next few days, then cutting new releases of imglib2-algorithm-fft and imagej-ops. At that point, it should be easier for you to try them out.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> The relevant tutorials are based on imglib2-algorithm-fft:
+</I>&gt;&gt;<i>     <A HREF="https://github.com/imglib/imglib2-tutorials/blob/929de9b7482c312ff9c51ab52aa632779ef058f3/src/main/java/Example6b.java">https://github.com/imglib/imglib2-tutorials/blob/929de9b7482c312ff9c51ab52aa632779ef058f3/src/main/java/Example6b.java</A>
+</I>&gt;&gt;<i>     <A HREF="https://github.com/imglib/imglib2-tutorials/blob/929de9b7482c312ff9c51ab52aa632779ef058f3/src/main/java/Example6c.java">https://github.com/imglib/imglib2-tutorials/blob/929de9b7482c312ff9c51ab52aa632779ef058f3/src/main/java/Example6c.java</A>
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> And IIUC the changes above are internal so the tutorial code should not requiring updating (beyond an update to the version of imglib2-algorithm-fft in the POM, of course).
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> Regards,
+</I>&gt;&gt;<i> Curtis
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> On Fri, Dec 5, 2014 at 12:21 PM, Michael Ellis &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">michael.ellis at dsuk.biz</A>&gt; wrote:
+</I>&gt;&gt;<i> Once again, Curtis
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> I really appreciate your help with this.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> Next questions on the horizon will involve the ImgLib2 algorithm FFT classes. It looks like there is a new FFT but the tutorials use the older version. 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> What should I go with?
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> My aim is build an application, which as part of it will be doing image alignment using FFT phase correlation.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> Regards &#8212; Michael Ellis
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> On 5 Dec 2014, at 18:13, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt; wrote:
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> Hi Michael,
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> &gt; gives me a self contained runnable jar. Progress! I&#8217;m learning.
+</I>&gt;&gt;&gt;<i> &gt; 
+</I>&gt;&gt;&gt;<i> &gt; BUT as before when I run the jar, I get the Exception: No compatible
+</I>&gt;&gt;&gt;<i> &gt; service: org.scijava.service.SciJavaService
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> Self contained runnable JARs (i.e., uber-jars) are convenient in some ways, but come with a host of problems.
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> 1) If you do not shade your dependencies (i.e., rename their packages), then you may ship duplicate and/or incompatible classes with other libraries. This makes your library much harder to reuse in a shared system such as an ImageJ installation.
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> 2) You cannot ship piecemeal updates to individual dependencies -- i.e., every time your code changes, you must ship a new (possibly very large) new JAR file to your users.
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> 3) The SciJava annotation processor, responsible for indexing the @Plugin annotations that drive SciJava/ImageJ2/etc. plugins, writes the metadata into a resource file at META-INF/json/org.scijava.plugin.Plugin within the JAR. If you try to create an uber-jar via the assembly or shade plugin, the default combination algorithm will overwrite those files, stomping the annotations.
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> We wrote some code which offers one way around this:
+</I>&gt;&gt;&gt;<i>    <A HREF="https://github.com/imagej/imagej/blob/imagej-2.0.0-rc-17/pom.xml#L614-L631">https://github.com/imagej/imagej/blob/imagej-2.0.0-rc-17/pom.xml#L614-L631</A>
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> For more on uber-jars, see also:
+</I>&gt;&gt;&gt;<i>    <A HREF="http://imagej.net/Frequently_Asked_Questions#How_can_I_call_ImageJ_from_my_software.3F">http://imagej.net/Frequently_Asked_Questions#How_can_I_call_ImageJ_from_my_software.3F</A>
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> The gist is: avoid using an uber-jar unless you really need it.
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> &gt; I&#8217;ve got it working with your help!
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> Awesome, congratulations. Let us know if you encounter any more roadblocks.
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> Regards,
+</I>&gt;&gt;&gt;<i> Curtis
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> On Fri, Dec 5, 2014 at 12:03 PM, Michael Ellis &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">michael.ellis at dsuk.biz</A>&gt; wrote:
+</I>&gt;&gt;&gt;<i> Adding a build section to the POM:
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i>   &lt;build&gt;
+</I>&gt;&gt;&gt;<i>     &lt;plugins&gt;
+</I>&gt;&gt;&gt;<i>       &lt;plugin&gt;
+</I>&gt;&gt;&gt;<i>         &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+</I>&gt;&gt;&gt;<i>         &lt;artifactId&gt;maven-shade-plugin&lt;/artifactId&gt;
+</I>&gt;&gt;&gt;<i>         &lt;version&gt;2.3&lt;/version&gt;
+</I>&gt;&gt;&gt;<i>         &lt;executions&gt;
+</I>&gt;&gt;&gt;<i>           &lt;execution&gt;
+</I>&gt;&gt;&gt;<i>             &lt;phase&gt;package&lt;/phase&gt;
+</I>&gt;&gt;&gt;<i>             &lt;goals&gt;
+</I>&gt;&gt;&gt;<i>               &lt;goal&gt;shade&lt;/goal&gt;
+</I>&gt;&gt;&gt;<i>             &lt;/goals&gt;
+</I>&gt;&gt;&gt;<i>             &lt;configuration&gt;
+</I>&gt;&gt;&gt;<i>               &lt;transformers&gt;
+</I>&gt;&gt;&gt;<i>                 &lt;transformer implementation=&quot;org.apache.maven.plugins.shade.resource.ManifestResourceTransformer&quot;&gt;
+</I>&gt;&gt;&gt;<i>                   &lt;manifestEntries&gt;
+</I>&gt;&gt;&gt;<i>                     &lt;Main-Class&gt;com.mycompany.app.App&lt;/Main-Class&gt;
+</I>&gt;&gt;&gt;<i>                     &lt;Build-Number&gt;123&lt;/Build-Number&gt;
+</I>&gt;&gt;&gt;<i>                   &lt;/manifestEntries&gt;
+</I>&gt;&gt;&gt;<i>                 &lt;/transformer&gt;
+</I>&gt;&gt;&gt;<i>               &lt;/transformers&gt;
+</I>&gt;&gt;&gt;<i>             &lt;/configuration&gt;
+</I>&gt;&gt;&gt;<i>           &lt;/execution&gt;
+</I>&gt;&gt;&gt;<i>         &lt;/executions&gt;
+</I>&gt;&gt;&gt;<i>       &lt;/plugin&gt;
+</I>&gt;&gt;&gt;<i>     &lt;/plugins&gt;
+</I>&gt;&gt;&gt;<i>   &lt;/build&gt;
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> To the POM gives me a self contained runnable jar. Progress! I&#8217;m learning.
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> BUT as before when I run the jar, I get the Exception: No compatible service: org.scijava.service.SciJavaService
+</I>&gt;&gt;&gt;<i> =================================================================
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> [Michaels-Retina:~/temp/deleteme/my-app] michaelellis% java -jar target/my-app-1.0-SNAPSHOT.jar 
+</I>&gt;&gt;&gt;<i> Hello World!
+</I>&gt;&gt;&gt;<i> Exception: No compatible service: org.scijava.service.SciJavaService
+</I>&gt;&gt;&gt;<i> =================================================================
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> Still vexed!
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> On 5 Dec 2014, at 17:17, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt; wrote:
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> Hi Michael,
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> &gt; mvn claims to build everything OK
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> Yep, it did build successfully.
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> &gt; % java -cp target/my-app-1.0-SNAPSHOT.jar com.mycompany.app.App
+</I>&gt;&gt;&gt;&gt;<i> &gt; Error: A JNI error has occurred, please check your installation and try again
+</I>&gt;&gt;&gt;&gt;<i> &gt; Exception in thread &quot;main&quot; java.lang.NoClassDefFoundError: io/scif/SCIFIO
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> Maven is primarily a build tool. It puts the correct JARs on your classpath at compile time. In your case, that is scifio-0.17.1.jar and its dependencies.
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> However, the way you are launching your program is not putting the required dependencies on the classpath. You put only my-app-1.0-SNAPSHOT.jar on the classpath, and its dependencies are missing. So of course Java cannot find the needed classes.
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> The gist is: it is your responsibility to assemble the dependencies and ensure they are on the classpath somehow when you launch your application.
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> There are several ways to accomplish this. Here is one generally useful way using Maven, which does not assume you are doing anything ImageJ-related:
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i>     $ mvn dependency:copy-dependencies
+</I>&gt;&gt;&gt;&gt;<i>     $ java -cp 'target/my-app-1.0-SNAPSHOT.jar:target/dependency/*' com.mycompany.app.App
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> The &quot;copy-dependencies&quot; goal copies all the JAR files needed by your program into the target/dependency folder, for easy subsequent consumption.
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> Alternately, the &quot;ImageJ way&quot; of dealing with deployment is to ship all needed dependencies in the &quot;jars&quot; folder of your ImageJ application. We created a Maven goal for this too, which you can use as follows:
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i>     $ mvn -Dimagej.app.directory=/Applications/ImageJ.app -Ddelete.other.versions=true
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> Which will copy your JAR and its dependencies into your ImageJ installation at /Applications/ImageJ.app. But note that in order for this goal to work, you must extend the pom-imagej parent (see <A HREF="https://github.com/imagej/minimal-ij1-plugin">https://github.com/imagej/minimal-ij1-plugin</A> for an example).
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> A third solution is to use the exec-maven-plugin to launch your application directly using Maven. E.g.: <A HREF="https://github.com/imagej/imagej/blob/imagej-2.0.0-rc-17/pom.xml#L255-L278">https://github.com/imagej/imagej/blob/imagej-2.0.0-rc-17/pom.xml#L255-L278</A>
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> Regards,
+</I>&gt;&gt;&gt;&gt;<i> Curtis
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> On Fri, Dec 5, 2014 at 11:03 AM, Michael Ellis &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">michael.ellis at dsuk.biz</A>&gt; wrote:
+</I>&gt;&gt;&gt;&gt;<i> Curtis,
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> Thanks but it is still not working.
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> I have cut out using NetBeans and am now just using the CLI and a text editor. 
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> POM as follows:
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> ========================================================
+</I>&gt;&gt;&gt;&gt;<i> &lt;project xmlns=&quot;<A HREF="http://maven.apache.org/POM/4.0.0">http://maven.apache.org/POM/4.0.0</A>&quot; xmlns:xsi=&quot;<A HREF="http://www.w3.org/2001/XMLSchema-instance">http://www.w3.org/2001/XMLSchema-instance</A>&quot;
+</I>&gt;&gt;&gt;&gt;<i>   xsi:schemaLocation=&quot;<A HREF="http://maven.apache.org/POM/4.0.0">http://maven.apache.org/POM/4.0.0</A> <A HREF="http://maven.apache.org/xsd/maven-4.0.0.xsd">http://maven.apache.org/xsd/maven-4.0.0.xsd</A>&quot;&gt;
+</I>&gt;&gt;&gt;&gt;<i>   &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i>   &lt;groupId&gt;com.mycompany.app&lt;/groupId&gt;
+</I>&gt;&gt;&gt;&gt;<i>   &lt;artifactId&gt;my-app&lt;/artifactId&gt;
+</I>&gt;&gt;&gt;&gt;<i>   &lt;version&gt;1.0-SNAPSHOT&lt;/version&gt;
+</I>&gt;&gt;&gt;&gt;<i>   &lt;packaging&gt;jar&lt;/packaging&gt;
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i>   &lt;name&gt;my-app&lt;/name&gt;
+</I>&gt;&gt;&gt;&gt;<i>   &lt;url&gt;<A HREF="http://maven.apache.org&lt;/url">http://maven.apache.org&lt;/url</A>&gt;
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i>   &lt;properties&gt;
+</I>&gt;&gt;&gt;&gt;<i>     &lt;project.build.sourceEncoding&gt;UTF-8&lt;/project.build.sourceEncoding&gt;
+</I>&gt;&gt;&gt;&gt;<i>   &lt;/properties&gt;
+</I>&gt;&gt;&gt;&gt;<i>   
+</I>&gt;&gt;&gt;&gt;<i> 	&lt;repositories&gt;
+</I>&gt;&gt;&gt;&gt;<i> 		&lt;repository&gt;
+</I>&gt;&gt;&gt;&gt;<i> 			&lt;id&gt;imagej.public&lt;/id&gt;
+</I>&gt;&gt;&gt;&gt;<i> 			&lt;url&gt;<A HREF="http://maven.imagej.net/content/groups/public&lt;/url">http://maven.imagej.net/content/groups/public&lt;/url</A>&gt;
+</I>&gt;&gt;&gt;&gt;<i> 		&lt;/repository&gt;
+</I>&gt;&gt;&gt;&gt;<i> 	&lt;/repositories&gt;
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i>   &lt;dependencies&gt;
+</I>&gt;&gt;&gt;&gt;<i>     &lt;dependency&gt;
+</I>&gt;&gt;&gt;&gt;<i>       &lt;groupId&gt;junit&lt;/groupId&gt;
+</I>&gt;&gt;&gt;&gt;<i>       &lt;artifactId&gt;junit&lt;/artifactId&gt;
+</I>&gt;&gt;&gt;&gt;<i>       &lt;version&gt;3.8.1&lt;/version&gt;
+</I>&gt;&gt;&gt;&gt;<i>       &lt;scope&gt;test&lt;/scope&gt;
+</I>&gt;&gt;&gt;&gt;<i>     &lt;/dependency&gt;
+</I>&gt;&gt;&gt;&gt;<i>     
+</I>&gt;&gt;&gt;&gt;<i> 	&lt;dependency&gt;
+</I>&gt;&gt;&gt;&gt;<i> 	  &lt;groupId&gt;io.scif&lt;/groupId&gt;
+</I>&gt;&gt;&gt;&gt;<i> 	  &lt;artifactId&gt;scifio&lt;/artifactId&gt;
+</I>&gt;&gt;&gt;&gt;<i> 	  &lt;version&gt;0.17.1&lt;/version&gt;
+</I>&gt;&gt;&gt;&gt;<i> 	&lt;/dependency&gt;
+</I>&gt;&gt;&gt;&gt;<i>     
+</I>&gt;&gt;&gt;&gt;<i>   &lt;/dependencies&gt;
+</I>&gt;&gt;&gt;&gt;<i> &lt;/project&gt;
+</I>&gt;&gt;&gt;&gt;<i> ========================================================
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> File hierarchy:
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> .
+</I>&gt;&gt;&gt;&gt;<i> ./.DS_Store
+</I>&gt;&gt;&gt;&gt;<i> ./pom.xml
+</I>&gt;&gt;&gt;&gt;<i> ./src
+</I>&gt;&gt;&gt;&gt;<i> ./src/main
+</I>&gt;&gt;&gt;&gt;<i> ./src/main/java
+</I>&gt;&gt;&gt;&gt;<i> ./src/main/java/com
+</I>&gt;&gt;&gt;&gt;<i> ./src/main/java/com/mycompany
+</I>&gt;&gt;&gt;&gt;<i> ./src/main/java/com/mycompany/app
+</I>&gt;&gt;&gt;&gt;<i> ./src/main/java/com/mycompany/app/App.java
+</I>&gt;&gt;&gt;&gt;<i> ./src/test
+</I>&gt;&gt;&gt;&gt;<i> ./src/test/java
+</I>&gt;&gt;&gt;&gt;<i> ./src/test/java/com
+</I>&gt;&gt;&gt;&gt;<i> ./src/test/java/com/mycompany
+</I>&gt;&gt;&gt;&gt;<i> ./src/test/java/com/mycompany/app
+</I>&gt;&gt;&gt;&gt;<i> ./src/test/java/com/mycompany/app/AppTest.java
+</I>&gt;&gt;&gt;&gt;<i> ========================================================
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> App.java as follows:
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> package com.mycompany.app;
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> import io.scif.FormatException;
+</I>&gt;&gt;&gt;&gt;<i> import io.scif.ImageMetadata;
+</I>&gt;&gt;&gt;&gt;<i> import io.scif.Plane;
+</I>&gt;&gt;&gt;&gt;<i> import io.scif.Reader;
+</I>&gt;&gt;&gt;&gt;<i> import io.scif.SCIFIO;
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> public class App 
+</I>&gt;&gt;&gt;&gt;<i> {
+</I>&gt;&gt;&gt;&gt;<i>     public static void main( String[] args )
+</I>&gt;&gt;&gt;&gt;<i>     {
+</I>&gt;&gt;&gt;&gt;<i> 		try {
+</I>&gt;&gt;&gt;&gt;<i>     	    System.out.println( &quot;Hello World!&quot; );
+</I>&gt;&gt;&gt;&gt;<i> 			SCIFIO scifio = new SCIFIO();
+</I>&gt;&gt;&gt;&gt;<i> 			String sampleImage
+</I>&gt;&gt;&gt;&gt;<i> 					= &quot;8bit-signed&amp;pixelType=int8&amp;lengths=50,50,3,5,7&amp;axes=X,Y,Z,Channel,Time.fake&quot;;
+</I>&gt;&gt;&gt;&gt;<i> 			final Reader reader = scifio.initializer().initializeReader(sampleImage);
+</I>&gt;&gt;&gt;&gt;<i> 			System.out.printf(&quot;reader=%s%n&quot;, reader );
+</I>&gt;&gt;&gt;&gt;<i>         } catch (Exception e) {
+</I>&gt;&gt;&gt;&gt;<i> 	        System.out.printf(&quot;Exception: %s%n&quot;, e.getMessage() );
+</I>&gt;&gt;&gt;&gt;<i>         }
+</I>&gt;&gt;&gt;&gt;<i>     }
+</I>&gt;&gt;&gt;&gt;<i> }
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> ========================================================
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> mvm -U install
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> [Michaels-Retina:~/temp/deleteme/my-app] michaelellis% mvn -U install
+</I>&gt;&gt;&gt;&gt;<i> [INFO] Scanning for projects...
+</I>&gt;&gt;&gt;&gt;<i> [INFO]                                                                         
+</I>&gt;&gt;&gt;&gt;<i> [INFO] ------------------------------------------------------------------------
+</I>&gt;&gt;&gt;&gt;<i> [INFO] Building my-app 1.0-SNAPSHOT
+</I>&gt;&gt;&gt;&gt;<i> [INFO] ------------------------------------------------------------------------
+</I>&gt;&gt;&gt;&gt;<i> [INFO] 
+</I>&gt;&gt;&gt;&gt;<i> [INFO] --- maven-resources-plugin:2.6:resources (default-resources) @ my-app ---
+</I>&gt;&gt;&gt;&gt;<i> [INFO] Using 'UTF-8' encoding to copy filtered resources.
+</I>&gt;&gt;&gt;&gt;<i> [INFO] skip non existing resourceDirectory /Users/michaelellis/temp/deleteme/my-app/src/main/resources
+</I>&gt;&gt;&gt;&gt;<i> [INFO] 
+</I>&gt;&gt;&gt;&gt;<i> [INFO] --- maven-compiler-plugin:3.1:compile (default-compile) @ my-app ---
+</I>&gt;&gt;&gt;&gt;<i> [INFO] Changes detected - recompiling the module!
+</I>&gt;&gt;&gt;&gt;<i> [INFO] Compiling 1 source file to /Users/michaelellis/temp/deleteme/my-app/target/classes
+</I>&gt;&gt;&gt;&gt;<i> [INFO] 
+</I>&gt;&gt;&gt;&gt;<i> [INFO] --- maven-resources-plugin:2.6:testResources (default-testResources) @ my-app ---
+</I>&gt;&gt;&gt;&gt;<i> [INFO] Using 'UTF-8' encoding to copy filtered resources.
+</I>&gt;&gt;&gt;&gt;<i> [INFO] skip non existing resourceDirectory /Users/michaelellis/temp/deleteme/my-app/src/test/resources
+</I>&gt;&gt;&gt;&gt;<i> [INFO] 
+</I>&gt;&gt;&gt;&gt;<i> [INFO] --- maven-compiler-plugin:3.1:testCompile (default-testCompile) @ my-app ---
+</I>&gt;&gt;&gt;&gt;<i> [INFO] Changes detected - recompiling the module!
+</I>&gt;&gt;&gt;&gt;<i> [INFO] Compiling 1 source file to /Users/michaelellis/temp/deleteme/my-app/target/test-classes
+</I>&gt;&gt;&gt;&gt;<i> [INFO] 
+</I>&gt;&gt;&gt;&gt;<i> [INFO] --- maven-surefire-plugin:2.12.4:test (default-test) @ my-app ---
+</I>&gt;&gt;&gt;&gt;<i> [INFO] Surefire report directory: /Users/michaelellis/temp/deleteme/my-app/target/surefire-reports
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> -------------------------------------------------------
+</I>&gt;&gt;&gt;&gt;<i>  T E S T S
+</I>&gt;&gt;&gt;&gt;<i> -------------------------------------------------------
+</I>&gt;&gt;&gt;&gt;<i> Running com.mycompany.app.AppTest
+</I>&gt;&gt;&gt;&gt;<i> Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.005 sec
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> Results :
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> [INFO] 
+</I>&gt;&gt;&gt;&gt;<i> [INFO] --- maven-jar-plugin:2.4:jar (default-jar) @ my-app ---
+</I>&gt;&gt;&gt;&gt;<i> [INFO] Building jar: /Users/michaelellis/temp/deleteme/my-app/target/my-app-1.0-SNAPSHOT.jar
+</I>&gt;&gt;&gt;&gt;<i> [INFO] 
+</I>&gt;&gt;&gt;&gt;<i> [INFO] --- maven-install-plugin:2.4:install (default-install) @ my-app ---
+</I>&gt;&gt;&gt;&gt;<i> [INFO] Installing /Users/michaelellis/temp/deleteme/my-app/target/my-app-1.0-SNAPSHOT.jar to /Users/michaelellis/.m2/repository/com/mycompany/app/my-app/1.0-SNAPSHOT/my-app-1.0-SNAPSHOT.jar
+</I>&gt;&gt;&gt;&gt;<i> [INFO] Installing /Users/michaelellis/temp/deleteme/my-app/pom.xml to /Users/michaelellis/.m2/repository/com/mycompany/app/my-app/1.0-SNAPSHOT/my-app-1.0-SNAPSHOT.pom
+</I>&gt;&gt;&gt;&gt;<i> [INFO] ------------------------------------------------------------------------
+</I>&gt;&gt;&gt;&gt;<i> [INFO] BUILD SUCCESS
+</I>&gt;&gt;&gt;&gt;<i> [INFO] ------------------------------------------------------------------------
+</I>&gt;&gt;&gt;&gt;<i> [INFO] Total time: 1.962 s
+</I>&gt;&gt;&gt;&gt;<i> [INFO] Finished at: 2014-12-05T16:59:50+00:00
+</I>&gt;&gt;&gt;&gt;<i> [INFO] Final Memory: 18M/242M
+</I>&gt;&gt;&gt;&gt;<i> [INFO] &#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> ========================================================
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> mvn claims to build everything OK there seems to be no inclusion of any scif libraries or class files.
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> When I run it I get:
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> [Michaels-Retina:~/temp/deleteme/my-app] michaelellis% java -cp target/my-app-1.0-SNAPSHOT.jar com.mycompany.app.App
+</I>&gt;&gt;&gt;&gt;<i> Error: A JNI error has occurred, please check your installation and try again
+</I>&gt;&gt;&gt;&gt;<i> Exception in thread &quot;main&quot; java.lang.NoClassDefFoundError: io/scif/SCIFIO
+</I>&gt;&gt;&gt;&gt;<i> 	at java.lang.Class.getDeclaredMethods0(Native Method)
+</I>&gt;&gt;&gt;&gt;<i> 	at java.lang.Class.privateGetDeclaredMethods(Class.java:2699)
+</I>&gt;&gt;&gt;&gt;<i> 	at java.lang.Class.privateGetMethodRecursive(Class.java:3046)
+</I>&gt;&gt;&gt;&gt;<i> 	at java.lang.Class.getMethod0(Class.java:3016)
+</I>&gt;&gt;&gt;&gt;<i> 	at java.lang.Class.getMethod(Class.java:1782)
+</I>&gt;&gt;&gt;&gt;<i> 	at sun.launcher.LauncherHelper.validateMainClass(LauncherHelper.java:544)
+</I>&gt;&gt;&gt;&gt;<i> 	at sun.launcher.LauncherHelper.checkAndLoadMain(LauncherHelper.java:526)
+</I>&gt;&gt;&gt;&gt;<i> Caused by: java.lang.ClassNotFoundException: io.scif.SCIFIO
+</I>&gt;&gt;&gt;&gt;<i> 	at java.net.URLClassLoader.findClass(URLClassLoader.java:381)
+</I>&gt;&gt;&gt;&gt;<i> 	at java.lang.ClassLoader.loadClass(ClassLoader.java:424)
+</I>&gt;&gt;&gt;&gt;<i> 	at sun.misc.Launcher$AppClassLoader.loadClass(Launcher.java:308)
+</I>&gt;&gt;&gt;&gt;<i> 	at java.lang.ClassLoader.loadClass(ClassLoader.java:357)
+</I>&gt;&gt;&gt;&gt;<i> 	... 7 more
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> ========================================================
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> I&#8217;ve been banging my head against this for two days now. 
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> So any help appreciated
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> On 5 Dec 2014, at 16:35, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at WISC.EDU</A>&gt; wrote:
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> Hi Michael,
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> &gt; The POM for io.scif:scifio:jar:0.17.1 is missing, no dependency
+</I>&gt;&gt;&gt;&gt;&gt;<i> &gt; information available
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> Make sure you have the following &lt;repositories&gt; block in your POM:
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	&lt;repositories&gt;
+</I>&gt;&gt;&gt;&gt;&gt;<i> 		&lt;repository&gt;
+</I>&gt;&gt;&gt;&gt;&gt;<i> 			&lt;id&gt;imagej.public&lt;/id&gt;
+</I>&gt;&gt;&gt;&gt;&gt;<i> 			&lt;url&gt;<A HREF="http://maven.imagej.net/content/groups/public&lt;/url">http://maven.imagej.net/content/groups/public&lt;/url</A>&gt;
+</I>&gt;&gt;&gt;&gt;&gt;<i> 		&lt;/repository&gt;
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	&lt;/repositories&gt;
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> Then rebuild with the &quot;-U&quot; flag. I don't know how to do this from NetBeans, but you only need to do it once from the CLI -- then you can return to NetBeans and it should work.
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> Regards,
+</I>&gt;&gt;&gt;&gt;&gt;<i> Curtis
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> On Fri, Dec 5, 2014 at 6:07 AM, Michael Ellis &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">michael.ellis at dsuk.biz</A>&gt; wrote:
+</I>&gt;&gt;&gt;&gt;&gt;<i> I have followed the advice offered by Curtis regarding adding the io.scif: scifio dependency to my POM
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> The dependency part of my POM looks like this:
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i>     &lt;dependencies&gt;
+</I>&gt;&gt;&gt;&gt;&gt;<i>         &lt;dependency&gt;
+</I>&gt;&gt;&gt;&gt;&gt;<i>             &lt;groupId&gt;net.imglib2&lt;/groupId&gt;
+</I>&gt;&gt;&gt;&gt;&gt;<i>             &lt;artifactId&gt;imglib2&lt;/artifactId&gt;
+</I>&gt;&gt;&gt;&gt;&gt;<i>             &lt;version&gt;2.2.1-SNAPSHOT&lt;/version&gt;
+</I>&gt;&gt;&gt;&gt;&gt;<i>             &lt;type&gt;jar&lt;/type&gt;
+</I>&gt;&gt;&gt;&gt;&gt;<i>         &lt;/dependency&gt;
+</I>&gt;&gt;&gt;&gt;&gt;<i>         &lt;dependency&gt;
+</I>&gt;&gt;&gt;&gt;&gt;<i>             &lt;groupId&gt;io.scif&lt;/groupId&gt;
+</I>&gt;&gt;&gt;&gt;&gt;<i>             &lt;artifactId&gt;scifio&lt;/artifactId&gt;
+</I>&gt;&gt;&gt;&gt;&gt;<i>             &lt;version&gt;0.17.1&lt;/version&gt;
+</I>&gt;&gt;&gt;&gt;&gt;<i>             &lt;type&gt;jar&lt;/type&gt;
+</I>&gt;&gt;&gt;&gt;&gt;<i>         &lt;/dependency&gt;
+</I>&gt;&gt;&gt;&gt;&gt;<i>     &lt;/dependencies&gt;
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> I am using NetBeans IDE, configured for use with maven project (I am slo using Java 8 and JavaFX)
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> However when I attempt to Build (or Build with Dependencies)  within NetBeans, I get the following error message:
+</I>&gt;&gt;&gt;&gt;&gt;<i> ============================================================
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> cd /Users/michaelellis/Documents/Development/MavenImgLib2FX; JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk1.8.0_40.jdk/Contents/Home &quot;/Applications/NetBeans/NetBeans 8.0.app/Contents/Resources/NetBeans/java/maven/bin/mvn&quot; install
+</I>&gt;&gt;&gt;&gt;&gt;<i> Scanning for projects...
+</I>&gt;&gt;&gt;&gt;&gt;<i>                                                                         
+</I>&gt;&gt;&gt;&gt;&gt;<i> ------------------------------------------------------------------------
+</I>&gt;&gt;&gt;&gt;&gt;<i> Building MavenImgLib2FX 1.0-SNAPSHOT
+</I>&gt;&gt;&gt;&gt;&gt;<i> ------------------------------------------------------------------------
+</I>&gt;&gt;&gt;&gt;&gt;<i> The POM for io.scif:scifio:jar:0.17.1 is missing, no dependency information available
+</I>&gt;&gt;&gt;&gt;&gt;<i> ------------------------------------------------------------------------
+</I>&gt;&gt;&gt;&gt;&gt;<i> BUILD FAILURE
+</I>&gt;&gt;&gt;&gt;&gt;<i> ------------------------------------------------------------------------
+</I>&gt;&gt;&gt;&gt;&gt;<i> Total time: 0.341s
+</I>&gt;&gt;&gt;&gt;&gt;<i> Finished at: Fri Dec 05 10:34:41 GMT 2014
+</I>&gt;&gt;&gt;&gt;&gt;<i> Final Memory: 7M/245M
+</I>&gt;&gt;&gt;&gt;&gt;<i> ------------------------------------------------------------------------
+</I>&gt;&gt;&gt;&gt;&gt;<i> Failed to execute goal on project MavenImgLib2FX: Could not resolve dependencies for project biz.dsuk:MavenImgLib2FX:jar:1.0-SNAPSHOT: Failure to find io.scif:scifio:jar:0.17.1 in <A HREF="http://repo.maven.apache.org/maven2">http://repo.maven.apache.org/maven2</A> was cached in the local repository, resolution will not be reattempted until the update interval of central has elapsed or updates are forced -&gt; [Help 1]
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> To see the full stack trace of the errors, re-run Maven with the -e switch.
+</I>&gt;&gt;&gt;&gt;&gt;<i> Re-run Maven using the -X switch to enable full debug logging.
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> For more information about the errors and possible solutions, please read the following articles:
+</I>&gt;&gt;&gt;&gt;&gt;<i> [Help 1] <A HREF="http://cwiki.apache.org/confluence/display/MAVEN/DependencyResolutionException">http://cwiki.apache.org/confluence/display/MAVEN/DependencyResolutionException</A>
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> ============================================================
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> If I open a terminal window and cd into the project directory and:
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	mvn clean package
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> It succeeds.
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> However, when I then attempt to run the project with:
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	java -cp MavenImgLib2FX-1.0-SNAPSHOT.jar biz.dsuk.mavenimglib2fx.MainApp
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> The application starts to execute but throws &#8220;No compatible service: io.scif.SCIFIOService&#8221; exception.
+</I>&gt;&gt;&gt;&gt;&gt;<i> ============================================================
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> img1=CellImg [20x30]
+</I>&gt;&gt;&gt;&gt;&gt;<i> BufferedImage=<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">BufferedImage at 3137c585</A>: type = 10 ColorModel: #pixelBits = 8 numComponents = 1 color space = <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">java.awt.color.ICC_ColorSpace at 134d9d5f</A> transparency = 1 has alpha = false isAlphaPre = false ByteInterleavedRaster: width = 707 height = 699 #numDataElements 1 dataOff[0] = 0
+</I>&gt;&gt;&gt;&gt;&gt;<i> Loading image...
+</I>&gt;&gt;&gt;&gt;&gt;<i> Exception in Application start method
+</I>&gt;&gt;&gt;&gt;&gt;<i> java.lang.reflect.InvocationTargetException
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	at java.lang.reflect.Method.invoke(Method.java:497)
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	at com.sun.javafx.application.LauncherImpl.launchApplicationWithArgs(LauncherImpl.java:363)
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	at com.sun.javafx.application.LauncherImpl.launchApplication(LauncherImpl.java:303)
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	at java.lang.reflect.Method.invoke(Method.java:497)
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	at sun.launcher.LauncherHelper$FXHelper.main(LauncherHelper.java:767)
+</I>&gt;&gt;&gt;&gt;&gt;<i> Caused by: java.lang.RuntimeException: Exception in Application start method
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	at com.sun.javafx.application.LauncherImpl.launchApplication1(LauncherImpl.java:875)
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	at com.sun.javafx.application.LauncherImpl.lambda$launchApplication$150(LauncherImpl.java:157)
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	at com.sun.javafx.application.LauncherImpl$$Lambda$50/553264065.run(Unknown Source)
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	at java.lang.Thread.run(Thread.java:745)
+</I>&gt;&gt;&gt;&gt;&gt;<i> Caused by: java.lang.IllegalArgumentException: No compatible service: io.scif.SCIFIOService
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	at org.scijava.service.ServiceHelper.loadService(ServiceHelper.java:243)
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	at org.scijava.service.ServiceHelper.loadService(ServiceHelper.java:194)
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	at org.scijava.service.ServiceHelper.loadServices(ServiceHelper.java:170)
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	at org.scijava.Context.&lt;init&gt;(Context.java:244)
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	at org.scijava.Context.&lt;init&gt;(Context.java:203)
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	at org.scijava.Context.&lt;init&gt;(Context.java:142)
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	at org.scijava.Context.&lt;init&gt;(Context.java:128)
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	at io.scif.SCIFIO.&lt;init&gt;(SCIFIO.java:81)
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	at biz.dsuk.mavenimglib2fx.MainApp.start(MainApp.java:38)
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	at com.sun.javafx.application.LauncherImpl.lambda$launchApplication1$156(LauncherImpl.java:821)
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	at com.sun.javafx.application.LauncherImpl$$Lambda$53/681110827.run(Unknown Source)
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	at com.sun.javafx.application.PlatformImpl.lambda$runAndWait$169(PlatformImpl.java:326)
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	at com.sun.javafx.application.PlatformImpl$$Lambda$47/693632176.run(Unknown Source)
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	at com.sun.javafx.application.PlatformImpl.lambda$null$167(PlatformImpl.java:295)
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	at com.sun.javafx.application.PlatformImpl$$Lambda$49/1260282780.run(Unknown Source)
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	at java.security.AccessController.doPrivileged(Native Method)
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	at com.sun.javafx.application.PlatformImpl.lambda$runLater$168(PlatformImpl.java:294)
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	at com.sun.javafx.application.PlatformImpl$$Lambda$48/1364335809.run(Unknown Source)
+</I>&gt;&gt;&gt;&gt;&gt;<i> 	at com.sun.glass.ui.InvokeLaterDispatcher$Future.run(InvokeLaterDispatcher.java:95)
+</I>&gt;&gt;&gt;&gt;&gt;<i> Exception running application biz.dsuk.mavenimglib2fx.MainApp
+</I>&gt;&gt;&gt;&gt;&gt;<i> ============================================================
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> If I remove the calls to the SCIO code and build and run from the command line, all works well.
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> The SCIO source code that I am using is lifted/amended from one of the tutorials and is as follows:
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> ============================================================
+</I>&gt;&gt;&gt;&gt;&gt;<i>             imagePath = &quot;8bit-signed&amp;pixelType=int8&amp;lengths=50,50,3,5,7&amp;axes=X,Y,Z,Channel,Time.fake&quot;;
+</I>&gt;&gt;&gt;&gt;&gt;<i>             System.out.println(&quot;Loading image... '&quot; + imagePath + &quot;'&quot;);
+</I>&gt;&gt;&gt;&gt;&gt;<i>             SCIFIO scifio = new SCIFIO();
+</I>&gt;&gt;&gt;&gt;&gt;<i>             final Reader reader = scifio.initializer().initializeReader(imagePath);
+</I>&gt;&gt;&gt;&gt;&gt;<i> ============================================================
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> This source code works file in the SCIFIO tutorial.
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> Any help gratefully appreciated!!!!!
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> &#8212; Michael Ellis
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> On 3 Dec 2014, at 19:31, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at WISC.EDU</A>&gt; wrote:
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> Hi Michael,
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> &gt; How do I establish what Maven projects I need to include? 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> One way to check is using the dependency-maven-plugin like so:
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>     mvn dependency:analyze
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> This will tell you:
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> A) Dependencies you declared but do not actually use; and
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> B) Dependencies you did not declare directly, but actually need.
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> Note that this will only work if your project compiles successfully. In other words, it is easier to start with &quot;too many&quot; dependencies and pare down, rather than trying to &quot;build up&quot; from zero.
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> So in your case, you can start with the ImgLib2 Examples dependencies block, run dependency:analyze, and adjust the POM according to its recommendations.
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> &gt; When I go to my NetBeans project dependence, select Add dependency,
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> &gt; then type SCIF to the query text box, I get a huge list of
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> &gt; possibilities.
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> The dependency you probably want is io.scif:scifio (i.e.: a groupId of io.scif, and an artifactId of scifio). Presumably at the latest version. You can search for that here:
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>    <A HREF="http://maven.imagej.net/index.html#nexus-search;gav~io.scif~scifio~~~">http://maven.imagej.net/index.html#nexus-search;gav~io.scif~scifio~~~</A>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> So your dependency block in this case would be:
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>     &lt;dependency&gt;
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>       &lt;groupId&gt;io.scif&lt;/groupId&gt;
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>       &lt;artifactId&gt;scifio&lt;/artifactId&gt;
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>       &lt;version&gt;0.17.1&lt;/version&gt;
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>     &lt;/dependency&gt;
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> Note that that block of XML is available for copy-pasting from the link above.
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> &gt; I am completely new to maven
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> For more information, see:
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i>     <A HREF="http://imagej.net/Maven">http://imagej.net/Maven</A>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> Regards,
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> Curtis
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> On Tue, Dec 2, 2014 at 6:05 PM, Michael Ellis &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">michael.ellis at dsuk.biz</A>&gt; wrote:
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> I am investigating the using ImgLib2 for a project.
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> I am using NetBeans and have managed to create a NetBeans Mavern project and have  added a dependency for ImgLib2 Core Library and that seems to be working OK.
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> I now want to add the least possible requirements for the purpose of opening some image files.
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> How do I establish what Maven projects I need to include? 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> I have cloned  the ImgLib2 Examples project and got that working but that seems to include all manner of things that I suspect I do not need.
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> When I go to my NetBeans project dependence, select Add dependency, then type SCIF to the query text box, I get a huge list of possibilities.
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> I am completely new to maven and so do not know what I am doing with it!
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> &#8212; Michael Ellis
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> Digital Scientific UK Ltd.
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;&gt;&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;&gt;&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i> 
+</I>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20141219/b4516945/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20141219/b4516945/attachment-0001.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002378.html">[ImageJ-devel] How do I Perform an Image Convolution?
+</A></li>
+	<LI>Next message: <A HREF="002356.html">[ImageJ-devel] [fiji-devel] moving to Java 7
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2379">[ date ]</a>
+              <a href="thread.html#2379">[ thread ]</a>
+              <a href="subject.html#2379">[ subject ]</a>
+              <a href="author.html#2379">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

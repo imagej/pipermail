@@ -1,0 +1,231 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] SemVer policies for ImageJ2 and Fiji
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20SemVer%20policies%20for%20ImageJ2%20and%20Fiji&In-Reply-To=%3C1427511990.4293.131.camel%40saalfelds-ws1.janelia.priv%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002525.html">
+   <LINK REL="Next"  HREF="002530.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] SemVer policies for ImageJ2 and Fiji</H1>
+    <B>Stephan Saalfeld</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20SemVer%20policies%20for%20ImageJ2%20and%20Fiji&In-Reply-To=%3C1427511990.4293.131.camel%40saalfelds-ws1.janelia.priv%3E"
+       TITLE="[ImageJ-devel] SemVer policies for ImageJ2 and Fiji">saalfelds at janelia.hhmi.org
+       </A><BR>
+    <I>Fri Mar 27 22:06:30 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002525.html">[ImageJ-devel] SemVer policies for ImageJ2 and Fiji
+</A></li>
+        <LI>Next message: <A HREF="002530.html">[ImageJ-devel] SemVer policies for ImageJ2 and Fiji
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2526">[ date ]</a>
+              <a href="thread.html#2526">[ thread ]</a>
+              <a href="subject.html#2526">[ subject ]</a>
+              <a href="author.html#2526">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Mark,
+
+&gt;<i>[...] but not the traditional definition of public API[1,2].
+</I>
+This is what worries me because for most things that are less trivial
+than addition, `traditional' definitions are not available, i.e.
+`unintended' is not well defined.
+
+&gt;<i> Just to make sure we're on the same page - when you say &quot;changes the
+</I>&gt;<i> output&quot;, I assume you mean &quot;changes the behavior but not the API - i.e.
+</I>&gt;<i> return type is unchanged&quot;
+</I>
+In a typed language yes, what about Python?  What I mean is indeed
+change in behavior---correct.  I proposed to treat change in behavior as
+change of API because that would enable to reason about compatibility.
+If we enable PATCH upgrades to change behavior but only require `compile
+time' compatibility (which limits the scope of PATCH to statically typed
+and compiled languages which, I think, was not intended), then all we
+can reason from seeing a PATCH upgrade is that the stuff will compile,
+and somehow run, no guarantees about behavior.  That's not very helpful
+because compiling and running stuff isn't expensive to just try.
+Behavior, however, is critical and complicated to test, having a
+contract that makes guarantees here would indeed be useful.
+
+&gt;<i> In that case, I think it would be cleaner to just eliminate the PATCH
+</I>&gt;<i> number - because every bug fix necessarily changes behavior, right? So with
+</I>&gt;<i> this scheme, MAJOR increases = &quot;existing behavior has changed&quot;, and MINOR
+</I>&gt;<i> increases = &quot;new behavior is available&quot;.
+</I>&gt;<i> 
+</I>
+Not necessarily.  Performance improvements, crash-fixes, compatibility
+adjustments to upgraded dependencies (!) would fall into PATCH.  But I
+see that even crashes could be used by dependents as part of the API...
+we're doomed.
+
+&gt;<i> Some problems with creating this versioning scheme:
+</I>&gt;<i> 1. MAJOR versions will increase rapidly. This is aesthetic, but one that
+</I>&gt;<i> people can react very negatively to - and can certainly be confusing if
+</I>&gt;<i> people don't expect MAJOR version bumps to cover bug fixes.
+</I>
+Right---but SemVer is already counterintuitive compared to romantic
+versioning where a MAYOR upgrade is associated with a lot of new
+features, not breakage.
+
+&gt;<i> 2. It's one more thing for external developers to learn. We can't just say
+</I>&gt;<i> &quot;we use SemVer&quot;.
+</I>
+Very true.
+
+&gt;<i> 3. Since this is an internal versioning scheme, it may not be easy to
+</I>&gt;<i> compare our versions with external project versions that use SemVer.
+</I>
+Why would we want to do this?
+
+&gt;<i> 4. There will be false negatives for MAJOR version compatibility
+</I>&gt;<i> comparisons (instead of what could be considered false positives with
+</I>&gt;<i> SemVer)
+</I>
+I wouldn't call them false but conservative or overly cautious.  It
+would tell you when compatibility is not guaranteed which is useful.
+
+&gt;<i> 
+</I>&gt;<i> Unfortunately, #1 above alone makes it very unlikely that we would want to
+</I>&gt;<i> adopt this use of version numbers.
+</I>
+I understand and fully agree.  But SemVer with PATCHES of `unintended
+behavior' or other sentimental or romantic versioning schemes (I am
+stealing these terms from
+
+<A HREF="https://gist.github.com/jashkenas/cbd2b088e20279ae2c8e">https://gist.github.com/jashkenas/cbd2b088e20279ae2c8e</A>
+
+and 
+
+<A HREF="http://sentimentalversioning.org/">http://sentimentalversioning.org/</A>
+
+which are both exciting reads) aren't useful to reason about
+compatibility.  We should therefore not use them to reason about
+compatibility which you correctly state in the following...
+
+&gt;<i> But what you're trying to do here -
+</I>&gt;<i> ensure compatibility - is fantastic and something that would be great to
+</I>&gt;<i> have.
+</I>&gt;<i> 
+</I>&gt;<i> So let's take a step back and look at what guarantees we do and do not have
+</I>&gt;<i> right now:
+</I>&gt;<i> 
+</I>&gt;<i> + We have reproducible builds (release couplings, which requires -some-
+</I>&gt;<i> versioning scheme to be used)
+</I>&gt;<i> + We have API compatibility (SemVer)
+</I>&gt;<i> 
+</I>
+No---there is no strict API compatibility when using PATCH to fix
+`unintended behavior'.  Happened with ImageJ many times over the last
+years: API compile-time compatible that would qualify as PATCH upgrade,
+behavior different, plugins delivering crazy output, discovered only
+much later through bug reports.
+
+&gt;<i> - We do not have strict behavior compatibility
+</I>&gt;<i> - We do not have dependency compatibility
+</I>&gt;<i> 
+</I>&gt;<i> Behavior and dependency compatibility are very closely related - if they
+</I>&gt;<i> were covered by a versioning scheme, we could automatically answer the
+</I>&gt;<i> question &quot;is it safe to drop in version X to replace version Y?&quot;.
+</I>&gt;<i> 
+</I>
+Yes.
+
+&gt;<i> However, I do not think we should conflate these concerns with SemVer.
+</I>
+I could not agree more.
+
+&gt;<i> Instead, two potential options would be:
+</I>&gt;<i> 
+</I>&gt;<i> 1) Continue to use SemVer, accept its limitations, be content with
+</I>&gt;<i> reproducibility.
+</I>
+Or any other versioning scheme that people like.  My current impression
+is that SemVer doesn't help much.  I will keep using it, but it isn't
+any better than any other scheme that assigns keys to versions and
+enables to order them.
+
+&gt;<i> 2) Create a separate versioning scheme that covers behavior and dependency
+</I>&gt;<i> compatibility. Use it in tandem with SemVer.
+</I>&gt;<i> 
+</I>
+You're absolutely right, but---phew---that's probably asking too much of
+people that are already unwilling to adopt to something as simple as
+SemVer.
+
+My current thinking is that we should require contributors to use a
+versioning scheme that can be sorted correctly by
+
+sort -V
+
+Anything else, i.e. compatibility guarantees, aren't possible to express
+with a simple number and require runtime testing (e.g. unit-tests
+promise this int an ideal world).  We should therefore never drop any
+upgrade without significant attempt to test.  We could assume that a
+maven build includes sufficient [unit-]testing to enable deployment if
+it succeeds (this is not true in reality but it is a meaningful
+contract).  I.e. artifacts can be deployed if they were explicitly built
+against upgraded dependencies.  In our heterogeneous environment,
+however, it is unrealistic to expect all contributors to adapt their
+code in time.  Instead, we should try to build pom-fiji including all
+downstream modules *overriding* or *upgrading* their dependency versions
+to the highest possible.  Do you have something like this already or do
+you have an idea how that could be done?
+
+Thanks for all the energy that you're putting into this!
+
+Cheers,
+Stephan
+
+
+
+&gt;<i> If anyone can think of other examples of versioned guarantees that would be
+</I>&gt;<i> useful to have, or counter-examples to any claims made here - please share!
+</I>&gt;<i> 
+</I>&gt;<i> Also, please let me know if any of this is confusing and/or additional
+</I>&gt;<i> examples would be useful.
+</I>&gt;<i> 
+</I>&gt;<i> Thanks again for the continued discussion,
+</I>&gt;<i> Mark
+</I>&gt;<i> 
+</I>&gt;<i> [1]
+</I>&gt;<i> <A HREF="http://en.wikipedia.org/wiki/Application_programming_interface#API_in_object-oriented_languages">http://en.wikipedia.org/wiki/Application_programming_interface#API_in_object-oriented_languages</A>
+</I>&gt;<i> [2]
+</I>&gt;<i> <A HREF="http://stackoverflow.com/questions/2954372/difference-between-spi-and-api">http://stackoverflow.com/questions/2954372/difference-between-spi-and-api</A>
+</I>
+
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002525.html">[ImageJ-devel] SemVer policies for ImageJ2 and Fiji
+</A></li>
+	<LI>Next message: <A HREF="002530.html">[ImageJ-devel] SemVer policies for ImageJ2 and Fiji
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2526">[ date ]</a>
+              <a href="thread.html#2526">[ thread ]</a>
+              <a href="subject.html#2526">[ subject ]</a>
+              <a href="author.html#2526">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

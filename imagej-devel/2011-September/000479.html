@@ -1,0 +1,141 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Macros and scripting in Imagej 2.0
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Macros%20and%20scripting%20in%20Imagej%202.0&In-Reply-To=%3C4E67D1A2.5030507%40mbl.edu%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000478.html">
+   <LINK REL="Next"  HREF="000480.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Macros and scripting in Imagej 2.0</H1>
+    <B>Grant B. Harris</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Macros%20and%20scripting%20in%20Imagej%202.0&In-Reply-To=%3C4E67D1A2.5030507%40mbl.edu%3E"
+       TITLE="[ImageJ-devel] Macros and scripting in Imagej 2.0">gharris at mbl.edu
+       </A><BR>
+    <I>Wed Sep  7 15:18:42 CDT 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000478.html">[ImageJ-devel] Macros and scripting in Imagej 2.0
+</A></li>
+        <LI>Next message: <A HREF="000480.html">[ImageJ-devel] Macros and scripting in Imagej 2.0
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#479">[ date ]</a>
+              <a href="thread.html#479">[ thread ]</a>
+              <a href="subject.html#479">[ subject ]</a>
+              <a href="author.html#479">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>All --
+
+Following-up on Lee's message this morning and some of the chatter on 
+the chat, I'm adding my two (perhaps even three)  cent's worth...
+
+-- Scripting Languages
+
+Our plan is to use the scripting engine in Java 6 (JSR-223 Scripting for 
+the Java Platform).  This enables us to be 
+polyglotic/language-agnostic... Jython, Closure, JavaScript, etc.
+
+As mentioned in the chat, BeanShell is interesting for the fact that it 
+is syntactically very similar to the ImageJ Macro language - The Macro 
+Language is a DSL (domain specific language) for image processing and 
+manipulating the ImageJ environment.   &quot;Porting&quot; it to Beanshell (as 
+suggested by Dscho) sounds like a good idea.  And it seems that that 
+process could produce a layer (i.e. API) that could be accessed by any 
+scripting language that works with JSR-223.
+
+(Note that MicroManager also uses BeanShell - 
+<A HREF="http://valelab.ucsf.edu/~MM/MMwiki/index.php/Example_Beanshell_scripts">http://valelab.ucsf.edu/~MM/MMwiki/index.php/Example_Beanshell_scripts</A>)
+
+-- Macro Recording
+
+Our EventBus-based architecture enables straight-forward macro recording 
+events.  A simple experiment/example is the 
+imagej.ui.swing.plugins.SwingScriptRecorder.  It records plugin/module 
+invocations and their parameter values, and then generates a chunk of 
+Java-like code.
+
+It remains to be decided how to handle
+(this applies to undo/redo as well)
+
+-- Code/Script Generation
+
+The plan is to have a Code Generation API which will enable the 
+generation of code/script in a variety of languages.
+In imagej.ext.script there is a very simple CodeGenerator with a 
+JavaCodeGenerator implementation.
+
+-- Script Execution
+
+A simple example of programmatic invocation of a plugins is in 
+imagej.core.plugins.debug.InvokePluginTest which passes the parameters 
+using varargs.
+
+Using the JSR-223 Scripting engine, scripts can easily access Java 
+classes.  The 'layer' I mentioned earlier would ease the script-writers 
+effort by providing wrappers to commonly used classes/objects and services.
+
+I'm interested to here other thoughts on these issues.
+
+(See my links and references on scripting here: 
+<A HREF="http://dev.imagejdev.org/gbh/arch/Scripting.html">http://dev.imagejdev.org/gbh/arch/Scripting.html</A>)
+
+
+
+Grant B. Harris
+---------------------------------------------------------
+Scientific Informatics Analyst, Cellular Dynamics Program
+Marine Biological Laboratory, Woods Hole, Mass. 02543
+<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">gharris at mbl.edu</A>
+
+
+On 9/7/2011 8:55 AM, Lee Kamentsky wrote:
+&gt;<i> Hi all,
+</I>&gt;<i> What are the plans and timeline for bringing macros and scripting into 
+</I>&gt;<i> ImageJ 2.0? I'm looking for a way to programatically run a script from 
+</I>&gt;<i> CellProfiler. I'm guessing that, as a first pass, I create a legacy 
+</I>&gt;<i> plugin for some ImageJ 1.0 plugin that takes the script as its 
+</I>&gt;<i> argument - I could really use pointers on how to do this. Also, I'm 
+</I>&gt;<i> not sure where scripting is on the roadmap and what the planned 
+</I>&gt;<i> architecture is. I'd opt for a macro / scripting service. As a start, 
+</I>&gt;<i> that sort of thing could talk to the legacy code, but would end up 
+</I>&gt;<i> using the same interfaces to talk to the IJ2 code. I'm also guessing 
+</I>&gt;<i> that the IJ1 scripting engine might only need minor modifications to 
+</I>&gt;<i> reference displays instead of ImagePlus.
+</I>&gt;<i>
+</I>&gt;<i> --Lee
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagejdev.org</A>
+</I>&gt;<i> <A HREF="http://imagejdev.org/mailman/listinfo/imagej-devel">http://imagejdev.org/mailman/listinfo/imagej-devel</A>
+</I>
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000478.html">[ImageJ-devel] Macros and scripting in Imagej 2.0
+</A></li>
+	<LI>Next message: <A HREF="000480.html">[ImageJ-devel] Macros and scripting in Imagej 2.0
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#479">[ date ]</a>
+              <a href="thread.html#479">[ thread ]</a>
+              <a href="subject.html#479">[ subject ]</a>
+              <a href="author.html#479">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

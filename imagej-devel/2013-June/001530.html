@@ -1,0 +1,450 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] ImageJ-launcher build failures
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImageJ-launcher%20build%20failures&In-Reply-To=%3CCADN69ymg6XimPRyGeEJ%2B66AxJ9d6gsetaQzeVjf2n1Ci5%3D9O5g%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001531.html">
+   <LINK REL="Next"  HREF="001534.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] ImageJ-launcher build failures</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImageJ-launcher%20build%20failures&In-Reply-To=%3CCADN69ymg6XimPRyGeEJ%2B66AxJ9d6gsetaQzeVjf2n1Ci5%3D9O5g%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] ImageJ-launcher build failures">ctrueden at wisc.edu
+       </A><BR>
+    <I>Mon Jun  3 22:55:12 CDT 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001531.html">[ImageJ-devel] [Farsight-developers] [Insight-users] [ANNOUNCE]	ITK 4.4.0 has	been released!
+</A></li>
+        <LI>Next message: <A HREF="001534.html">[ImageJ-devel] [ImageJ] #1553: Make it easier for non-core-IJ2 developers to respond to tickets
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1530">[ date ]</a>
+              <a href="thread.html#1530">[ thread ]</a>
+              <a href="subject.html#1530">[ subject ]</a>
+              <a href="author.html#1530">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi everyone,
+
+The ImageJ 2.0.0-beta-7 release is nigh. However, there is one remaining
+problem: a slight configuration bug with nar-maven-plugin and the ImageJ
+launcher.
+
+The problem was revealed by the rename from maven-nar-plugin to
+nar-maven-plugin, and corresponding bump of the plugin version to
+3.0.0-scijava-1.
+
+The following output illustrates the gist of the misconfiguration:
+
+--snip--
+$ cd launcher &amp;&amp; mvn help:effective-pom | grep -B 1 -A 10 maven-nar-plugin
+      &lt;plugin&gt;
+        &lt;artifactId&gt;maven-nar-plugin&lt;/artifactId&gt;
+        &lt;version&gt;2.1-20120403&lt;/version&gt;
+        &lt;executions&gt;
+          &lt;execution&gt;
+            &lt;id&gt;default-nar-integration-test&lt;/id&gt;
+            &lt;phase&gt;integration-test&lt;/phase&gt;
+            &lt;goals&gt;
+              &lt;goal&gt;nar-integration-test&lt;/goal&gt;
+            &lt;/goals&gt;
+          &lt;/execution&gt;
+          &lt;execution&gt;
+--snap--
+
+So somehow, one reference to maven-nar-plugin remains (and to release
+version 2.1-20120403 at that, which was last explicitly referenced in the
+2.0.0-beta1 release!).
+
+Hopefully we can quickly iron out this niggling reference to fix the build,
+and start testing 2.0.0-beta-7 release candidates!
+
+Regards,
+Curtis
+
+
+On Mon, Jun 3, 2013 at 10:27 PM, &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">jenkins at imagej.net</A>&gt; wrote:
+
+&gt;<i> See &lt;<A HREF="http://jenkins.imagej.net/job/ImageJ-launcher/./label=Windows/1000/">http://jenkins.imagej.net/job/ImageJ-launcher/./label=Windows/1000/</A>&gt;
+</I>&gt;<i>
+</I>&gt;<i> ------------------------------------------
+</I>&gt;<i> [...truncated 14 lines...]
+</I>&gt;<i> ++ cd /c/fiji/java/win32/jdk1.6.0_24
+</I>&gt;<i> ++ pwd -W
+</I>&gt;<i> + export JAVA_HOME=c:/fiji/java/win32/jdk1.6.0_24
+</I>&gt;<i> + JAVA_HOME=c:/fiji/java/win32/jdk1.6.0_24
+</I>&gt;<i> + export
+</I>&gt;<i> 'PATH=/c/msysgit/mingw/bin:/c/msysgit/bin:c:/fiji/java/win32/jdk1.6.0_24/bin:/usr/src/fiji/java/win64/jdk1.6.0_24/bin:/usr/src/fiji/bin/apache-maven-3.0.4/bin:/usr/src/mingw-w64/sysroot/bin:/usr/bin:/usr/mingw/bin:/c/Windows/system32:/c/Windows:/c/Windows/System32/Wbem:/c/Windows/System32/WindowsPowerShell/v1.0/:/c/Program
+</I>&gt;<i> Files (x86)/CMake 2.8/bin:/c/Program Files (x86)/Git/cmd'
+</I>&gt;<i> +
+</I>&gt;<i> PATH='/c/msysgit/mingw/bin:/c/msysgit/bin:c:/fiji/java/win32/jdk1.6.0_24/bin:/usr/src/fiji/java/win64/jdk1.6.0_24/bin:/usr/src/fiji/bin/apache-maven-3.0.4/bin:/usr/src/mingw-w64/sysroot/bin:/usr/bin:/usr/mingw/bin:/c/Windows/system32:/c/Windows:/c/Windows/System32/Wbem:/c/Windows/System32/WindowsPowerShell/v1.0/:/c/Program
+</I>&gt;<i> Files (x86)/CMake 2.8/bin:/c/Program Files (x86)/Git/cmd'
+</I>&gt;<i> + mvn -Dos.arch=x86 -X -e
+</I>&gt;<i> Apache Maven 3.0.4 (r1232337; 2012-01-17 02:44:56-0600)
+</I>&gt;<i> Maven home: C:\msysgit\src\fiji\bin\apache-maven-3.0.4
+</I>&gt;<i> Java version: 1.6.0_24, vendor: Sun Microsystems Inc.
+</I>&gt;<i> Java home: c:\fiji\java\win32\jdk1.6.0_24\jre
+</I>&gt;<i> Default locale: en_US, platform encoding: Cp1252
+</I>&gt;<i> OS name: &quot;windows 7&quot;, version: &quot;6.1&quot;, arch: &quot;x86&quot;, family: &quot;windows&quot;
+</I>&gt;<i> [INFO] Error stacktraces are turned on.
+</I>&gt;<i> [DEBUG] Reading global settings from
+</I>&gt;<i> C:\msysgit\src\fiji\bin\apache-maven-3.0.4\conf\settings.xml
+</I>&gt;<i> [DEBUG] Reading user settings from C:\Users\VirtualBox\.m2\settings.xml
+</I>&gt;<i> [DEBUG] Using local repository at C:\Users\VirtualBox\.m2\repository
+</I>&gt;<i> [DEBUG] Using manager EnhancedLocalRepositoryManager with priority 10 for
+</I>&gt;<i> C:\Users\VirtualBox\.m2\repository
+</I>&gt;<i> [INFO] Scanning for projects...
+</I>&gt;<i> [DEBUG] org.apache.maven.wagon:wagon-webdav-jackrabbit:jar:1.0:
+</I>&gt;<i> [DEBUG]    org.apache.maven.wagon:wagon-http-shared:jar:1.0:compile
+</I>&gt;<i> [DEBUG]       commons-httpclient:commons-httpclient:jar:3.1:compile
+</I>&gt;<i> [DEBUG]          commons-codec:commons-codec:jar:1.2:compile
+</I>&gt;<i> [DEBUG]       commons-logging:commons-logging:jar:1.1.1:compile
+</I>&gt;<i> [DEBUG]       commons-io:commons-io:jar:2.0.1:compile
+</I>&gt;<i> [DEBUG]       org.jsoup:jsoup:jar:1.6.1:compile
+</I>&gt;<i> [DEBUG]    org.apache.jackrabbit:jackrabbit-webdav:jar:1.5.0:compile
+</I>&gt;<i> [DEBUG]
+</I>&gt;<i> org.apache.jackrabbit:jackrabbit-jcr-commons:jar:1.5.0:compile
+</I>&gt;<i> [DEBUG]       org.slf4j:slf4j-api:jar:1.5.3:compile
+</I>&gt;<i> [DEBUG]    org.slf4j:slf4j-nop:jar:1.5.3:runtime
+</I>&gt;<i> [DEBUG]    org.apache.maven.wagon:wagon-provider-api:jar:1.0:compile
+</I>&gt;<i> [DEBUG]       org.codehaus.plexus:plexus-utils:jar:1.4.2:compile
+</I>&gt;<i> [DEBUG] Created new class realm maven.api
+</I>&gt;<i> [DEBUG] Importing foreign packages into class realm maven.api
+</I>&gt;<i> [DEBUG]   Imported: org.apache.maven.wagon.events &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.sonatype.aether.transfer &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.apache.maven.exception &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.sonatype.aether.metadata &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.codehaus.plexus.util.xml.Xpp3Dom &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.sonatype.aether.collection &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.sonatype.aether.version &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.apache.maven.monitor &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.apache.maven.wagon.repository &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.apache.maven.repository &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.apache.maven.wagon.resource &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.codehaus.plexus.logging &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.apache.maven.profiles &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.sonatype.aether.repository &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.apache.maven.classrealm &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.apache.maven.execution &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.sonatype.aether.artifact &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.sonatype.aether.spi &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.apache.maven.reporting &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.apache.maven.usability &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.codehaus.plexus.container &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.codehaus.plexus.component &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.codehaus.plexus.util.xml.pull.XmlSerializer &lt;
+</I>&gt;<i> plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.apache.maven.wagon.authentication &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.apache.maven.lifecycle &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.codehaus.plexus.classworlds &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.sonatype.aether.graph &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.sonatype.aether.* &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.apache.maven.settings &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.codehaus.classworlds &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.sonatype.aether.impl &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.apache.maven.wagon.* &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.apache.maven.toolchain &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.sonatype.aether.deployment &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.apache.maven.wagon.observers &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported:
+</I>&gt;<i> org.codehaus.plexus.util.xml.pull.XmlPullParserException &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.codehaus.plexus.util.xml.pull.XmlPullParser &lt;
+</I>&gt;<i> plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.apache.maven.configuration &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.apache.maven.cli &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.sonatype.aether.installation &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.codehaus.plexus.context &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.apache.maven.wagon.authorization &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.apache.maven.project &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.apache.maven.rtinfo &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.codehaus.plexus.lifecycle &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.codehaus.plexus.configuration &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.apache.maven.artifact &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.apache.maven.model &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.apache.maven.* &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.apache.maven.wagon.proxy &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.sonatype.aether.resolution &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.apache.maven.plugin &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.codehaus.plexus.* &lt; plexus.core
+</I>&gt;<i> [DEBUG]   Imported: org.codehaus.plexus.personality &lt; plexus.core
+</I>&gt;<i> [DEBUG] Populating class realm maven.api
+</I>&gt;<i> [DEBUG] Created new class realm
+</I>&gt;<i> extension&gt;org.apache.maven.wagon:wagon-webdav-jackrabbit:1.0
+</I>&gt;<i> [DEBUG] Importing foreign packages into class realm
+</I>&gt;<i> extension&gt;org.apache.maven.wagon:wagon-webdav-jackrabbit:1.0
+</I>&gt;<i> [DEBUG]   Imported:  &lt; maven.api
+</I>&gt;<i> [DEBUG] Populating class realm
+</I>&gt;<i> extension&gt;org.apache.maven.wagon:wagon-webdav-jackrabbit:1.0
+</I>&gt;<i> [DEBUG]   Included: org.apache.maven.wagon:wagon-webdav-jackrabbit:jar:1.0
+</I>&gt;<i> [DEBUG]   Included: org.apache.maven.wagon:wagon-http-shared:jar:1.0
+</I>&gt;<i> [DEBUG]   Included: commons-httpclient:commons-httpclient:jar:3.1
+</I>&gt;<i> [DEBUG]   Included: commons-codec:commons-codec:jar:1.2
+</I>&gt;<i> [DEBUG]   Included: commons-logging:commons-logging:jar:1.1.1
+</I>&gt;<i> [DEBUG]   Included: commons-io:commons-io:jar:2.0.1
+</I>&gt;<i> [DEBUG]   Included: org.jsoup:jsoup:jar:1.6.1
+</I>&gt;<i> [DEBUG]   Included: org.apache.jackrabbit:jackrabbit-webdav:jar:1.5.0
+</I>&gt;<i> [DEBUG]   Included: org.apache.jackrabbit:jackrabbit-jcr-commons:jar:1.5.0
+</I>&gt;<i> [DEBUG]   Included: org.slf4j:slf4j-api:jar:1.5.3
+</I>&gt;<i> [DEBUG]   Included: org.slf4j:slf4j-nop:jar:1.5.3
+</I>&gt;<i> [DEBUG]   Included: org.codehaus.plexus:plexus-utils:jar:1.4.2
+</I>&gt;<i> [DEBUG] org.apache.maven.plugins:nar-maven-plugin:jar:3.0.0-scijava-1:
+</I>&gt;<i> [DEBUG]    org.apache.maven:maven-plugin-api:jar:2.0.9:compile
+</I>&gt;<i> [DEBUG]    org.apache.maven:maven-project:jar:2.0.9:compile
+</I>&gt;<i> [DEBUG]       org.apache.maven:maven-settings:jar:2.0.9:compile
+</I>&gt;<i> [DEBUG]       org.apache.maven:maven-profile:jar:2.0.9:compile
+</I>&gt;<i> [DEBUG]       org.apache.maven:maven-artifact-manager:jar:2.0.9:compile
+</I>&gt;<i> [DEBUG]       org.apache.maven:maven-plugin-registry:jar:2.0.9:compile
+</I>&gt;<i> [DEBUG]    org.apache.maven:maven-artifact:jar:2.0.9:compile
+</I>&gt;<i> [DEBUG]    org.apache.maven:maven-model:jar:2.0.9:compile
+</I>&gt;<i> [DEBUG]    org.apache.maven.surefire:surefire-booter:jar:2.6:compile
+</I>&gt;<i> [DEBUG]       org.apache.maven.surefire:surefire-api:jar:2.6:compile
+</I>&gt;<i> [DEBUG]    org.apache.maven:maven-toolchain:jar:2.2.1:compile
+</I>&gt;<i> [DEBUG]    org.apache.maven:maven-core:jar:2.2.1:compile
+</I>&gt;<i> [DEBUG]
+</I>&gt;<i> org.apache.maven:maven-plugin-parameter-documenter:jar:2.2.1:compile
+</I>&gt;<i> [DEBUG]       org.slf4j:slf4j-jdk14:jar:1.5.6:runtime
+</I>&gt;<i> [DEBUG]          org.slf4j:slf4j-api:jar:1.5.6:runtime
+</I>&gt;<i> [DEBUG]       org.slf4j:jcl-over-slf4j:jar:1.5.6:runtime
+</I>&gt;<i> [DEBUG]
+</I>&gt;<i> org.apache.maven.reporting:maven-reporting-api:jar:2.2.1:compile
+</I>&gt;<i> [DEBUG]          org.apache.maven.doxia:doxia-sink-api:jar:1.1:compile
+</I>&gt;<i> [DEBUG]          org.apache.maven.doxia:doxia-logging-api:jar:1.1:compile
+</I>&gt;<i> [DEBUG]       org.apache.maven:maven-repository-metadata:jar:2.2.1:compile
+</I>&gt;<i> [DEBUG]       org.apache.maven:maven-error-diagnostics:jar:2.2.1:compile
+</I>&gt;<i> [DEBUG]       commons-cli:commons-cli:jar:1.2:compile
+</I>&gt;<i> [DEBUG]       org.apache.maven:maven-plugin-descriptor:jar:2.2.1:compile
+</I>&gt;<i> [DEBUG]
+</I>&gt;<i> org.codehaus.plexus:plexus-interactivity-api:jar:1.0-alpha-4:compile
+</I>&gt;<i> [DEBUG]       org.apache.maven:maven-monitor:jar:2.2.1:compile
+</I>&gt;<i> [DEBUG]       classworlds:classworlds:jar:1.1:compile
+</I>&gt;<i> [DEBUG]       org.sonatype.plexus:plexus-sec-dispatcher:jar:1.3:compile
+</I>&gt;<i> [DEBUG]          org.sonatype.plexus:plexus-cipher:jar:1.4:compile
+</I>&gt;<i> [DEBUG]    org.codehaus.plexus:plexus-container-default:jar:1.5.4:compile
+</I>&gt;<i> [DEBUG]       org.codehaus.plexus:plexus-classworlds:jar:2.2.2:compile
+</I>&gt;<i> [DEBUG]       org.apache.xbean:xbean-reflect:jar:3.4:compile
+</I>&gt;<i> [DEBUG]          log4j:log4j:jar:1.2.12:compile
+</I>&gt;<i> [DEBUG]          commons-logging:commons-logging-api:jar:1.1:compile
+</I>&gt;<i> [DEBUG]       com.google.collections:google-collections:jar:1.0:compile
+</I>&gt;<i> [DEBUG]       junit:junit:jar:3.8.2:compile
+</I>&gt;<i> [DEBUG]    org.codehaus.plexus:plexus-compiler-api:jar:1.8:compile
+</I>&gt;<i> [DEBUG]    org.codehaus.plexus:plexus-utils:jar:2.0.5:compile
+</I>&gt;<i> [DEBUG]    org.codehaus.plexus:plexus-archiver:jar:1.0:compile
+</I>&gt;<i> [DEBUG]       org.codehaus.plexus:plexus-io:jar:1.0:compile
+</I>&gt;<i> [DEBUG]    net.sf.antcontrib:cpptasks-parallel:jar:1.1.1-scijava-1:compile
+</I>&gt;<i> [DEBUG]       xml-apis:xml-apis:jar:1.3.04:compile
+</I>&gt;<i> [DEBUG]       xerces:xercesImpl:jar:2.9.1:compile
+</I>&gt;<i> [DEBUG]    org.apache.bcel:bcel:jar:5.2:compile
+</I>&gt;<i> [DEBUG]       jakarta-regexp:jakarta-regexp:jar:1.4:compile
+</I>&gt;<i> [DEBUG]    org.apache.ant:ant:jar:1.8.1:compile
+</I>&gt;<i> [DEBUG]       org.apache.ant:ant-launcher:jar:1.8.1:compile
+</I>&gt;<i> [DEBUG]    commons-io:commons-io:jar:2.4:compile
+</I>&gt;<i> [DEBUG] Created new class realm
+</I>&gt;<i> extension&gt;org.apache.maven.plugins:nar-maven-plugin:3.0.0-scijava-1
+</I>&gt;<i> [DEBUG] Importing foreign packages into class realm
+</I>&gt;<i> extension&gt;org.apache.maven.plugins:nar-maven-plugin:3.0.0-scijava-1
+</I>&gt;<i> [DEBUG]   Imported:  &lt; maven.api
+</I>&gt;<i> [DEBUG] Populating class realm
+</I>&gt;<i> extension&gt;org.apache.maven.plugins:nar-maven-plugin:3.0.0-scijava-1
+</I>&gt;<i> [DEBUG]   Included:
+</I>&gt;<i> org.apache.maven.plugins:nar-maven-plugin:jar:3.0.0-scijava-1
+</I>&gt;<i> [DEBUG]   Included: org.apache.maven.surefire:surefire-booter:jar:2.6
+</I>&gt;<i> [DEBUG]   Included: org.apache.maven.surefire:surefire-api:jar:2.6
+</I>&gt;<i> [DEBUG]   Included: org.slf4j:slf4j-jdk14:jar:1.5.6
+</I>&gt;<i> [DEBUG]   Included: org.slf4j:slf4j-api:jar:1.5.6
+</I>&gt;<i> [DEBUG]   Included: org.slf4j:jcl-over-slf4j:jar:1.5.6
+</I>&gt;<i> [DEBUG]   Included:
+</I>&gt;<i> org.apache.maven.reporting:maven-reporting-api:jar:2.2.1
+</I>&gt;<i> [DEBUG]   Included: org.apache.maven.doxia:doxia-sink-api:jar:1.1
+</I>&gt;<i> [DEBUG]   Included: org.apache.maven.doxia:doxia-logging-api:jar:1.1
+</I>&gt;<i> [DEBUG]   Included: commons-cli:commons-cli:jar:1.2
+</I>&gt;<i> [DEBUG]   Included:
+</I>&gt;<i> org.codehaus.plexus:plexus-interactivity-api:jar:1.0-alpha-4
+</I>&gt;<i> [DEBUG]   Included: org.sonatype.plexus:plexus-sec-dispatcher:jar:1.3
+</I>&gt;<i> [DEBUG]   Included: org.sonatype.plexus:plexus-cipher:jar:1.4
+</I>&gt;<i> [DEBUG]   Included: org.apache.xbean:xbean-reflect:jar:3.4
+</I>&gt;<i> [DEBUG]   Included: log4j:log4j:jar:1.2.12
+</I>&gt;<i> [DEBUG]   Included: commons-logging:commons-logging-api:jar:1.1
+</I>&gt;<i> [DEBUG]   Included: com.google.collections:google-collections:jar:1.0
+</I>&gt;<i> [DEBUG]   Included: junit:junit:jar:3.8.2
+</I>&gt;<i> [DEBUG]   Included: org.codehaus.plexus:plexus-compiler-api:jar:1.8
+</I>&gt;<i> [DEBUG]   Included: org.codehaus.plexus:plexus-utils:jar:2.0.5
+</I>&gt;<i> [DEBUG]   Included: org.codehaus.plexus:plexus-archiver:jar:1.0
+</I>&gt;<i> [DEBUG]   Included: org.codehaus.plexus:plexus-io:jar:1.0
+</I>&gt;<i> [DEBUG]   Included: net.sf.antcontrib:cpptasks-parallel:jar:1.1.1-scijava-1
+</I>&gt;<i> [DEBUG]   Included: xml-apis:xml-apis:jar:1.3.04
+</I>&gt;<i> [DEBUG]   Included: xerces:xercesImpl:jar:2.9.1
+</I>&gt;<i> [DEBUG]   Included: org.apache.bcel:bcel:jar:5.2
+</I>&gt;<i> [DEBUG]   Included: jakarta-regexp:jakarta-regexp:jar:1.4
+</I>&gt;<i> [DEBUG]   Included: org.apache.ant:ant:jar:1.8.1
+</I>&gt;<i> [DEBUG]   Included: org.apache.ant:ant-launcher:jar:1.8.1
+</I>&gt;<i> [DEBUG]   Included: commons-io:commons-io:jar:2.4
+</I>&gt;<i> [DEBUG] Extension realms for project
+</I>&gt;<i> net.imagej:ij-launcher:nar:2.0.0-SNAPSHOT:
+</I>&gt;<i> [ClassRealm[extension&gt;org.apache.maven.wagon:wagon-webdav-jackrabbit:1.0,
+</I>&gt;<i> parent: sun.misc.Launcher$<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">AppClassLoader at 1ea2dfe</A>],
+</I>&gt;<i> ClassRealm[extension&gt;org.apache.maven.plugins:nar-maven-plugin:3.0.0-scijava-1,
+</I>&gt;<i> parent: sun.misc.Launcher$<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">AppClassLoader at 1ea2dfe</A>]]
+</I>&gt;<i> [DEBUG] Created new class realm
+</I>&gt;<i> project&gt;net.imagej:ij-launcher:2.0.0-SNAPSHOT
+</I>&gt;<i> [DEBUG] Populating class realm
+</I>&gt;<i> project&gt;net.imagej:ij-launcher:2.0.0-SNAPSHOT
+</I>&gt;<i> [DEBUG] Looking up lifecyle mappings for packaging nar from
+</I>&gt;<i> ClassRealm[project&gt;net.imagej:ij-launcher:2.0.0-SNAPSHOT, parent:
+</I>&gt;<i> ClassRealm[maven.api, parent: null]]
+</I>&gt;<i> [DEBUG] === REACTOR BUILD PLAN
+</I>&gt;<i> ================================================
+</I>&gt;<i> [DEBUG] Project: net.imagej:ij-launcher:nar:2.0.0-SNAPSHOT
+</I>&gt;<i> [DEBUG] Tasks:   [install]
+</I>&gt;<i> [DEBUG] Style:   Regular
+</I>&gt;<i> [DEBUG]
+</I>&gt;<i> =======================================================================
+</I>&gt;<i> [INFO]
+</I>&gt;<i> [INFO]
+</I>&gt;<i> ------------------------------------------------------------------------
+</I>&gt;<i> [INFO] Building ImageJ Launcher 2.0.0-SNAPSHOT
+</I>&gt;<i> [INFO]
+</I>&gt;<i> ------------------------------------------------------------------------
+</I>&gt;<i> [DEBUG] Resolving plugin version for
+</I>&gt;<i> org.apache.maven.plugins:maven-nar-plugin
+</I>&gt;<i> [DEBUG] Skipped remote update check for
+</I>&gt;<i> org.apache.maven.plugins:maven-nar-plugin/maven-metadata.xml, locally
+</I>&gt;<i> cached metadata up-to-date.
+</I>&gt;<i> [DEBUG] Skipped remote update check for
+</I>&gt;<i> org.apache.maven.plugins:maven-nar-plugin/maven-metadata.xml, locally
+</I>&gt;<i> cached metadata up-to-date.
+</I>&gt;<i> [DEBUG] Skipped remote update check for
+</I>&gt;<i> org.apache.maven.plugins:maven-nar-plugin/maven-metadata.xml, locally
+</I>&gt;<i> cached metadata up-to-date.
+</I>&gt;<i> [DEBUG] Skipped remote update check for
+</I>&gt;<i> org.apache.maven.plugins:maven-nar-plugin/maven-metadata.xml, locally
+</I>&gt;<i> cached metadata up-to-date.
+</I>&gt;<i> [DEBUG] Skipped remote update check for
+</I>&gt;<i> org.apache.maven.plugins:maven-nar-plugin/maven-metadata.xml, locally
+</I>&gt;<i> cached metadata up-to-date.
+</I>&gt;<i> [DEBUG] Resolved plugin version for
+</I>&gt;<i> org.apache.maven.plugins:maven-nar-plugin to 2.1-20120403 from repository
+</I>&gt;<i> imagej.thirdparty (<A HREF="http://maven.imagej.net/content/repositories/thirdparty,">http://maven.imagej.net/content/repositories/thirdparty,</A>
+</I>&gt;<i> releases+snapshots)
+</I>&gt;<i> [DEBUG] Lifecycle default -&gt; [validate, initialize, generate-sources,
+</I>&gt;<i> process-sources, generate-resources, process-resources, compile,
+</I>&gt;<i> process-classes, generate-test-sources, process-test-sources,
+</I>&gt;<i> generate-test-resources, process-test-resources, test-compile,
+</I>&gt;<i> process-test-classes, test, prepare-package, package, pre-integration-test,
+</I>&gt;<i> integration-test, post-integration-test, verify, install, deploy]
+</I>&gt;<i> [DEBUG] Lifecycle clean -&gt; [pre-clean, clean, post-clean]
+</I>&gt;<i> [DEBUG] Lifecycle site -&gt; [pre-site, site, post-site, site-deploy]
+</I>&gt;<i> [INFO]
+</I>&gt;<i> ------------------------------------------------------------------------
+</I>&gt;<i> [INFO] BUILD FAILURE
+</I>&gt;<i> [INFO]
+</I>&gt;<i> ------------------------------------------------------------------------
+</I>&gt;<i> [INFO] Total time: 1.062s
+</I>&gt;<i> [INFO] Finished at: Mon Jun 03 22:27:35 CDT 2013
+</I>&gt;<i> [INFO] Final Memory: 5M/15M
+</I>&gt;<i> [INFO]
+</I>&gt;<i> ------------------------------------------------------------------------
+</I>&gt;<i> [ERROR] Could not find goal 'nar-process-libraries' in plugin
+</I>&gt;<i> org.apache.maven.plugins:maven-nar-plugin:2.1-20120403 among available
+</I>&gt;<i> goals nar-unpack, nar-download, nar-gnu-configure, nar-testDownload,
+</I>&gt;<i> nar-gnu-resources, nar-package, nar-validate, nar-vcproj,
+</I>&gt;<i> nar-system-generate, nar-testUnpack, nar-resources, nar-test,
+</I>&gt;<i> nar-gnu-process, nar-testCompile, nar-gnu-make, nar-compile, nar-javah,
+</I>&gt;<i> nar-integration-test, nar-assembly, help -&gt; [Help 1]
+</I>&gt;<i> org.apache.maven.plugin.MojoNotFoundException: Could not find goal
+</I>&gt;<i> 'nar-process-libraries' in plugin
+</I>&gt;<i> org.apache.maven.plugins:maven-nar-plugin:2.1-20120403 among available
+</I>&gt;<i> goals nar-unpack, nar-download, nar-gnu-configure, nar-testDownload,
+</I>&gt;<i> nar-gnu-resources, nar-package, nar-validate, nar-vcproj,
+</I>&gt;<i> nar-system-generate, nar-testUnpack, nar-resources, nar-test,
+</I>&gt;<i> nar-gnu-process, nar-testCompile, nar-gnu-make, nar-compile, nar-javah,
+</I>&gt;<i> nar-integration-test, nar-assembly, help
+</I>&gt;<i>         at
+</I>&gt;<i> org.apache.maven.plugin.internal.DefaultMavenPluginManager.getMojoDescriptor(DefaultMavenPluginManager.java:267)
+</I>&gt;<i>         at
+</I>&gt;<i> org.apache.maven.plugin.DefaultBuildPluginManager.getMojoDescriptor(DefaultBuildPluginManager.java:185)
+</I>&gt;<i>         at
+</I>&gt;<i> org.apache.maven.lifecycle.internal.DefaultLifecycleExecutionPlanCalculator.setupMojoExecution(DefaultLifecycleExecutionPlanCalculator.java:152)
+</I>&gt;<i>         at
+</I>&gt;<i> org.apache.maven.lifecycle.internal.DefaultLifecycleExecutionPlanCalculator.setupMojoExecutions(DefaultLifecycleExecutionPlanCalculator.java:139)
+</I>&gt;<i>         at
+</I>&gt;<i> org.apache.maven.lifecycle.internal.DefaultLifecycleExecutionPlanCalculator.calculateExecutionPlan(DefaultLifecycleExecutionPlanCalculator.java:116)
+</I>&gt;<i>         at
+</I>&gt;<i> org.apache.maven.lifecycle.internal.DefaultLifecycleExecutionPlanCalculator.calculateExecutionPlan(DefaultLifecycleExecutionPlanCalculator.java:129)
+</I>&gt;<i>         at
+</I>&gt;<i> org.apache.maven.lifecycle.internal.BuilderCommon.resolveBuildPlan(BuilderCommon.java:92)
+</I>&gt;<i>         at
+</I>&gt;<i> org.apache.maven.lifecycle.internal.LifecycleModuleBuilder.buildProject(LifecycleModuleBuilder.java:81)
+</I>&gt;<i>         at
+</I>&gt;<i> org.apache.maven.lifecycle.internal.LifecycleModuleBuilder.buildProject(LifecycleModuleBuilder.java:59)
+</I>&gt;<i>         at
+</I>&gt;<i> org.apache.maven.lifecycle.internal.LifecycleStarter.singleThreadedBuild(LifecycleStarter.java:183)
+</I>&gt;<i>         at
+</I>&gt;<i> org.apache.maven.lifecycle.internal.LifecycleStarter.execute(LifecycleStarter.java:161)
+</I>&gt;<i>         at org.apache.maven.DefaultMaven.doExecute(DefaultMaven.java:320)
+</I>&gt;<i>         at org.apache.maven.DefaultMaven.execute(DefaultMaven.java:156)
+</I>&gt;<i>         at org.apache.maven.cli.MavenCli.execute(MavenCli.java:537)
+</I>&gt;<i>         at org.apache.maven.cli.MavenCli.doMain(MavenCli.java:196)
+</I>&gt;<i>         at org.apache.maven.cli.MavenCli.main(MavenCli.java:141)
+</I>&gt;<i>         at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+</I>&gt;<i>         at
+</I>&gt;<i> sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:39)
+</I>&gt;<i>         at
+</I>&gt;<i> sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:25)
+</I>&gt;<i>         at java.lang.reflect.Method.invoke(Method.java:597)
+</I>&gt;<i>         at
+</I>&gt;<i> org.codehaus.plexus.classworlds.launcher.Launcher.launchEnhanced(Launcher.java:290)
+</I>&gt;<i>         at
+</I>&gt;<i> org.codehaus.plexus.classworlds.launcher.Launcher.launch(Launcher.java:230)
+</I>&gt;<i>         at
+</I>&gt;<i> org.codehaus.plexus.classworlds.launcher.Launcher.mainWithExitCode(Launcher.java:409)
+</I>&gt;<i>         at
+</I>&gt;<i> org.codehaus.plexus.classworlds.launcher.Launcher.main(Launcher.java:352)
+</I>&gt;<i> [ERROR]
+</I>&gt;<i> [ERROR]
+</I>&gt;<i> [ERROR] For more information about the errors and possible solutions,
+</I>&gt;<i> please read the following articles:
+</I>&gt;<i> [ERROR] [Help 1]
+</I>&gt;<i> <A HREF="http://cwiki.apache.org/confluence/display/MAVEN/MojoNotFoundException">http://cwiki.apache.org/confluence/display/MAVEN/MojoNotFoundException</A>
+</I>&gt;<i> Build step 'Execute shell' marked build as failure
+</I>&gt;<i> Archiving artifacts
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20130603/a46b6c28/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20130603/a46b6c28/attachment-0001.html</A>&gt;
+</PRE>
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001531.html">[ImageJ-devel] [Farsight-developers] [Insight-users] [ANNOUNCE]	ITK 4.4.0 has	been released!
+</A></li>
+	<LI>Next message: <A HREF="001534.html">[ImageJ-devel] [ImageJ] #1553: Make it easier for non-core-IJ2 developers to respond to tickets
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1530">[ date ]</a>
+              <a href="thread.html#1530">[ thread ]</a>
+              <a href="subject.html#1530">[ subject ]</a>
+              <a href="author.html#1530">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

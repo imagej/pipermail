@@ -1,0 +1,148 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Regarding Target Java 1.5 for imglib2 core
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Regarding%20Target%20Java%201.5%20for%20imglib2%20core&In-Reply-To=%3Calpine.DEB.1.00.1203311230430.3340%40s15462909.onlinehome-server.info%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000759.html">
+   <LINK REL="Next"  HREF="000762.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Regarding Target Java 1.5 for imglib2 core</H1>
+    <B>Johannes Schindelin</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Regarding%20Target%20Java%201.5%20for%20imglib2%20core&In-Reply-To=%3Calpine.DEB.1.00.1203311230430.3340%40s15462909.onlinehome-server.info%3E"
+       TITLE="[ImageJ-devel] Regarding Target Java 1.5 for imglib2 core">Johannes.Schindelin at gmx.de
+       </A><BR>
+    <I>Sat Mar 31 12:49:40 CDT 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000759.html">[ImageJ-devel] [fiji-devel] Regarding Target Java 1.5 for	imglib2 core
+</A></li>
+        <LI>Next message: <A HREF="000762.html">[ImageJ-devel] Regarding Target Java 1.5 for imglib2 core
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#760">[ date ]</a>
+              <a href="thread.html#760">[ thread ]</a>
+              <a href="subject.html#760">[ subject ]</a>
+              <a href="author.html#760">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Dear Tobias,
+
+On Sat, 31 Mar 2012, Tobias Pietzsch wrote:
+
+&gt;<i> This has all been happening a bit too fast for me and I'm kind of lost
+</I>&gt;<i> right now about what exactly is going on here.  So could someone please
+</I>&gt;<i> explain what happened?
+</I>
+You might have realized that there were quite a ton of mails regarding the
+non-compiling Fiji? That is what happened. And it was not exactly fast.
+Things did not compile with the default javac shipping with Fiji, which
+happens to be compiled from the latest javac sources available form the
+jd6/langtools repository at <A HREF="http://hg.openjdk.java.net/jdk6/jdk6/langtools">http://hg.openjdk.java.net/jdk6/jdk6/langtools</A>
+
+Personally, I cannot understand how anybody can be happy with their code
+not compiling in the standard setup (but only with a compiler that was
+written in C++ and that is known to misbehave), so I worked long and hard
+to fix the issues.
+
+There was nothing exactly happening a bit too fast. Everything was
+happening not at all until I tried and failed to fix things.
+
+The real problem is of course that I need to care. It is not acceptable
+for Fiji nor ImageJ2 or their dependencies to be non-compiling. We are
+working very, very hard toward a beta1 of IJ2 and now is the least
+opportune time to introduce compilation failures.
+
+&gt;<i> There have been ugly &quot;HACK&quot;s introduced like the following:
+</I>&gt;<i> 
+</I>&gt;<i> -final T buffer = Util.getTypeFromInterval( fftImage ).createVariable();
+</I>&gt;<i> +// HACK: Explicit assignment is needed for OpenJDK javac.
+</I>&gt;<i> +final T fftImageType = Util.getTypeFromInterval( fftImage );
+</I>&gt;<i> +final T buffer = fftImageType.createVariable();
+</I>
+Yes. Outside of Eclipse, there exist other compilers. Some would even go
+so far as to claim that the Eclipse compiler is not even standard!
+
+:<i>-)
+</I>
+It is just a wild guess on my part, but I have a hunch that it might be
+the OpenJDK javac (the one from which we can legally take the javac
+sources and ship them in fiji.git, as we label javac.jar as GPLv2) which
+needs an explicit assignment to be able to compile the code.
+
+It might have helped you understand the issue if you had been there when
+we tried frantically to get those compilation errors out of our way to do
+our real job. The problem is -- as you can see from the Jenkins logs that
+are visible from quite a few Jenkins mails on fiji-devel -- that assigning
+the thing in one go (basically, x = A.b().c()) triggers a javac bug that loses
+the type information. Curtis found out that unchaining that assignment (y
+= A.b(); x = y.c()) works around that bug.
+
+&gt;<i> It seems, that this has been limited (fortunately!!!) to
+</I>&gt;<i> imglib2-algorithms-gpl.  But why? Surely, there are similar constructs
+</I>&gt;<i> in other parts of imglib. Why are they not affected?
+</I>
+If you want to know, please be my guest to git grep/dig into the source
+code to find out. My guess is that there are no other such chains. (Note
+that it has to do with really advanced and complicated constructs
+involving generics such as having a &quot;&lt;S extends A&lt;S, T&gt;&quot; generic parameter
+and inferring the return value T. Note also that I fully expect more javac
+bugs to lurk waiting for such obscure -- and rarely used -- constructs.)
+
+Happily, Steffi and Curtis actually did something about the issue, so even
+if it cost a lot of time, the things are fixed now.
+
+&gt;<i> Are there plans to figure out the performance implications of using the
+</I>&gt;<i> old class format?  Is there anything I have to be careful about now, so
+</I>&gt;<i> that I don't break anything?  Can I (locally) just remove the
+</I>&gt;<i> maven-compiler-plugin section from the pom and have everything working
+</I>&gt;<i> as before?
+</I>
+Tobias, I researched what it takes to do the performance tests. Just write
+JUnit tests to that extent. I even researched what it takes to have
+Jenkins test for performance regressions. I installed the plugin. I tested
+it. It works basically. I am fully prepared, even this is not *my* itch,
+to extend the Jenkins plugin to support fine-grained performance testing.
+What I am not prepared to do is the whole work. Someone who cares *must*
+write the unit tests.
+
+&gt;<i> And honestly, I don't like that this was done without any advance
+</I>&gt;<i> warning or discussion. This seems to be a big thing with potential
+</I>&gt;<i> performance implications.
+</I>
+Sure. There is a potential performance implication.
+
+Show it to me.
+
+Ciao,
+Dscho
+
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000759.html">[ImageJ-devel] [fiji-devel] Regarding Target Java 1.5 for	imglib2 core
+</A></li>
+	<LI>Next message: <A HREF="000762.html">[ImageJ-devel] Regarding Target Java 1.5 for imglib2 core
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#760">[ date ]</a>
+              <a href="thread.html#760">[ thread ]</a>
+              <a href="subject.html#760">[ subject ]</a>
+              <a href="author.html#760">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

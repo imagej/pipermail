@@ -1,0 +1,168 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-bugs] [Bug 835] Fiji hangs when installing macro tool
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%20835%5D%20Fiji%20hangs%20when%20installing%20macro%20tool&In-Reply-To=%3Cbug-835-19-JWDiZBDp3m%40http.fiji.sc/bugzilla/%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000057.html">
+   <LINK REL="Next"  HREF="000060.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-bugs] [Bug 835] Fiji hangs when installing macro tool</H1>
+    <B>bugzilla at fiji.sc</B> 
+    <A HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%20835%5D%20Fiji%20hangs%20when%20installing%20macro%20tool&In-Reply-To=%3Cbug-835-19-JWDiZBDp3m%40http.fiji.sc/bugzilla/%3E"
+       TITLE="[ImageJ-bugs] [Bug 835] Fiji hangs when installing macro tool">bugzilla at fiji.sc
+       </A><BR>
+    <I>Wed Jul 23 01:23:20 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000057.html">[ImageJ-bugs] [Bug 835] Fiji hangs when installing macro tool
+</A></li>
+        <LI>Next message: <A HREF="000060.html">[ImageJ-bugs] [Bug 803] &quot;Refresh Menus&quot; grayed out in Fiji
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#59">[ date ]</a>
+              <a href="thread.html#59">[ thread ]</a>
+              <a href="subject.html#59">[ subject ]</a>
+              <a href="author.html#59">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE><A HREF="http://fiji.sc/bugzilla/show_bug.cgi?id=835">http://fiji.sc/bugzilla/show_bug.cgi?id=835</A>
+
+--- Comment #5 from Ilan Tal &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">ilan.tal at gmail.com</A>&gt; ---
+My debugging environment is NetBeans and I use ImageJ, not Fiji for memory
+considerations. For example there have been cases where a large whole body scan
+would not fit into memory for debugging.
+
+With this restriction, I was able to find out what goes on inside ImageJ when I
+install a macro tool. I can verify that ImageJ works properly but Fiji fails. I
+would like to be able to work with someone who can check the Fiji environment.
+
+I will describe what happens in 3 different cases:
+1) installing using the toolbar &quot;More&quot; command and choosing the macro.
+2) installing using Plugins -&gt; Tools and choosing the macro.
+3) restarting ImageJ where the tools are reinstalled from the registry values.
+
+In Fiji case 1 causes a crash which freezes the keyboard. Fiji case 2 causes
+the macro to run but it doesn't get installed to the toolbar. Case 3 cannot be
+checked in Fiji since installation of the tool always fails.
+
+In the case of both a plugin jar file as well as a macro, both receive the run
+command. The plugin jar is simpler since its run does the install. The macro
+runs through some 6 different run commands. The stack dumps are shown in the 3
+attachments.
+
+The crucial point is the macro name. Here is the code in macro runner which
+does the job
+        else if (name.endsWith(&quot;Tool.ijm&quot;) || name.endsWith(&quot;Tool.txt&quot;)
+        || name.endsWith(&quot;Menu.ijm&quot;) || name.endsWith(&quot;Menu.txt&quot;))
+            (new MacroInstaller()).installTool(Menus.getPlugInsPath()+name);
+
+My tool is called Postage_Action_Tool.ijm and the Tool.ijm is the key. In
+ImageJ all works correctly so that it reaches this point. In case 2 of Fiji, it
+won't reach this point - instead of installing the tool, it runs it. In case 1
+Fiji just crashes.
+
+Now to consider the different cases. In case 1 the interesting things start at
+
+            String label = item.getLabel();
+            String cmd = item.getActionCommand();
+            boolean isTool = cmd.equals(&quot;Tool&quot;) || cmd.equals(&quot;Plugin Tool&quot;);
+            if (!(label.equals(&quot;Help...&quot;)||label.equals(&quot;Remove Custom Tools&quot;))
+&amp;&amp; !isTool)
+                currentSet = label;
+            if (isTool) {
+                if (cmd.equals(&quot;Tool&quot;)) // built in tool
+                    installBuiltinTool(label);
+                else  // plugin or macro tool in ImageJ/plugins/Tools
+                    IJ.run(label);
+                return;
+
+in itemStateChanged. The cmd is &quot;Plugin Tool&quot; and not &quot;Tool&quot; so that it skips
+the installBuiltinTool and does the IJ.run(label). In Fiji is it Tool, or
+Plugin Tool?
+
+Case 2 does a run directly which in ImageJ ends up checking the file name and
+causing the install, whereas in Fiji it just runs with no install. Why does
+Fiji act differently?
+
+Case 3 is the startup which works in ImageJ and can't be reached in Fiji. The
+code is
+
+    public void installStartupTools() {
+        if (IJ.debugMode) IJ.log(&quot;Toolbar.installStartupTools&quot;);
+        for (int i=0; i&lt;=6; i++) {
+            String name = Prefs.get(TOOL_KEY + (i/10)%10 + i%10, &quot;&quot;);
+            if (IJ.debugMode) IJ.log(&quot;  &quot;+i+&quot; &quot;+name);
+            if (name.equals(&quot;&quot;)) continue;
+            installingStartupTool = true;
+            boolean ok = installBuiltinTool(name);
+            if (!ok) {
+                if (name.endsWith(&quot;Menu Tool&quot;))
+                    name = name.substring(0, name.length()-5);
+                Hashtable commands = Menus.getCommands();
+                if (commands!=null &amp;&amp; commands.get(name)!=null)
+                    IJ.run(name);
+            }
+            installingStartupTool = false;
+        }
+    }
+
+The 6 additional keys are checked from the registry. Clearly this is not a
+built in tool so installBuiltinTool will fail. It then sees that commands are
+not null and commands.get(name) is in the hashtable, so the IJ.run(name) takes
+over. This reaches the same point as cases 1 and 2 causing the tool to be
+installed.
+
+Again, my question is: who has a Fiji environment and can check what the
+difference is in Fiji?
+
+Hoping to hear from someone,
+Ilan
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-bugs/attachments/20140723/333201ec/attachment.html">http://imagej.net/pipermail/imagej-bugs/attachments/20140723/333201ec/attachment.html</A>&gt;
+</PRE>
+
+
+
+
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000057.html">[ImageJ-bugs] [Bug 835] Fiji hangs when installing macro tool
+</A></li>
+	<LI>Next message: <A HREF="000060.html">[ImageJ-bugs] [Bug 803] &quot;Refresh Menus&quot; grayed out in Fiji
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#59">[ date ]</a>
+              <a href="thread.html#59">[ thread ]</a>
+              <a href="subject.html#59">[ subject ]</a>
+              <a href="author.html#59">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-bugs">More information about the Imagej-bugs
+mailing list</a><br>
+</body></html>

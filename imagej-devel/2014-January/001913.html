@@ -1,0 +1,300 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] ImageJ2 Question
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImageJ2%20Question&In-Reply-To=%3CCADN69ynP5mp5j7tHZBA_h5skWHVj1p5egzxnad%2BNbCefgbR19g%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001912.html">
+   <LINK REL="Next"  HREF="001914.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] ImageJ2 Question</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImageJ2%20Question&In-Reply-To=%3CCADN69ynP5mp5j7tHZBA_h5skWHVj1p5egzxnad%2BNbCefgbR19g%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] ImageJ2 Question">ctrueden at wisc.edu
+       </A><BR>
+    <I>Mon Jan 13 16:41:57 CST 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001912.html">[ImageJ-devel] ImageJ2 Question
+</A></li>
+        <LI>Next message: <A HREF="001914.html">[ImageJ-devel] ImageJ2 Question
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1913">[ date ]</a>
+              <a href="thread.html#1913">[ thread ]</a>
+              <a href="subject.html#1913">[ subject ]</a>
+              <a href="author.html#1913">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Jay,
+
+&gt;<i> <A HREF="http://developer.imagej.net/faq#t22n213">http://developer.imagej.net/faq#t22n213</A>
+</I>
+A better URL is:
+<A HREF="http://developer.imagej.net/how-can-i-call-imagej-my-software">http://developer.imagej.net/how-can-i-call-imagej-my-software</A>
+
+Regards,
+Curtis
+
+
+On Mon, Jan 13, 2014 at 4:28 PM, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt; wrote:
+
+&gt;<i> Hi Jay,
+</I>&gt;<i>
+</I>&gt;<i> I am CCing the imagej-devel list, where these discussions should best take
+</I>&gt;<i> place for the public good.
+</I>&gt;<i>
+</I>&gt;<i> &gt; I'm trying to incorporate ImageJ plugins/functionality into JEX. I got
+</I>&gt;<i> &gt; an example working where I use an instance if ImageJ and the
+</I>&gt;<i> &gt; .command() service to discover, get, and execute a command type
+</I>&gt;<i> &gt; plugin. As I move forward I will be implementing widgets for each type
+</I>&gt;<i> &gt; of input and provide my own ui and put the info into the CommandInfo
+</I>&gt;<i> &gt; inputs, set the dataset and retrieve the output. I think this will
+</I>&gt;<i> &gt; suffice for most of the commands that take a Dataset. Right?
+</I>&gt;<i>
+</I>&gt;<i> I think so. Though please note you will be the first
+</I>&gt;<i> guinea^H^H^H^H^Hperson to be implementing a full-blown custom UI with its
+</I>&gt;<i> own widgets. I have implemented four so far, though only one (Swing) is
+</I>&gt;<i> fully fleshed out; the others are incomplete prototypes.
+</I>&gt;<i>
+</I>&gt;<i> I am very happy to help resolve any issues you see in the imagej.ui design
+</I>&gt;<i> (UIService, UserInterface plugin type, etc.). Personally I am not satisfied
+</I>&gt;<i> with the design yet, but for the time being there are more pressing
+</I>&gt;<i> development priorities.
+</I>&gt;<i>
+</I>&gt;<i> &gt; However, I am not sure how to build an ImageDisplay object (e.g., from
+</I>&gt;<i> &gt; a tif file on disk) for use with plugins that require an
+</I>&gt;<i> &gt; ImageDisplay object.
+</I>&gt;<i>
+</I>&gt;<i> At the moment there is some unfortunate casting.
+</I>&gt;<i>
+</I>&gt;<i> To wrap a Dataset in an ImageDisplay:
+</I>&gt;<i> ImageDisplay display = (ImageDisplay) ij.display().createDisplay(dataset);
+</I>&gt;<i>
+</I>&gt;<i>  To wrap a Dataset in a DatasetView:
+</I>&gt;<i> DatasetView view = (DatasetView) ij.imageDisplay().createDataView(d);
+</I>&gt;<i>
+</I>&gt;<i> To wrap a DatasetView in an ImageDisplay:
+</I>&gt;<i> ImageDisplay display = (ImageDisplay) ij.display().createDisplay(view);
+</I>&gt;<i>
+</I>&gt;<i> But that should get you started, at least.
+</I>&gt;<i>
+</I>&gt;<i> &gt; Is there a fundamental difference between plugin
+</I>&gt;<i> &gt; commands that prefer to work with ImageDisplay objects (i.e. they only
+</I>&gt;<i> &gt; alter how things are displayed? and not the underlying data? or maybe
+</I>&gt;<i> &gt; commands that take ImageDisplay objects might need a roi object while
+</I>&gt;<i> &gt; commands that use Datasets don't?)
+</I>&gt;<i>
+</I>&gt;<i> Yes:
+</I>&gt;<i>
+</I>&gt;<i> - A Dataset contains image pixels and metadata, but is stateless. E.g., it
+</I>&gt;<i> does not know the current plane being visualized.
+</I>&gt;<i>
+</I>&gt;<i> - A DatasetView wraps a Dataset and knows its current position
+</I>&gt;<i> (Localizable and Positionable in ImgLib2 terms). The idea is that the same
+</I>&gt;<i> data can be visualized simultaneously in different ways; e.g., a 3-view of
+</I>&gt;<i> cross-sections over different dimensions of a multi-dimensional dataset.
+</I>&gt;<i> ImgLib2 makes this sort of thing really feasible without copying any data
+</I>&gt;<i> around.
+</I>&gt;<i>
+</I>&gt;<i> - An ImageDisplay is a collection of DataViews (DatasetViews and/or
+</I>&gt;<i> OverlayViews). So if you want to show an image with some ROIs on it, or
+</I>&gt;<i> multiple images as tiles, the ImageDisplay can bind all that together into
+</I>&gt;<i> one thing.
+</I>&gt;<i>
+</I>&gt;<i> &gt; For example, why does the &quot;Rotate...&quot; command take a Dataset while the
+</I>&gt;<i> &gt; &quot;Rotate Left&quot; and &quot;Rotate Right&quot; commands take an ImageDisplay? If the
+</I>&gt;<i> &gt; command takes and ImageDisplay, can the image operation still be
+</I>&gt;<i> &gt; accomplished without displaying the image?
+</I>&gt;<i>
+</I>&gt;<i> We try to use the &quot;minimal object type&quot; for each operation; i.e., Dataset
+</I>&gt;<i> when possible. If ImageDisplay is required, it's almost always because
+</I>&gt;<i> there is some feature of the ImageDisplay API that is needed by the
+</I>&gt;<i> command. If DatasetView is required, it's probably because the command
+</I>&gt;<i> wants to know the current position of the visualization, or wants to
+</I>&gt;<i> manipulate the current canvas zoom or color scheme (all features of the
+</I>&gt;<i> view, not the data itself).
+</I>&gt;<i>
+</I>&gt;<i> If you look at the source of Rotate90DegreesLeft, you'll see that it asks
+</I>&gt;<i> the ImageDisplay for its current selection bounds. This is so that the
+</I>&gt;<i> rotation operation can process pixels inside only the current selection,
+</I>&gt;<i> such as a rectangle ROI.
+</I>&gt;<i>
+</I>&gt;<i> &gt; Also, will plugins like TrackMate (is that the name? Also not sure if
+</I>&gt;<i> &gt; this one is ImageJ2 ready... is it?) that may encompass a much larger
+</I>&gt;<i> &gt; framework, be implemented as command plugins or will they be more
+</I>&gt;<i> &gt; general modules.
+</I>&gt;<i>
+</I>&gt;<i> TrackMate is not yet an ImageJ2 command, but it will be. Right now it
+</I>&gt;<i> still targets ImageJ1. More generally, TrackMate is an API for programmatic
+</I>&gt;<i> tracking, with its own SciJava plugin types for segmentation and &quot;linking&quot;
+</I>&gt;<i> (i.e., joining segmented objects together into a graph).
+</I>&gt;<i>
+</I>&gt;<i> &gt; If they are modules, can I still generally just ask
+</I>&gt;<i> &gt; for the inputs, display the widgets to the user, pass the info, set
+</I>&gt;<i> &gt; the Dataset, run them, and get outputs like for the command plugins
+</I>&gt;<i> &gt; but just using the module service. Is it more hopeless than that?
+</I>&gt;<i>
+</I>&gt;<i> An ImageJ2 command is merely a type of ImageJ2 module. The code you have
+</I>&gt;<i> written for discovering the inputs and outputs of available modules applies
+</I>&gt;<i> equal to commands and to other modules.
+</I>&gt;<i>
+</I>&gt;<i> The only thing special about a command is that it is Java code which
+</I>&gt;<i> implements the Command interface and supports declaring the inputs and
+</I>&gt;<i> outputs via the @Parameter annotation. From the standpoint of an API
+</I>&gt;<i> consumer, you don't care at all about that, and can just interrogate the
+</I>&gt;<i> ModuleInfo for what you need, regardless of whether the module in question
+</I>&gt;<i> is a Command.
+</I>&gt;<i>
+</I>&gt;<i> &gt; What is the general difference in paradigm I need to understand (if
+</I>&gt;<i> &gt; any) in order to also incorporate these much larger/more involved
+</I>&gt;<i> &gt; plugins?
+</I>&gt;<i>
+</I>&gt;<i>  By &quot;more involved&quot; I assume you mean &quot;more than just a single module.&quot;
+</I>&gt;<i> Because in terms of lines of code, it makes no difference. But often what
+</I>&gt;<i> will happen is that an extension such as TrackMate will end up consisting
+</I>&gt;<i> of several modules, possibly define other plugin types (such as &quot;segmentor&quot;
+</I>&gt;<i> and &quot;linker&quot;), and plugin implementations (e.g., &quot;simple threshold&quot; as a
+</I>&gt;<i> segementor, or &quot;overlapping pixels&quot; as a linker).
+</I>&gt;<i>
+</I>&gt;<i> But really, who cares? If TrackMate provides 18 modules, and your code
+</I>&gt;<i> discovers and exposes all available modules, you will provide 18
+</I>&gt;<i> TrackMate-related modules to your users. No worries there, right?
+</I>&gt;<i>
+</I>&gt;<i> &gt; I always at least provide default values for each input of a plugin,
+</I>&gt;<i> &gt; will I require any other preprocessing?
+</I>&gt;<i>
+</I>&gt;<i> Without getting very nitty-gritty, I couldn't say. Try it.
+</I>&gt;<i>
+</I>&gt;<i> &gt; Can I get an example of how preprocessing and post processing are used
+</I>&gt;<i> &gt; or their typical purpose for the types of plugins that I'm looking to
+</I>&gt;<i> &gt; bring into JEX (image processing and quantification as opposed to
+</I>&gt;<i> &gt; results table editing / preferences / image display settings / etc
+</I>&gt;<i> &gt; plugins).
+</I>&gt;<i>
+</I>&gt;<i> Here is an example showing how to implement your own preprocessing plugin:
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> <A HREF="https://github.com/imagej/imagej-tutorials/tree/master/custom-preprocessor-plugin">https://github.com/imagej/imagej-tutorials/tree/master/custom-preprocessor-plugin</A>
+</I>&gt;<i>
+</I>&gt;<i> Postprocessing plugins are analogous.
+</I>&gt;<i>
+</I>&gt;<i> That said, I am not sure whether you will need to implement any custom
+</I>&gt;<i> pre- or postprocessing steps. Perhaps.
+</I>&gt;<i>
+</I>&gt;<i> &gt; I couldn't find and &quot;all-inclusive&quot; imagej.jar file on the website for
+</I>&gt;<i> &gt; download so that I could just import a single jar into my project.
+</I>&gt;<i>
+</I>&gt;<i> Sorry, it is a little buried:
+</I>&gt;<i>
+</I>&gt;<i>   <A HREF="http://developer.imagej.net/faq#t22n213">http://developer.imagej.net/faq#t22n213</A>
+</I>&gt;<i>
+</I>&gt;<i> But that's rather intentional; using uber-JARs is fraught with peril, and
+</I>&gt;<i> it's better if you don't. Structure your project as a Maven project and let
+</I>&gt;<i> it manage your dependencies, and the need for an uber-JAR largely
+</I>&gt;<i> disappears.
+</I>&gt;<i>
+</I>&gt;<i> Regards,
+</I>&gt;<i> Curtis
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On Thu, Jan 9, 2014 at 1:26 PM, Jay Warrick &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">warrick at wisc.edu</A>&gt; wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> Hi Johannes,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Let the annoying questions from me begin ;-)... I'm trying to incorporate
+</I>&gt;&gt;<i> ImageJ plugins/functionality into JEX. I got an example working where I use
+</I>&gt;&gt;<i> an instance if ImageJ and the .command() service to discover, get, and
+</I>&gt;&gt;<i> execute a command type plugin. As I move forward I will be implementing
+</I>&gt;&gt;<i> widgets for each type of input and provide my own ui and put the info into
+</I>&gt;&gt;<i> the CommandInfo inputs, set the dataset and retrieve the output. I think
+</I>&gt;&gt;<i> this will suffice for most of the commands that take a Dataset. Right?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> However, I am not sure how to build an ImageDisplay object (e.g., from a
+</I>&gt;&gt;<i> tif file on disk) for use with plugins that require an ImageDisplay object.
+</I>&gt;&gt;<i> Is there a fundamental difference between plugin commands that prefer to
+</I>&gt;&gt;<i> work with ImageDisplay objects (i.e. they only alter how things are
+</I>&gt;&gt;<i> displayed? and not the underlying data? or maybe commands that take
+</I>&gt;&gt;<i> ImageDisplay objects might need a roi object while commands that use
+</I>&gt;&gt;<i> Datasets don't?) Just trying to wrap my mind around the thinking so I can
+</I>&gt;&gt;<i> craft a general way to work with these particular sets of commands. For
+</I>&gt;&gt;<i> example, why does the &quot;Rotate...&quot; command take a Dataset while the &quot;Rotate
+</I>&gt;&gt;<i> Left&quot; and &quot;Rotate Right&quot; commands take an ImageDisplay? If the command
+</I>&gt;&gt;<i> takes and ImageDisplay, can the image operation still be accomplished
+</I>&gt;&gt;<i> without displaying the image?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Also, will plugins like TrackMate (is that the name? Also not sure if
+</I>&gt;&gt;<i> this one is ImageJ2 ready... is it?) that may encompass a much larger
+</I>&gt;&gt;<i> framework, be implemented as command plugins or will they be more general
+</I>&gt;&gt;<i> modules. If they are modules, can I still generally just ask for the
+</I>&gt;&gt;<i> inputs, display the widgets to the user, pass the info, set the Dataset,
+</I>&gt;&gt;<i> run them, and get outputs like for the command plugins but just using the
+</I>&gt;&gt;<i> module service. Is it more hopeless than that? What is the general
+</I>&gt;&gt;<i> difference in paradigm I need to understand (if any) in order to also
+</I>&gt;&gt;<i> incorporate these much larger/more involved plugins? If I always at least
+</I>&gt;&gt;<i> provide default values for each input of a plugin, will I require any other
+</I>&gt;&gt;<i> preprocessing? Can I get an example of how preprocessing and post
+</I>&gt;&gt;<i> processing are used or their typical purpose for the types of plugins that
+</I>&gt;&gt;<i> I'm looking to bring into JEX (image processing and quantification as
+</I>&gt;&gt;<i> opposed to results table editing / preferences / image display settings /
+</I>&gt;&gt;<i> etc plugins).
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Thanks!!!!
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Jay
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On Thu, Jan 9, 2014 at 1:44 PM, Jay Warrick &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">warrick at wisc.edu</A>&gt; wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> Sorry for another one :-)
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I couldn't find and &quot;all-inclusive&quot; imagej.jar file on the website for
+</I>&gt;&gt;<i> download so that I could just import a single jar into my project. I'm fine
+</I>&gt;&gt;<i> with importing each separately if need be but figured you guys probably
+</I>&gt;&gt;<i> have one somewhere. In one of your pages you refer to something of the sort
+</I>&gt;&gt;<i> but I didn't see it on the linked download page currently.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Thanks,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Jay
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140113/00be1547/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20140113/00be1547/attachment-0001.html</A>&gt;
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001912.html">[ImageJ-devel] ImageJ2 Question
+</A></li>
+	<LI>Next message: <A HREF="001914.html">[ImageJ-devel] ImageJ2 Question
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1913">[ date ]</a>
+              <a href="thread.html#1913">[ thread ]</a>
+              <a href="subject.html#1913">[ subject ]</a>
+              <a href="author.html#1913">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

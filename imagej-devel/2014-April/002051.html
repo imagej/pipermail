@@ -1,0 +1,166 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] JEX
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20JEX&In-Reply-To=%3C7148A1D3-35E0-4F39-BD71-F3EFBF99A2B5%40wisc.edu%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002048.html">
+   <LINK REL="Next"  HREF="002052.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] JEX</H1>
+    <B>Jay Warrick</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20JEX&In-Reply-To=%3C7148A1D3-35E0-4F39-BD71-F3EFBF99A2B5%40wisc.edu%3E"
+       TITLE="[ImageJ-devel] JEX">warrick at wisc.edu
+       </A><BR>
+    <I>Sun Apr 20 01:28:42 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002048.html">[ImageJ-devel] JEX
+</A></li>
+        <LI>Next message: <A HREF="002052.html">[ImageJ-devel] JEX
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2051">[ date ]</a>
+              <a href="thread.html#2051">[ thread ]</a>
+              <a href="subject.html#2051">[ subject ]</a>
+              <a href="author.html#2051">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Curtis,
+
+So, I took a crack at getting a Maven project setup for the &quot;JEX plugin&quot; with a &quot;hello world&quot; run method. I think it is working so far (mostly). I think I likely need to add more dependancies because when I run and show ImageJ so that I may select JEX from the menu, I find that some of the other menu commands work and others give an error message (I think I at least need to add the ij-options project). However, I figure this is a point to get feedback on what I've done to set it up so far...
+
+1) The maven project template was very helpful. Thanks. Although I really don't have much of an idea of what I should tweak from here. I figure mainly the name of the project and dependancies. Also, the template is based on ImageJ 1.x but I'm doing ImageJ2... I will be showing all the Command.class plugins within the JEX plugin as batchable commands within JEX and I don't know what all of those may depend on. So probably I should add all the ij projects as dependancies, right? If you have any other key words to search regarding maven project properties to search the web for to learn more about... I'm willing.
+
+2) I tried to set up dependancies with my forked ImageJ2 maven projects in my eclipse workspace. Not sure how this will affect things downstream or if the magic of Maven will find jars if there are no projects when others clone this new project's repository to contribute. Advice?
+
+3) Right now, the versions of the dependencies are fixed instead of flexible (e.g., using ${project.version} parameters) I have no idea what I'm doing :-) but when I changed the dependancy version to ${project.version} as done in the poms of the other ij projects, it gave an error. Mainly I just wanted this to point to the newest versions. Maybe fixed version is better / less prone to random new bugs as other things get updated so I should leave it as is for now and update version numbers manually moving forward?
+
+4) If I make JEX a Command.class plugin, will the JEX plugin act like a modal window, blocking interaction with the main IJ2 UI while &quot;running&quot;. If so, is there an alternative that won't block? I was hoping they could be open, operating, and interacting at the same time. Is there a more appropriate plugin class to do this?
+
+5) Can you pass the singular ImageJ context/gateway as a parameter to the plugin or only services and whatnot? i.e., can I do the following?
+
+	@Parameter
+	private ImageJ ij;
+
+6) I figure once things look a bit more reasonable as far as project readiness, I'll do the update site thing :-) Thanks for the tips and website. The instructions seem fairly straight forward.
+
+Thanks in advance, for any help you can provide. The github repo for what I've done is here... (<A HREF="https://github.com/jaywarrick/JEX_IJ2">https://github.com/jaywarrick/JEX_IJ2</A>) I've added you as a collaborator. I imagine this repo is what Erwin and I will build up, pulling JEX code in and cleaning/converting things as we do so.
+
+Cheers,
+
+Jay
+
+On Apr 17, 2014, at 10:32 AM, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt; wrote:
+
+&gt;<i> Hi Jay &amp; Erwin,
+</I>&gt;<i> 
+</I>&gt;<i> &gt; Erwin and I are exploring the idea of a new version of JEX that would
+</I>&gt;<i> &gt; itself be a plugin of ImageJ.
+</I>&gt;<i> 
+</I>&gt;<i> That would be fantastic.
+</I>&gt;<i>  
+</I>&gt;<i> &gt; There are a few different ways this could be developed... Either as
+</I>&gt;<i> &gt; part of the imagej managed code base (i.e. a package within a current
+</I>&gt;<i> &gt; ImageJ2 project or as its own maven project that is updated and
+</I>&gt;<i> &gt; managed like the rest of the ImageJ2 suite of projects like ij-app,
+</I>&gt;<i> &gt; ij-core, etc.) or as a completely separate project that we jarify and
+</I>&gt;<i> &gt; allow users to put into the plugin folder of ImageJ afterward.
+</I>&gt;<i> 
+</I>&gt;<i> The model we are targeting is &quot;one Git repository per JAR file&quot; with each being a Maven module with its own version. We have already completed this transition with the Fiji project [1], and ImageJ2 will be completely structured that way soon as well. This approach has many advantages:
+</I>&gt;<i> 
+</I>&gt;<i> 1) Stable release version couplings between components, so that if an upstream component changes, downstream components are not affected/broken until they intentionally upgrade to the newer version.
+</I>&gt;<i> 
+</I>&gt;<i> 2) Independent versioning of each component. When a bug is fixed in a particular component, we just release a new version of that component. No need to cut vacuous releases of the entire collection of ImageJ2 JARs.
+</I>&gt;<i> 
+</I>&gt;<i> 3) Easier and less intimidating to contribute to an individual plugin: just fork that one repo, push your changes and file a PR. No need to clone an all-encompassing fiji.git or imagej.git repository.
+</I>&gt;<i> 
+</I>&gt;<i> Further, in the Fiji project, each module is now what we call an &quot;external plugin&quot; that lives in its own repository, either in the github.com/fiji namespace, or in some cases [2, 3] in the plugin developer's personal space (doesn't matter that much).
+</I>&gt;<i> 
+</I>&gt;<i> ImageJ2 and Fiji support multiple update sites [4]. There is a core ImageJ2 update site [5], a core Fiji update site [6], and many others as well [7]. JEX would be a perfect fit for its own update site, giving you full control over every aspect of your releases while leveraging the power of ImageJ2 for deployment to your users.
+</I>&gt;<i> 
+</I>&gt;<i> In short: I would suggest creating a personal update site for JEX and serving your releases from there. That way, anyone using ImageJ2 or Fiji can install JEX simply by checking a box. For details, see:
+</I>&gt;<i> 
+</I>&gt;<i>     <A HREF="http://fiji.sc/How_to_set_up_and_populate_an_update_site">http://fiji.sc/How_to_set_up_and_populate_an_update_site</A>
+</I>&gt;<i> 
+</I>&gt;<i> And as you know I would certainly advise structuring JEX as a Maven project, though it is not required. Here is a template you can use as a starting point:
+</I>&gt;<i> 
+</I>&gt;<i>     <A HREF="https://github.com/imagej/minimal-ij1-plugin">https://github.com/imagej/minimal-ij1-plugin</A>
+</I>&gt;<i> 
+</I>&gt;<i> Very happy to answer any questions our issues you have on your journey. :-)
+</I>&gt;<i> 
+</I>&gt;<i> Regards,
+</I>&gt;<i> Curtis
+</I>&gt;<i> 
+</I>&gt;<i> [1] <A HREF="https://github.com/fiji">https://github.com/fiji</A>
+</I>&gt;<i> [2] <A HREF="https://github.com/tferr/ASA">https://github.com/tferr/ASA</A>
+</I>&gt;<i> [3] <A HREF="git://repo.or.cz/trakem2.git">git://repo.or.cz/trakem2.git</A>
+</I>&gt;<i> [4] <A HREF="http://fiji.sc/Update_Sites">http://fiji.sc/Update_Sites</A>
+</I>&gt;<i> [5] <A HREF="http://update.imagej.net/">http://update.imagej.net/</A>
+</I>&gt;<i> [6] <A HREF="http://fiji.sc/update/">http://fiji.sc/update/</A>
+</I>&gt;<i> [7] <A HREF="http://fiji.sc/List_of_update_sites">http://fiji.sc/List_of_update_sites</A>
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> On Thu, Apr 17, 2014 at 9:41 AM, Jay Warrick &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">warrick at wisc.edu</A>&gt; wrote:
+</I>&gt;<i> Sorry to clog your inbox. Evidently this didn't send last night and it got sent without closing the email... 
+</I>&gt;<i> 
+</I>&gt;<i> Any ideas or suggestions on a development approach would be welcome. You have sold me/us on your approach to application development. We want to integrate ourselves the best way possible but don't want to bring the project down by being less professional in our coding abilities and practices. We'll do our best but I'm not sure we'll ever be able to be on par with the rest of you guys :-)
+</I>&gt;<i> 
+</I>&gt;<i> I look forward to hearing from you. Thanks,
+</I>&gt;<i> 
+</I>&gt;<i> Jay (and Erwin)
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> Begin forwarded message:
+</I>&gt;<i> 
+</I>&gt;&gt;<i> From: Jay Warrick &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">warrick at wisc.edu</A>&gt;
+</I>&gt;&gt;<i> Subject: JEX
+</I>&gt;&gt;<i> Date: April 17, 2014 at 9:35:04 AM CDT
+</I>&gt;&gt;<i> To: Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt;
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> Hi Curtis,
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> Erwin and I are exploring the idea of a new version of JEX that would itself be a plugin of ImageJ.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> There are a few different ways this could be developed... Either as part of the imagej managed code base (i.e. a package within a current ImageJ2 project or as its own maven project that is updated and managed like the rest of the ImageJ2 suite of projects like ij-app, ij-core, etc.) or as a completely separate project that we jarify and allow users to put into the plugin folder of ImageJ afterward. What might you recommend? We don't want to impose or muddy up your architecture but also really like the idea of being well-integrated with your current lifecycle management schemes (i.e. maven dependancies, compiling, versioning, and updating of jars (Jenkins etc).
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140420/cbb9c134/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20140420/cbb9c134/attachment.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002048.html">[ImageJ-devel] JEX
+</A></li>
+	<LI>Next message: <A HREF="002052.html">[ImageJ-devel] JEX
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2051">[ date ]</a>
+              <a href="thread.html#2051">[ thread ]</a>
+              <a href="subject.html#2051">[ subject ]</a>
+              <a href="author.html#2051">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

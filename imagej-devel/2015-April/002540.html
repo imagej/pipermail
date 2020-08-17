@@ -1,0 +1,192 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Developping new UI for ImageJ
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Developping%20new%20UI%20for%20ImageJ&In-Reply-To=%3CCADN69ym2Cq1_gWnihpY%2BDTpuWKu7BddLGYgd9QLAm4Cn1Z-sVA%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002535.html">
+   <LINK REL="Next"  HREF="002544.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Developping new UI for ImageJ</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Developping%20new%20UI%20for%20ImageJ&In-Reply-To=%3CCADN69ym2Cq1_gWnihpY%2BDTpuWKu7BddLGYgd9QLAm4Cn1Z-sVA%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Developping new UI for ImageJ">ctrueden at wisc.edu
+       </A><BR>
+    <I>Wed Apr  8 12:20:44 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002535.html">[ImageJ-devel] Developping new UI for ImageJ
+</A></li>
+        <LI>Next message: <A HREF="002544.html">[ImageJ-devel] Developping new UI for ImageJ
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2540">[ date ]</a>
+              <a href="thread.html#2540">[ thread ]</a>
+              <a href="subject.html#2540">[ subject ]</a>
+              <a href="author.html#2540">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Cyril,
+
+&gt;<i> What the difference between the DisplayService, ImageDisplay and
+</I>&gt;<i> ImageDisplayViewer ?
+</I>
+The DisplayService is the service for working with Displays. It is UI
+agnostic, and should not need to be overridden.
+
+ImageDisplay is a Display for image objects. These are UI agnostic.
+
+ImageDisplayViewer is the actual UI-specific implementation (e.g.,
+SwingImageDisplayViewer in imagej-ui-swing), which creates and shows the UI
+components for the desired ImageDisplay.
+
+&gt;<i> An image is open but who decide of what and how ?
+</I>
+The UIService responds to DisplayCreatedEvents, creating and showing a
+DisplayViewer for each currently visible UI [1, 2, 3].
+
+&gt;<i> Do I have to overwrite the ImageDisplayService or is it UI agnostic ?
+</I>
+The ImageDisplayService is a convenience service for working specifically
+with ImageDisplays (rather than the more general Displays). It is UI
+agnostic, and should not need to be overridden.
+
+What you need to do is implement a JavaFXImageDisplayViewer, which will
+then be used to display the UI component that visualizes the image (i.e.,
+the Dataset, which is wrapped in a DatasetView, which is wrapped in an
+ImageDisplay).
+
+The current type hierarchy is at least one level too complex. FWIW, it
+evolved this way so that ImageDisplays could be fully headless [4]. But
+there are definitely ways to simplify the hierarchy. We will do it before
+the ImageJ2 data model comes out of beta.
+
+See also these issues:
+* <A HREF="https://github.com/scijava/scijava-common/issues/157">https://github.com/scijava/scijava-common/issues/157</A>
+* <A HREF="https://github.com/imagej/imagej-common/issues/12">https://github.com/imagej/imagej-common/issues/12</A>
+
+Regards,
+Curtis
+
+[1]
+<A HREF="https://github.com/scijava/scijava-common/blob/scijava-common-2.40.0/src/main/java/org/scijava/ui/DefaultUIService.java#L373-L380">https://github.com/scijava/scijava-common/blob/scijava-common-2.40.0/src/main/java/org/scijava/ui/DefaultUIService.java#L373-L380</A>
+[2]
+<A HREF="https://github.com/scijava/scijava-common/blob/scijava-common-2.40.0/src/main/java/org/scijava/ui/AbstractUserInterface.java#L125-L162">https://github.com/scijava/scijava-common/blob/scijava-common-2.40.0/src/main/java/org/scijava/ui/AbstractUserInterface.java#L125-L162</A>
+[3]
+<A HREF="https://github.com/scijava/scijava-common/blob/scijava-common-2.40.0/src/main/java/org/scijava/ui/DefaultUIService.java#L272-L277">https://github.com/scijava/scijava-common/blob/scijava-common-2.40.0/src/main/java/org/scijava/ui/DefaultUIService.java#L272-L277</A>
+
+[4] <A HREF="http://trac.imagej.net/ticket/995">http://trac.imagej.net/ticket/995</A>
+
+
+On Tue, Apr 7, 2015 at 11:06 AM, Mongis Cyril &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">cyril.mongis at googlemail.com</A>&gt;
+wrote:
+
+&gt;<i> Hello everyone !
+</I>&gt;<i>
+</I>&gt;<i> I had to put the project on pause for a couple of week but now I'm back on
+</I>&gt;<i> it. First, thank you for your help. Thanks to you, I succeeded to put the
+</I>&gt;<i> FxUI as prior UI. Also the JavaFX App is started in ImageJ. I could even
+</I>&gt;<i> generate a menu and all. I can call the &quot;Open file&quot; plugin and it uses the
+</I>&gt;<i> JavaFX routines to show the file dialogs and all. It's great. However, not
+</I>&gt;<i> much happens after that. My next questions goes about to the ImageDisplay
+</I>&gt;<i> stack. I have troubles understanding the &quot;call stack&quot; after the image has
+</I>&gt;<i> been open. What the difference between the DisplayService, ImageDisplay and
+</I>&gt;<i> ImageDisplayViewer ? An image is open but who decide of what and how ? Do I
+</I>&gt;<i> have to overwrite the ImageDisplayService or is it UI agnostic ?
+</I>&gt;<i>
+</I>&gt;<i> Cheers
+</I>&gt;<i>
+</I>&gt;<i> Cyril
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> 2015-03-26 18:23 GMT+01:00 Brian Schlining &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">bschlining at gmail.com</A>&gt;:
+</I>&gt;<i>
+</I>&gt;&gt;<i> Hi,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> On March 26, 2015 at 8:49:21 AM, Mongis Cyril (
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">cyril.mongis at googlemail.com</A>) wrote:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I'm currently embedding ImageJ in one my application but I use JavaFX for
+</I>&gt;&gt;<i> the user interface. I would like to channel the image windows, which are
+</I>&gt;&gt;<i> created and handled by ImageJ, to JavaFX elements. In other words, when a
+</I>&gt;&gt;<i> plugin wants to display an image, this image would be displayed in a JavaFX
+</I>&gt;&gt;<i> element.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I have some code that may help get you going. The source is under
+</I>&gt;&gt;<i> <A HREF="https://github.com/hohonuuli/assignments-openimaj.">https://github.com/hohonuuli/assignments-openimaj.</A> Specifically, you
+</I>&gt;&gt;<i> should take a look at the classes in
+</I>&gt;&gt;<i> <A HREF="https://github.com/hohonuuli/assignments-openimaj/tree/master/src/main/java/org/mbari/javafx/scene/image">https://github.com/hohonuuli/assignments-openimaj/tree/master/src/main/java/org/mbari/javafx/scene/image</A>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> The code there is pretty straightforward. I wrote this code for an image
+</I>&gt;&gt;<i> processing course I was taking. You can display an image in a resizable
+</I>&gt;&gt;<i> JavaFX Stage likes so:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> import java.net.URL;
+</I>&gt;&gt;<i> import org.mbari.javafx.scene.image.*;
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> JavaFX.namedWindow(&quot;My Window&quot;,
+</I>&gt;&gt;<i>   new URL(&quot;<A HREF="https://upload.wikimedia.org/wikipedia/en/2/24/Lenna.png">https://upload.wikimedia.org/wikipedia/en/2/24/Lenna.png</A>&quot;));
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> If you need a reference to the Stage you can do the following after
+</I>&gt;&gt;<i> you&#8217;ve created it:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Optional&lt;ImageStage&gt; stage = JavaFX.getNamedWindow(&quot;My Window&quot;);
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Anyway, it will at least give you a starting point. There&#8217;s a method that
+</I>&gt;&gt;<i> takes a javafx.scene.image.Image
+</I>&gt;&gt;<i> &lt;<A HREF="http://docs.oracle.com/javase/8/javafx/api/javafx/scene/image/Image.html">http://docs.oracle.com/javase/8/javafx/api/javafx/scene/image/Image.html</A>&gt;
+</I>&gt;&gt;<i> instead of a URL too. You&#8217;ll still need to implement a conversion between
+</I>&gt;&gt;<i> ImageJ/imglib2 image formats and JavaFX&#8217;s Image. There&#8217;s also a Swing class
+</I>&gt;&gt;<i> the does something similar (e.g. Swing.namedWindow(...) in the project.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Good Luck
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> &#8211; Brian Schlining
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20150408/4e338007/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20150408/4e338007/attachment.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002535.html">[ImageJ-devel] Developping new UI for ImageJ
+</A></li>
+	<LI>Next message: <A HREF="002544.html">[ImageJ-devel] Developping new UI for ImageJ
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2540">[ date ]</a>
+              <a href="thread.html#2540">[ thread ]</a>
+              <a href="subject.html#2540">[ subject ]</a>
+              <a href="author.html#2540">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

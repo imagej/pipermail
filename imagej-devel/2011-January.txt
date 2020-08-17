@@ -1,0 +1,2819 @@
+From ctrueden at wisc.edu  Sun Jan  2 20:13:10 2011
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Sun, 2 Jan 2011 20:13:10 -0600
+Subject: [ImageJ-devel] ImageJDev project update
+In-Reply-To: <AANLkTimwPFna-D_0rHWQWcmPyiouB2rQQ0S62VD_08Un@mail.gmail.com>
+References: <AANLkTi=O8raSrNWB3uayp1d+iH80XhTraZWm24F7Jrex@mail.gmail.com>
+	<AANLkTimwPFna-D_0rHWQWcmPyiouB2rQQ0S62VD_08Un@mail.gmail.com>
+Message-ID: <AANLkTincrO1XhFvs+wBY8rjy4t4Hybz8RZtWR4=7N=g1@mail.gmail.com>
+
+Hi Albert,
+
+Thanks for the update. It's missing one key explanation: how to launch it.
+>
+
+We wanted to have an alpha version of all the functionality pulled together
+by the holidays, but unfortunately it is not quite ready. I assure you that
+running ImageJ2 in its current form will be highly unimpressive. That said,
+if you are set on trying it, the easiest way at the moment is:
+
+$ mvn
+$ cd imagej
+$ ./run
+
+This will invoke the Maven command to copy all the dependent JAR files to a
+common folder and launch the program with the appropriate classpath.
+
+I will send another update to the lists before the end of January, and
+hopefully by then we will have an alpha version ready as well.
+
+Regards,
+Curtis
+
+On Thu, Dec 30, 2010 at 2:31 PM, Albert Cardona <sapristi at gmail.com> wrote:
+
+> Curtis,
+>
+> Thanks for the update. It's missing one key explanation: how to launch it.
+>
+> I managed to figure out the following:
+>
+> $ java -classpath $(find -name "*.jar" -printf "%h/%f:").
+> imagej.gui.MainFrame
+>
+> or:
+>
+> $ java -classpath $(find -name "*.jar" -printf "%h/%f:"). ijx.ImageJX
+>
+> ... but they are both very broken.
+>
+> Is there any way to launch the program?
+>
+> With maven, I get:
+>
+> $ mvn -e exec:java -Dexec.mainClass="ijx.ImageJX"
+>
+> org.apache.maven.lifecycle.LifecycleExecutionException: An exception
+> occured while executing the Java class. ijx.ImageJX
+> ...
+> Caused by: java.lang.ClassNotFoundException: ijx.ImageJX
+>        at java.net.URLClassLoader$1.run(URLClassLoader.java:202)
+>        at java.security.AccessController.doPrivileged(Native Method)
+>        at java.net.URLClassLoader.findClass(URLClassLoader.java:190)
+>        at java.lang.ClassLoader.loadClass(ClassLoader.java:307)
+>        at java.lang.ClassLoader.loadClass(ClassLoader.java:248)
+>        at org.codehaus.mojo.exec.ExecJavaMojo$1.run(ExecJavaMojo.java:284)
+>        at java.lang.Thread.run(Thread.java:619)
+>
+>
+> Surely there is an incantation to run ImageJ 2.0 ?
+>
+>
+> Albert
+> --
+> http://albert.rierol.net
+>
+> --
+> You received this message because you are subscribed to the Google Groups
+> "ImageJX" group.
+> To post to this group, send email to imagejx at googlegroups.com.
+> To unsubscribe from this group, send email to
+> imagejx+unsubscribe at googlegroups.com<imagejx%2Bunsubscribe at googlegroups.com>
+> .
+> For more options, visit this group at
+> http://groups.google.com/group/imagejx?hl=en.
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110102/ce8c7186/attachment.html>
+
+From ctrueden at wisc.edu  Thu Jan  6 13:41:21 2011
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Thu, 6 Jan 2011 13:41:21 -0600
+Subject: [ImageJ-devel] ImageCanvas Rotation in ImageJ2.0 ?
+In-Reply-To: <4D22D4EC.3010401@insightbb.com>
+References: <4D202CC5.9060806@insightbb.com>
+	<1814997C-D95D-4294-BE85-4C97825DF970@nih.gov>
+	<4D22D4EC.3010401@insightbb.com>
+Message-ID: <AANLkTiknQ67JNCLSFZ47-EOAeUp7QU-EQgH=aMj2AN4m@mail.gmail.com>
+
+Hi Karen,
+
+I am CCing the ImageJDev mailing list, since your question may be on
+interest to others.
+
+   From reading the Image2.0 website, it appears that one of your main goals
+> is the decouple the image data from the image display and that rotating the
+> image display might be much easier to accomplish than in ImageJ1.xx. Is this
+> something that is already implemented in ImageJ2.0, or is it in the roadmap,
+> or if not, would such a feature be reasonable to implement in 2.0?
+>
+
+Yes, this is a major feature we plan to implement for ImageJ2. It is
+definitely on the roadmap. The idea is to allow a many-to-one mapping of
+data to display, so that you can visualize multiple images overlaid in the
+same display, with each one mapped by an arbitrary affine transform. That
+way you can have images as tiles in a display, and/or do Photoshop-style
+image layers.
+
+This feature is important for applications such as TrakEM2, which perform
+image registration. Right now, if you download Fiji (which is just ImageJ
+1.x with a bunch of extra plugins), you can use TrakEM2 to perform the
+arbitrary rotation you seek, and much more.
+
+At the moment, ImageJDev uses a very simple image display class called
+NavigableImagePanel, which you can browse at:
+
+http://dev.imagejdev.org/trac/imagej/browser/trunk/ij2-gui/src/main/java/imagej/gui/display
+
+It was adapted from an article on java.net by Slav Boleslawski:
+  http://today.java.net/article/2007/03/23/navigable-image-panel
+
+We are still exploring whether to continue adapting this display by adding
+features similar to TrakEM2, to adapt some TrakEM2 code more directly, or a
+combination of the two, in order to achieve our ultimate goals described
+above. There is also a library called VisAD we plan to utilize to create 2D
+and 3D displays in ImageJ?the ImageJDev architecture will allow for multiple
+distinct display plugins, depending on the type of image data.
+
+I look forward to your feedback since I need to make a decision on whether
+> to create yet another specific purpose release stream of ImageJ1.xx or start
+> migrating to IJ2.0.
+>
+
+Unfortunately, it is still early days to be migrating to IJ2. Over the
+course of this year things will really solidify. We hope to have a more
+stable API against which third party folks can code by the fall. In the
+meantime, if you are interested in participating in the design of said API,
+you can join the ImageJX and/or imagej-devel mailing lists (see
+http://imagejdev.org/mailing-lists). We would love to hear more details on
+your requirements.
+
+HTH,
+Curtis
+
+On Tue, Jan 4, 2011 at 2:06 AM, Karen Collins
+<karen.collins at insightbb.com>wrote:
+
+>  Hi Curtis,
+>   I am developing a "professional" Astronomy environment for ImageJ
+> building on top of the existing Astronomy package from Rick Hessman. Wayne
+> suggested that I contact you regarding my request to him to add a feature to
+> ImageJ that allows the ImageCanvas to be flipped in X and/or Y and to allow
+> the ImageCanvas to be rotated (in steps of 90 degrees is enough for my
+> astronomy purposes). I am specifying the ImageCanvas as opposed to the
+> actual underlying image data because I need to be able to rotate just the
+> display of the data (and associated ROI's), while leaving the underlying
+> data in the same orientation.
+>    From reading the Image2.0 website, it appears that one of your main
+> goals is the decouple the image data from the image display and that
+> rotating the image display might be much easier to accomplish than in
+> ImageJ1.xx. Is this something that is already implemented in ImageJ2.0, or
+> is it in the roadmap, or if not, would such a feature be reasonable to
+> implement in 2.0? My analysis and preliminary work to add this capability to
+> 1.xx is discussed below if you are interested in more detail. In summary, I
+> have image flipping (in X and/or Y) implemented in 1.0, but I will need to
+> do more work to complete the rotation capability.
+>     I look forward to your feedback since I need to make a decision on
+> whether to create yet another specific purpose release stream of ImageJ1.xx
+> or start migrating to IJ2.0.
+>
+> Thanks,
+>     Karen
+>
+> On 1/2/2011 12:12 PM, Rasband, Wayne (NIH/NIMH) [E] wrote:
+>
+>> Hi Karen,
+>>
+>> This sounds like more changes than I am willing to make. I am attempting
+>> to keep ImageJ as small and simple as possible. There is a good chance,
+>> however, that you can talk the ImageJDev people into incorporating you
+>> changes into ImageJ 2.0 (http://imagejdev.org/). They are much more
+>> receptive to changes than I am. I good person to contact would be Curtis
+>> Rueden (ctrueden at wisc.edu). Another possibility would be to incorporate
+>> your changes into SalsaJ (http://www.euhou.net/), a version of ImageJ
+>> focused on Astronomy in education.
+>>
+>> Best regards,
+>>
+>> -wayne
+>>
+>>
+>>
+>> On Jan 2, 2011, at 2:44 AM, Karen Collins wrote:
+>>
+>>  Hi Wayne,
+>>>       The description in my previous email was all based on flipping an
+>>> ImageCanvas in the X and Y direction, but I had not seriously looked into
+>>> rotating the Canvas by 90 degree steps. The changes to provide the ability
+>>> to flip in X and Y do still seem to be limited to what I described below.
+>>> However, after further work on rotating the canvas, I can't find a way to
+>>> avoid passing both X and Y values as parameters in each of the
+>>> screen-to-image mapping methods. In other words, these methods would need to
+>>> be changed to something like screenX(int offX, int offY),  screenY(int offX,
+>>> int offY), offScreenX(int screenX, int screenY),  offScreenY(int screenX,
+>>> int screenY). Both values are required as parameters since with rotations of
+>>> 0 or 180 degrees, screenX determines offScreenX, but in rotations of 90 or
+>>> 270 degrees, screenY determines offScreenX, and vice-versa.
+>>>       There are on the order of 30 occurrences of each of these, with
+>>> most of them being in ImageCanvas and the ROI Classes. Would I be correct in
+>>> assuming that this would be too much change for you to consider folding into
+>>> the standard ImageJ release stream? Could the ImageJ user base in general
+>>> benefit from having ImageCanvas rotation capability, or is this specific to
+>>> astronomy?
+>>>       If you are willing to include this capability into the base code, I
+>>> am willing to do the coding and testing work. I would of course leave in the
+>>> existing single parameter screenX/Y and offScreenX/Y ImageCanvas methods for
+>>> backwards compatibility with plugins that only support the standard canvas
+>>> orientation.  For standard ImageJ use, the new double parameter (X, Y)
+>>> versions would of course return the same value as the single parameter
+>>> versions and should be transparent to the operation of ImageJ as it exists
+>>> today.
+>>>
+>>> Happy New Year!
+>>> Karen
+>>>
+>>> -------- Original Message --------
+>>> Subject:        ImageCanvas Rotation in ImageJ
+>>> Date:   Thu, 30 Dec 2010 05:02:02 -0500
+>>> From:   Karen Collins<karen.collins at insightbb.com>
+>>> To:     Rasband Wayne<wsr at nih.gov>
+>>>
+>>>  Hi Wayne,
+>>>       In connection with the Astronomy_Tool plugin that is still under
+>>> development, I have been experimenting with ways to accomplish rotating
+>>> an ImageCanvas (as opposed to rotating an ImagePlus). In astronomy, we
+>>> often want to display an image such that North is up and East is to the
+>>> left when viewed on the screen. However, images are often not exposed in
+>>> this orientation on the sky, but are rotated by 90, 180, or 270 degrees
+>>> and/or flipped in X or Y. We don't want to rotate the actual image
+>>> dataset so that if it is modified and saved, the saved image is
+>>> maintained in the original orientation, regardless of the display
+>>> orientation.
+>>>      Assuming that this feature may not be needed for non-astronomy
+>>> ImageJ users, I have been investigating extending ImageCanvas to
+>>> accomplish the rotations/flips. I am utilizing the Graphics2d Affine
+>>> Transformations which keeps all the changes within ImageCanvas (or
+>>> extension thereof), and leaves the Roi code unchanged. The changes
+>>> needed are the insertion of the affine transformations in
+>>> ImageCanvas.paint and ImageCanvas.paintDoubleBuffered methods and the
+>>> modification of the offscreenX/Y and screenX/Y methods to accommodate
+>>> the flips and rotates. The zoom indicator code also needs additional
+>>> functionality to handle the different orientations and to add X and Y
+>>> axis indicator arrows.
+>>>     I have a working version implemented as a subclass of ImageCanvas,
+>>> but I had to change some of the ImageCanvas method and variable
+>>> modifiers from private to protected to be able to Override the
+>>> ImageCanvas paint method from the subclass. I wanted to find out if it
+>>> would be possible to change some of the modifiers in the base ImageJ
+>>> code, so that I could avoid a non-standard release of ImageJ?
+>>>
+>>> The changes that would be needed in ImageCanvas are:
+>>>
+>>> private Image offScreenImage;  ->   protected Image offScreenImage;
+>>> private int offScreenWidth = 0;   ->   protected int offScreenWidth = 0;
+>>> private int offScreenHeight = 0;  ->   protected int offScreenHeight = 0;
+>>>
+>>> private void drawRoi(Roi roi, Graphics g)    ->   protected void
+>>> drawRoi(Roi roi, Graphics g)
+>>> void drawAllROIs(Graphics g)    ->   protected void drawAllROIs(Graphics
+>>> g)
+>>> void drawZoomIndicator(Graphics g)    ->   protected void
+>>> drawZoomIndicator(Graphics g)
+>>> void showFrameRate(Graphics g)    ->   protected void
+>>> showFrameRate(Graphics g)
+>>>
+>>>
+>>>
+>>> There is one additional change that may be needed in ij.gui.Roi.
+>>> ImageCanvas.paint() line 4 is:
+>>>    if (roi!=null) roi.updatePaste();
+>>> In Roi, roi.updatePaste() is currently unmodified, but would need to be
+>>> public for me to be able access it outside the ij.gui package. I haven't
+>>> been able to fully understand what this feature does, but assuming I
+>>> need to keep it in the ImageCanvas.paint override code, could the
+>>> Roi.updatePaste() modifier be changed to "public" if the above changes
+>>> are also acceptable?
+>>>
+>>> If these changes are not appropriate for standard ImageJ releases, I
+>>> will search for other solutions, although I'm not sure how to accomplish
+>>> this otherwise without a special release of ImageJ. I will put in my
+>>> disclaimer here: I am certainly not a Java guru, so I hope my analysis
+>>> is sensible.  I am very open to other ideas if I am off track.
+>>>
+>>> If you are interested in offering canvas rotation in the standard ImageJ
+>>> release, I am happy to contribute my work to the project by providing
+>>> you an updated ImageCanvas.java file when I am finished, which in turn
+>>> would avoid an ImageCanvas subclass for me. I currently have X/Y canvas
+>>> flipping working, and will turn next to rotation. I think this will only
+>>> require one more boolean to exchange X and Y coordinates, as it seems
+>>> that all combinations of 90, 180, and 270 degree rotations and X/Y flips
+>>> can be accomplished with a single 90 rotation combined with appropriate
+>>> X and Y flips.
+>>>
+>>> Thanks,
+>>>     Karen
+>>>
+>>>
+>>>
+>>>
+>>>
+>>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110106/ff8b668a/attachment.html>
+
+From ctrueden at wisc.edu  Mon Jan 10 12:16:14 2011
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Mon, 10 Jan 2011 12:16:14 -0600
+Subject: [ImageJ-devel] ImageOpener always giving me three channels when
+ these is only one.
+In-Reply-To: <E1PS5kK-0002y2-MZ@skynet.loci.wisc.edu>
+References: <4D0520E1.5000501@mbl.edu> <E1PS4r0-0002sl-Vw@skynet.loci.wisc.edu>
+	<alpine.DEB.1.00.1012131042590.1461@bonsai2>
+	<E1PS5kK-0002y2-MZ@skynet.loci.wisc.edu>
+Message-ID: <AANLkTi=ak=WTD+9O=iWdSJH3L7hYheiE1u=0Ej2G7MMx@mail.gmail.com>
+
+Hi,
+
+The problem is how to tell apart a greyscale with a viewing LUT (underlying
+> numeric, indexing a palette) from one with an unordered palette (indexed).
+> One way could be to implicitly record this at creation time (let's say if
+> saved as GIF, or after applying some colour reduction) by adding a flag
+> indicating so. But of course, all externally created images would not have
+> this tag.
+>
+
+I know this thread is a bit old now, but I wanted to make one comment about
+differentiating between what Gabriel calls "underlying numeric, indexing a
+palette" (i.e., color table for visualization) and "unordered palette"
+(i.e., color table identifying actual measured values).
+
+Bio-Formats can report, for a given indexed dataset, which of these it
+believes the data to be, via a method called "isFalseColor()." If the data
+isFalseColor(), then its color table is merely for visualization. If
+!isFalseColor(), then the true data is represented in the table values.
+
+Right now, the false color flag is format-dependent. That is, we know
+certain formats generally save the color table for visualization. As of this
+writing, the following formats are reported as using false color indexing:
+
+: curtis at rook~/code/LOCI/software/components/bio-formats/src/loci/formats/in
+grep falseColor *.java | grep true
+BioRadReader.java:    core[0].falseColor = true;
+LeicaHandler.java:        coreMeta.falseColor = true;
+LeicaReader.java:      core[i].falseColor = true;
+NativeND2Reader.java:        core[i].falseColor = true;
+OMEXMLReader.java:      core[i].falseColor = true;
+TCSReader.java:    core[0].falseColor = true;
+ZeissZVIReader.java:    core[0].falseColor = true;
+
+I agree with Gabriel that it would be nice if open standards (e.g.,
+OME-TIFF) supported indexed color, as well as a flag to differentiate,
+rather than merely using a convention. But for proprietary formats, this
+heuristic has worked fairly well so far.
+
+-Curtis
+
+On Mon, Dec 13, 2010 at 4:35 AM, Gabriel Landini <G.Landini at bham.ac.uk>wrote:
+
+> On Monday 13 December 2010 10:52:34 Johannes Schindelin wrote:
+> > IMHO an index-color image is _not_ of a numeric type. So to properly
+> > support index-color images, one would need to make a "CategoricalType"
+> > that still uses bytes or shorts, but that cannot add/multiply/whatever.
+>
+> Sure.
+>
+> > OTOH if the LUT is just a view mode (as it should always be seen in
+> > scientific imaging), then the LUT is not part of the image and should not
+> > be saved in the first place.
+>
+> I agree here too, but most people will want to save greyscale images with a
+> viewing palette while preserving the underlying data.
+>
+> The problem is how to tell apart a greyscale with a viewing LUT (underlying
+> numeric, indexing a palette) from one with an unordered palette (indexed).
+> One way could be to implicitly record this at creation time (let's say if
+> saved as GIF, or after applying some colour reduction) by adding a flag
+> indicating so. But of course, all externally created images would not have
+> this tag.
+>
+> But going back to the original problem, if the palette -at file creation
+> time-
+> is the Grays.lut, then it should be saved without a palette. I wonder if
+> this
+> would solve the reported problem.
+>
+> Cheers
+>
+> Gabriel
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110110/d2905cfd/attachment.html>
+
+From leek at broadinstitute.org  Mon Jan 10 12:29:03 2011
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Mon, 10 Jan 2011 13:29:03 -0500
+Subject: [ImageJ-devel] ImageOpener always giving me three channels when
+ these is only one.
+In-Reply-To: <AANLkTi=ak=WTD+9O=iWdSJH3L7hYheiE1u=0Ej2G7MMx@mail.gmail.com>
+References: <4D0520E1.5000501@mbl.edu>
+	<E1PS4r0-0002sl-Vw@skynet.loci.wisc.edu>	<alpine.DEB.1.00.1012131042590.1461@bonsai2>	<E1PS5kK-0002y2-MZ@skynet.loci.wisc.edu>
+	<AANLkTi=ak=WTD+9O=iWdSJH3L7hYheiE1u=0Ej2G7MMx@mail.gmail.com>
+Message-ID: <4D2B4FEF.6030700@broadinstitute.org>
+
+It might be useful to leave the choice to the user of whether the index 
+is intended as a value, probably upon loading. The "categorical data" 
+might be the object's index if the image is a segmentation and the LUT 
+is a coloring for visualization.
+
+Related to this, I was wondering how to save segmentation results and I 
+*would* like to annotate the "image" with some data that would mark it 
+as a segmentation. And, to complicate matters, some pixels might have 
+more than one label and you'd like to map an LUT index, in some cases, 
+to mean "this pixel is part of object A and object B"... and you'd like 
+the LUT color to reflect that fact - an alpha-blending of the colors for 
+A & B.
+
+- Lee
+
+On 1/10/2011 1:16 PM, Curtis Rueden wrote:
+> Hi,
+>
+>     The problem is how to tell apart a greyscale with a viewing LUT
+>     (underlying
+>     numeric, indexing a palette) from one with an unordered palette
+>     (indexed).
+>     One way could be to implicitly record this at creation time (let's
+>     say if
+>     saved as GIF, or after applying some colour reduction) by adding a
+>     flag
+>     indicating so. But of course, all externally created images would
+>     not have
+>     this tag.
+>
+>
+> I know this thread is a bit old now, but I wanted to make one comment 
+> about differentiating between what Gabriel calls "underlying numeric, 
+> indexing a palette" (i.e., color table for visualization) and 
+> "unordered palette" (i.e., color table identifying actual measured 
+> values).
+>
+> Bio-Formats can report, for a given indexed dataset, which of these it 
+> believes the data to be, via a method called "isFalseColor()." If the 
+> data isFalseColor(), then its color table is merely for visualization. 
+> If !isFalseColor(), then the true data is represented in the table values.
+>
+> Right now, the false color flag is format-dependent. That is, we know 
+> certain formats generally save the color table for visualization. As 
+> of this writing, the following formats are reported as using false 
+> color indexing:
+>
+> : curtis at rook 
+> ~/code/LOCI/software/components/bio-formats/src/loci/formats/in
+> grep falseColor *.java | grep true
+> BioRadReader.java:    core[0].falseColor = true;
+> LeicaHandler.java:        coreMeta.falseColor = true;
+> LeicaReader.java:      core[i].falseColor = true;
+> NativeND2Reader.java:        core[i].falseColor = true;
+> OMEXMLReader.java:      core[i].falseColor = true;
+> TCSReader.java:    core[0].falseColor = true;
+> ZeissZVIReader.java:    core[0].falseColor = true;
+>
+> I agree with Gabriel that it would be nice if open standards (e.g., 
+> OME-TIFF) supported indexed color, as well as a flag to differentiate, 
+> rather than merely using a convention. But for proprietary formats, 
+> this heuristic has worked fairly well so far.
+>
+> -Curtis
+>
+> On Mon, Dec 13, 2010 at 4:35 AM, Gabriel Landini <G.Landini at bham.ac.uk 
+> <mailto:G.Landini at bham.ac.uk>> wrote:
+>
+>     On Monday 13 December 2010 10:52:34 Johannes Schindelin wrote:
+>     > IMHO an index-color image is _not_ of a numeric type. So to properly
+>     > support index-color images, one would need to make a
+>     "CategoricalType"
+>     > that still uses bytes or shorts, but that cannot
+>     add/multiply/whatever.
+>
+>     Sure.
+>
+>     > OTOH if the LUT is just a view mode (as it should always be seen in
+>     > scientific imaging), then the LUT is not part of the image and
+>     should not
+>     > be saved in the first place.
+>
+>     I agree here too, but most people will want to save greyscale
+>     images with a
+>     viewing palette while preserving the underlying data.
+>
+>     The problem is how to tell apart a greyscale with a viewing LUT
+>     (underlying
+>     numeric, indexing a palette) from one with an unordered palette
+>     (indexed).
+>     One way could be to implicitly record this at creation time (let's
+>     say if
+>     saved as GIF, or after applying some colour reduction) by adding a
+>     flag
+>     indicating so. But of course, all externally created images would
+>     not have
+>     this tag.
+>
+>     But going back to the original problem, if the palette -at file
+>     creation time-
+>     is the Grays.lut, then it should be saved without a palette. I
+>     wonder if this
+>     would solve the reported problem.
+>
+>     Cheers
+>
+>     Gabriel
+>
+>
+>     _______________________________________________
+>     ImageJ-devel mailing list
+>     ImageJ-devel at imagejdev.org <mailto:ImageJ-devel at imagejdev.org>
+>     http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110110/b5ef27c8/attachment.html>
+
+From rwlentz at wisc.edu  Tue Jan 11 14:31:49 2011
+From: rwlentz at wisc.edu (Rick Lentz)
+Date: Tue, 11 Jan 2011 14:31:49 -0600
+Subject: [ImageJ-devel] Fwd: OpenCL plugin
+In-Reply-To: <AANLkTi=+2Lvq0DpJugOU-zNjEtk3PTTp_dyaguXFahQL@mail.gmail.com>
+References: <AANLkTi=+2Lvq0DpJugOU-zNjEtk3PTTp_dyaguXFahQL@mail.gmail.com>
+Message-ID: <AANLkTimm2acDwPSCvXOPkm8DENrR=ciBbTGGRJdrBP5u@mail.gmail.com>
+
+Hi Pol,
+
+  Thank you for your feedback regarding OpenCL in ImageJ.  Per your second
+question, there are some very minor changes needed to get your started on
+your development of ImageJ OpenCL plugins.  I have updated the source
+documentation to be reflective of the current state of the source available
+in the loci repository (
+http://dev.loci.wisc.edu/svn/software/branches/maven/projects/opencl-decon).
+
+  If your refresh your download of the opencl-decon source, you may notice
+the addition of a README file.  Here is the text from that file:
+
+( Please ensure installation of OpenCL prior to running these programs )
+The source at
+http://dev.loci.wisc.edu/svn/software/branches/maven/projects/opencl-deconwas
+developed to demonstrate successful leveraging of OpenCL within ImageJ
+using JOCL both locally and remotely (as a binary web service).
+
+The folder structure of the source consists of the following folders:
+src - Java and OpenCL source files (extension .cl)
+sourcedata - PSF and 3D data used as a small sample data set for the FHT3D
+Example.
+lib - libraries needed for classes using JOCL, ImageJ, and Hessian 4.0.7
+native - contains the dynamic libraries needed for runtime execution of
+OpenCL code on various operating systems
+
+Background:
+To use OpenCL from Java in ImageJ we leverage JOCL.  JOCL uses JNI to make
+calls into the OpenCL API.  The OpenCL code you write can also leverage JOCL
+to accelerate execution of ImageJ plugins from Java.
+
+Notice the files fht.cl and sobel.cl in the source (src) directory.  The
+Java code in provided in the examples compile these two files for execution
+on the OpenCL enabled device that is programmatically chosen at runtime.  It
+is runtime compilation of OpenCL that allows execution on any potential
+OpenCL enabled device.
+
+Start exploring the examples by viewing the developer comments in the file
+SobelFilterExample.java.  Notice the Main() method calls run() which use an
+awt.Image type as an input parameter.  Modify and run the Main() method as a
+Java application with the VM Arguments -Xmx1024m.
+
+  Without modification, SobelFilterExample.java loads an image from a web
+server, process it locally using OpenCL, and displays the results.  There is
+nothing novel about this example.  It simply allows runtime testing
+of several system configuration steps to ensure working configuration of
+JOCL and OpenCL native libraries.  Modify this example to suite your needs,
+but please ensure proper JOCL and OpenCL configuration before proceeding.
+
+Working within ImageJ: If developing an ImageJ plugin using OpenCL realize
+that programatic control is passed to your plugin inside the PlugIn (or
+PluginFilter) run() method.  An example of this can be found in
+src.demos.OpenCL_SobelFilter.java.  For this plugin to run within ImageJ,
+the JOCL jars and native libraries respective to the target platform will
+need to be available by the ImageJ classloader.   The supporting JOCL native
+libraries can be copied into the plugin directory within ImageJ to allow
+plugin implementations using OpenCL from Java to reference the installed
+native libraries provided by the OpenCL installation.
+
+Now that you have demonstrated use of OpenCL from Java and within ImageJ,
+you may wish to see an a compute intensive example demonstrating
+modification of an existing Java implementation that delegates a portion of
+its implementation to OpenCL.  Take a look at the developer comments in the
+FHT3D_3D_Deconvolution.java example to see what steps are used for brokering
+of data between Java and OpenCL between steps within an algorithm's
+implementation.
+
+Finally, the need may arise where the GPU compute capabilities you wish to
+leverage are not on the same computer that ImageJ is running on.  The
+FHTEJBService and Iterative_Deconvolve_3D_WS classes demonstrate how to
+remotely serve up the functionality leveraging standard, open source J2EE
+technologies.
+
+I will comment in a separate email regarding your first question.
+
+I am interested in following your progress.  Please feel free to contact me
+via Google chat, Skype or email if you run into any more configuration
+problems.
+
+Best Regards,
+
+Rick Lentz
+
+
+
+Hello,
+I am a PhD student working on image segmentation by texture analysis with an
+application on remote sensing images (Montpellier, France). So i have to
+process very large images (e.g. 15000*8000).
+All methods I developed are formed as plugin under ImageJ API that I really
+like, but not yet applicable on this sort of image.
+Recently, I tough to use finally my graphic card (Nvidia GTS240) which I
+think will help me a lot in my process. So after several search on the web,
+I found this (OpenCL plugin you wrote) great ! it's precisely what i need.
+So I decided to follow your tutorial to setup the environment but met some
+problems... :
+
+When launching makefile in "~/NVIDIA_GPU_Computing_SDK/C/ " and
+"~/NVIDIA_GPU_Computing_SDK/OpenCL" I had following error "/usr/bin/ld:
+cannot find -lGL". Plus, I dont have the same demo files, maybe because of
+version ? (cudatoolkit_3.2.16_linux_64, gpucomputingsdk_3.2.16 and
+devdriver_3.2_linux_64_260.19.26 on Ubuntu 10.10). On the other side demos I
+have work perfectly (ooclDCT8x8, oclHistogram,...)
+Main problem is that the repository you indicate to get the example project
+(http://www.loci.wisc.edu/svn/decon) doesn't work... "
+http://dev.loci.wisc.edu/svn/software/branches/maven/projects/opencl-decon"
+repository works well. Is is the same ?
+
+Thanks a lot if you find time to answer me (and sorry for my english).
+And thanks you for work you are doing on ImageJ.
+Best regards,
+Pol Kennel
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110111/8fde4862/attachment.html>
+
+From preibisch at mpi-cbg.de  Wed Jan 12 08:42:43 2011
+From: preibisch at mpi-cbg.de (Stephan Preibisch)
+Date: Wed, 12 Jan 2011 15:42:43 +0100
+Subject: [ImageJ-devel] New Lanczos-Interpolation
+Message-ID: <00b901cbb266$f8b6f7e0$ea24e7a0$@de>
+
+Hi everybody,
+
+ 
+
+I added the n-dimensional Lanczos Interpolation to ImgLib, it gives more
+convincing results than the DCT Interpolation. It is also faster, however
+depending on the local area the sinc interpolation is computed in for each
+sample.
+
+ 
+
+Ciao ciao,
+
+Steffi
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110112/68b6d04e/attachment.html>
+
+From rwlentz at wisc.edu  Wed Jan 12 13:16:46 2011
+From: rwlentz at wisc.edu (Rick Lentz)
+Date: Wed, 12 Jan 2011 13:16:46 -0600
+Subject: [ImageJ-devel] OpenCL plugin
+In-Reply-To: <AANLkTi=+2Lvq0DpJugOU-zNjEtk3PTTp_dyaguXFahQL@mail.gmail.com>
+References: <AANLkTi=+2Lvq0DpJugOU-zNjEtk3PTTp_dyaguXFahQL@mail.gmail.com>
+Message-ID: <AANLkTi=71BHuCKkiK4DV=R5vcrB3DkT244sO1siYzt3V@mail.gmail.com>
+
+Hi Pol,
+
+  Regarding your first question it is likely that the linker is missing a
+reference to OpenGL.  My instructions were for a prior major release of
+Ubuntu as well as a prior minor release of NVidia's CUDA SDK.  I have
+updated the setup instructions to reflect the current versions as well as
+tested against 64bit Mac and Linux OSs.
+
+  With regard to your specific problem, many of NVidia's examples include
+use of OpenGL.  NVidia's documentation indicates that libgl.so is referenced
+via static link to appear to be located in /usr/lib/libgl.so (per
+http://developer.download.nvidia.com/compute/cuda/3_2_prod/drivers/docs/README_Linux.txtunder
+Chapter 5, Listing of Installed Components, 4th bullet).  Chapter 5 of
+NVidia's documentation goes on to describe the linking process that happens
+when installing the developer drivers.  Perhaps this linking did not happen
+when you installed the NVidia development drivers for Linux.  Did you get an
+error during installation of the developer drivers reporting something in
+this regard?  Chapter 5 concludes on how to check a Linux dynamic library
+using the command line tool ldd.  In this case, ldd /usr/lib/libGL.so
+
+Here is the output I get when running ldd /usr/lib/libGL.so
+
+ldd /usr/lib/libGL.so
+linux-vdso.so.1 =>  (0x00007ffff33e6000)
+ libnvidia-tls.so.260.19.14 => /usr/lib/tls/libnvidia-tls.so.260.19.14
+(0x00007fc82b46b000)
+libnvidia-glcore.so.260.19.14 => /usr/lib/libnvidia-glcore.so.260.19.14
+(0x00007fc82987f000)
+ libX11.so.6 => /usr/lib/libX11.so.6 (0x00007fc829549000)
+libXext.so.6 => /usr/lib/libXext.so.6 (0x00007fc829337000)
+ libc.so.6 => /lib/libc.so.6 (0x00007fc828f93000)
+libdl.so.2 => /lib/libdl.so.2 (0x00007fc828d8f000)
+ libm.so.6 => /lib/libm.so.6 (0x00007fc828b0c000)
+libxcb.so.1 => /usr/lib/libxcb.so.1 (0x00007fc8288ef000)
+ /lib64/ld-linux-x86-64.so.2 (0x00007fc82b974000)
+libXau.so.6 => /usr/lib/libXau.so.6 (0x00007fc8286eb000)
+ libXdmcp.so.6 => /usr/lib/libXdmcp.so.6 (0x00007fc8284e5000)
+
+
+If the libGL.so file is present and linked property, you can double check
+for inclusion of libGL.so path by ensuring its path in your bash profile
+under the variable LD_LIBRARY_PATH.  NVidia asks for the installer to add
+these additions in the Linux install documents.  Here is the line in my
+.bashrc file that allows the linker to find libGL.so (specifically the
+":/usr/lib" portion of this line):
+
+export
+LD_LIBRARY_PATH="/usr/lib:/usr/local/cuda/lib64:/usr/local/cuda/lib:/usr/lib32:/usr/local/lib"
+
+I also had issues compiling the most recent version of NVidia's C samples.
+ I reflected a work around in the updated web documents (see the bottom of:
+http://www.imagejdev.org/setting-host-machine ).
+
+Please let me know if you have any more questions or difficulties with the
+ImageJ OpenCL plugin examples.
+
+Sincerely,
+
+Rick Lentz
+
+
+On Tue, Jan 11, 2011 at 4:20 AM, Pol kennel <pol.kennel at gmail.com> wrote:
+
+> Hello,
+>
+> I am a PhD student working on image segmentation by texture analysis with
+> an application on remote sensing images (Montpellier, France). So i have to
+> process very large images (e.g. 15000*8000).
+> All methods I developed are formed as plugin under ImageJ API that I really
+> like, but not yet applicable on this sort of image.
+> Recently, I tough to use finally my graphic card (Nvidia GTS240) which I
+> think will help me a lot in my process. So after several search on the web,
+> I found this <http://imagejdev.org/plugins/opencl-plugin> (OpenCL plugin
+> you wrote) great ! it's precisely what i need.
+>
+> So I decided to follow your tutorial to setup the environment but met some
+> problems... :
+>
+>    1. When launching makefile in "~/NVIDIA_GPU_Computing_SDK/C/ " and
+>    "~/NVIDIA_GPU_Computing_SDK/OpenCL" I had following error "/usr/bin/ld:
+>    cannot find -lGL". Plus, I dont have the same demo files, maybe because of
+>    version ? (cudatoolkit_3.2.16_linux_64, gpucomputingsdk_3.2.16 and
+>    devdriver_3.2_linux_64_260.19.26 on Ubuntu 10.10). On the other side demos I
+>    have work perfectly (ooclDCT8x8, oclHistogram,...)
+>    2. *Main problem is that the repository you indicate to get the example
+>    project (http://www.loci.wisc.edu/svn/decon) doesn't work... *"
+>    http://dev.loci.wisc.edu/svn/software/branches/maven/projects/opencl-decon"
+>    repository works well. Is is the same ?
+>
+>
+> Thanks a lot if you find time to answer me (and sorry for my english).
+>
+> And thanks you for work you are doing on ImageJ.
+>
+> Best regards,
+> *
+> *
+> --
+> Pol Kennel
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110112/1099c826/attachment.html>
+
+From rwlentz at wisc.edu  Thu Jan 13 13:00:20 2011
+From: rwlentz at wisc.edu (Rick Lentz)
+Date: Thu, 13 Jan 2011 13:00:20 -0600
+Subject: [ImageJ-devel] Fwd: OpenCL plugin
+In-Reply-To: <AANLkTiniNHZgFtXuc0OchkTQrZzRu_JcDNw3md9fMyz-@mail.gmail.com>
+References: <AANLkTi=+2Lvq0DpJugOU-zNjEtk3PTTp_dyaguXFahQL@mail.gmail.com>
+	<AANLkTi=71BHuCKkiK4DV=R5vcrB3DkT244sO1siYzt3V@mail.gmail.com>
+	<AANLkTikeCii0hpKiLK5HSOZiae5FDYFE3WybvgAX5dAG@mail.gmail.com>
+	<AANLkTin8ZCJuDLVGhrt4z7B53YSv9K-wrzoHA4CdoPLg@mail.gmail.com>
+	<AANLkTikpRTX51FGkwzvmG9Rc6ajKjqKZ-MtQOEdeQDj1@mail.gmail.com>
+	<AANLkTiniNHZgFtXuc0OchkTQrZzRu_JcDNw3md9fMyz-@mail.gmail.com>
+Message-ID: <AANLkTin-pe83Qbg04q3NyP8AGXZ+H9HcxEHdtTBHh-+Z@mail.gmail.com>
+
+Hi Pol,
+
+  I am thinking that the material under http://www.imagejdev.org/OpenCL was
+not going to be as useful for you as a getting started tutorial.  I have
+removed the publication related material from our website.  I created a Getting
+Started with OpenCL in ImageJ
+Tutorial<https://docs.google.com/document/d/12aiL7urwcve7Mi-YyuOtAVlTZ5P6outcay75YiQlqyQ/edit?hl=en>
+with
+the goal of helping ImageJ users get started quickly with OpenCL.
+
+ Back to your issues, for the research publication I compiled the jogamp
+files.  For your application, I do not think you need to do this.  The
+compilation steps listed were specific to Ubuntu 9.10 and NVidia 3.1.  If I
+am understanding your ImageJ need correctly, I think you are looking to run
+a few Java examples that help you get into writing OpenCL plugins for
+ImageJ.  I hope the attached draft copy of the tutorial will help you get
+there quickly.
+
+ Please let me know if you any troubles with the tutorial - and have any
+feedback regarding the tutorial.
+
+Best Regards,
+
+Rick Lentz
+
+
+Hi Pol,
+
+  Can you do a fresh pull from our repository - You should not have to build
+these unless you really want to.
+
+  You can download the needed components directly from:
+  http://jogamp.org/deployment/webstart/
+
+  I have also updated the ImageJ plugin demo source to include the most
+recent Jogamp OpenCL binaries and native libs.
+
+Sincerely,
+
+Rick
+
+On Thu, Jan 13, 2011 at 9:55 AM, Pol kennel <pol.kennel at gmail.com> wrote:
+
+> In fact my *jocl* building also crash during Junit tests, with error
+> stacks like :
+>
+> [junit] Testcase: createContextTest(com.jogamp.opencl.gl.CLGLTest): Caused
+> an ERROR
+>     [junit] test timed out after 5000 milliseconds
+>     [junit] java.lang.Exception: test timed out after 5000 milliseconds
+>     [junit] at java.lang.Object.wait(Native Method)
+>     [junit] at java.lang.Object.wait(Object.java:485)
+>     [junit] at
+> com.jogamp.opengl.impl.SharedResourceRunner.doAndWait(SharedResourceRunner.java:152)
+>     [junit] at
+> com.jogamp.opengl.impl.SharedResourceRunner.getOrCreateShared(SharedResourceRunner.java:100)
+>     [junit] at
+> com.jogamp.opengl.impl.x11.glx.X11GLXDrawableFactory.getOrCreateSharedContextImpl(X11GLXDrawableFactory.java:253)
+>     [junit] at
+> javax.media.opengl.GLDrawableFactory.getOrCreateSharedContext(GLDrawableFactory.java:275)
+>     [junit] at
+> javax.media.opengl.GLDrawableFactory.getIsSharedContextAvailable(GLDrawableFactory.java:250)
+>     [junit] at
+> javax.media.opengl.GLProfile.initProfilesForDeviceImpl(GLProfile.java:1251)
+>     [junit] at
+> javax.media.opengl.GLProfile.initProfilesForDevice(GLProfile.java:1224)
+>     [junit] at
+> javax.media.opengl.GLProfile.initProfilesForDefaultDevices(GLProfile.java:1192)
+>     [junit] at javax.media.opengl.GLProfile.access$000(GLProfile.java:66)
+>     [junit] at javax.media.opengl.GLProfile$1.run(GLProfile.java:112)
+>     [junit] at java.security.AccessController.doPrivileged(Native Method)
+>     [junit] at
+> javax.media.opengl.GLProfile.initSingleton(GLProfile.java:110)
+>     [junit] at com.jogamp.opencl.gl.CLGLTest.init(CLGLTest.java:70)
+>     [junit] at
+> com.jogamp.opencl.gl.CLGLTest.createContextTest(CLGLTest.java:102)
+>
+> So there is another problem I don t identify...
+>
+> 2011/1/13 Pol kennel <pol.kennel at gmail.com>
+>
+> Hi Rick,
+>>
+>> Thank a lot for your detailed answers an to pay attention to my problems !
+>>
+>> I finally resolved my problem with the OpenGL lib with your previous mail
+>> : a link was not set correctly to the libGL.so file. I now have the same
+>> output with *ldd /usr/lib/libGL.so *command. So I build correctly C and
+>> OpenCL project, demos work well.
+>>
+>> I also build correctly *gluegen*, *jogl*, *jocl* and *jocl-demos*projects (note that lines "git clone
+>> http://github.com/sgothel/gluegen.git gluegen" and "git clone
+>> http://github.com/sgothel/jogl-demos.git jogl-demos" are missing on the
+>> http://www.imagejdev.org/setting-jocl-jogl-and-gluegen page of your
+>> tutorial).
+>>
+>> However, I stoped in building *joal* and *jogl-demos. *You probably omit
+>> to precise the building of the *joal *project (but it could be intended
+>> ?) ; when building *joal* with *ant* in the */joal/make/* directory I get
+>> an error :
+>> "*/home/pol/joal/make/build.xml:369: taskdef class
+>> com.sun.gluegen.ant.GlueGenTask cannot be found*
+>> * using the classloader
+>> AntClassLoader[/home/pol/gluegen/build/gluegen.jar:/home/pol/gluegen/build/antlr.jar:/home/pol/gluegen/make/lib/antlr.jar]
+>> *"
+>> (gluegen.jar and antlr.jar still in the right directory, is there
+>> classpath to set for gluegen ?). In the *joal* readme file, I found that
+>> OpenAL lib are need, so i downloaded  libopenal-dev/openal1 packets from
+>> synaptic, and follow instructions saying to copy gluegen.properties and
+>> joal.properties and jogl.properties into home directory but don't know how
+>> to set correctly properties into this files.
+>> *joal* building stills crash.
+>>
+>> Regarding to *jogl-demos *when* *building with* ant *in *
+>> ~/jogl-demos/make/*  i get 27 errors like :
+>> [javac] Compiling 169 source files to /home/pol/jogl-demos/build/classes
+>> [javac] /home/pol/jogl-demos/src/demos/applets/GearsJOALApplet.java:11:
+>> package com.jogamp.openal.util does not exist
+>> [javac] import com.jogamp.openal.util.ALut;"
+>> [...]
+>> I suppose it s due to joal, OpenAL again....
+>>
+>> (How) Did you install it ?
+>>
+>>
+>> On the other side, i have update the decon project from svn.
+>> When running *SobelFilterExample.java *i get :
+>>
+>> *Retrieving test image...  *
+>> *Starting iteration... 0*
+>> *Local work size dimensions are max array size of*
+>> *unavailable functions: [clCreateEventFromGLsyncKHR,
+>> clIcdGetPlatformIDsKHR]*
+>> *Discovered NVIDIA CUDA*
+>> *com.jogamp.opencl.CLException$CLInvalidBinaryException: *
+>> *CLDevice [id: 140626625730048 name: GeForce GTS 240 type: GPU profile:
+>> FULL_PROFILE] build log:*
+>> *ptxas application ptx input, line 104; error   : Instruction 'cvt'
+>> requires SM 1.3 or higher, or map_f64_to_f32 directive*
+>> *ptxas application ptx input, line 105; error   : Instruction 'cvt'
+>> requires SM 1.3 or higher, or map_f64_to_f32 directive*
+>> *ptxas application ptx input, line 106; error   : Instruction 'mul'
+>> requires SM 1.3 or higher, or map_f64_to_f32 directive*
+>> *ptxas application ptx input, line 107; error   : Instruction 'mul'
+>> requires SM 1.3 or higher, or map_f64_to_f32 directive*
+>> *ptxas application ptx input, line 108; error   : Instruction 'add'
+>> requires SM 1.3 or higher, or map_f64_to_f32 directive*
+>> *ptxas application ptx input, line 109; error   : Instruction 'sqrt'
+>> requires SM 1.3 or higher, or map_f64_to_f32 directive*
+>> *ptxas application ptx input, line 110; error   : Instruction 'cvt'
+>> requires SM 1.3 or higher, or map_f64_to_f32 directive*
+>> *ptxas fatal   : Ptx assembly aborted due to errors*
+>> *error   : Ptx compilation failed: gpu='sm_11', device
+>> code='cuModuleLoadDataEx_4'*
+>> *: Considering profile 'compute_11' for gpu='sm_11' in
+>> 'cuModuleLoadDataEx_4'*
+>> *: Retrieving binary for 'cuModuleLoadDataEx_4', for gpu='sm_11', usage
+>> mode='  '*
+>> *: Considering profile 'compute_11' for gpu='sm_11' in
+>> 'cuModuleLoadDataEx_4'*
+>> *: Control flags for 'cuModuleLoadDataEx_4' disable search path*
+>> *: Ptx binary found for 'cuModuleLoadDataEx_4', architecture='compute_11'
+>> *
+>> *: Ptx compilation for 'cuModuleLoadDataEx_4', for gpu='sm_11', ocg
+>> options='  '*
+>> *ptxas application ptx input, line 104; warning : Double is not
+>> supported. Demoting to float*
+>> *error: CL_INVALID_BINARY (man page:
+>> http://www.khronos.org/opencl/sdk/1.1/docs/man/xhtml/errors.html)*
+>> * at com.jogamp.opencl.CLException.newException(CLException.java:49)*
+>> * at com.jogamp.opencl.CLProgram.build(CLProgram.java:335)*
+>> * at com.jogamp.opencl.CLProgram.build(CLProgram.java:174)*
+>> * at publication.SobelFilterExample.<init>(SobelFilterExample.java:66)*
+>> * at publication.SobelFilterExample.runTest(SobelFilterExample.java:204)*
+>> * at publication.SobelFilterExample.main(SobelFilterExample.java:155)*
+>>
+>> So I suppose it s due to miss installation of JOAL.
+>>
+>>
+>> I'll be so thankful if you can get me out of this deadlock.... I can
+>> already see the light far away :)
+>>
+>> Best regards,
+>>
+>>
+>>  Pol
+>>
+>>
+>>
+>> PS : I'm often connected on google chat so if you prefer answer me online
+>> please let me know you gmail address.
+>>
+>>
+>>
+>> 2011/1/12 Rick Lentz <rwlentz at wisc.edu>
+>>
+>> Hi Pol,
+>>>
+>>>   Regarding your first question it is likely that the linker is missing a
+>>> reference to OpenGL.  My instructions were for a prior major release of
+>>> Ubuntu as well as a prior minor release of NVidia's CUDA SDK.  I have
+>>> updated the setup instructions to reflect the current versions as well as
+>>> tested against 64bit Mac and Linux OSs.
+>>>
+>>>   With regard to your specific problem, many of NVidia's examples include
+>>> use of OpenGL.  NVidia's documentation indicates that libgl.so is referenced
+>>> via static link to appear to be located in /usr/lib/libgl.so (per
+>>> http://developer.download.nvidia.com/compute/cuda/3_2_prod/drivers/docs/README_Linux.txtunder Chapter 5, Listing of Installed Components, 4th bullet).  Chapter 5 of
+>>> NVidia's documentation goes on to describe the linking process that happens
+>>> when installing the developer drivers.  Perhaps this linking did not happen
+>>> when you installed the NVidia development drivers for Linux.  Did you get an
+>>> error during installation of the developer drivers reporting something in
+>>> this regard?  Chapter 5 concludes on how to check a Linux dynamic library
+>>> using the command line tool ldd.  In this case, ldd /usr/lib/libGL.so
+>>>
+>>> Here is the output I get when running ldd /usr/lib/libGL.so
+>>>
+>>> ldd /usr/lib/libGL.so
+>>> linux-vdso.so.1 =>  (0x00007ffff33e6000)
+>>>  libnvidia-tls.so.260.19.14 => /usr/lib/tls/libnvidia-tls.so.260.19.14
+>>> (0x00007fc82b46b000)
+>>> libnvidia-glcore.so.260.19.14 => /usr/lib/libnvidia-glcore.so.260.19.14
+>>> (0x00007fc82987f000)
+>>>  libX11.so.6 => /usr/lib/libX11.so.6 (0x00007fc829549000)
+>>> libXext.so.6 => /usr/lib/libXext.so.6 (0x00007fc829337000)
+>>>  libc.so.6 => /lib/libc.so.6 (0x00007fc828f93000)
+>>> libdl.so.2 => /lib/libdl.so.2 (0x00007fc828d8f000)
+>>>  libm.so.6 => /lib/libm.so.6 (0x00007fc828b0c000)
+>>> libxcb.so.1 => /usr/lib/libxcb.so.1 (0x00007fc8288ef000)
+>>>  /lib64/ld-linux-x86-64.so.2 (0x00007fc82b974000)
+>>> libXau.so.6 => /usr/lib/libXau.so.6 (0x00007fc8286eb000)
+>>>  libXdmcp.so.6 => /usr/lib/libXdmcp.so.6 (0x00007fc8284e5000)
+>>>
+>>>
+>>> If the libGL.so file is present and linked property, you can double check
+>>> for inclusion of libGL.so path by ensuring its path in your bash profile
+>>> under the variable LD_LIBRARY_PATH.  NVidia asks for the installer to add
+>>> these additions in the Linux install documents.  Here is the line in my
+>>> .bashrc file that allows the linker to find libGL.so (specifically the
+>>> ":/usr/lib" portion of this line):
+>>>
+>>> export
+>>> LD_LIBRARY_PATH="/usr/lib:/usr/local/cuda/lib64:/usr/local/cuda/lib:/usr/lib32:/usr/local/lib"
+>>>
+>>> I also had issues compiling the most recent version of NVidia's C
+>>> samples.  I reflected a work around in the updated web documents (see the
+>>> bottom of: http://www.imagejdev.org/setting-host-machine ).
+>>>
+>>> Please let me know if you have any more questions or difficulties with
+>>> the ImageJ OpenCL plugin examples.
+>>>
+>>> Sincerely,
+>>>
+>>> Rick Lentz
+>>>
+>>>
+>>> On Tue, Jan 11, 2011 at 4:20 AM, Pol kennel <pol.kennel at gmail.com>wrote:
+>>>
+>>>> Hello,
+>>>>
+>>>> I am a PhD student working on image segmentation by texture analysis
+>>>> with an application on remote sensing images (Montpellier, France). So i
+>>>> have to process very large images (e.g. 15000*8000).
+>>>> All methods I developed are formed as plugin under ImageJ API that I
+>>>> really like, but not yet applicable on this sort of image.
+>>>> Recently, I tough to use finally my graphic card (Nvidia GTS240) which I
+>>>> think will help me a lot in my process. So after several search on the web,
+>>>> I found this <http://imagejdev.org/plugins/opencl-plugin> (OpenCL
+>>>> plugin you wrote) great ! it's precisely what i need.
+>>>>
+>>>> So I decided to follow your tutorial to setup the environment but met
+>>>> some problems... :
+>>>>
+>>>>    1. When launching makefile in "~/NVIDIA_GPU_Computing_SDK/C/ " and
+>>>>    "~/NVIDIA_GPU_Computing_SDK/OpenCL" I had following error "/usr/bin/ld:
+>>>>    cannot find -lGL". Plus, I dont have the same demo files, maybe because of
+>>>>    version ? (cudatoolkit_3.2.16_linux_64, gpucomputingsdk_3.2.16 and
+>>>>    devdriver_3.2_linux_64_260.19.26 on Ubuntu 10.10). On the other side demos I
+>>>>    have work perfectly (ooclDCT8x8, oclHistogram,...)
+>>>>    2. *Main problem is that the repository you indicate to get the
+>>>>    example project (http://www.loci.wisc.edu/svn/decon) doesn't work...
+>>>>    *"
+>>>>    http://dev.loci.wisc.edu/svn/software/branches/maven/projects/opencl-decon"
+>>>>    repository works well. Is is the same ?
+>>>>
+>>>>
+>>>> Thanks a lot if you find time to answer me (and sorry for my english).
+>>>>
+>>>> And thanks you for work you are doing on ImageJ.
+>>>>
+>>>> Best regards,
+>>>> *
+>>>> *
+>>>> --
+>>>> Pol Kennel
+>>>>
+>>>>
+>>>
+>>
+>>
+>> --
+>> Pol Kennel
+>>
+>>
+>
+>
+> --
+> Pol Kennel
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110113/6b84bd46/attachment.html>
+
+From ctrueden at wisc.edu  Fri Jan 14 11:09:26 2011
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Fri, 14 Jan 2011 11:09:26 -0600
+Subject: [ImageJ-devel] Biweekly milestone meeting on Tuesday Jan. 18
+Message-ID: <AANLkTi=naYwHiG7FVrUwEiOAdWnpNTG2oY_WwXETk+Q4@mail.gmail.com>
+
+Hi everyone,
+
+Due to Martin Luther King Jr. Day, our next biweekly milestone meeting will
+be next Tuesday at the usual time, 10:30 CST / 11:30 EST. It is our last
+formal group meeting before the hackathon, so please update your tickets,
+and be ready to discuss your priorities leading up to and including the
+hackathon.
+
+-Curtis
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110114/5c5bb592/attachment.html>
+
+From rwlentz at wisc.edu  Fri Jan 14 10:56:49 2011
+From: rwlentz at wisc.edu (Rick Lentz)
+Date: Fri, 14 Jan 2011 10:56:49 -0600
+Subject: [ImageJ-devel] OpenCL plugin
+In-Reply-To: <AANLkTinGxp6dKTttO1B2KVmYqeD0rr+44=W6GUX4LYFY@mail.gmail.com>
+References: <AANLkTi=+2Lvq0DpJugOU-zNjEtk3PTTp_dyaguXFahQL@mail.gmail.com>
+	<AANLkTi=71BHuCKkiK4DV=R5vcrB3DkT244sO1siYzt3V@mail.gmail.com>
+	<AANLkTikeCii0hpKiLK5HSOZiae5FDYFE3WybvgAX5dAG@mail.gmail.com>
+	<AANLkTin8ZCJuDLVGhrt4z7B53YSv9K-wrzoHA4CdoPLg@mail.gmail.com>
+	<AANLkTikpRTX51FGkwzvmG9Rc6ajKjqKZ-MtQOEdeQDj1@mail.gmail.com>
+	<AANLkTiniNHZgFtXuc0OchkTQrZzRu_JcDNw3md9fMyz-@mail.gmail.com>
+	<AANLkTinGxp6dKTttO1B2KVmYqeD0rr+44=W6GUX4LYFY@mail.gmail.com>
+Message-ID: <AANLkTimN1=WOOBmuHumvaU0UAAhrn_7x=+vT33CbZO9p@mail.gmail.com>
+
+Hi Pol,
+
+  The Open Source community has been a great for me regarding collaboration
+and support.  For me, understanding the nature of OpenCL came from previous
+work done with CUDA.  It helped me to review free online videos of academic
+lectures (iTunesU - GPU computing) and articles pertaining to the device
+architecture (optimization) since this understanding help me organize a plan
+to implement an algorithm for a specific platform.
+
+  Here is a 32 bit version of the sobel.cl that should run fine on the GTS
+240 (that has also been committed in the repository in place of the old
+'double' version):
+
+
+__kernel void sobel( __global float* input,
+
+__global float* output,
+
+     int width,
+
+     int height )
+
+{
+
+    int x = get_global_id(0);
+
+    int y = get_global_id(1);
+
+    int offset = y * width + x;
+
+
+
+    float p0, p1, p2, p3, p5, p6, p7, p8 = 0;
+
+
+
+
+
+if( x < 1 || y < 1 || x > width - 2 || y > height - 2 )
+
+{
+
+  output[offset] = 0;
+
+}
+
+else
+
+{
+
+    p0 = input[offset - width - 1] ;
+
+    p1 = input[offset - width] ;
+
+    p2 = input[offset - width + 1] ;
+
+    p3 = input[offset - 1] ;
+
+    p5 = input[offset + 1] ;
+
+    p6 = input[offset + width - 1] ;
+
+    p7 = input[offset + width] ;
+
+    p8 = input[offset + width + 1] ;
+
+     float sum1 = p0 + 2*p1 + p2 - p6 - 2*p7 - p8;  //GY
+
+    float sum2 = p0 + 2*p3 + p6 - p2 - 2*p5 - p8;  //GX
+
+
+
+    output[offset] = sqrt(  sum1*sum1 + sum2*sum2 );
+
+}
+
+}
+
+
+For your last question, you can write OpenCL directly from Java if that is
+easier for you.  Here is an example from a unit test written by Michael
+Bien:
+
+
+
+/**
+
+ * This test was authored by Michael Bien to help identify a platform
+specific bug
+
+ * identified on OSX (specifically 10.6)
+
+ * @author Michael Bien
+
+ *
+
+ */
+
+public class ProgramTest {
+
+
+    @BeforeClass
+
+    public synchronized static void setUpClass() throws Exception {
+
+        out.println("OS: " + System.getProperty("os.name"));
+
+        out.println("ARCH: " + System.getProperty("os.arch"));
+
+        out.println("VM: " + System.getProperty("java.vm.name"));
+
+        out.println("lib path: " + System.getProperty("java.library.path"));
+
+    }
+
+    // NOTE THE OPENCL PROGRAM SOURCE HAS BEEN ADDED INSIDE THE JAVA CLASS
+DECLARATION.
+
+    private final static String programSource =""
+
+//             + " #pragma OPENCL EXTENSION cl_khr_fp64: enable   \n"
+
+             +"   __kernel void sobel( __global float* input, __global
+float* output, int width,  int height ) {     \n"
+
+             +"       int x = get_global_id(0);   \n"
+
+             +"       int y = get_global_id(1);   \n"
+
+             +"       int offset = y * width + x;   \n"
+
+             +"
+  \n"
+
+             +"         float p0, p1, p2, p3, p5, p6, p7, p8 = 0;
+\n"
+
+             +"
+  \n"
+
+             +"
+  \n"
+
+             +"              if( x < 1 || y < 1 || x > width - 2 || y >
+height - 2 )   \n"
+
+             +"              {   \n"
+
+             +"                 output[offset] = 0;   \n"
+
+             +"              }   \n"
+
+             +"              else   \n"
+
+             +"              {   \n"
+
+             +"                  p0 = input[offset - width - 1] ;   \n"
+
+             +"                  p1 = input[offset - width] ;   \n"
+
+             +"                  p2 = input[offset - width + 1] ;   \n"
+
+             +"                  p3 = input[offset - 1] ;   \n"
+
+             +"                  p5 = input[offset + 1] ;   \n"
+
+             +"                  p6 = input[offset + width - 1] ;   \n"
+
+             +"                  p7 = input[offset + width] ;   \n"
+
+             +"                  p8 = input[offset + width + 1] ;   \n"
+
+             +"   \n"
+
+             +"                  float sum1 = p0 + 2*p1 + p2 - p6 - 2*p7 -
+p8;  //GY   \n"
+
+             +"                  float sum2 = p0 + 2*p3 + p6 - p2 - 2*p5 -
+p8;  //GX   \n"
+
+             +"   \n"
+
+             +"                  output[offset] = sqrt(  sum1*sum1 +
+sum2*sum2 );   \n"
+
+             +"              }   \n"
+
+             +"      }  ";
+
+
+    @Test
+
+    public synchronized void buildProgramTest() {
+
+
+
+        CLContext context = CLContext.create();
+
+
+
+        try {
+
+            System.out.println(context);
+
+            System.out.println(context.getPlatform().getVersion());
+
+
+            long contextID = context.ID;
+
+            CL cl = CLPlatform.getLowLevelCLInterface();
+
+
+            PointerBuffer buffer = (PointerBuffer)
+PointerBuffer.allocateDirect(1).put(programSource.length());
+
+            String[] srcArray = new String[]{programSource};
+
+
+            IntBuffer uploadStatus = Buffers.newDirectIntBuffer(1);
+
+            final long programID = cl.clCreateProgramWithSource(contextID,
+1, srcArray, buffer, uploadStatus);
+
+            checkError("on clCreateProgramWithSource", uploadStatus.get(0));
+
+
+            // Build the program
+
+            int buildStatus = cl.clBuildProgram(programID, 0, null, null,
+null);
+
+
+            System.out.println("please ignore "+srcArray+ "" + buffer); //
+please ignore, just a artificial reference lock
+
+
+
+            System.out.println("src: " + getProgramInfoString(cl, programID,
+CL.CL_PROGRAM_SOURCE));
+
+
+
+            checkError("on clBuildProgram", buildStatus);
+
+        } finally {
+
+            context.release();
+
+            System.out.println("-> success");
+
+        }
+
+    }
+
+
+
+    private synchronized String getProgramInfoString(CL cl, long program,
+int flag) {
+
+
+        PointerBuffer size = PointerBuffer.allocateDirect(1);
+
+
+        int ret = cl.clGetProgramInfo(program, flag, 0, null, size);
+
+        checkError("on clGetProgramInfo", ret);
+
+
+        ByteBuffer buffer = Buffers.newDirectByteBuffer((int)size.get(0));
+
+
+        ret = cl.clGetProgramInfo(program, flag, buffer.capacity(), buffer,
+null);
+
+        checkError("on clGetProgramInfo", ret);
+
+
+        return CLUtil.clString2JavaString(buffer, (int)size.get(0));
+
+    }
+
+
+    private synchronized void checkError(String msg, int ret) {
+
+        if(ret != CL.CL_SUCCESS)
+
+            throw CLException.newException(ret, msg);
+
+    }
+
+}
+
+
+For me, I prefer to place the OpenCL code in separate files because it is
+easier for me to reuse them. When I first started using OpenCL from Java - I
+liked to see the OpenCL inside the Java class.  Over time reusability, use
+of runtime resource loading, and readability caused me to separate the CL
+code from the Java code.
+
+
+ImageJ plugins can also access GPU resources in other languages other than
+OpenCL.  CUDA is specific to NVidia's hardware and they have produced over
+1B devices.  Depending on the users of your ImageJ plugin - one might be
+preferable CUDA over OpenCL.  For the imagejdev.org group, the argument was
+distilled to performance vs hardware scope - and having more hardware
+coverage was a higher priority for our users.
+
+Once a GPU implementation has been optimized for a specific hardware -
+porting between CUDA and OpenCL is relatively easy.  If your interested in
+working with CUDA through Java, an example of the bindings can be found at
+http://www.jcuda.de/ImageJ/ImageJHowTo.html.  Further you may find
+discussions like this one interesting in understanding the tradeoffs:
+http://stackoverflow.com/questions/2633483/best-approach-for-gpgpu-cuda-opencl-in-java
+.
+
+Let me know if you have any problems running the updated float version of
+sobel filter.
+
+Sincerely,
+
+Rick Lentz
+
+On Fri, Jan 14, 2011 at 2:07 AM, Pol kennel <pol.kennel at gmail.com> wrote:
+
+> Hi Rick,
+>
+> You perfectly understood what I need, this will lead to apply "heavy"
+> texture features extraction on large image aiming segmentation (the method
+> will be published soon).
+> I hope to have time in future to create a clear plugin for IJ that could be
+> shared with users and contribuate to IJ community :) So thanks for your
+> help, I'll try your last tutorial today, with hopes to get started with
+> OpenCL quick... I have a last (at least) question : are we constrained to
+> write gpu code in Cl ? could we use directly java codes ?
+>
+> Best regards,
+> Pol
+>
+> 2011/1/13 Rick Lentz <rwlentz at wisc.edu>
+>
+> Hi Pol,
+>>
+>>   I am thinking that the material under http://www.imagejdev.org/OpenCLwas not going to be as useful for you as a getting started tutorial.  I have
+>> removed the publication related material from our website.  I created a Getting
+>> Started with OpenCL in ImageJ Tutorial<https://docs.google.com/document/d/12aiL7urwcve7Mi-YyuOtAVlTZ5P6outcay75YiQlqyQ/edit?hl=en> with
+>> the goal of helping ImageJ users get started quickly with OpenCL.
+>>
+>>  Back to your issues, for the research publication I compiled the jogamp
+>> files - but for your application, I do not think you need to do this.  The
+>> compilation steps listed were specific to Ubuntu 9.10 and NVidia 3.1.  If I
+>> am understanding your ImageJ need correctly, I think you are looking to run
+>> a few Java examples that help you get into writing OpenCL plugins for
+>> ImageJ.  I hope the attached draft copy of the tutorial will help you get
+>> there quickly.
+>>
+>>  Please let me know if you any troubles with the tutorial - and have any
+>> feedback regarding the tutorial.
+>>
+>> Best Regards,
+>>
+>> Rick Lentz
+>>
+>>
+>> Hi Pol,
+>>
+>>   Can you do a fresh pull from our repository - You should not have to
+>> build these unless you really want to.
+>>
+>>   You can download the needed components directly from:
+>>   http://jogamp.org/deployment/webstart/
+>>
+>>   I have also updated the ImageJ plugin demo source to include the most
+>> recent Jogamp OpenCL binaries and native libs.
+>>
+>> Sincerely,
+>>
+>> Rick
+>>
+>> On Thu, Jan 13, 2011 at 9:55 AM, Pol kennel <pol.kennel at gmail.com> wrote:
+>>
+>>> In fact my *jocl* building also crash during Junit tests, with error
+>>> stacks like :
+>>>
+>>> [junit] Testcase: createContextTest(com.jogamp.opencl.gl.CLGLTest): Caused
+>>> an ERROR
+>>>     [junit] test timed out after 5000 milliseconds
+>>>     [junit] java.lang.Exception: test timed out after 5000 milliseconds
+>>>     [junit] at java.lang.Object.wait(Native Method)
+>>>     [junit] at java.lang.Object.wait(Object.java:485)
+>>>     [junit] at
+>>> com.jogamp.opengl.impl.SharedResourceRunner.doAndWait(SharedResourceRunner.java:152)
+>>>     [junit] at
+>>> com.jogamp.opengl.impl.SharedResourceRunner.getOrCreateShared(SharedResourceRunner.java:100)
+>>>     [junit] at
+>>> com.jogamp.opengl.impl.x11.glx.X11GLXDrawableFactory.getOrCreateSharedContextImpl(X11GLXDrawableFactory.java:253)
+>>>     [junit] at
+>>> javax.media.opengl.GLDrawableFactory.getOrCreateSharedContext(GLDrawableFactory.java:275)
+>>>     [junit] at
+>>> javax.media.opengl.GLDrawableFactory.getIsSharedContextAvailable(GLDrawableFactory.java:250)
+>>>     [junit] at
+>>> javax.media.opengl.GLProfile.initProfilesForDeviceImpl(GLProfile.java:1251)
+>>>     [junit] at
+>>> javax.media.opengl.GLProfile.initProfilesForDevice(GLProfile.java:1224)
+>>>     [junit] at
+>>> javax.media.opengl.GLProfile.initProfilesForDefaultDevices(GLProfile.java:1192)
+>>>     [junit] at
+>>> javax.media.opengl.GLProfile.access$000(GLProfile.java:66)
+>>>     [junit] at javax.media.opengl.GLProfile$1.run(GLProfile.java:112)
+>>>     [junit] at java.security.AccessController.doPrivileged(Native
+>>> Method)
+>>>     [junit] at
+>>> javax.media.opengl.GLProfile.initSingleton(GLProfile.java:110)
+>>>     [junit] at com.jogamp.opencl.gl.CLGLTest.init(CLGLTest.java:70)
+>>>     [junit] at
+>>> com.jogamp.opencl.gl.CLGLTest.createContextTest(CLGLTest.java:102)
+>>>
+>>> So there is another problem I don t identify...
+>>>
+>>> 2011/1/13 Pol kennel <pol.kennel at gmail.com>
+>>>
+>>> Hi Rick,
+>>>>
+>>>> Thank a lot for your detailed answers an to pay attention to my problems
+>>>> !
+>>>>
+>>>> I finally resolved my problem with the OpenGL lib with your previous
+>>>> mail : a link was not set correctly to the libGL.so file. I now have the
+>>>> same output with *ldd /usr/lib/libGL.so *command. So I build correctly
+>>>> C and OpenCL project, demos work well.
+>>>>
+>>>> I also build correctly *gluegen*, *jogl*, *jocl* and *jocl-demos*projects (note that lines "git clone
+>>>> http://github.com/sgothel/gluegen.git gluegen" and "git clone
+>>>> http://github.com/sgothel/jogl-demos.git jogl-demos" are missing on
+>>>> the http://www.imagejdev.org/setting-jocl-jogl-and-gluegen page of your
+>>>> tutorial).
+>>>>
+>>>> However, I stoped in building *joal* and *jogl-demos. *You probably
+>>>> omit to precise the building of the *joal *project (but it could be
+>>>> intended ?) ; when building *joal* with *ant* in the */joal/make/*directory I get an error :
+>>>> "*/home/pol/joal/make/build.xml:369: taskdef class
+>>>> com.sun.gluegen.ant.GlueGenTask cannot be found*
+>>>> * using the classloader
+>>>> AntClassLoader[/home/pol/gluegen/build/gluegen.jar:/home/pol/gluegen/build/antlr.jar:/home/pol/gluegen/make/lib/antlr.jar]
+>>>> *"
+>>>> (gluegen.jar and antlr.jar still in the right directory, is there
+>>>> classpath to set for gluegen ?). In the *joal* readme file, I found
+>>>> that OpenAL lib are need, so i downloaded  libopenal-dev/openal1 packets
+>>>> from synaptic, and follow instructions saying to copy gluegen.properties and
+>>>> joal.properties and jogl.properties into home directory but don't know how
+>>>> to set correctly properties into this files.
+>>>> *joal* building stills crash.
+>>>>
+>>>> Regarding to *jogl-demos *when* *building with* ant *in *
+>>>> ~/jogl-demos/make/*  i get 27 errors like :
+>>>> [javac] Compiling 169 source files to /home/pol/jogl-demos/build/classes
+>>>> [javac] /home/pol/jogl-demos/src/demos/applets/GearsJOALApplet.java:11:
+>>>> package com.jogamp.openal.util does not exist
+>>>> [javac] import com.jogamp.openal.util.ALut;"
+>>>> [...]
+>>>> I suppose it s due to joal, OpenAL again....
+>>>>
+>>>> (How) Did you install it ?
+>>>>
+>>>>
+>>>> On the other side, i have update the decon project from svn.
+>>>> When running *SobelFilterExample.java *i get :
+>>>>
+>>>> *Retrieving test image...  *
+>>>> *Starting iteration... 0*
+>>>> *Local work size dimensions are max array size of*
+>>>> *unavailable functions: [clCreateEventFromGLsyncKHR,
+>>>> clIcdGetPlatformIDsKHR]*
+>>>> *Discovered NVIDIA CUDA*
+>>>> *com.jogamp.opencl.CLException$CLInvalidBinaryException: *
+>>>> *CLDevice [id: 140626625730048 name: GeForce GTS 240 type: GPU profile:
+>>>> FULL_PROFILE] build log:*
+>>>> *ptxas application ptx input, line 104; error   : Instruction 'cvt'
+>>>> requires SM 1.3 or higher, or map_f64_to_f32 directive*
+>>>> *ptxas application ptx input, line 105; error   : Instruction 'cvt'
+>>>> requires SM 1.3 or higher, or map_f64_to_f32 directive*
+>>>> *ptxas application ptx input, line 106; error   : Instruction 'mul'
+>>>> requires SM 1.3 or higher, or map_f64_to_f32 directive*
+>>>> *ptxas application ptx input, line 107; error   : Instruction 'mul'
+>>>> requires SM 1.3 or higher, or map_f64_to_f32 directive*
+>>>> *ptxas application ptx input, line 108; error   : Instruction 'add'
+>>>> requires SM 1.3 or higher, or map_f64_to_f32 directive*
+>>>> *ptxas application ptx input, line 109; error   : Instruction 'sqrt'
+>>>> requires SM 1.3 or higher, or map_f64_to_f32 directive*
+>>>> *ptxas application ptx input, line 110; error   : Instruction 'cvt'
+>>>> requires SM 1.3 or higher, or map_f64_to_f32 directive*
+>>>> *ptxas fatal   : Ptx assembly aborted due to errors*
+>>>> *error   : Ptx compilation failed: gpu='sm_11', device
+>>>> code='cuModuleLoadDataEx_4'*
+>>>> *: Considering profile 'compute_11' for gpu='sm_11' in
+>>>> 'cuModuleLoadDataEx_4'*
+>>>> *: Retrieving binary for 'cuModuleLoadDataEx_4', for gpu='sm_11', usage
+>>>> mode='  '*
+>>>> *: Considering profile 'compute_11' for gpu='sm_11' in
+>>>> 'cuModuleLoadDataEx_4'*
+>>>> *: Control flags for 'cuModuleLoadDataEx_4' disable search path*
+>>>> *: Ptx binary found for 'cuModuleLoadDataEx_4',
+>>>> architecture='compute_11'*
+>>>> *: Ptx compilation for 'cuModuleLoadDataEx_4', for gpu='sm_11', ocg
+>>>> options='  '*
+>>>> *ptxas application ptx input, line 104; warning : Double is not
+>>>> supported. Demoting to float*
+>>>> *error: CL_INVALID_BINARY (man page:
+>>>> http://www.khronos.org/opencl/sdk/1.1/docs/man/xhtml/errors.html)*
+>>>> * at com.jogamp.opencl.CLException.newException(CLException.java:49)*
+>>>> * at com.jogamp.opencl.CLProgram.build(CLProgram.java:335)*
+>>>> * at com.jogamp.opencl.CLProgram.build(CLProgram.java:174)*
+>>>> * at publication.SobelFilterExample.<init>(SobelFilterExample.java:66)*
+>>>> * at
+>>>> publication.SobelFilterExample.runTest(SobelFilterExample.java:204)*
+>>>> * at publication.SobelFilterExample.main(SobelFilterExample.java:155)*
+>>>>
+>>>> So I suppose it s due to miss installation of JOAL.
+>>>>
+>>>>
+>>>> I'll be so thankful if you can get me out of this deadlock.... I can
+>>>> already see the light far away :)
+>>>>
+>>>> Best regards,
+>>>>
+>>>>
+>>>>  Pol
+>>>>
+>>>>
+>>>>
+>>>> PS : I'm often connected on google chat so if you prefer answer me
+>>>> online please let me know you gmail address.
+>>>>
+>>>>
+>>>>
+>>>> 2011/1/12 Rick Lentz <rwlentz at wisc.edu>
+>>>>
+>>>> Hi Pol,
+>>>>>
+>>>>>   Regarding your first question it is likely that the linker is missing
+>>>>> a reference to OpenGL.  My instructions were for a prior major release of
+>>>>> Ubuntu as well as a prior minor release of NVidia's CUDA SDK.  I have
+>>>>> updated the setup instructions to reflect the current versions as well as
+>>>>> tested against 64bit Mac and Linux OSs.
+>>>>>
+>>>>>   With regard to your specific problem, many of NVidia's examples
+>>>>> include use of OpenGL.  NVidia's documentation indicates that libgl.so is
+>>>>> referenced via static link to appear to be located in /usr/lib/libgl.so (per
+>>>>>
+>>>>> http://developer.download.nvidia.com/compute/cuda/3_2_prod/drivers/docs/README_Linux.txtunder Chapter 5, Listing of Installed Components, 4th bullet).  Chapter 5 of
+>>>>> NVidia's documentation goes on to describe the linking process that happens
+>>>>> when installing the developer drivers.  Perhaps this linking did not happen
+>>>>> when you installed the NVidia development drivers for Linux.  Did you get an
+>>>>> error during installation of the developer drivers reporting something in
+>>>>> this regard?  Chapter 5 concludes on how to check a Linux dynamic library
+>>>>> using the command line tool ldd.  In this case, ldd /usr/lib/libGL.so
+>>>>>
+>>>>> Here is the output I get when running ldd /usr/lib/libGL.so
+>>>>>
+>>>>> ldd /usr/lib/libGL.so
+>>>>> linux-vdso.so.1 =>  (0x00007ffff33e6000)
+>>>>>  libnvidia-tls.so.260.19.14 => /usr/lib/tls/libnvidia-tls.so.260.19.14
+>>>>> (0x00007fc82b46b000)
+>>>>> libnvidia-glcore.so.260.19.14 => /usr/lib/libnvidia-glcore.so.260.19.14
+>>>>> (0x00007fc82987f000)
+>>>>>  libX11.so.6 => /usr/lib/libX11.so.6 (0x00007fc829549000)
+>>>>> libXext.so.6 => /usr/lib/libXext.so.6 (0x00007fc829337000)
+>>>>>  libc.so.6 => /lib/libc.so.6 (0x00007fc828f93000)
+>>>>> libdl.so.2 => /lib/libdl.so.2 (0x00007fc828d8f000)
+>>>>>  libm.so.6 => /lib/libm.so.6 (0x00007fc828b0c000)
+>>>>> libxcb.so.1 => /usr/lib/libxcb.so.1 (0x00007fc8288ef000)
+>>>>>  /lib64/ld-linux-x86-64.so.2 (0x00007fc82b974000)
+>>>>> libXau.so.6 => /usr/lib/libXau.so.6 (0x00007fc8286eb000)
+>>>>>  libXdmcp.so.6 => /usr/lib/libXdmcp.so.6 (0x00007fc8284e5000)
+>>>>>
+>>>>>
+>>>>> If the libGL.so file is present and linked property, you can double
+>>>>> check for inclusion of libGL.so path by ensuring its path in your bash
+>>>>> profile under the variable LD_LIBRARY_PATH.  NVidia asks for the installer
+>>>>> to add these additions in the Linux install documents.  Here is the line in
+>>>>> my .bashrc file that allows the linker to find libGL.so (specifically the
+>>>>> ":/usr/lib" portion of this line):
+>>>>>
+>>>>> export
+>>>>> LD_LIBRARY_PATH="/usr/lib:/usr/local/cuda/lib64:/usr/local/cuda/lib:/usr/lib32:/usr/local/lib"
+>>>>>
+>>>>> I also had issues compiling the most recent version of NVidia's C
+>>>>> samples.  I reflected a work around in the updated web documents (see the
+>>>>> bottom of: http://www.imagejdev.org/setting-host-machine ).
+>>>>>
+>>>>> Please let me know if you have any more questions or difficulties with
+>>>>> the ImageJ OpenCL plugin examples.
+>>>>>
+>>>>> Sincerely,
+>>>>>
+>>>>> Rick Lentz
+>>>>>
+>>>>>
+>>>>> On Tue, Jan 11, 2011 at 4:20 AM, Pol kennel <pol.kennel at gmail.com>wrote:
+>>>>>
+>>>>>> Hello,
+>>>>>>
+>>>>>> I am a PhD student working on image segmentation by texture analysis
+>>>>>> with an application on remote sensing images (Montpellier, France). So i
+>>>>>> have to process very large images (e.g. 15000*8000).
+>>>>>> All methods I developed are formed as plugin under ImageJ API that I
+>>>>>> really like, but not yet applicable on this sort of image.
+>>>>>> Recently, I tough to use finally my graphic card (Nvidia GTS240) which
+>>>>>> I think will help me a lot in my process. So after several search on the
+>>>>>> web, I found this <http://imagejdev.org/plugins/opencl-plugin> (OpenCL
+>>>>>> plugin you wrote) great ! it's precisely what i need.
+>>>>>>
+>>>>>> So I decided to follow your tutorial to setup the environment but met
+>>>>>> some problems... :
+>>>>>>
+>>>>>>    1. When launching makefile in "~/NVIDIA_GPU_Computing_SDK/C/ " and
+>>>>>>    "~/NVIDIA_GPU_Computing_SDK/OpenCL" I had following error "/usr/bin/ld:
+>>>>>>    cannot find -lGL". Plus, I dont have the same demo files, maybe because of
+>>>>>>    version ? (cudatoolkit_3.2.16_linux_64, gpucomputingsdk_3.2.16 and
+>>>>>>    devdriver_3.2_linux_64_260.19.26 on Ubuntu 10.10). On the other side demos I
+>>>>>>    have work perfectly (ooclDCT8x8, oclHistogram,...)
+>>>>>>    2. *Main problem is that the repository you indicate to get the
+>>>>>>    example project (http://www.loci.wisc.edu/svn/decon) doesn't
+>>>>>>    work... *"
+>>>>>>    http://dev.loci.wisc.edu/svn/software/branches/maven/projects/opencl-decon"
+>>>>>>    repository works well. Is is the same ?
+>>>>>>
+>>>>>>
+>>>>>> Thanks a lot if you find time to answer me (and sorry for my english).
+>>>>>>
+>>>>>> And thanks you for work you are doing on ImageJ.
+>>>>>>
+>>>>>> Best regards,
+>>>>>> *
+>>>>>> *
+>>>>>> --
+>>>>>> Pol Kennel
+>>>>>>
+>>>>>>
+>>>>>
+>>>>
+>>>>
+>>>> --
+>>>> Pol Kennel
+>>>>
+>>>>
+>>>
+>>>
+>>> --
+>>> Pol Kennel
+>>>
+>>>
+>>
+>>
+>>
+>>
+>>
+> --
+> Pol Kennel
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110114/f5b4105c/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Sat Jan 15 04:22:40 2011
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Sat, 15 Jan 2011 11:22:40 +0100 (CET)
+Subject: [ImageJ-devel] OpenCL plugin
+In-Reply-To: <AANLkTimN1=WOOBmuHumvaU0UAAhrn_7x=+vT33CbZO9p@mail.gmail.com>
+References: <AANLkTi=+2Lvq0DpJugOU-zNjEtk3PTTp_dyaguXFahQL@mail.gmail.com>
+	<AANLkTi=71BHuCKkiK4DV=R5vcrB3DkT244sO1siYzt3V@mail.gmail.com>
+	<AANLkTikeCii0hpKiLK5HSOZiae5FDYFE3WybvgAX5dAG@mail.gmail.com>
+	<AANLkTin8ZCJuDLVGhrt4z7B53YSv9K-wrzoHA4CdoPLg@mail.gmail.com>
+	<AANLkTikpRTX51FGkwzvmG9Rc6ajKjqKZ-MtQOEdeQDj1@mail.gmail.com>
+	<AANLkTiniNHZgFtXuc0OchkTQrZzRu_JcDNw3md9fMyz-@mail.gmail.com>
+	<AANLkTinGxp6dKTttO1B2KVmYqeD0rr+44=W6GUX4LYFY@mail.gmail.com>
+	<AANLkTimN1=WOOBmuHumvaU0UAAhrn_7x=+vT33CbZO9p@mail.gmail.com>
+Message-ID: <alpine.DEB.1.00.1101151121560.1571@bonsai2>
+
+Hi,
+
+On Fri, 14 Jan 2011, Rick Lentz wrote:
+
+> Hi Pol,
+
+Just for your curiosity: I haven't seen a single mail by Pol on the public 
+mailing list.
+
+Ciao,
+Johannes
+
+
+
+From rwlentz at wisc.edu  Sat Jan 15 11:59:13 2011
+From: rwlentz at wisc.edu (Rick Lentz)
+Date: Sat, 15 Jan 2011 11:59:13 -0600
+Subject: [ImageJ-devel] OpenCL plugin
+In-Reply-To: <AANLkTim08OUeggRfVJcVsWB_GoY56Mukjd9=GkRj1R21@mail.gmail.com>
+References: <AANLkTi=+2Lvq0DpJugOU-zNjEtk3PTTp_dyaguXFahQL@mail.gmail.com>
+	<AANLkTi=71BHuCKkiK4DV=R5vcrB3DkT244sO1siYzt3V@mail.gmail.com>
+	<AANLkTikeCii0hpKiLK5HSOZiae5FDYFE3WybvgAX5dAG@mail.gmail.com>
+	<AANLkTin8ZCJuDLVGhrt4z7B53YSv9K-wrzoHA4CdoPLg@mail.gmail.com>
+	<AANLkTikpRTX51FGkwzvmG9Rc6ajKjqKZ-MtQOEdeQDj1@mail.gmail.com>
+	<AANLkTiniNHZgFtXuc0OchkTQrZzRu_JcDNw3md9fMyz-@mail.gmail.com>
+	<AANLkTinGxp6dKTttO1B2KVmYqeD0rr+44=W6GUX4LYFY@mail.gmail.com>
+	<AANLkTim08OUeggRfVJcVsWB_GoY56Mukjd9=GkRj1R21@mail.gmail.com>
+Message-ID: <AANLkTi=C-OPJ_jH1cGdk_nGMNWuzWir8YsyOz6obYiCW@mail.gmail.com>
+
+Hi Pol,
+
+  Thank you for trying the draft Getting Started with ImageJ OpenCL plugins
+tutorial.  I made a few updates based on your feedback.  Specifically, I
+changed sobel.cl to use floats vs doubles (this should take care of the
+error you ran into).  I also corrected the line error to line 169 for the
+update to the common.mk file.
+
+   I am not sure about the ./oclParticles error.  I have a similar error
+when running GL based apps - but my error is specific to tunneling X over
+SSH.  I am not sure if you are tunneling or not.  Looks like a group at
+Cambridge has a solid solution for GL over a SSH tunnel (see attached).
+
+  Michael Bien (author of JOCL) has filed a ticket for JOCL regarding
+working around a bug identified in the Apple implementation of
+OpenCL<https://jogamp.org/bugzilla/show_bug.cgi?id=458>.
+ Either the Windows 32/64 or Linux 32/64 implementations should work for
+you.  Let me know if you have any issues moving forward with your OpenCL /
+CUDA ImageJ plugin.
+
+Sincerely,
+
+Rick Lentz
+
+
+
+
+On Fri, Jan 14, 2011 at 3:19 AM, Pol kennel <pol.kennel at gmail.com> wrote:
+
+> Rick,
+>
+> Your tutorial is so clear I dont understand why I get again an error with
+> sobel example, but I dont want to abuse of your helpfulness.
+>
+> I really do exactly the same as your tutorial (except line 137 of
+> common.mk that don't refers to a NVCCFLAGS so a replace line 169 and
+> compil was ok).
+>
+> SobelExample error :
+>
+>
+> com.jogamp.opencl.CLException$CLInvalidBinaryException:
+> CLDevice [id: 139780449736272 name: GeForce GTS 240 type: GPU profile:
+> FULL_PROFILE] build log:
+>
+> ptxas application ptx input, line 104; error   : Instruction 'cvt' requires
+> SM 1.3 or higher, or map_f64_to_f32 directive
+> ptxas application ptx input, line 105; error   : Instruction 'cvt' requires
+> SM 1.3 or higher, or map_f64_to_f32 directive
+> ptxas application ptx input, line 106; error   : Instruction 'mul' requires
+> SM 1.3 or higher, or map_f64_to_f32 directive
+> ptxas application ptx input, line 107; error   : Instruction 'mul' requires
+> SM 1.3 or higher, or map_f64_to_f32 directive
+> ptxas application ptx input, line 108; error   : Instruction 'add' requires
+> SM 1.3 or higher, or map_f64_to_f32 directive
+> ptxas application ptx input, line 109; error   : Instruction 'sqrt'
+> requires SM 1.3 or higher, or map_f64_to_f32 directive
+> ptxas application ptx input, line 110; error   : Instruction 'cvt' requires
+> SM 1.3 or higher, or map_f64_to_f32 directive
+> ptxas fatal   : Ptx assembly aborted due to errors
+> error   : Ptx compilation failed: gpu='sm_11', device
+> code='cuModuleLoadDataEx_4'
+> : Considering profile 'compute_11' for gpu='sm_11' in
+> 'cuModuleLoadDataEx_4'
+> : Retrieving binary for 'cuModuleLoadDataEx_4', for gpu='sm_11', usage
+> mode='  '
+> : Considering profile 'compute_11' for gpu='sm_11' in
+> 'cuModuleLoadDataEx_4'
+> : Control flags for 'cuModuleLoadDataEx_4' disable search path
+> : Ptx binary found for 'cuModuleLoadDataEx_4', architecture='compute_11'
+> : Ptx compilation for 'cuModuleLoadDataEx_4', for gpu='sm_11', ocg
+> options='  '
+> ptxas application ptx input, line 104; warning : Double is not supported.
+> Demoting to float [error: CL_INVALID_BINARY]
+>     at com.jogamp.opencl.CLException.newException(CLException.java:78)
+>     at com.jogamp.opencl.CLProgram.build(CLProgram.java:363)
+>     at com.jogamp.opencl.CLProgram.build(CLProgram.java:245)
+>     at demos.SobelFilterExample.init(SobelFilterExample.java:66)
+>     at demos.SobelFilterExample.runTest(SobelFilterExample.java:240)
+>     at demos.SobelFilterExample.main(SobelFilterExample.java:193)
+>
+> I also noted that some examples in
+> /NVIDIA_GPU_Computing_SDK/OpenCL/bin/linux/release/ crash like
+> ./oclParticles with error :
+> X Error of failed request:  BadWindow (invalid Window parameter)
+>   Major opcode of failed request:  138 (NV-GLX)
+>   Minor opcode of failed request:  4 ()
+>   Resource id in failed request:  0x4e00002
+>   Serial number of failed request:  49
+>   Current serial number in output stream:  49
+>
+> ./oclBandWidthTest is ok.
+>
+> If you have an idea, please let me know. Have a nice day.
+>
+> Regards,
+> Pol
+>
+> 2011/1/14 Pol kennel <pol.kennel at gmail.com>
+>
+> Hi Rick,
+>>
+>> You perfectly understood what I need, this will lead to apply "heavy"
+>> texture features extraction on large image aiming segmentation (the method
+>> will be published soon).
+>> I hope to have time in future to create a clear plugin for IJ that could
+>> be shared with users and contribuate to IJ community :) So thanks for your
+>> help, I'll try your last tutorial today, with hopes to get started with
+>> OpenCL quick... I have a last (at least) question : are we constrained to
+>> write gpu code in Cl ? could we use directly java codes ?
+>>
+>> Best regards,
+>> Pol
+>>
+>> 2011/1/13 Rick Lentz <rwlentz at wisc.edu>
+>>
+>> Hi Pol,
+>>>
+>>>   I am thinking that the material under http://www.imagejdev.org/OpenCLwas not going to be as useful for you as a getting started tutorial.  I have
+>>> removed the publication related material from our website.  I created a Getting
+>>> Started with OpenCL in ImageJ Tutorial<https://docs.google.com/document/d/12aiL7urwcve7Mi-YyuOtAVlTZ5P6outcay75YiQlqyQ/edit?hl=en> with
+>>> the goal of helping ImageJ users get started quickly with OpenCL.
+>>>
+>>>  Back to your issues, for the research publication I compiled the jogamp
+>>> files - but for your application, I do not think you need to do this.  The
+>>> compilation steps listed were specific to Ubuntu 9.10 and NVidia 3.1.  If I
+>>> am understanding your ImageJ need correctly, I think you are looking to run
+>>> a few Java examples that help you get into writing OpenCL plugins for
+>>> ImageJ.  I hope the attached draft copy of the tutorial will help you get
+>>> there quickly.
+>>>
+>>>  Please let me know if you any troubles with the tutorial - and have any
+>>> feedback regarding the tutorial.
+>>>
+>>> Best Regards,
+>>>
+>>> Rick Lentz
+>>>
+>>>
+>>> Hi Pol,
+>>>
+>>>   Can you do a fresh pull from our repository - You should not have to
+>>> build these unless you really want to.
+>>>
+>>>   You can download the needed components directly from:
+>>>   http://jogamp.org/deployment/webstart/
+>>>
+>>>   I have also updated the ImageJ plugin demo source to include the most
+>>> recent Jogamp OpenCL binaries and native libs.
+>>>
+>>> Sincerely,
+>>>
+>>> Rick
+>>>
+>>> On Thu, Jan 13, 2011 at 9:55 AM, Pol kennel <pol.kennel at gmail.com>wrote:
+>>>
+>>>> In fact my *jocl* building also crash during Junit tests, with error
+>>>> stacks like :
+>>>>
+>>>> [junit] Testcase: createContextTest(com.jogamp.opencl.gl.CLGLTest): Caused
+>>>> an ERROR
+>>>>     [junit] test timed out after 5000 milliseconds
+>>>>     [junit] java.lang.Exception: test timed out after 5000 milliseconds
+>>>>     [junit] at java.lang.Object.wait(Native Method)
+>>>>     [junit] at java.lang.Object.wait(Object.java:485)
+>>>>     [junit] at
+>>>> com.jogamp.opengl.impl.SharedResourceRunner.doAndWait(SharedResourceRunner.java:152)
+>>>>     [junit] at
+>>>> com.jogamp.opengl.impl.SharedResourceRunner.getOrCreateShared(SharedResourceRunner.java:100)
+>>>>     [junit] at
+>>>> com.jogamp.opengl.impl.x11.glx.X11GLXDrawableFactory.getOrCreateSharedContextImpl(X11GLXDrawableFactory.java:253)
+>>>>     [junit] at
+>>>> javax.media.opengl.GLDrawableFactory.getOrCreateSharedContext(GLDrawableFactory.java:275)
+>>>>     [junit] at
+>>>> javax.media.opengl.GLDrawableFactory.getIsSharedContextAvailable(GLDrawableFactory.java:250)
+>>>>     [junit] at
+>>>> javax.media.opengl.GLProfile.initProfilesForDeviceImpl(GLProfile.java:1251)
+>>>>     [junit] at
+>>>> javax.media.opengl.GLProfile.initProfilesForDevice(GLProfile.java:1224)
+>>>>     [junit] at
+>>>> javax.media.opengl.GLProfile.initProfilesForDefaultDevices(GLProfile.java:1192)
+>>>>     [junit] at
+>>>> javax.media.opengl.GLProfile.access$000(GLProfile.java:66)
+>>>>     [junit] at javax.media.opengl.GLProfile$1.run(GLProfile.java:112)
+>>>>     [junit] at java.security.AccessController.doPrivileged(Native
+>>>> Method)
+>>>>     [junit] at
+>>>> javax.media.opengl.GLProfile.initSingleton(GLProfile.java:110)
+>>>>     [junit] at com.jogamp.opencl.gl.CLGLTest.init(CLGLTest.java:70)
+>>>>     [junit] at
+>>>> com.jogamp.opencl.gl.CLGLTest.createContextTest(CLGLTest.java:102)
+>>>>
+>>>> So there is another problem I don t identify...
+>>>>
+>>>> 2011/1/13 Pol kennel <pol.kennel at gmail.com>
+>>>>
+>>>> Hi Rick,
+>>>>>
+>>>>> Thank a lot for your detailed answers an to pay attention to my
+>>>>> problems !
+>>>>>
+>>>>> I finally resolved my problem with the OpenGL lib with your previous
+>>>>> mail : a link was not set correctly to the libGL.so file. I now have the
+>>>>> same output with *ldd /usr/lib/libGL.so *command. So I build correctly
+>>>>> C and OpenCL project, demos work well.
+>>>>>
+>>>>> I also build correctly *gluegen*, *jogl*, *jocl* and *jocl-demos*projects (note that lines "git clone
+>>>>> http://github.com/sgothel/gluegen.git gluegen" and "git clone
+>>>>> http://github.com/sgothel/jogl-demos.git jogl-demos" are missing on
+>>>>> the http://www.imagejdev.org/setting-jocl-jogl-and-gluegen page of
+>>>>> your tutorial).
+>>>>>
+>>>>> However, I stoped in building *joal* and *jogl-demos. *You probably
+>>>>> omit to precise the building of the *joal *project (but it could be
+>>>>> intended ?) ; when building *joal* with *ant* in the */joal/make/*directory I get an error :
+>>>>> "*/home/pol/joal/make/build.xml:369: taskdef class
+>>>>> com.sun.gluegen.ant.GlueGenTask cannot be found*
+>>>>> * using the classloader
+>>>>> AntClassLoader[/home/pol/gluegen/build/gluegen.jar:/home/pol/gluegen/build/antlr.jar:/home/pol/gluegen/make/lib/antlr.jar]
+>>>>> *"
+>>>>> (gluegen.jar and antlr.jar still in the right directory, is there
+>>>>> classpath to set for gluegen ?). In the *joal* readme file, I found
+>>>>> that OpenAL lib are need, so i downloaded  libopenal-dev/openal1 packets
+>>>>> from synaptic, and follow instructions saying to copy gluegen.properties and
+>>>>> joal.properties and jogl.properties into home directory but don't know how
+>>>>> to set correctly properties into this files.
+>>>>> *joal* building stills crash.
+>>>>>
+>>>>> Regarding to *jogl-demos *when* *building with* ant *in *
+>>>>> ~/jogl-demos/make/*  i get 27 errors like :
+>>>>> [javac] Compiling 169 source files to
+>>>>> /home/pol/jogl-demos/build/classes
+>>>>> [javac] /home/pol/jogl-demos/src/demos/applets/GearsJOALApplet.java:11:
+>>>>> package com.jogamp.openal.util does not exist
+>>>>> [javac] import com.jogamp.openal.util.ALut;"
+>>>>> [...]
+>>>>> I suppose it s due to joal, OpenAL again....
+>>>>>
+>>>>> (How) Did you install it ?
+>>>>>
+>>>>>
+>>>>> On the other side, i have update the decon project from svn.
+>>>>> When running *SobelFilterExample.java *i get :
+>>>>>
+>>>>> *Retrieving test image...  *
+>>>>> *Starting iteration... 0*
+>>>>> *Local work size dimensions are max array size of*
+>>>>> *unavailable functions: [clCreateEventFromGLsyncKHR,
+>>>>> clIcdGetPlatformIDsKHR]*
+>>>>> *Discovered NVIDIA CUDA*
+>>>>> *com.jogamp.opencl.CLException$CLInvalidBinaryException: *
+>>>>> *CLDevice [id: 140626625730048 name: GeForce GTS 240 type: GPU
+>>>>> profile: FULL_PROFILE] build log:*
+>>>>> *ptxas application ptx input, line 104; error   : Instruction 'cvt'
+>>>>> requires SM 1.3 or higher, or map_f64_to_f32 directive*
+>>>>> *ptxas application ptx input, line 105; error   : Instruction 'cvt'
+>>>>> requires SM 1.3 or higher, or map_f64_to_f32 directive*
+>>>>> *ptxas application ptx input, line 106; error   : Instruction 'mul'
+>>>>> requires SM 1.3 or higher, or map_f64_to_f32 directive*
+>>>>> *ptxas application ptx input, line 107; error   : Instruction 'mul'
+>>>>> requires SM 1.3 or higher, or map_f64_to_f32 directive*
+>>>>> *ptxas application ptx input, line 108; error   : Instruction 'add'
+>>>>> requires SM 1.3 or higher, or map_f64_to_f32 directive*
+>>>>> *ptxas application ptx input, line 109; error   : Instruction 'sqrt'
+>>>>> requires SM 1.3 or higher, or map_f64_to_f32 directive*
+>>>>> *ptxas application ptx input, line 110; error   : Instruction 'cvt'
+>>>>> requires SM 1.3 or higher, or map_f64_to_f32 directive*
+>>>>> *ptxas fatal   : Ptx assembly aborted due to errors*
+>>>>> *error   : Ptx compilation failed: gpu='sm_11', device
+>>>>> code='cuModuleLoadDataEx_4'*
+>>>>> *: Considering profile 'compute_11' for gpu='sm_11' in
+>>>>> 'cuModuleLoadDataEx_4'*
+>>>>> *: Retrieving binary for 'cuModuleLoadDataEx_4', for gpu='sm_11',
+>>>>> usage mode='  '*
+>>>>> *: Considering profile 'compute_11' for gpu='sm_11' in
+>>>>> 'cuModuleLoadDataEx_4'*
+>>>>> *: Control flags for 'cuModuleLoadDataEx_4' disable search path*
+>>>>> *: Ptx binary found for 'cuModuleLoadDataEx_4',
+>>>>> architecture='compute_11'*
+>>>>> *: Ptx compilation for 'cuModuleLoadDataEx_4', for gpu='sm_11', ocg
+>>>>> options='  '*
+>>>>> *ptxas application ptx input, line 104; warning : Double is not
+>>>>> supported. Demoting to float*
+>>>>> *error: CL_INVALID_BINARY (man page:
+>>>>> http://www.khronos.org/opencl/sdk/1.1/docs/man/xhtml/errors.html)*
+>>>>> * at com.jogamp.opencl.CLException.newException(CLException.java:49)*
+>>>>> * at com.jogamp.opencl.CLProgram.build(CLProgram.java:335)*
+>>>>> * at com.jogamp.opencl.CLProgram.build(CLProgram.java:174)*
+>>>>> * at publication.SobelFilterExample.<init>(SobelFilterExample.java:66)
+>>>>> *
+>>>>> * at
+>>>>> publication.SobelFilterExample.runTest(SobelFilterExample.java:204)*
+>>>>> * at publication.SobelFilterExample.main(SobelFilterExample.java:155)*
+>>>>>
+>>>>> So I suppose it s due to miss installation of JOAL.
+>>>>>
+>>>>>
+>>>>> I'll be so thankful if you can get me out of this deadlock.... I can
+>>>>> already see the light far away :)
+>>>>>
+>>>>> Best regards,
+>>>>>
+>>>>>
+>>>>>  Pol
+>>>>>
+>>>>>
+>>>>>
+>>>>> PS : I'm often connected on google chat so if you prefer answer me
+>>>>> online please let me know you gmail address.
+>>>>>
+>>>>>
+>>>>>
+>>>>> 2011/1/12 Rick Lentz <rwlentz at wisc.edu>
+>>>>>
+>>>>> Hi Pol,
+>>>>>>
+>>>>>>   Regarding your first question it is likely that the linker is
+>>>>>> missing a reference to OpenGL.  My instructions were for a prior major
+>>>>>> release of Ubuntu as well as a prior minor release of NVidia's CUDA SDK.  I
+>>>>>> have updated the setup instructions to reflect the current versions as well
+>>>>>> as tested against 64bit Mac and Linux OSs.
+>>>>>>
+>>>>>>   With regard to your specific problem, many of NVidia's examples
+>>>>>> include use of OpenGL.  NVidia's documentation indicates that libgl.so is
+>>>>>> referenced via static link to appear to be located in /usr/lib/libgl.so (per
+>>>>>>
+>>>>>> http://developer.download.nvidia.com/compute/cuda/3_2_prod/drivers/docs/README_Linux.txtunder Chapter 5, Listing of Installed Components, 4th bullet).  Chapter 5 of
+>>>>>> NVidia's documentation goes on to describe the linking process that happens
+>>>>>> when installing the developer drivers.  Perhaps this linking did not happen
+>>>>>> when you installed the NVidia development drivers for Linux.  Did you get an
+>>>>>> error during installation of the developer drivers reporting something in
+>>>>>> this regard?  Chapter 5 concludes on how to check a Linux dynamic library
+>>>>>> using the command line tool ldd.  In this case, ldd /usr/lib/libGL.so
+>>>>>>
+>>>>>> Here is the output I get when running ldd /usr/lib/libGL.so
+>>>>>>
+>>>>>> ldd /usr/lib/libGL.so
+>>>>>> linux-vdso.so.1 =>  (0x00007ffff33e6000)
+>>>>>>  libnvidia-tls.so.260.19.14 =>
+>>>>>> /usr/lib/tls/libnvidia-tls.so.260.19.14 (0x00007fc82b46b000)
+>>>>>> libnvidia-glcore.so.260.19.14 =>
+>>>>>> /usr/lib/libnvidia-glcore.so.260.19.14 (0x00007fc82987f000)
+>>>>>>  libX11.so.6 => /usr/lib/libX11.so.6 (0x00007fc829549000)
+>>>>>> libXext.so.6 => /usr/lib/libXext.so.6 (0x00007fc829337000)
+>>>>>>  libc.so.6 => /lib/libc.so.6 (0x00007fc828f93000)
+>>>>>> libdl.so.2 => /lib/libdl.so.2 (0x00007fc828d8f000)
+>>>>>>  libm.so.6 => /lib/libm.so.6 (0x00007fc828b0c000)
+>>>>>> libxcb.so.1 => /usr/lib/libxcb.so.1 (0x00007fc8288ef000)
+>>>>>>  /lib64/ld-linux-x86-64.so.2 (0x00007fc82b974000)
+>>>>>> libXau.so.6 => /usr/lib/libXau.so.6 (0x00007fc8286eb000)
+>>>>>>  libXdmcp.so.6 => /usr/lib/libXdmcp.so.6 (0x00007fc8284e5000)
+>>>>>>
+>>>>>>
+>>>>>> If the libGL.so file is present and linked property, you can double
+>>>>>> check for inclusion of libGL.so path by ensuring its path in your bash
+>>>>>> profile under the variable LD_LIBRARY_PATH.  NVidia asks for the installer
+>>>>>> to add these additions in the Linux install documents.  Here is the line in
+>>>>>> my .bashrc file that allows the linker to find libGL.so (specifically the
+>>>>>> ":/usr/lib" portion of this line):
+>>>>>>
+>>>>>> export
+>>>>>> LD_LIBRARY_PATH="/usr/lib:/usr/local/cuda/lib64:/usr/local/cuda/lib:/usr/lib32:/usr/local/lib"
+>>>>>>
+>>>>>> I also had issues compiling the most recent version of NVidia's C
+>>>>>> samples.  I reflected a work around in the updated web documents (see the
+>>>>>> bottom of: http://www.imagejdev.org/setting-host-machine ).
+>>>>>>
+>>>>>> Please let me know if you have any more questions or difficulties with
+>>>>>> the ImageJ OpenCL plugin examples.
+>>>>>>
+>>>>>> Sincerely,
+>>>>>>
+>>>>>> Rick Lentz
+>>>>>>
+>>>>>>
+>>>>>> On Tue, Jan 11, 2011 at 4:20 AM, Pol kennel <pol.kennel at gmail.com>wrote:
+>>>>>>
+>>>>>>> Hello,
+>>>>>>>
+>>>>>>> I am a PhD student working on image segmentation by texture analysis
+>>>>>>> with an application on remote sensing images (Montpellier, France). So i
+>>>>>>> have to process very large images (e.g. 15000*8000).
+>>>>>>> All methods I developed are formed as plugin under ImageJ API that I
+>>>>>>> really like, but not yet applicable on this sort of image.
+>>>>>>> Recently, I tough to use finally my graphic card (Nvidia GTS240)
+>>>>>>> which I think will help me a lot in my process. So after several search on
+>>>>>>> the web, I found this <http://imagejdev.org/plugins/opencl-plugin> (OpenCL
+>>>>>>> plugin you wrote) great ! it's precisely what i need.
+>>>>>>>
+>>>>>>> So I decided to follow your tutorial to setup the environment but met
+>>>>>>> some problems... :
+>>>>>>>
+>>>>>>>    1. When launching makefile in "~/NVIDIA_GPU_Computing_SDK/C/ "
+>>>>>>>    and "~/NVIDIA_GPU_Computing_SDK/OpenCL" I had following error "/usr/bin/ld:
+>>>>>>>    cannot find -lGL". Plus, I dont have the same demo files, maybe because of
+>>>>>>>    version ? (cudatoolkit_3.2.16_linux_64, gpucomputingsdk_3.2.16 and
+>>>>>>>    devdriver_3.2_linux_64_260.19.26 on Ubuntu 10.10). On the other side demos I
+>>>>>>>    have work perfectly (ooclDCT8x8, oclHistogram,...)
+>>>>>>>    2. *Main problem is that the repository you indicate to get the
+>>>>>>>    example project (http://www.loci.wisc.edu/svn/decon) doesn't
+>>>>>>>    work... *"
+>>>>>>>    http://dev.loci.wisc.edu/svn/software/branches/maven/projects/opencl-decon"
+>>>>>>>    repository works well. Is is the same ?
+>>>>>>>
+>>>>>>>
+>>>>>>> Thanks a lot if you find time to answer me (and sorry for my
+>>>>>>> english).
+>>>>>>>
+>>>>>>> And thanks you for work you are doing on ImageJ.
+>>>>>>>
+>>>>>>> Best regards,
+>>>>>>> *
+>>>>>>> *
+>>>>>>> --
+>>>>>>> Pol Kennel
+>>>>>>>
+>>>>>>>
+>>>>>>
+>>>>>
+>>>>>
+>>>>> --
+>>>>> Pol Kennel
+>>>>>
+>>>>>
+>>>>
+>>>>
+>>>> --
+>>>> Pol Kennel
+>>>>
+>>>>
+>>>
+>>>
+>>>
+>>>
+>> --
+>> Pol Kennel
+>>
+>>
+>
+>
+> --
+> Pol Kennel
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110115/850a582f/attachment.html>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: dell-remote-virtualisation.pdf
+Type: application/pdf
+Size: 511417 bytes
+Desc: not available
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110115/850a582f/attachment.pdf>
+
+From pol.kennel at gmail.com  Mon Jan 17 07:57:35 2011
+From: pol.kennel at gmail.com (Pol kennel)
+Date: Mon, 17 Jan 2011 14:57:35 +0100
+Subject: [ImageJ-devel] OpenCL plugin
+In-Reply-To: <AANLkTi=C-OPJ_jH1cGdk_nGMNWuzWir8YsyOz6obYiCW@mail.gmail.com>
+References: <AANLkTi=+2Lvq0DpJugOU-zNjEtk3PTTp_dyaguXFahQL@mail.gmail.com>
+	<AANLkTi=71BHuCKkiK4DV=R5vcrB3DkT244sO1siYzt3V@mail.gmail.com>
+	<AANLkTikeCii0hpKiLK5HSOZiae5FDYFE3WybvgAX5dAG@mail.gmail.com>
+	<AANLkTin8ZCJuDLVGhrt4z7B53YSv9K-wrzoHA4CdoPLg@mail.gmail.com>
+	<AANLkTikpRTX51FGkwzvmG9Rc6ajKjqKZ-MtQOEdeQDj1@mail.gmail.com>
+	<AANLkTiniNHZgFtXuc0OchkTQrZzRu_JcDNw3md9fMyz-@mail.gmail.com>
+	<AANLkTinGxp6dKTttO1B2KVmYqeD0rr+44=W6GUX4LYFY@mail.gmail.com>
+	<AANLkTim08OUeggRfVJcVsWB_GoY56Mukjd9=GkRj1R21@mail.gmail.com>
+	<AANLkTi=C-OPJ_jH1cGdk_nGMNWuzWir8YsyOz6obYiCW@mail.gmail.com>
+Message-ID: <AANLkTi=Q_Bpc_U7evt6LRU5BZRZDbJttkKXY9A1FXkCP@mail.gmail.com>
+
+Hi Rick,
+
+Thank you so much for all your precise comments. I (finally!) ran the
+example (sobel.cl) without error using the float version.
+I will also test JCuda library and evaluate what is the best for my needs
+with my plugin, as you suggest it.
+Concerning ./oclParticles i don't know, but I don't use ssh tunnel.
+
+Thank you again for your attention, I'll keep you inform of my developments.
+
+Best regards,
+
+Pol K.
+
+PS: Johannes, I recently subscribe to the mailing list.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110117/55a7096c/attachment.html>
+
+From preibisch at mpi-cbg.de  Thu Jan 20 07:58:04 2011
+From: preibisch at mpi-cbg.de (Stephan Preibisch)
+Date: Thu, 20 Jan 2011 14:58:04 +0100
+Subject: [ImageJ-devel] How to implement filters in ImgLib?
+In-Reply-To: <8E143F1B62C0594F8D0FB77A1457845A0D8086AFE0@HAGMXBE01.hagenberg.fhooe.at>
+References: <8E143F1B62C0594F8D0FB77A1457845A0D8086AFE0@HAGMXBE01.hagenberg.fhooe.at>
+Message-ID: <001401cbb8aa$0f19eee0$2d4dcca0$@de>
+
+Hi Wilhelm,
+
+there are some examples in the imglib-algorithms package. They include
+Gaussian Convolution and Fourier Convolution (convolution with any kernel).
+The basic idea is to implement the OutputAlgorithm interface and maybe also
+Benchmark and MultiThreading. So the current implementations support
+benchmarking, but no thorough benchmark has been done yet. But it is quite
+fast, especially the Fourier Convolution where the convolution time is
+independent of the kernel size. 
+
+I would have a look at the class
+mpicbg.imglib.algorithm.gauss.GaussianConvolution3 which is a generic
+Gaussian convolution, it even supports different Input, Processing and
+Output datatypes (e.g. input is Byte, compute in Float, output Byte again).
+Of course, for a start one can assume that the type is the same throughout
+the whole computation to make it not too complicated.
+
+Nice greetings,
+Stephan
+
+-----Original Message-----
+From: Burger Wilhelm [mailto:Wilhelm.Burger at fh-hagenberg.at] 
+Sent: Thursday, January 20, 2011 1:37 PM
+To: imagej-devel at imagejdev.org
+Cc: Stephan Preibisch; Burger Wilhelm
+Subject: How to implement filters in ImgLib?
+
+Dear Stephan and others,
+
+I was wondering how one would implement a typical filter on top of ImgLib
+(say a Gaussian blur or other linear filter) - are there any examples and/or
+benchmarks yet?
+
+Thanks much,
+Wilhelm
+
+
+
+
+
+
+From Wilhelm.Burger at fh-hagenberg.at  Thu Jan 20 06:36:37 2011
+From: Wilhelm.Burger at fh-hagenberg.at (Burger Wilhelm)
+Date: Thu, 20 Jan 2011 13:36:37 +0100
+Subject: [ImageJ-devel] How to implement filters in ImgLib?
+Message-ID: <8E143F1B62C0594F8D0FB77A1457845A0D8086AFE0@HAGMXBE01.hagenberg.fhooe.at>
+
+Dear Stephan and others,
+
+I was wondering how one would implement a typical filter on top of ImgLib (say a Gaussian blur or other linear filter) - are there any examples and/or benchmarks yet?
+
+Thanks much,
+Wilhelm
+
+
+
+
+
+From sapristi at gmail.com  Thu Jan 20 14:35:26 2011
+From: sapristi at gmail.com (Albert Cardona)
+Date: Thu, 20 Jan 2011 15:35:26 -0500
+Subject: [ImageJ-devel] How to implement filters in ImgLib?
+In-Reply-To: <001401cbb8aa$0f19eee0$2d4dcca0$@de>
+References: <8E143F1B62C0594F8D0FB77A1457845A0D8086AFE0@HAGMXBE01.hagenberg.fhooe.at>
+	<001401cbb8aa$0f19eee0$2d4dcca0$@de>
+Message-ID: <AANLkTim2zxN2VwAt62VDsWdh8wRri_ZRJ8YakCm8qzMF@mail.gmail.com>
+
+Hi Wilhem,
+
+There's also the script.imglib.* way. For example, to normalize an image:
+
+import mpicbg.imglib.image.Image;
+import mpicbg.imglib.type.numeric.RealType;
+import mpicbg.imglib.type.numeric.real.FloatType;
+import script.imglib.math.*;
+import script.imglib.ImgLib;
+import ij.IJ;
+import ij.plugin.PlugIn;
+
+public class Normalize<R extends RealType<R>> implements PlugIn {
+
+    public void run(String arg) {
+        try {
+                run();
+        } catch (Exception e) {
+                e.printStackTrace();
+        }
+    }
+
+    public void run() throws Exception {
+
+        Image<R> image = ImgLib.wrap(IJ.getImage());
+
+        double mean = 0;
+        for (RealType<?> pixel : image) {
+            mean += pixel.getRealFloat() / image.size();
+        }
+
+        double variance = 0;
+        for (RealType<?> pixel : image) {
+            variance += Math.pow(pixel.getRealFloat() - mean, 2) / image.size();
+        }
+        double stdDev = Math.sqrt(variance);
+
+        Image<FloatType> normalized = Compute.inFloats(new Divide(new
+Subtract(image, mean), stdDev));
+
+        normalized.getDisplay().setMinMax();
+        ImgLib.wrap(normalized).show();
+    }
+
+    static public final void main(String[] args) {
+        try {
+            new Normalize().run();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+
+
+Internally, "Compute" uses cursors to do the right thing. Then JIT
+removes all layers and the algorithm runs at the same speed as it
+would when hand-coded with cursors. In addition, "Compute"
+automatically parallelizes the operations by processing different
+chunks of the image in parallel.
+
+There are also constructors for extracting specific channels from
+color images. See examples towards the end of this tutorial:
+
+http://www.ini.uzh.ch/~acardona/fiji-tutorial/
+
+Albert
+
+-- 
+http://albert.rierol.net
+
+
+
+From rwlentz at wisc.edu  Mon Jan 31 11:54:34 2011
+From: rwlentz at wisc.edu (Rick Lentz)
+Date: Mon, 31 Jan 2011 11:54:34 -0600
+Subject: [ImageJ-devel] [Software Feedback] Email for Rick Lentz. ImageJ
+	OpenCL support
+In-Reply-To: <AANLkTi=z39iaWckJUeHLSd2BVHWr_vKnJQ6bJkn5dtJB@mail.gmail.com>
+References: <E1Pjd3a-0006Pr-G3@skynet.loci.wisc.edu>
+	<AANLkTi=z39iaWckJUeHLSd2BVHWr_vKnJQ6bJkn5dtJB@mail.gmail.com>
+Message-ID: <AANLkTinZOCmthQq=ck4UZhqJGD4YMHBR5FLAaxEycPCV@mail.gmail.com>
+
+Dear Vincent,
+
+  Community feedback revealed that the old OpenCL setup web instructions
+were not as helpful for ImageJ users due to the change to NVidia3.2 / Ubuntu
+10.4.  Instead, we reworked those pages into a getting started tutorial.
+
+  The getting started tutorial is now here:
+https://docs0.google.com/document/d/12aiL7urwcve7Mi-YyuOtAVlTZ5P6outcay75YiQlqyQ/edit?hl=en#
+
+  and available linked from www.imagejdev.org/opencl.
+
+  We are working on integrating the libs into Fiji and perhaps ImageJ.  The
+issue with ImageJ is that we (the ImageJDev.org team) do not have control
+over the ImageJ source code.  This control is held by *Wayne Rasband **thus
+Fiji will be our first integration target.*
+
+**  If I can make any part of the tutorial clearer, please let me know.  If
+linking to ImageJDev.org, please direct to www.imagejdev.org/opencl.  I hope
+your client work goes well.  If you have other suggestions or questions
+regarding ImageJ/OpenCL please let us know as we are working to improve the
+experience for ImageJ users.
+
+Warm regards,
+
+Rick Lentz
+Imagejdev.org
+
+On Sun, Jan 30, 2011 at 1:55 PM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+
+>
+>
+> ---------- Forwarded message ----------
+> From: <vincent at streamcomputing.eu>
+> Date: Sun, Jan 30, 2011 at 1:35 PM
+> Subject: [Software Feedback] Email for Rick Lentz. ImageJ OpenCL support
+> To: ctrueden at wisc.edu
+>
+>
+> Vincent Hindriksen sent a message using the contact form at
+> http://loci.wisc.edu/contact.
+>
+> Dear Rick Lentz,
+>
+> I saw you were working on OpenCL-support. Currently I've finished a
+> helper-class to get it done. Problem is mostly the native libraries; the
+> directory ./lib/<OS> should be included by default in ImageJ to make all
+> easier for plugins like these.
+>
+> Description and downloadable files are at at
+> http://www.streamcomputing.eu/blog/2011-01-21/imagej-and-opencl . I
+> mentioned your work there, but just check if you want things changed.
+>
+> Kind regards,
+> Vincent Hindriksen
+>
+>
+
+
+-- 
+Sincerely,
+
+Rick Lentz
+(608) 217 - 8592 (cell)
+(608) 807-0790 (skype/internet)
+(608) 263 - 8481 (UW office)
+(877) 679 - 9520 (fax)
+rickwlentz (Skype Video Chat)
+Bascom Hall - "...ever encourage that continual and fearless sifting and
+winnowing by which alone the truth can be found"
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110131/602c752d/attachment.html>
+
+From ctrueden at wisc.edu  Mon Jan 31 17:55:09 2011
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Mon, 31 Jan 2011 17:55:09 -0600
+Subject: [ImageJ-devel] Why Eclipse ignores SezPoz and NetBeans Lookup
+	annotations
+Message-ID: <AANLkTimLVey97dF+0FTtzZJW2yyDBLKTYB-3D-EB0pXy@mail.gmail.com>
+
+Hi everyone,
+
+Recently I did some digging into a problem we have been having: when
+compiling ImageJDev code inside Eclipse, it does not execute annotation
+processors. The result is that when running ImageJ2 from Eclipse, none of
+the dependency injection works?no IJ2 plugins are discovered, etc.
+
+DETAILS:
+
+Both SezPoz and NetBeans Lookup make use of annotation processors?listed in
+the relevant JARs' META-INF/services/javax.annotation.processing.Processor
+file?to write additional information to the target project's META-INF
+directory. For example, in the case of NetBeans Lookup, it adds the class to
+the META-INF/services/whatever-service file.
+
+It turns out that unlike Javac and NetBeans, Eclipse does not enable
+annotation processing by default. And there is no way to turn it on by
+default?it must be enabled on a project-by-project basis. Further, JARs
+containing relevant annotation processors must then be explicitly listed in
+the project configuration under Java Compiler > Annotation Processing >
+Factory Path.
+
+The SezPoz homepage makes mention of these facts, as follows:
+
+Eclipse-specific notes: make sure annotation processing is enabled at least
+for any projects registering objects using annotations. Make sure the SezPoz
+library is in the factory path for annotation processors. You also need to
+check the box *Run this container's processor in batch mode* from the *
+Advanced* button in *Java Compiler > Annotation Processing > Factory Path*.
+There does not appear to be any way for Eclipse to discover processors in
+the regular classpath as JSR 269 suggests, and there does not appear to be
+any way to make these settings apply automatically to all projects. Eclipse
+users are recommended to use javac (e.g. via Maven) to build. Eclipse Help
+Page<http://help.eclipse.org/ganymede/index.jsp?topic=/org.eclipse.jdt.doc.isv/guide/jdt_apt_getting_started.htm>
+Eclipse
+bug #280542 <https://bugs.eclipse.org/bugs/show_bug.cgi?id=280542>
+
+Further, if anything goes wrong during annotation processing, Eclipse logs
+the error to .metadata/.log in its workspace, but does not report the
+problem in the user interface, making debugging difficult.
+
+SOLUTION:
+
+We could make SezPoz work automatically from Eclipse by committing certain
+metadata files to the repository. However, there is a further problem with
+using NetBeans Lookup from Eclipse: it throws a cryptic exception (to the
+.metadata/.log) when its annotation processor is invoked. Hence, NetBeans
+Lookup still won't work properly, even with Eclipse properly configured.
+
+So for now, the easiest way to run ImageJ2 is to do a clean build by
+invoking Maven, and then running a simple shell script:
+
+$ mvn -DskipTests clean install
+$ cd imagej
+$ ./run
+
+In conclusion, this bug,
+#280542<https://bugs.eclipse.org/bugs/show_bug.cgi?id=280542>,
+is a serious limitation in Eclipse, and I encourage any interested
+developers to vote for a resolution.
+
+-Curtis
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110131/c951a051/attachment.html>
+
+From vincent at streamcomputing.eu  Mon Jan 31 17:16:30 2011
+From: vincent at streamcomputing.eu (Vincent Hindriksen)
+Date: Tue, 01 Feb 2011 00:16:30 +0100
+Subject: [ImageJ-devel] [Software Feedback] Email for Rick Lentz. ImageJ
+	OpenCL support
+In-Reply-To: <AANLkTinZOCmthQq=ck4UZhqJGD4YMHBR5FLAaxEycPCV@mail.gmail.com>
+References: <E1Pjd3a-0006Pr-G3@skynet.loci.wisc.edu>
+	<AANLkTi=z39iaWckJUeHLSd2BVHWr_vKnJQ6bJkn5dtJB@mail.gmail.com>
+	<AANLkTinZOCmthQq=ck4UZhqJGD4YMHBR5FLAaxEycPCV@mail.gmail.com>
+Message-ID: <1296515791.14303.114.camel@truus-laptop>
+
+Dear Rick,
+
+Maybe I was not clear: I did not use the code from the ImageDev-site,
+but rewrote it. Mostly the low-level calls were replaced and I've used a
+singleton-construction to avoid some OpenCL-problems. This way adding
+other OpenCL-kernels can be done in just 3 steps in a clean way. I have
+programmed all in a text-editor, but after I have done some javadoc
++clean-up in an IDE, added multi-image support and have finished my work
+for my client, I'll provide the code. Then I would like it if you want
+to discuss with me how we can combine the two branches.
+
+If the Fiji and ImageJ will have better support for native libraries,
+then it could solve a lot of current and future problems. Future
+problems being other plugins which need native libraries.
+
+Since Gimp has the same kind of support, I would like the kernels to
+have the same structure (float* in, float* out, int width, int height,
+extra_arguments). This way OpenCL-kernels can be shared.
+
+I hope I can be of help in this project, or at least not delay it.
+
+Kind regards,
+Vincent Hindriksen
+
+
+Rick Lentz schreef op ma 31-01-2011 om 11:54 [-0600]:
+
+> Dear Vincent,
+> 
+> 
+>   Community feedback revealed that the old OpenCL setup web
+> instructions were not as helpful for ImageJ users due to the change to
+> NVidia3.2 / Ubuntu 10.4.  Instead, we reworked those pages into a
+> getting started tutorial.
+> 
+> 
+>   The getting started tutorial is now here:
+> https://docs0.google.com/document/d/12aiL7urwcve7Mi-YyuOtAVlTZ5P6outcay75YiQlqyQ/edit?hl=en#
+> 
+> 
+>   and available linked from www.imagejdev.org/opencl.
+> 
+> 
+>   We are working on integrating the libs into Fiji and perhaps
+> ImageJ.  The issue with ImageJ is that we (the ImageJDev.org team) do
+> not have control over the ImageJ source code.  This control is held
+> by Wayne Rasband thus Fiji will be our first integration target.
+> 
+> 
+>   If I can make any part of the tutorial clearer, please let me know.
+>  If linking to ImageJDev.org, please direct to
+> www.imagejdev.org/opencl.  I hope your client work goes well.  If you
+> have other suggestions or questions regarding ImageJ/OpenCL please let
+> us know as we are working to improve the experience for ImageJ users.
+> 
+> 
+> Warm regards,
+> 
+> 
+> Rick Lentz
+> Imagejdev.org
+> 
+> On Sun, Jan 30, 2011 at 1:55 PM, Curtis Rueden <ctrueden at wisc.edu>
+> wrote:
+> 
+>         
+>         
+>         ---------- Forwarded message ----------
+>         From: <vincent at streamcomputing.eu>
+>         Date: Sun, Jan 30, 2011 at 1:35 PM
+>         Subject: [Software Feedback] Email for Rick Lentz. ImageJ
+>         OpenCL support
+>         To: ctrueden at wisc.edu
+>         
+>         
+>         Vincent Hindriksen sent a message using the contact form at
+>         http://loci.wisc.edu/contact.
+>         
+>         Dear Rick Lentz,
+>         
+>         I saw you were working on OpenCL-support. Currently I've
+>         finished a helper-class to get it done. Problem is mostly the
+>         native libraries; the directory ./lib/<OS> should be included
+>         by default in ImageJ to make all easier for plugins like
+>         these.
+>         
+>         Description and downloadable files are at at
+>         http://www.streamcomputing.eu/blog/2011-01-21/imagej-and-opencl . I mentioned your work there, but just check if you want things changed.
+>         
+>         Kind regards,
+>         Vincent Hindriksen
+>         
+>         
+> 
+> 
+> 
+> 
+> -- 
+> Sincerely,
+> 
+> Rick Lentz
+> (608) 217 - 8592 (cell)
+> (608) 807-0790 (skype/internet)
+> (608) 263 - 8481 (UW office)
+> (877) 679 - 9520 (fax)
+> rickwlentz (Skype Video Chat)
+> Bascom Hall - "...ever encourage that continual and fearless sifting
+> and winnowing by which alone the truth can be found"
+> 
+
+
+-- 
+
+______________________________________________________________________________	
+
+ V.G.Hindriksen MSc.
+ StreamComputing - http://www.streamcomputing.eu
+ Location: Haarlem, Netherlands, Europe - Phone: +31 645400456
+ KvK-number (Chamber of Commerce): 34394283
+ Rabo Bank: 1138.85.571 - IBAN/SEPA: NL89RABO0113885571 - BIC: RABONL2U
+
+ How we work: http://www.streamcomputing.eu/consultancy/how-we-work
+______________________________________________________________________________
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20110201/dcb44f33/attachment.html>
+

@@ -1,0 +1,187 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] ImgLib2 dimensionality
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImgLib2%20dimensionality&In-Reply-To=%3CCADN69ykSd0OecQ-s_Q0gNmDvHMYz_d3mZCFPGF%2BfQD9p%2BhBYsw%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001550.html">
+   <LINK REL="Next"  HREF="001553.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] ImgLib2 dimensionality</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImgLib2%20dimensionality&In-Reply-To=%3CCADN69ykSd0OecQ-s_Q0gNmDvHMYz_d3mZCFPGF%2BfQD9p%2BhBYsw%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] ImgLib2 dimensionality">ctrueden at wisc.edu
+       </A><BR>
+    <I>Tue Jun 18 06:32:15 CDT 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001550.html">[ImageJ-devel] Projector branch - ImgLib2
+</A></li>
+        <LI>Next message: <A HREF="001553.html">[ImageJ-devel] Imglib2 Cubic spline interpolator (1 of 2)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1551">[ date ]</a>
+              <a href="thread.html#1551">[ thread ]</a>
+              <a href="subject.html#1551">[ subject ]</a>
+              <a href="author.html#1551">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Aivar,
+
+Sorry for ignoring this mail for so long...
+
+&gt;<i> Another useful concept would be whether a dimension is DISCRETE
+</I>
+I agree; we should put this in to AxisType. We can do it on the pending
+img-metadata branch [1].
+
+&gt;<i> What if an algorithm could somehow declare via annotation what sorts
+</I>&gt;<i> of dimensions it was interested in?
+</I>
+I think the plan is to build a layer on top of ImgLib2 (a CalibratedViews
+static utility class, probably) that can do things like detecting when an
+Img has attached Axis metadata with a discrete dimension, and create
+sub-Imgs at each discrete sample. Then you can execute whatever
+dimension-agnostic algorithm you want on those sub-Imgs without clobbering
+the discrete dimension(s), as you say.
+
+I think both of your examples could be handled in this way, potentially.
+
+&gt;<i> There's a lot of hand-waving here at present, particularly how this
+</I>&gt;<i> dimensional interest would be specified.
+</I>
+Indeed, I am also not certain exactly what my proposed layer would look
+like. I agree that it would be ideal to have some convenient way of
+specifying which (types of) dimensions are of interest when subdividing
+images. There may also be an argument to passing the entire Img rather than
+a sub-Img, if the &quot;non-interesting&quot; dimensions are rather &quot;interesting for
+decision-making but not to be operated upon directly.&quot; I don't know.
+
+&gt;<i> ([*] Another alternative would be my creating a custom
+</I>&gt;<i> FittedLifetimeType or some kind of generic TupleType)
+</I>
+Hopefully we won't have to go that route... custom types are powerful but
+also incompatible with the wealth of code already in existence that uses
+regular types.
+
+Regards,
+Curtis
+
+
+On Thu, Jan 10, 2013 at 3:26 PM, Aivar Grislis &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">grislis at wisc.edu</A>&gt; wrote:
+
+&gt;<i> I was looking at the dimensional code in net.imglib2.meta.Axes. This is an
+</I>&gt;<i> enum of known, named AxisTypes such as X, Y, Z..., has the capacity for
+</I>&gt;<i> CustomAxisTypes, and some sort of characterization of these dimensions with
+</I>&gt;<i> 'isXY()' and 'isSpatial()'.  (Perhaps we could replace these latter with
+</I>&gt;<i> some kind of EnumSet of DimensionTypes, such as XY, SPATIAL, etc. for the
+</I>&gt;<i> discussion that follows.)
+</I>&gt;<i>
+</I>&gt;<i> It might be useful to have a concept of a COINCIDENTAL type.  This sort of
+</I>&gt;<i> dimension represents different aspects of the same pixel/voxel/doxel.  It's
+</I>&gt;<i> as if you look at it with red glasses, blue glasses, etc.  Effectively this
+</I>&gt;<i> is the same as non-spatial/-temporal since all of the default AxisTypes
+</I>&gt;<i> besides XYZT would be coincidental.  But with this you can specify if a new
+</I>&gt;<i> CustomAxisType should be coincidental or not.  For example, if you wrote a
+</I>&gt;<i> plugin that works on an image in 5D that is a series of 4D (XYZT) images,
+</I>&gt;<i> the dimension that represents the series of images is not coincidental (and
+</I>&gt;<i> not spatial or temporal either).
+</I>&gt;<i>
+</I>&gt;<i> Another useful concept would be whether a dimension is DISCRETE (or
+</I>&gt;<i> NON_INTERPOLABLE?).   This sort of image would be analogous to a table of
+</I>&gt;<i> height/weight/shoe size per individual (pixel).  This works only because it
+</I>&gt;<i> happens you can express all three measurements as floating point.  Anyway,
+</I>&gt;<i> the point is these measurements are totally independent, the order is
+</I>&gt;<i> arbitrary, and it never would make any sense to combine them somehow or
+</I>&gt;<i> interpolate between them.  I've been working on a FLIM fitting plugin and
+</I>&gt;<i> using such images as my output, where the measurements are a set of fitted
+</I>&gt;<i> lifetime parameters, for example A1, T1, A2, T2, Z, all doubles.  It's the
+</I>&gt;<i> equivalent of five separate images in one and could just be refactored as
+</I>&gt;<i> such. [*]
+</I>&gt;<i>
+</I>&gt;<i> My motivating concern was that if were to introduce such a DISCRETE
+</I>&gt;<i> DimensionType most existing plugins or algorithms will not do anything
+</I>&gt;<i> useful (other than simple things like copying, etc.).  In fact they will
+</I>&gt;<i> most likely clobber my discrete dimension.
+</I>&gt;<i>
+</I>&gt;<i> What if an algorithm could somehow declare via annotation what sorts of
+</I>&gt;<i> dimensions it was interested in?  Without such an annotation the default
+</I>&gt;<i> would be to get all of the non-discrete dimensions, and the caller splits
+</I>&gt;<i> the image into sub images across discrete dimensions and processes them
+</I>&gt;<i> successively.  Then existing algorithms could do useful work on my discrete
+</I>&gt;<i> image.  Other algorithms that understand the meaning of this discrete
+</I>&gt;<i> dimension information could declare an interest in it and get the whole
+</I>&gt;<i> thing.
+</I>&gt;<i>
+</I>&gt;<i> This could be a very useful mechanism in other instances.  In general lets
+</I>&gt;<i> say an algorithm could specify dimension types or specific dimensions of
+</I>&gt;<i> interest and the caller splits the image into sub images across the
+</I>&gt;<i> remaining dimensions.  Then the algorithm gets a cursor that iterates only
+</I>&gt;<i> on the dimensions of interest.  They could set the cursor position within
+</I>&gt;<i> these dimensions or just iterate through the whole thing.
+</I>&gt;<i>
+</I>&gt;<i> Another use case might be to split up arbitrary images into XY slices for
+</I>&gt;<i> 2D-processing algorithms. On the input side, my FLIM fitting algorithm
+</I>&gt;<i> could declare an interest in the LIFETIME AxisType only and get called
+</I>&gt;<i> pixel by pixel with a lifetime dimension cursor to process a whole image
+</I>&gt;<i> that has unknown dimensions.
+</I>&gt;<i>
+</I>&gt;<i> For another example, the early ImgLib1 sample Floyd-Steinberg dithering
+</I>&gt;<i> algorithm could process only non-COINCIDENTAL dimensions. This would avoid
+</I>&gt;<i> distributing errors from the red channel to the blue channel, for instance;
+</I>&gt;<i> they would be dithered one by one.
+</I>&gt;<i>
+</I>&gt;<i> Hope this makes sense!  There's a lot of hand-waving here at present,
+</I>&gt;<i> particularly how this dimensional interest would be specified.
+</I>&gt;<i>
+</I>&gt;<i> Thanks for reading,
+</I>&gt;<i>
+</I>&gt;<i> Aivar Grislis
+</I>&gt;<i>
+</I>&gt;<i> ([*] Another alternative would be my creating a custom FittedLifetimeType
+</I>&gt;<i> or some kind of generic TupleType)
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> ______________________________**_________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/**listinfo/imagej-devel&lt;http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/**listinfo/imagej-devel&lt;http://imagej.net/mailman/listinfo/imagej-devel</A>&gt;
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20130618/44efc823/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20130618/44efc823/attachment.html</A>&gt;
+</PRE>
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001550.html">[ImageJ-devel] Projector branch - ImgLib2
+</A></li>
+	<LI>Next message: <A HREF="001553.html">[ImageJ-devel] Imglib2 Cubic spline interpolator (1 of 2)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1551">[ date ]</a>
+              <a href="thread.html#1551">[ thread ]</a>
+              <a href="subject.html#1551">[ subject ]</a>
+              <a href="author.html#1551">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

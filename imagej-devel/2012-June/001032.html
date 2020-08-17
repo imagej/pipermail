@@ -1,0 +1,139 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Fwd: CompositeOverlay
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Fwd%3A%20CompositeOverlay&In-Reply-To=%3CCADN69ymSd2Fta7jUqW9CJXR50B%2BQvTBRYEkNDVvnBRbeCxcsiA%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001027.html">
+   <LINK REL="Next"  HREF="001033.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Fwd: CompositeOverlay</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Fwd%3A%20CompositeOverlay&In-Reply-To=%3CCADN69ymSd2Fta7jUqW9CJXR50B%2BQvTBRYEkNDVvnBRbeCxcsiA%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Fwd: CompositeOverlay">ctrueden at wisc.edu
+       </A><BR>
+    <I>Tue Jun 19 13:29:21 CDT 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001027.html">[ImageJ-devel] Crop behavior (was Re: Changes to the overlay	support)
+</A></li>
+        <LI>Next message: <A HREF="001033.html">[ImageJ-devel] ImageJ User and Developer Conference 201: Only three days left (fwd)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1032">[ date ]</a>
+              <a href="thread.html#1032">[ thread ]</a>
+              <a href="subject.html#1032">[ subject ]</a>
+              <a href="author.html#1032">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Thanks for your comments, Lee. I am forwarding this thread to imagej-devel,
+since the discussion is of general interest.
+
+
+---------- Forwarded message ----------
+From: Lee Kamentsky &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">leek at broadinstitute.org</A>&gt;
+Date: Mon, Jun 18, 2012 at 3:41 PM
+Subject: Re: CompositeOverlay
+To: Barry DeZonia &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">bdezonia at gmail.com</A>&gt;
+Cc: Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt;, Lee Kamentsky &lt;
+<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">leek at broadinstitute.org</A>&gt;
+
+
+Hi Barry,
+
+On 6/18/2012 4:06 PM, Barry DeZonia wrote:
+
+&gt;<i> Hey guys,
+</I>&gt;<i>
+</I>&gt;<i> I am wondering if the current CompositeOverlays approach is broken.
+</I>&gt;<i> Originally we had CompositeOverlay only be defined by a
+</I>&gt;<i> CompositeRegionOfInterest (defined in Imglib). This makes sense but we want
+</I>&gt;<i> to be able to serialize overlays and in order to serialize
+</I>&gt;<i> CompositeOverlays we need to either push the serializing code down into
+</I>&gt;<i> Imglib's RegionOfInterest code or we need to have CompositeOverlays
+</I>&gt;<i> maintain the state of multiple overlays.
+</I>&gt;<i>
+</I>&gt;<i> Currently we've started down the second road. But looking at the API for
+</I>&gt;<i> Overlay I can see things that are tricky to deal with. For instance getting
+</I>&gt;<i> well defined axes and ranges from the Overlays making up a Composite (e.g.
+</I>&gt;<i> what if axes of two overlays are different?).
+</I>&gt;<i>
+</I>
+I think the problem here is similar to the issues we have when combining
+any two objects - the EuclideanSpace of the objects might be different and
+the &quot;meaning&quot; of the composite is ambiguous: does a 2-d overlay select a
+plane in a 3-d space or does it project through all of the planes? So part
+of the problem with the overlays as I wrote them was that they only handled
+the trivial case and they made assumptions about the user's intent when
+mapping onto higher-dimension spaces.
+
+
+ We could make and(), or(), not(), etc. check that the referenced overlay
+&gt;<i> is compatible with the current definition. But before I write a bunch of
+</I>&gt;<i> code I'd like to see what you guys think the best approach is. Any
+</I>&gt;<i> suggestions?
+</I>&gt;<i>
+</I>&gt;<i>
+</I>In Barcelona, we talked briefly about strategies for melding objects in
+different spaces using space-space mappings to project everything into a
+common space. That's useful not only for overlays, but for multi-image
+alignment and other problems. My gut reaction is that this is another
+flavor of the same problem. When creating a composite, you need both the
+overlay and a mapping object that translates the coordinates of the
+composite space into those of the overlay space (or that executes an
+out-of-bounds strategy for coordinates that don't map). We talked about
+drawing overlays in a 3-d viewer where the view plane might not be X-Y
+plane - there, the space-space mapping lets you rotate our 2-d overlays in
+the 3-d space.
+
+I think there's a lot of value in making the composite manage individual
+overlays. I have a feeling people will want to ungroup the composites and
+adjust the individual shapes, then group them again. I'm also guessing that
+people might want each of the sub-objects to have its own line and fill.
+
+Pragmatically, it's possible to take baby steps. You could create a single
+identity mapping and have the current code either throw an exception if
+axes didn't match or use the identity mapping if they did. Then, you could
+add different flavors of and(), or()... to take both an overlay and a
+mapping. The mappings themselves would need to be serializable and the
+serialization of the composite would wrap the serializations of the overlay
+/ mapping pairs.
+
+Hope this helps,
+--Lee
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20120619/201495fb/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20120619/201495fb/attachment.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001027.html">[ImageJ-devel] Crop behavior (was Re: Changes to the overlay	support)
+</A></li>
+	<LI>Next message: <A HREF="001033.html">[ImageJ-devel] ImageJ User and Developer Conference 201: Only three days left (fwd)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1032">[ date ]</a>
+              <a href="thread.html#1032">[ thread ]</a>
+              <a href="subject.html#1032">[ subject ]</a>
+              <a href="author.html#1032">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,208 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Fwd: Hist thresh toolbox license question
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Fwd%3A%20Hist%20thresh%20toolbox%20license%20question&In-Reply-To=%3Calpine.LRH.2.02.1302182342000.15465%40savukolibri.cs.tut.fi%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001420.html">
+   <LINK REL="Next"  HREF="001423.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Fwd: Hist thresh toolbox license question</H1>
+    <B>Antti Niemist&#246;</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Fwd%3A%20Hist%20thresh%20toolbox%20license%20question&In-Reply-To=%3Calpine.LRH.2.02.1302182342000.15465%40savukolibri.cs.tut.fi%3E"
+       TITLE="[ImageJ-devel] Fwd: Hist thresh toolbox license question">antti.niemisto at tut.fi
+       </A><BR>
+    <I>Mon Feb 18 16:01:14 CST 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001420.html">[ImageJ-devel] Fwd: Hist thresh toolbox license question
+</A></li>
+        <LI>Next message: <A HREF="001423.html">[ImageJ-devel] Fwd: Hist thresh toolbox license question
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1421">[ date ]</a>
+              <a href="thread.html#1421">[ thread ]</a>
+              <a href="subject.html#1421">[ subject ]</a>
+              <a href="author.html#1421">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hello,
+
+It seems like your ported version does not produce the correct threshold 
+between the two peaks in the smoothed histogram in certain cases where you 
+have flat areas in the smoothed histogram.
+
+For example, try this one.
+
+I = 40*ones(40);
+I(10:30,10:30) = 120;
+T = th_minimum(I);
+
+You'll find the threshold becomes 121. This is of course not between the 
+two peaks at 40 and 120.
+
+The code in v1.02 did not assign any value to the threshold in this 
+example case and in similar cases, so it clearly needed to be fixed.
+
+I now realize that a much more elegant fix than what I put in v1.03 would 
+be this (gives T=41 in my simple example):
+
+for k = 2:n
+   if y(k-1) &gt; y(k) &amp; y(k+1) &gt;= y(k)
+     T = k-1;
+     break
+   end
+end
+
+The &quot;break&quot; from the loop is essential, in addition to changing the latter 
+&quot;&gt;&quot; to a &quot;&gt;=&quot;. I would definitely use this code in your port.
+
+Antti
+
+
+On Mon, 18 Feb 2013, Barry DeZonia wrote:
+
+&gt;<i> Thanks Antti. I've already begun porting it into ImageJ2. I noticed that the
+</I>&gt;<i> release includes a tweak to the th_minimum.m code. I was going to
+</I>&gt;<i> incorporate it into our stuff but came across three versions (one our own)
+</I>&gt;<i> and wanted to make sure that if our code differs it is a mistake and not a
+</I>&gt;<i> bug we found.
+</I>&gt;<i> At the end of th_minimum.m the code looks like this in 1.02:
+</I>&gt;<i> 
+</I>&gt;<i> % The threshold is the minimum between the two peaks.
+</I>&gt;<i> for k = 2:n
+</I>&gt;<i> &#160; if y(k-1) &gt; y(k) &amp; y(k+1) &gt; y(k)
+</I>&gt;<i> &#160; &#160; T = k-1;
+</I>&gt;<i> &#160; end
+</I>&gt;<i> end
+</I>&gt;<i> 
+</I>&gt;<i> Our version (I believe ported from 1.02) is very similar except the test
+</I>&gt;<i> line looks like:
+</I>&gt;<i> 
+</I>&gt;<i> &#160; if y(k-1) &gt; y(k) &amp; y(k+1) &gt;= y(k) &#160; // NOTICE THE SINGLE &gt;= INSTEAD OF &gt;
+</I>&gt;<i> 
+</I>&gt;<i> Finally your much changed version looks like this in 1.03:
+</I>&gt;<i> 
+</I>&gt;<i> % The threshold is the minimum between the two peaks.
+</I>&gt;<i> peakfound = false;
+</I>&gt;<i> for k = 2:n
+</I>&gt;<i> &#160; if y(k-1) &lt; y(k) &amp; y(k+1) &lt; y(k)
+</I>&gt;<i> &#160; &#160; peakfound = true;
+</I>&gt;<i> &#160; end
+</I>&gt;<i> &#160; if peakfound &#160;&amp; y(k-1) &gt;= y(k) &amp; y(k+1) &gt;= y(k)
+</I>&gt;<i> &#160; &#160; T = k-1;
+</I>&gt;<i> &#160; &#160; return
+</I>&gt;<i> &#160; end
+</I>&gt;<i> end
+</I>&gt;<i> 
+</I>&gt;<i> I think Gabriel can shed light maybe on our change and if it was by design
+</I>&gt;<i> or not. (Gabriel its been present since 1.0). And I see your new version is
+</I>&gt;<i> &gt;='s on both ends. So maybe this email is overkill. Any clarification on
+</I>&gt;<i> your thinking re: the 1.03 change would be appreciated.
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> On Wed, Feb 13, 2013 at 8:15 AM, Antti Niemist&#246; &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">antti.niemisto at tut.fi</A>&gt;
+</I>&gt;<i> wrote:
+</I>&gt;<i>       Hi Johannes,
+</I>&gt;<i>
+</I>&gt;<i>       On Tue, 12 Feb 2013, Johannes Schindelin wrote:
+</I>&gt;<i>
+</I>&gt;<i>             Hi Gabriel and Antti,
+</I>&gt;<i>
+</I>&gt;<i>             On Mon, 11 Feb 2013, Gabriel Landini wrote:
+</I>&gt;<i>
+</I>&gt;<i>                   On Monday 11 Feb 2013 23:23:11 Antti
+</I>&gt;<i>                   Niemist&#246; wrote:
+</I>&gt;<i>                         Then that's what we'll do. I
+</I>&gt;<i>                         actually found a little bug
+</I>&gt;<i>                         in one of the
+</I>&gt;<i>                         methods (th_maxlik) some
+</I>&gt;<i>                         time ago, so I was thinking
+</I>&gt;<i>                         I'll put out a
+</I>&gt;<i>                         new version of the toolbox
+</I>&gt;<i>                         with that fixed. I'm not
+</I>&gt;<i>                         exactly a software
+</I>&gt;<i>                         guy and do not routinely
+</I>&gt;<i>                         deal with licensing, so can
+</I>&gt;<i>                         you give me a
+</I>&gt;<i>                         walkthrough as to how to go
+</I>&gt;<i>                         about making this new
+</I>&gt;<i>                         release with a dual
+</I>&gt;<i>                         BSD/GPL license? Or point me
+</I>&gt;<i>                         to one? I'll then update the
+</I>&gt;<i>                         toolbox page
+</I>&gt;<i>                         at
+</I>&gt;<i>                         <A HREF="http://www.cs.tut.fi/~ant/histthresh/">http://www.cs.tut.fi/~ant/histthresh/</A>
+</I>&gt;<i>                         The bug fix is ready so I'll
+</I>&gt;<i>                         get this up as soon as the
+</I>&gt;<i>                         licensing is sorted.
+</I>&gt;<i> 
+</I>&gt;<i>
+</I>&gt;<i>                   The maximum likelihood estimator method
+</I>&gt;<i>                   was never implemented in the
+</I>&gt;<i>                   ImageJ plugin because I could never make
+</I>&gt;<i>                   it replicate the results of the
+</I>&gt;<i>                   Matlab code.
+</I>&gt;<i> 
+</I>&gt;<i>
+</I>&gt;<i>             I look forward to trying that maximum likelihood
+</I>&gt;<i>             method!
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> The updated version of the maximum likelihood method is now available
+</I>&gt;<i> with the brand new release 1.03 of HistThresh Toolbox for MATLAB at
+</I>&gt;<i> <A HREF="http://www.cs.tut.fi/~ant/histthresh/">http://www.cs.tut.fi/~ant/histthresh/</A>
+</I>&gt;<i> 
+</I>&gt;<i> I hope that it is useful to you.
+</I>&gt;<i> 
+</I>&gt;<i> --
+</I>&gt;<i> Antti Niemist&#246; DSc(Tech) &#160; &#160; &#160; &#160; &#160; &#160; &#160;office: TE410
+</I>&gt;<i> Research Fellow &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; phone: &#160;+358-40-849-0587 (GSM)
+</I>&gt;<i> Department of Signal Processing &#160; &#160; &#160; &#160; &#160; &#160; &#160; +358-3-3115-4989 (fax)
+</I>&gt;<i> Tampere University of Technology &#160; &#160; &#160;URI: &#160;
+</I>&gt;<i> &#160;<A HREF="http://www.cs.tut.fi/~ant/">http://www.cs.tut.fi/~ant/</A>
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i>
+</I>
+-- 
+Antti Niemist&#246; DSc(Tech)              office: TE410
+Research Fellow                       phone:  +358-40-849-0587 (GSM)
+Department of Signal Processing               +358-3-3115-4989 (fax)
+Tampere University of Technology      URI:    <A HREF="http://www.cs.tut.fi/~ant/">http://www.cs.tut.fi/~ant/</A>
+
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001420.html">[ImageJ-devel] Fwd: Hist thresh toolbox license question
+</A></li>
+	<LI>Next message: <A HREF="001423.html">[ImageJ-devel] Fwd: Hist thresh toolbox license question
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1421">[ date ]</a>
+              <a href="thread.html#1421">[ thread ]</a>
+              <a href="subject.html#1421">[ subject ]</a>
+              <a href="author.html#1421">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

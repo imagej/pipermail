@@ -1,0 +1,319 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Local Neighborhood stuff
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Local%20Neighborhood%20stuff&In-Reply-To=%3C5010F06F.6040607%40uni-konstanz.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001097.html">
+   <LINK REL="Next"  HREF="001112.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Local Neighborhood stuff</H1>
+    <B>Christian Dietz</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Local%20Neighborhood%20stuff&In-Reply-To=%3C5010F06F.6040607%40uni-konstanz.de%3E"
+       TITLE="[ImageJ-devel] Local Neighborhood stuff">christian.dietz at uni-konstanz.de
+       </A><BR>
+    <I>Thu Jul 26 02:23:27 CDT 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001097.html">[ImageJ-devel] Local Neighborhood stuff
+</A></li>
+        <LI>Next message: <A HREF="001112.html">[ImageJ-devel] Local Neighborhood stuff
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1111">[ date ]</a>
+              <a href="thread.html#1111">[ thread ]</a>
+              <a href="subject.html#1111">[ subject ]</a>
+              <a href="author.html#1111">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+I just branched into &quot;localneighborhood-revised&quot; where you can find the 
+current version in algorithms-gpl (which is not very elegant at the moment).
+
+&gt;<i> Hi,
+</I>&gt;<i>
+</I>&gt;<i> I cc'ed the imagej-devel list, because this should be of wider interest.
+</I>&gt;<i> The gist of the mails quoted below is that we (Christian Dietz,
+</I>&gt;<i> Jean-Yves Tinevez) are trying to unify the LocalNeighborhood (-Cursors)
+</I>&gt;<i> that have been popping up in different places in ImgLib2.
+</I>&gt;<i> Currently, most of the relevant source can be found in package
+</I>&gt;<i> net.imglib2.algorithm.region.localneighborhood in algorithms-gpl.
+</I>&gt;<i> Maybe Jean-Yves and Christian could provide some more information on the
+</I>&gt;<i> individual neighborhoods that are implemented.
+</I>
+BufferedRectangularNeighborhood is a very simple ring-buffer 
+implementation, to reduce the number of pixel-accesses (yes there is a 
+speed-up).
+Additionaly I wrapped the HyperSphere stuff of Stephan Preibisch 
+(HyperSphereNeighborhood).
+
+&gt;<i>
+</I>&gt;<i> Some comments with respect to the previous mails
+</I>&gt;<i>
+</I>&gt;<i> 1.) Factory vs. CopyOn()
+</I>&gt;<i> A factory could be constructed with parameters, for instance the
+</I>&gt;<i> CellContainerFactory is constructed with cell dimensions. So a
+</I>&gt;<i> HypersphereNeighborhood could be constructed with the radius for
+</I>&gt;<i> example. However, I don't see much harm in adding the copyOn() method.
+</I>&gt;<i> Having only updateSource() would be too little, as we might want to
+</I>&gt;<i> change the type T of the Neighborhood in copyOn() and only keep the
+</I>&gt;<i> structure.In general, I don't like the updateSource() very much. For
+</I>&gt;<i> instance,what happens if the new source has a different number of
+</I>&gt;<i> dimensions?
+</I>I agree. As long as one can simulate the updateSource() behaviour (maybe 
+with copyOn) everything is fine.
+But as you mentoined, how would we handle sources with more dimensions 
+in copyOn? For instance copyOn on a RectangularNeighborhood (with 3,5,7 
+spans) is called with a
+4-d source. What would be the span in this dimension?
+
+&gt;<i> 2.) Neighborhood interface
+</I>&gt;<i> In addition to Positionable and IterableInterval, it could extend 
+</I>&gt;<i> Localizable to get the position of the center.
+</I>
+Yap. Perfect.
+
+&gt;<i>
+</I>&gt;<i> 3.) IN extends RandomAccessibleInterval&lt;T&gt; parameter in 
+</I>&gt;<i> AbstractNeighborhood, etc
+</I>&gt;<i> I think all the Neighborhoods should be constructed on
+</I>&gt;<i> RandomAccessible&lt;T&gt; instead of RandomAccessibleInterval&lt;T&gt;.
+</I>&gt;<i> If interval extension is required then this should be done outside of
+</I>&gt;<i> the Neighborhood. If we do this, then the IN parameter is no longer
+</I>&gt;<i> required, right? The Neighborhood is just constructed with any
+</I>&gt;<i> RandomAccessible&lt;T&gt;.
+</I>
+Agree.
+
+&gt;<i> 4.) move to imglib2 core
+</I>&gt;<i> Eventually, the neighborhood should be moved to the core, maybe with the
+</I>&gt;<i> exception of rather special-case stuff like DiscNeighborhood.
+</I>&gt;<i> Or is ops a better place? What do you think?
+</I>
+ From my point of view it should be in the core, as these are basic 
+data-structures.
+
+&gt;<i>
+</I>&gt;<i> best regards,
+</I>&gt;<i> Tobias
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On 07/24/2012 09:12 AM, Jean-Yves Tinevez wrote:
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; On Tue, Jul 24, 2012 at 8:53 AM, Christian Dietz
+</I>&gt;<i> &gt; &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">christian.dietz at uni-konstanz.de</A>
+</I>&gt;<i> &gt; &lt;mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">christian.dietz at uni-konstanz.de</A>&gt;&gt; wrote:
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Hi Tobi,
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; thinking of parameters. Each neighborhood may have a different amount
+</I>&gt;<i> &gt; of parameters like radius, spans etc...
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Which leads us to the question: What do we want in the Neighborhood
+</I>&gt;<i> &gt; interface? It has to be Positionable and IntervalIterable, but what
+</I>&gt;<i> &gt; do we add to this?
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Initially I put a setSpan(long[] size); method, because I thought
+</I>&gt;<i> &gt; that every neighborhood would have some size that could be set. The
+</I>&gt;<i> &gt; span would then have the meaning of the bounding box radius. It doe
+</I>&gt;<i> &gt; snot work if we want to put /e.g./ Brensenham lines there.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; What else?
+</I>&gt;<i>
+</I>&gt;<i> On 07/23/2012 08:45 PM, Christian Dietz wrote:
+</I>&gt;<i> &gt; Hi,
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; yes I was also thinking about a factory, but again I ran into
+</I>&gt;<i> &gt; problems. Imagine the following scenario:
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; You've an operation which operates on a Neighborhood &amp; Image, so you
+</I>&gt;<i> &gt; give it a Neighborhood in the Constructor. Any Img&lt;T&gt; is passed in
+</I>&gt;<i> &gt; the compute call of the. The operation can be applied on any Img&lt;T&gt;
+</I>&gt;<i> &gt; (e.g. compute(A img, A res)), but if the op can't set the source of a
+</I>&gt;<i> &gt; neighborhood the op can't be reused.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Best regards,
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Christian
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; -----Original Message----- From: Tobias Pietzsch
+</I>&gt;<i> &gt; [mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pietzsch at mpi-cbg.de</A>] Sent: Montag, 23. Juli 2012 17:27 To:
+</I>&gt;<i> &gt; Christian Dietz Cc: 'Jean-Yves Tinevez' Subject: Re: Local
+</I>&gt;<i> &gt; Neighborhood stuff
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Hi,
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; In similar situations we often used a factory in imglib2. So, would a
+</I>&gt;<i> &gt; NeighborhoodFactory instead of a copy/updateSource method work here?
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; best regards, Tobias
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; On 07/21/2012 09:03 PM, Christian Dietz wrote:
+</I>&gt;<i> &gt;&gt; Just one more remark (as I ran into problems ;))
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; Just recognized that instead of the copy(IN source) something like
+</I>&gt;<i> &gt;&gt; updateSource(IN source) would be better. In addition a constructor
+</I>&gt;<i> &gt;&gt; of a AbstractNeighborhood(int numDims,&#8230; xy) should also be
+</I>&gt;<i> &gt;&gt; available (see knip_deployment for examples).
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; What do you think?
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; *From:*Jean-Yves Tinevez [mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">jeanyves.tinevez at gmail.com</A>]
+</I>&gt;<i> &gt;&gt; *Sent:* Samstag, 21. Juli 2012 20:32 *To:* Christian Dietz *Cc:*
+</I>&gt;<i> &gt;&gt; Tobias Pietzsch; Martin Horn *Subject:* Re: Local Neighborhood
+</I>&gt;<i> &gt;&gt; stuff
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; Sorry mail was sent a bit early. I should not write with a baby on
+</I>&gt;<i> &gt;&gt; my lap.
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; I just had a look again at the LocalNeighborhood stuff which came
+</I>&gt;<i> &gt;&gt; up the last days in algorithms-gpl.
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; It looks pretty much as the things we did some weeks ago. Our
+</I>&gt;<i> &gt;&gt; solution was less sophisticated, that&#8217;s  why I converted the
+</I>&gt;<i> &gt;&gt; &#8220;delta&#8221; to the solution of Jean-Yves
+</I>&gt;<i> &gt;&gt; (BufferedRectangleNeighborhoodCursor and the Wrapper for the
+</I>&gt;<i> &gt;&gt; HyperSphere/Cursor of Stephan P.).
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; Ok careful, the Sphere iterator is not a wrapper for the
+</I>&gt;<i> &gt;&gt; HyperSphere of Stephan: It gives you an actual ellipsoid (3
+</I>&gt;<i> &gt;&gt; different semi axes) and only iterate over the first 3 dimension by
+</I>&gt;<i> &gt;&gt; privileging the Z axis. Stephan Hypersphere is nD generic, and is
+</I>&gt;<i> &gt;&gt; an actual sphere in pixel coordinates.
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; Several questions/suggestions came up, which I would like to
+</I>&gt;<i> &gt;&gt; discuss with you so that we maybe have one consolidated package to
+</I>&gt;<i> &gt;&gt; work on? ; )
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; (i)Why in algorithms-gpl? Could also be put into the core of
+</I>&gt;<i> &gt;&gt; algorithms or even imglib2?
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; Because I thought the code was clumsy compared to the elegance of
+</I>&gt;<i> &gt;&gt; Stephan's sphere, and I did not dare put it in the core.
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; (ii)Could we parameterize AbstractNeighborhood&lt;T, IN extends
+</I>&gt;<i> &gt;&gt; RandomAccessibleInterval&lt;T&gt;&gt;? Especially in the case of the
+</I>&gt;<i> &gt;&gt; OutOfBoundsStrategy this could make sense (less casting).
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; Oki.
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; (iii)Could we add a method like copy(IN source) to
+</I>&gt;<i> &gt;&gt; AbstractNeighborhood? It&#8217;s nice if one could create instances of
+</I>&gt;<i> &gt;&gt; any AbstractNeighborhood from a given neighborhood.
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; You mean create the same kind of neighborhood on a different
+</I>&gt;<i> &gt;&gt; source? Oki.
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; (iv)Maybe we could add an Interface Neighborhood&lt;T, IN extends
+</I>&gt;<i> &gt;&gt; RandomAccessibleInterbal&lt;T&gt;&gt;?
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; Tobias?
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; We should also add the HyperSphere/Cursor of Stephan to this
+</I>&gt;<i> &gt;&gt; package.
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; I made some changes and pushed them into knip_deployment
+</I>&gt;<i> &gt;&gt; algorithms-gpl etc!
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; As soon as I am back to University I will also fix the formatting,
+</I>&gt;<i> &gt;&gt; sorry for that ;)
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; Have a nice weekend,
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt; Thanks! cheers jy
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;
+</I>&gt;<i>
+</I>&gt;<i> On 07/21/2012 07:01 PM, Christian Dietz wrote:
+</I>&gt;&gt;<i> Hi Tobi &amp; Jean-Yves,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I just had a look again at the LocalNeighborhood stuff which came up the
+</I>&gt;&gt;<i> last days in algorithms-gpl.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> It looks pretty much as the things we did some weeks ago. Our solution
+</I>&gt;&gt;<i> was less sophisticated, that&#8217;s  why I converted the &#8220;delta&#8221; to the
+</I>&gt;&gt;<i> solution of Jean-Yves (BufferedRectangleNeighborhoodCursor and the
+</I>&gt;&gt;<i> Wrapper for the HyperSphere/Cursor of Stephan P.).
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Several questions/suggestions came up, which I would like to discuss
+</I>&gt;&gt;<i> with you so that we maybe have one consolidated package to work on? ; )
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> (i)Why in algorithms-gpl? Could also be put into the core of algorithms
+</I>&gt;&gt;<i> or even imglib2?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> (ii)Could we parameterize AbstractNeighborhood&lt;T, IN extends
+</I>&gt;&gt;<i> RandomAccessibleInterval&lt;T&gt;&gt;? Especially in the case of the
+</I>&gt;&gt;<i> OutOfBoundsStrategy this could make sense (less casting).
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> (iii)Could we add a method like copy(IN source) to AbstractNeighborhood?
+</I>&gt;&gt;<i> It&#8217;s nice if one could create instances of any AbstractNeighborhood from
+</I>&gt;&gt;<i> a given neighborhood.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> (iv)Maybe we could add an Interface Neighborhood&lt;T, IN extends
+</I>&gt;&gt;<i> RandomAccessibleInterbal&lt;T&gt;&gt;?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> We should also add the HyperSphere/Cursor of Stephan to this package.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I made some changes and pushed them into knip_deployment 
+</I>&gt;&gt;<i> algorithms-gpl etc!
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> As soon as I am back to University I will also fix the formatting, sorry
+</I>&gt;&gt;<i> for that ;)
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Have a nice weekend,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Christian
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>
+
+</PRE>
+
+
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001097.html">[ImageJ-devel] Local Neighborhood stuff
+</A></li>
+	<LI>Next message: <A HREF="001112.html">[ImageJ-devel] Local Neighborhood stuff
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1111">[ date ]</a>
+              <a href="thread.html#1111">[ thread ]</a>
+              <a href="subject.html#1111">[ subject ]</a>
+              <a href="author.html#1111">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

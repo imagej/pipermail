@@ -1,0 +1,195 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Feature Extraction
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Feature%20Extraction&In-Reply-To=%3C9D08C1CD-AB04-4728-98CE-0CDC54ADB7EE%40wisc.edu%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002569.html">
+   <LINK REL="Next"  HREF="002571.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Feature Extraction</H1>
+    <B>Jay Warrick</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Feature%20Extraction&In-Reply-To=%3C9D08C1CD-AB04-4728-98CE-0CDC54ADB7EE%40wisc.edu%3E"
+       TITLE="[ImageJ-devel] Feature Extraction">warrick at wisc.edu
+       </A><BR>
+    <I>Fri May 15 12:36:56 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002569.html">[ImageJ-devel] Feature Extraction
+</A></li>
+        <LI>Next message: <A HREF="002571.html">[ImageJ-devel] ROI, Overlay and UI Implementation
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2570">[ date ]</a>
+              <a href="thread.html#2570">[ thread ]</a>
+              <a href="subject.html#2570">[ subject ]</a>
+              <a href="author.html#2570">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>All super helpful. Thanks for the details. I'll try to tackle soon.
+
+Best!
+
+Jay
+
+&gt;<i> On May 15, 2015, at 7:04 AM, Christian Dietz &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">Christian.Dietz at uni-konstanz.de</A>&gt; wrote:
+</I>&gt;<i> 
+</I>&gt;<i> Hi Jay,
+</I>&gt;<i> 
+</I>&gt;<i> See my answers below. I hope this helps.
+</I>&gt;<i> 
+</I>&gt;<i> Christian
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> On 14.05.2015 20:44, Jay Warrick wrote:
+</I>&gt;&gt;<i> Hi Christian,
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> Thanks so much! This helps a lot. I probably wouldn't have discovered the tools for labeling immediately without your suggestion. Although I've gone through the tutorials, I'm still new to ImgLib2 so I wonder if I could try to summarize what I think the general workflow to be with an example and maybe you can correct me / direct me as I go? As a place to start, I'm imagining a scenario where I have a 1-plane, 1-channel nuclear stained image of cells and its associated thresholded image to <A HREF="identhttps://github.com/imglib/imglib2-roi/tree/master/src/main/java/net/imglib2/roiify">identhttps://github.com/imglib/imglib2-roi/tree/master/src/main/java/net/imglib2/roiify</A> nuclear regions for quantifying feature sets. At a high-level, what I imagine trying to do is...
+</I>&gt;<i> 
+</I>&gt;<i> In KNIME we are still using the deprecated versions of the Labeling. Tobias Pietzsch rewrote parts of this framework (thats why NativeImgLabeling for example is deprecated). The new implementations, you can find here: 
+</I>&gt;<i> <A HREF="https://github.com/imglib/imglib2-roi/tree/master/src/main/java/net/imglib2/roi">https://github.com/imglib/imglib2-roi/tree/master/src/main/java/net/imglib2/roi</A> &lt;<A HREF="https://github.com/imglib/imglib2-roi/tree/master/src/main/java/net/imglib2/roi">https://github.com/imglib/imglib2-roi/tree/master/src/main/java/net/imglib2/roi</A>&gt;. We are going to switch to these implementations in KNIME soon.
+</I>&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 1) Generate a labeling object. For example, using the following...
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> final Labeling&lt; T &gt; labeling = new NativeImgLabeling&lt; T, IntType &gt;( Img &lt; T &gt; );
+</I>&gt;<i> 
+</I>&gt;<i> In the new ROI implementations you would use ImgLabeling (<A HREF="https://github.com/imglib/imglib2-roi/blob/master/src/main/java/net/imglib2/roi/labeling/ImgLabeling.java">https://github.com/imglib/imglib2-roi/blob/master/src/main/java/net/imglib2/roi/labeling/ImgLabeling.java</A> &lt;<A HREF="https://github.com/imglib/imglib2-roi/blob/master/src/main/java/net/imglib2/roi/labeling/ImgLabeling.java">https://github.com/imglib/imglib2-roi/blob/master/src/main/java/net/imglib2/roi/labeling/ImgLabeling.java</A>&gt;) instead of NativeImgLabeling.
+</I>&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> I assume this simplified constructor takes what could be a &quot;black and white&quot; image and associates Long numbers with each separate region of white pixels. Right? How might I reassign labels or construct them if, for example, I have specific IDs that I would like to associate with each white region of the mask image I would like to label?
+</I>&gt;<i> 
+</I>&gt;<i> Actually, the constructor takes an Img of arbitrary integer-type which serves as an index image. From each Integer there exists a mapping to a Set of labels. If you want to derive a Labeling from a &quot;Black and White&quot; image, you have to apply an algorithm. For example a Connected Component Analysis (this is one way to do it in KNIME, for example after a simple thresholding), to identify the individual objects in your &quot;Black and White&quot; image.
+</I>&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 2) Once I have a labeling, it seems like the next step is to obtain an IterableInterval over an ROI that can return &quot;x-y locations&quot; of pixels with a particular label. I assume to get this I would use something like...
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> labeling.getIterableRegionOfInterest(i).getIterableIntervalOverROI(src)
+</I>&gt;<i> 
+</I>&gt;<i> Right! In the new implementations you would do something like:  
+</I>&gt;<i> 
+</I>&gt;<i> ImgLabeling&lt;String, IntType&gt; labeling = new ImgLabeling&lt;String, IntType&gt;(...);
+</I>&gt;<i> LabelRegions&lt;String&gt; regions = new LabelRegions&lt;String&gt;(labeling); 
+</I>&gt;<i> Iterator&lt;LabelRegion&lt;String&gt;&gt; labelIter = regions.iterator(); 
+</I>&gt;<i> 
+</I>&gt;<i> and then use Regions.sample(...) to overlay the region on some arbitrary image.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> I can see where sometimes I only care about the shape of the ROI (e.g., with Zernike shape features) and other times I want pixel intensities at those locations (e.g., texture features). For the latter case, I assume &quot;src&quot; could be an image whose pixel values I'm interested at these locations, essentially applying an ROI to a particular image. Right? For other scenarios where only shape matters, would I use &quot;labeling.getRegionOfInterest()&quot; and that would be sufficient? Does the Zernike feature set prefer ROIs that define the boundaries of the shape or the whole region of the shape and it figures out the boundaries itself?
+</I>&gt;<i> 
+</I>&gt;<i> Correct. In some cases (e.g. Shape) the input is just the LabelRegion (new wording from new implementation of Tobias), in other cases you want to sample over the pixels of another image in this region (Regions.sample()).
+</I>&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 3) Then I suppose I loop through the labels in the &quot;labeling&quot; object to get these ROIs and pass them to the FeatureSet ops accessing the data as you do in the provided example and storing the data however I like.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> Is that about right?
+</I>&gt;<i> 
+</I>&gt;<i> Sounds good.
+</I>&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> Lastly, related to Step 1,it looks like a labeling can hold multiple labels for each pixel location. Is the idea there to allow regions to overlap?
+</I>&gt;<i> 
+</I>&gt;<i> Absolutely. Overlap or more meta-information about objects (TrackID, Classification Result, ...).
+</I>&gt;<i> 
+</I>&gt;&gt;<i> If I'm generally interested in keeping pixels associated with a maximum of one cell, would I use this feature for anything else and if so, what sort of workflow is envisioned for creating these different labelings and essentially ending up with the merged information in a single labeling object?
+</I>&gt;<i> 
+</I>&gt;<i> Speaking about workflows: On <A HREF="https://tech.knime.org/community/image-processing">https://tech.knime.org/community/image-processing</A> &lt;<A HREF="https://tech.knime.org/community/image-processing">https://tech.knime.org/community/image-processing</A>&gt; there is an example workflow called High-Content-Screening where we make use of a labeling. Maybe this helps you, too.
+</I>&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> Thanks!!!
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> Jay
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> On May 13, 2015, at 8:22 AM, Christian Dietz &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">Christian.Dietz at uni-konstanz.de</A> &lt;mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">Christian.Dietz at uni-konstanz.de</A>&gt;&gt; wrote:
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> Hi Jay,
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> you are right, we are working on this project since a while. The goal of the work we are doing is to have efficient implementations for most of the well known features which can be derived from images or ROIs. The main work is done on the following branch:
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> <A HREF="https://github.com/imagej/imagej-ops/tree/outputop-service">https://github.com/imagej/imagej-ops/tree/outputop-service</A> &lt;<A HREF="https://github.com/imagej/imagej-ops/tree/outputop-service">https://github.com/imagej/imagej-ops/tree/outputop-service</A>&gt;
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> and there is an open issue documenting the process:
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> <A HREF="https://github.com/imagej/imagej-ops/issues/67">https://github.com/imagej/imagej-ops/issues/67</A> &lt;<A HREF="https://github.com/imagej/imagej-ops/issues/67">https://github.com/imagej/imagej-ops/issues/67</A>&gt;
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> A very small example how to use the features is given at:
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> <A HREF="https://github.com/imagej/imagej-ops/blob/outputop-service/src/main/java/net/imagej/ops/features/Example.java">https://github.com/imagej/imagej-ops/blob/outputop-service/src/main/java/net/imagej/ops/features/Example.java</A> &lt;<A HREF="https://github.com/imagej/imagej-ops/blob/outputop-service/src/main/java/net/imagej/ops/features/Example.java">https://github.com/imagej/imagej-ops/blob/outputop-service/src/main/java/net/imagej/ops/features/Example.java</A>&gt;
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> Concerning your question with ROIs: The features implementation do not really care if they get an Img or a ROI. The only thing they expect is to get some IterableInterval or Iterable or RandomAccessibleInterval etc (depends on the type of feature). In KNIME we use Labelings (<A HREF="https://github.com/imglib/imglib2-roi/tree/master/src">https://github.com/imglib/imglib2-roi/tree/master/src</A> &lt;<A HREF="https://github.com/imglib/imglib2-roi/tree/master/src">https://github.com/imglib/imglib2-roi/tree/master/src</A>&gt;) to describe our segmentations and derive or ROIs.
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> Does this help you? It would be great if you want to contribute to the outputop-service and maybe implement some of the missing features.
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> Best,
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> Christian
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> On 13.05.2015 06:27, Jay Warrick wrote:
+</I>&gt;&gt;&gt;&gt;<i> Hi All,
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> I was hoping to find some info on the 'feature service' or 'haralick' branch of imagej-ops (at least those look like to two most developed branches for feature extraction). The creation of feature set ops is a really great idea and thanks to everyone who is working on it. Likewise, I would certainly be willing to try and help fill out some features if it seems appropriate, especially when I get more familiar with the ops framework. Also, please let me know if there are any concerns with me using any of these tools prior to the authors publishing on/with these implementations themselves. My work is still preliminary, but just wanted to ask to be safe.
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> I realize the 'feature service' and 'haralick' branches are somewhat WIPs but it seems there are many rich feature sets that appear to be nearly or completely implemented and was hoping to try and use them if possible... Towards this goal, I was able to use the FirstOrderStatFeatureSet and ZernikeFeatureSet classes to get information from an Img / ImgPlus / SCIFIOImgPlus using the example provided in the branch. However, it is unclear to me how the classes should be used to do this for each cell in an image. Is it assumed that we are feeding in small cropped and masked regions to the feature set ops? If so, suggestions on an efficient way to do so (or links to examples in other projects... Knime?) would be amazing. I'm generally able to identify cells and create ROIs and mask images etc programmatically in Java with ImageJ classes, but haven't done so with Img-related image objects yet. With a hint or two, I can try and take it from there. Maybe do the cropping etc with old I
+</I>&gt;&gt;&gt;&gt;<i>  mageJ classes and wrap the resultant cropped regions in Img objects? Maybe I'm way off base and I'm supposed to be using ROIs somewhere in the mix with the ops. Hopefully someone can set me straight :-)
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> Thanks a bunch in advance.
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> Best,
+</I>&gt;&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;&gt;<i> Jay
+</I>&gt;&gt;&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A> &lt;mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>&gt;
+</I>&gt;&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A> &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>&gt;
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A> &lt;mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>&gt;
+</I>&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A> &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>&gt;
+</I>&gt;&gt;<i> 
+</I>&gt;<i> 
+</I>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20150515/3f4ff7a0/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20150515/3f4ff7a0/attachment.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002569.html">[ImageJ-devel] Feature Extraction
+</A></li>
+	<LI>Next message: <A HREF="002571.html">[ImageJ-devel] ROI, Overlay and UI Implementation
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2570">[ date ]</a>
+              <a href="thread.html#2570">[ thread ]</a>
+              <a href="subject.html#2570">[ subject ]</a>
+              <a href="author.html#2570">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

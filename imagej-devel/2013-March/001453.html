@@ -1,0 +1,164 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Regarding Preferences support for Multiple Instances, Applications, and Versions
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Regarding%20Preferences%20support%20for%20Multiple%0A%20Instances%2C%20Applications%2C%20and%20Versions&In-Reply-To=%3CCADN69yk%2BscxnsFs8UTzV5JrQMWTZsD8EPZmDrjZqEuHSpRZhXw%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001451.html">
+   <LINK REL="Next"  HREF="001452.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Regarding Preferences support for Multiple Instances, Applications, and Versions</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Regarding%20Preferences%20support%20for%20Multiple%0A%20Instances%2C%20Applications%2C%20and%20Versions&In-Reply-To=%3CCADN69yk%2BscxnsFs8UTzV5JrQMWTZsD8EPZmDrjZqEuHSpRZhXw%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Regarding Preferences support for Multiple Instances, Applications, and Versions">ctrueden at wisc.edu
+       </A><BR>
+    <I>Thu Mar 21 13:39:05 CDT 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001451.html">[ImageJ-devel] Regarding Preferences support for Multiple Instances, Applications, and Versions
+</A></li>
+        <LI>Next message: <A HREF="001452.html">[ImageJ-devel] Calibration bug when rotating an image by 90&#176;
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1453">[ date ]</a>
+              <a href="thread.html#1453">[ thread ]</a>
+              <a href="subject.html#1453">[ subject ]</a>
+              <a href="author.html#1453">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Grant,
+
+Thanks for bringing up this issue. I have added a comment to the
+corresponding Trac ticket:
+
+    <A HREF="http://trac.imagej.net/ticket/1706">http://trac.imagej.net/ticket/1706</A>
+
+Regards,
+Curtis
+
+
+On Tue, Mar 19, 2013 at 4:13 PM, Grant B. Harris &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">gharris at mbl.edu</A>&gt; wrote:
+
+&gt;<i> ImageJ2ers,
+</I>&gt;<i>
+</I>&gt;<i> We've recently run into the problem of having multiple versions of
+</I>&gt;<i> MicroManager installed (for testing our plugins under different versions).
+</I>&gt;<i>  This made me realize that there are some issues with ImageJ2 preferences
+</I>&gt;<i> that we may want to address.
+</I>&gt;<i>
+</I>&gt;<i> Right now, Prefs are stored in the userRoot() by Class&lt;?&gt; and name.
+</I>&gt;<i>
+</I>&gt;<i> I don't think that this allows us to support any of these scenarios:
+</I>&gt;<i> - multiple applications (that use the application framework)
+</I>&gt;<i> - multiple versions of the same application
+</I>&gt;<i> - multiple instances (contexts) of the same application
+</I>&gt;<i>
+</I>&gt;<i> I all of these cases, they will stomp on each other by reading/writing the
+</I>&gt;<i> same Prefs.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> I'd like to propose an extension to the Prefs mechanism which follows:
+</I>&gt;<i>
+</I>&gt;<i> When an application launches, if it does not find a node for itself
+</I>&gt;<i> (applicationA/v2.0), it could optionally copy or translate the values from
+</I>&gt;<i> an old version node (applicationA/v2.0).  The Prefs class could provide
+</I>&gt;<i> some helper methods for this.  The Prefs nodes could be something like this:
+</I>&gt;<i>
+</I>&gt;<i> userRoot()
+</I>&gt;<i>     /applicationA
+</I>&gt;<i>         /v1.01
+</I>&gt;<i>             /...
+</I>&gt;<i>         /v1.02
+</I>&gt;<i>             /...
+</I>&gt;<i>      /applicationB
+</I>&gt;<i>         /v2.0
+</I>&gt;<i>             /...
+</I>&gt;<i>
+</I>&gt;<i> To deal with multiple instances (contexts) of the same application, it
+</I>&gt;<i> might make sense to have the prefs stored by context (perhaps under a node
+</I>&gt;<i> for application and a node for each version.  It seems that each instance
+</I>&gt;<i> would need to have an identifier, and this identifier would need to be set
+</I>&gt;<i> when the app. (re-)launches, perhaps using a command line argument.
+</I>&gt;<i>
+</I>&gt;<i> While less common, the ability to have multiple instances (contexts) of
+</I>&gt;<i> the same application can be useful in two use cases I can think of: 1)
+</I>&gt;<i> running instances running headless on a server, 2) having multiple users of
+</I>&gt;<i> an application on the same OS user account (like 'guest').  A context
+</I>&gt;<i> identifier would also enable separate prefs settings for these situations.
+</I>&gt;<i>
+</I>&gt;<i> Using context identifiers, perhaps the Prefs nodes could be something like
+</I>&gt;<i> this:
+</I>&gt;<i>
+</I>&gt;<i> userRoot()
+</I>&gt;<i>     /applicationA
+</I>&gt;<i>         /v1.01
+</I>&gt;<i>             /...
+</I>&gt;<i>             /cID1
+</I>&gt;<i>                 /...
+</I>&gt;<i>         /v1.02
+</I>&gt;<i>             /...
+</I>&gt;<i>      /applicationB
+</I>&gt;<i>         /v2.0
+</I>&gt;<i>             /cID1
+</I>&gt;<i>                 /...
+</I>&gt;<i>             /cID2
+</I>&gt;<i>                 /...
+</I>&gt;<i>
+</I>&gt;<i> For example, if a context identifier is provided, the app. would use the
+</I>&gt;<i> nodes under /applicationA/v1.01/cID1... and if a context identifier is not
+</I>&gt;<i> provided, the app. would use the nodes under /applicationA/v1.01/...
+</I>&gt;<i>
+</I>&gt;<i> Perhaps Prefs could be Contextual, and then use getTitle(), getVersion().
+</I>&gt;<i> (For the context, I suppose one kluge would be to add something to the
+</I>&gt;<i> Title...)
+</I>&gt;<i>
+</I>&gt;<i> There may be some related issues, e.g. in ConfigFileParameters, this is
+</I>&gt;<i> hardcoded: CONFIG_FILE = &quot;ImageJ.cfg&quot;;
+</I>&gt;<i>
+</I>&gt;<i> Thoughts?  Ideas?
+</I>&gt;<i>
+</I>&gt;<i> (I've added this as an issue ticket in TRAC.)
+</I>&gt;<i>
+</I>&gt;<i> -- Grant
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> ______________________________**_________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/**listinfo/imagej-devel&lt;http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/**listinfo/imagej-devel&lt;http://imagej.net/mailman/listinfo/imagej-devel</A>&gt;
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20130321/b81c5852/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20130321/b81c5852/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001451.html">[ImageJ-devel] Regarding Preferences support for Multiple Instances, Applications, and Versions
+</A></li>
+	<LI>Next message: <A HREF="001452.html">[ImageJ-devel] Calibration bug when rotating an image by 90&#176;
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1453">[ date ]</a>
+              <a href="thread.html#1453">[ thread ]</a>
+              <a href="subject.html#1453">[ subject ]</a>
+              <a href="author.html#1453">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

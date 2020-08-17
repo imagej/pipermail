@@ -1,0 +1,143 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] (ImgLib2) operations on two or more images with differing calibrations
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%28ImgLib2%29%20operations%20on%20two%20or%20more%20images%20with%0A%20differing%20calibrations&In-Reply-To=%3C4ED4D983.2000904%40mpi-cbg.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000551.html">
+   <LINK REL="Next"  HREF="000552.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] (ImgLib2) operations on two or more images with differing calibrations</H1>
+    <B>Tobias Pietzsch</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%28ImgLib2%29%20operations%20on%20two%20or%20more%20images%20with%0A%20differing%20calibrations&In-Reply-To=%3C4ED4D983.2000904%40mpi-cbg.de%3E"
+       TITLE="[ImageJ-devel] (ImgLib2) operations on two or more images with differing calibrations">pietzsch at mpi-cbg.de
+       </A><BR>
+    <I>Tue Nov 29 07:09:23 CST 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000551.html">[ImageJ-devel] (ImgLib2) operations on two or more images with differing calibrations
+</A></li>
+        <LI>Next message: <A HREF="000552.html">[ImageJ-devel] (ImgLib2) operations on two or more images with	differing calibrations
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#553">[ date ]</a>
+              <a href="thread.html#553">[ thread ]</a>
+              <a href="subject.html#553">[ subject ]</a>
+              <a href="author.html#553">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Lee,
+
+In analogy to integer transforms &amp; views we should have AffineTransform, 
+which maps (coordinate) vectors to vectors.
+
+Then we would have a view class that implements RealRandomAccessible. 
+This view class is what you referred to as CoordinateAffineTransform. 
+It would take another RealRandomAccessible and an AffineTransform, as 
+you described.
+
+The AffineTransform in turn would tie into a transform hierarchy: 
+Affine is probably the most general transform we would support.  So 
+there will be an interface Affine which extends RealTransform. 
+Interface Rigid would derive from Affine and so on.  This interface 
+hierarchy specifies the transform hierarchy, e.g., a Rigid is also an 
+Affine.  Then on the implementation side we have
+public class AffineTransform implements Affine, Concatenable&lt; Affine &gt;, 
+PreConcatenable&lt; Affine &gt; {...}.
+
+Lets assume, we implement a restricted transform like scaling within the 
+transform hierarchy.  Then the Scale (?) interface would derive from 
+Affine and a ScaleTransform can be treated as an Affine.  This nicely 
+separates the transforms from the implementation of the views, which 
+will require implementing a RealRandomAccess that applies a transform to 
+its position, etc. We can first do a general view implementation like 
+your CoordinateAffineTransform.  You can naturally pass a Scale as the 
+view transform.  This will be treated as a full Affine for the time 
+being, doing a bit more work than necessary.  Later it is easy to write 
+special cases for special transforms.  (For example, for the integer 
+views there is a TranslationRandomAccess which is more efficient than 
+the general MixedRandomAccess.)
+
+Tobias
+
+On 11/28/2011 07:16 PM, Lee Kamentsky wrote:
+&gt;<i> All so cool - my preference would be to have a CoordinateAffineTransform
+</I>&gt;<i> class that implemented RealRandomAccessible. It would take another
+</I>&gt;<i> RealRandomAccessible as input as well as the affine transform matrix.
+</I>&gt;<i> That's very general and it separates interpolation from transformation
+</I>&gt;<i> so that you can choose the interpolation method you want to use (e.g.
+</I>&gt;<i> InterpolatedRandomAccessible) and you can use the
+</I>&gt;<i> CoordinateAffineTransform class for other sorts of
+</I>&gt;<i> RealRandomAccessibles. For scaling, it's just a question of populating
+</I>&gt;<i> the diagonal of the matrix appropriately, right?
+</I>&gt;<i>
+</I>&gt;<i> There are a lot of times when I'd like to treat images as functions that
+</I>&gt;<i> I could sample in a real space. For instance, in CellProfiler, we have a
+</I>&gt;<i> technique that uses spline interpolation to estimate variances in
+</I>&gt;<i> illumination. I'd like to divide my raw image by the spline
+</I>&gt;<i> interpolation and operate downstream on the result. I'm guessing that
+</I>&gt;<i> things like SIFT could be implemented very elegantly using
+</I>&gt;<i> RealRandomAccessibles whose output was a Gaussian transformation of a
+</I>&gt;<i> RandomAccessible input.
+</I>&gt;<i>
+</I>&gt;<i> OK, this is a joke, but I can see a slippery slope here to imglib3 where
+</I>&gt;<i> RandomAccessible is an artifact of images being stored using pixels and
+</I>&gt;<i> everything is done in a real space.
+</I>&gt;<i>
+</I>&gt;<i> --Lee
+</I>&gt;<i>
+</I>&gt;<i> On 11/28/2011 12:49 PM, Tobias Pietzsch wrote:
+</I>&gt;&gt;<i> Hi ImgLib2 people,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> A while ago, Johannes asked about whether I had any thoughts on how
+</I>&gt;&gt;<i> this (see subject) should be done. I finally had the time to look at
+</I>&gt;&gt;<i> it now and found, that the ideas to do it are mostly in place (in my
+</I>&gt;&gt;<i> opinion, at least) though implementation is not.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I wrote a few thoughts on the wiki
+</I>&gt;&gt;<i> <A HREF="http://fiji.sc/wiki/index.php/ImgLib2_Discussion#RealViews">http://fiji.sc/wiki/index.php/ImgLib2_Discussion#RealViews</A>
+</I>&gt;&gt;<i> What do you think?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> best regards,
+</I>&gt;&gt;<i> Tobias
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagejdev.org</A>
+</I>&gt;&gt;<i> <A HREF="http://imagejdev.org/mailman/listinfo/imagej-devel">http://imagejdev.org/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagejdev.org</A>
+</I>&gt;<i> <A HREF="http://imagejdev.org/mailman/listinfo/imagej-devel">http://imagejdev.org/mailman/listinfo/imagej-devel</A>
+</I>
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000551.html">[ImageJ-devel] (ImgLib2) operations on two or more images with differing calibrations
+</A></li>
+	<LI>Next message: <A HREF="000552.html">[ImageJ-devel] (ImgLib2) operations on two or more images with	differing calibrations
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#553">[ date ]</a>
+              <a href="thread.html#553">[ thread ]</a>
+              <a href="subject.html#553">[ subject ]</a>
+              <a href="author.html#553">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

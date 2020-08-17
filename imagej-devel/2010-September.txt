@@ -1,0 +1,766 @@
+From adam.n.fraser at gmail.com  Wed Sep  1 09:32:53 2010
+From: adam.n.fraser at gmail.com (Adam Fraser)
+Date: Wed, 1 Sep 2010 10:32:53 -0400
+Subject: [ImageJ-devel] Headlessness
+In-Reply-To: <alpine.DEB.1.00.1008312302450.4461@bonsai2>
+References: <4C7D2467.4060903@mbl.edu>
+	<AANLkTikrZzVKkZUxa8WpSBnEmij1iO46h76QXUSf0AUM@mail.gmail.com>
+	<alpine.DEB.1.00.1008312302450.4461@bonsai2>
+Message-ID: <AANLkTi=fr9wsZz4mzJmNfOHSwiTicX-_b-HXoW_J9Xnv@mail.gmail.com>
+
+Dscho, I like the cut of your jib, but I'm wondering how backwards
+compatibility with old plugins fits into your proposal. Can they still make
+GUI calls as before? Do we try to write some crazy wrapper that shoehorns
+them into the API?
+
+Thanks :)
+-Adam
+
+On Tue, Aug 31, 2010 at 5:12 PM, Johannes Schindelin <
+Johannes.Schindelin at gmx.de> wrote:
+
+> Hi,
+>
+> On Tue, 31 Aug 2010, Curtis Rueden wrote:
+>
+> > I think the "abstract plugin" mechanism that Dscho & you developed is a
+> > good start, at least for plugins. Then you do not need a global context
+> > flag, but rather GenericDialog is only created in the GUI case. So
+> > plugins written using that new style are one big step closer to working
+> > headless. I think it is less important that older plugins work headless
+> > as-is?they can be converted to use the new style, to solve the problem
+> > that way.
+> >
+> > For Menus and Tools, I have not examined them in detail yet, so cannot
+> > really comment. Do you have a list of the main offenders? Point to some
+> > line numbers in code where it's a problem? It would help save me time.
+>
+> As I mentioned back in Heidelberg: the main problem is when plugins think
+> they should open a GUI. Or show anything.
+>
+> Split Channels. Plot Profile. Even all the filters that open a new
+> (filtered) image. All of that is a problem. (Obviously!)
+>
+> Why? Because ImageJ plugins do not have a concept of "output". They just
+> show stuff, instead of returning _anything_.
+>
+> > Another thing we could do is write a program that is supposed to run
+> > headless, run it so, and see where the exceptions are raised. Then solve
+> > them one by one until it works.
+>
+> That won't work. It is a losing battle to try until you found all of the
+> cases where macros go wrong.
+>
+> The design I put into the abstract plugin was carefully thought through.
+> Really.
+>
+> Instead of letting the developer make a dialog, she has to specify in a
+> high-level manner (similar to HTML or LaTeX) _what_ she means instead of
+> _how_ it should be displayed. That means both input and output.
+>
+> It would be positively good if there were things in ImageJ2 that
+> discouraged the developer rather strongly (such by breaking his code) to
+> open any GUI elements.
+>
+> Of course, there are -- some -- things that developers would like to do
+> with a GUI, such as interactions with sliders, aspect ratio constraining,
+> validation routines, etc. _All_ of these should be offered using the
+> abstract plugin API. So that nobody has an excuse to make proper plugins
+> that run in a headless manner, that indeed could be shipped in a task
+> packet to a TV, a mobile phone or a toaster via TCP/IP, returning as
+> result packets.
+>
+> The abstract plugin API should make specifying such things so easy that it
+> would be a bigger hassle to implement the GUI stuff yourself (thereby
+> breaking macro recording, headless operation, cluster queue submission,
+> etc).
+>
+> Ciao,
+> Dscho
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20100901/f2a75653/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Wed Sep  1 10:48:01 2010
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Wed, 1 Sep 2010 17:48:01 +0200 (CEST)
+Subject: [ImageJ-devel] Headlessness
+In-Reply-To: <AANLkTi=fr9wsZz4mzJmNfOHSwiTicX-_b-HXoW_J9Xnv@mail.gmail.com>
+References: <4C7D2467.4060903@mbl.edu>
+	<AANLkTikrZzVKkZUxa8WpSBnEmij1iO46h76QXUSf0AUM@mail.gmail.com>
+	<alpine.DEB.1.00.1008312302450.4461@bonsai2>
+	<AANLkTi=fr9wsZz4mzJmNfOHSwiTicX-_b-HXoW_J9Xnv@mail.gmail.com>
+Message-ID: <alpine.DEB.1.00.1009011746410.2200@intel-tinevez-2-302>
+
+Hi Adam,
+
+On Wed, 1 Sep 2010, Adam Fraser wrote:
+
+> Dscho, I like the cut of your jib, but I'm wondering how backwards 
+> compatibility with old plugins fits into your proposal. Can they still 
+> make GUI calls as before? Do we try to write some crazy wrapper that 
+> shoehorns them into the API?
+
+We cannot make the API headless-safe retroactively, that is correct. But 
+that was not the idea of ImageJDev, right? ij.* stays the same as before, 
+imagej.* is the new and redesigned API, which we want to make so enticing 
+that everybody will want to rewrite their plugins ;-)
+
+Ciao,
+Johannes
+
+
+
+From ctrueden at wisc.edu  Wed Sep  1 16:47:39 2010
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Wed, 1 Sep 2010 16:47:39 -0500
+Subject: [ImageJ-devel] Git vs. Subversion
+Message-ID: <AANLkTinqAHJze2N53DqyxnQvGtLi9EPprU59T3_RWuBw@mail.gmail.com>
+
+Hi everyone,
+
+Over the past few months, we have been using Git for source control of the
+ImageJ2 effort. However, for a number of reasons, I would like to migrate
+the repository to Subversion instead. I am soliciting feedback from anyone
+who has a preference one way or the other, as well as input on the issues
+below, so that we can reach a consensus as a group.
+
+1) Git support on Windows is weak compared to SVN
+
+Our current Git workflow on Windows is to install msysGit, optionally
+TortoiseGit (which requires msysGit), as well as Putty/Pageant, for proper
+handling of SSH keys. And we're still struggling to make this configuration
+work. Conversely, for SVN, we install TortoiseSVN, add the user through the
+Trac administrative interface, they type their password the first time they
+perform a commit, and it is cached thereafter. Security-wise this is
+probably inferior, but it is much easier to set up.
+
+2) Git support in NetBeans is weak compared to SVN
+
+NetBeans interfaces with Git through the NBGit plugin, which is only
+partially implemented. For example, I could not figure out how to switch
+branches using NBGit. Conversely, NetBeans has full built-in support for
+SVN. TortoiseGit provides an alternative GUI-based solution, but is
+unfortunately several times slower than command line Git.
+
+3) Git allows dangerous operations like rewriting history and deleting
+branches
+
+In some ways this is great, and it's a pain that Subversion doesn't.
+However, there is a certain security in knowing that no matter what you do
+in SVN, you can always backtrack. For example, the other day I accidentally
+deleted the old ijx branch containing Grant's original refactoring work, and
+did not realize it until later. In this case it is not catastrophic, but it
+scares me that users can so easily delete big chunks of the repository. Even
+if it is possible to undo, I simply do not know enough about Git to know how
+to do so, or even necessarily realize such a thing has happened.
+
+4) Git does not allow partial tree checkouts of the repository
+
+With SVN you can checkout a subtree of the repository, allowing you to place
+a large number of modules off the root, and instruct people to check out and
+build only what they want (and Maven makes this especially easy). AFAIK you
+cannot do this with a single Git repository, but would need one Git
+repository per module instead?which then complicates checking out the entire
+umbrella of projects instead. I know submodules are a partial solution, but
+they have their own problems as well.
+
+5) Git uses non-linear versioning, making it more difficult to refer to
+development builds
+
+The fact that every checkout of Subversion is linear and has a monotonically
+increasing number is exceedingly useful for stamping builds. With Git, AFAIK
+you can't easily do this. An article at
+https://wincent.com/blog/automatic-deployment-numbering-in-git discusses a
+possible workaround, but it is deployment-based. We want the revision number
+to match a particular snapshot of code, so that external developers can
+easily check out that particular revision and get source code that matches
+the build in question.
+
+6) Git is harder to understand and use than SVN
+
+Apologies in advance if this statement starts a flame-war. However, I've
+witnessed the vast majority of developers with whom I've interacted struggle
+with Git's learning curve compared to SVN. In particular, I am personally
+frustrated with the complication of local branches vs. remote ones. And I
+know that the choice of Git has been a barrier to adoption for Grant as
+well?as mentioned above, Git's GUI tools, especially on Windows, are not as
+polished as they are for SVN.
+
+7) Our development server?Ubuntu, serving Git code using Gitosis?produces
+mysterious (but seemingly harmless?) error messages; e.g.:
+
+curtis at rook:~/code/LOCI/imagej$ git pull
+error: ssh died of signal 13
+Already up-to-date.
+
+It's probably a minor issue, but I haven't been able to find a solution via
+web searches.
+
+8) Git does not integrate with Trac as well as SVN does
+
+This is also a minor point, since the Git-Trac integration is actually quite
+nice. However, there are a number of issues (documented at
+http://trac-hacks.org/wiki/GitPlugin)<http://trac-hacks.org/wiki/GitPlugin%29>?in
+particular, performance (#746) and branch display issues (#2633).
+
+In conclusion, I am frankly frustrated with Git, and feel SVN would be an
+easier choice for both our own development team as well as the larger ImageJ
+community. However, I welcome discussion, as there are certainly downsides
+to switching away from Git.
+
+-Curtis
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20100901/4bd7c9f2/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Thu Sep  2 02:21:04 2010
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Thu, 2 Sep 2010 09:21:04 +0200 (CEST)
+Subject: [ImageJ-devel] Git vs. Subversion
+In-Reply-To: <AANLkTinqAHJze2N53DqyxnQvGtLi9EPprU59T3_RWuBw@mail.gmail.com>
+References: <AANLkTinqAHJze2N53DqyxnQvGtLi9EPprU59T3_RWuBw@mail.gmail.com>
+Message-ID: <alpine.DEB.1.00.1009020913090.4461@bonsai2>
+
+Hi,
+
+On Wed, 1 Sep 2010, Curtis Rueden wrote:
+
+> In conclusion, I am frankly frustrated with Git, and feel SVN would be 
+> an easier choice for both our own development team as well as the larger 
+> ImageJ community.
+
+If you're frustrated with Git, then it is certainly advisable to switch 
+away from it. An SCM should help you develop things, not distract from it.
+
+> However, I welcome discussion, as there are certainly downsides to 
+> switching away from Git.
+
+Not so many as you think: inclined developers can always use git-svn.
+
+However, you should make sure to uphold the discipline _not_ to commit 
+huge chunks of unreviewably large changes.
+
+This is the curse of Subversion: it is hard to polish patch series until 
+they shine. The dear consequence is often that you get a commit history 
+that is unreviewable. And what is unreviewable is not reviewed properly.
+
+For example, I would _positively_ hate it if I saw a single monster commit 
+adding the abstract plugin infrastructure. Remember: there are patches so 
+small and sweet that there are no obvious programming mistakes. And there 
+are patches so clunky and heavy and ugly that there are no obvious 
+programming mistakes.
+
+Ciao,
+Dscho
+
+
+
+
+From adam.n.fraser at gmail.com  Thu Sep  2 09:47:39 2010
+From: adam.n.fraser at gmail.com (Adam Fraser)
+Date: Thu, 2 Sep 2010 10:47:39 -0400
+Subject: [ImageJ-devel] Git vs. Subversion
+In-Reply-To: <AANLkTinqAHJze2N53DqyxnQvGtLi9EPprU59T3_RWuBw@mail.gmail.com>
+References: <AANLkTinqAHJze2N53DqyxnQvGtLi9EPprU59T3_RWuBw@mail.gmail.com>
+Message-ID: <AANLkTinpo6GAMJe7d7H1=WkUhXLK9DkP7EzWpC3GgvY9@mail.gmail.com>
+
+Short answer: I like SVN better.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20100902/6e84f687/attachment.html>
+
+From ctrueden at wisc.edu  Fri Sep  3 18:00:18 2010
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Fri, 3 Sep 2010 18:00:18 -0500
+Subject: [ImageJ-devel] Reminder: project cycle meeting on Tuesday
+Message-ID: <AANLkTim9cYf0QuV7Ya55HBg_bXBwQzk-6BsyOZ-7dEsM@mail.gmail.com>
+
+Hi everyone,
+
+Just wanted to remind you that our biweekly project cycle meeting will be on
+Tuesday next week instead of Monday, due to Labor Day. We will meet at the
+usual time, 10:30 am CDT / 11:30 am EDT. Have a good weekend, all.
+
+-Curtis
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20100903/4c8670cf/attachment.html>
+
+From ctrueden at wisc.edu  Sun Sep  5 02:26:13 2010
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Sun, 5 Sep 2010 02:26:13 -0500
+Subject: [ImageJ-devel] ImageJDev/LOCI development server
+Message-ID: <AANLkTimiy=O8=_ZafwwprJ2p5NJGX33sOAFHuwH3EP9h@mail.gmail.com>
+
+Hi everyone,
+
+LOCI has recently completed a migration of all our hosted source code over
+to a new development server. Much is the same, but there are a couple of key
+differences.
+
+1) For those of you using our SVN?in particular, pacific's bio-formats.git
+mirror?the URL has changed to *dev.loci.wisc.edu*.
+
+You can update existing checkouts from the command line. First, run:
+
+svn info
+
+
+Take note of the "Repository Root" listed, then execute:
+
+svn switch --relocate http://loci.wisc.edu/svn/java
+http://dev.loci.wisc.edu/svn/java
+
+
+Where "http://loci.wisc.edu/svn/java" is the Repository Root from before.
+Alternately, you can just do a fresh checkout using the new URL.
+
+2) The ImageJDev Git repository has been migrated to Subversion, and is
+available from *http://dev.imagejdev.org/svn/imagej*.
+
+   - The imglib repository still uses Git. And I still need to migrate Git
+   from imagejdev.org to dev.imagejdev.org.
+   - The ImageJ SVN repository's trunk is currently based on ImageJ v1.43o
+   with some later bugfixes, and contains our work on ImgLibProcessor.
+   - The ImageJ SVN repository's ijx branch is currently based on ImageJA
+   v1.44f, has been reorganized as a Maven project, will contain Grant's
+   refactoring work.
+   - We will need to merge the trunk and ijx branch's progress within the
+   next few weeks.
+
+
+3) The Tracs have also all moved, though the old URLs should all
+automatically redirect. Our Hudson moved as well (
+http://dev.loci.wisc.edu:8080/). And I have also been playing with a Maven
+Nexus (http://dev.loci.wisc.edu:8081/); for anyone interested, it goes along
+with the Maven code branches (
+http://dev.loci.wisc.edu/svn/java/branches/maven,
+http://dev.imagejdev.org/svn/imagej/branches/ijx).
+
+The location of the code repositories should now be stable for the
+foreseeable future. Apologies for the disruptions. Please let me know if you
+have any questions or problems with it!
+
+-Curtis
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20100905/465b2ae2/attachment.html>
+
+From ctrueden at wisc.edu  Mon Sep  6 22:11:44 2010
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Mon, 6 Sep 2010 22:11:44 -0500
+Subject: [ImageJ-devel] Git vs. Subversion
+In-Reply-To: <alpine.DEB.1.00.1009020913090.4461@bonsai2>
+References: <AANLkTinqAHJze2N53DqyxnQvGtLi9EPprU59T3_RWuBw@mail.gmail.com>
+	<alpine.DEB.1.00.1009020913090.4461@bonsai2>
+Message-ID: <AANLkTimdi=Mbj3CRmrd5tke8Lbc6dK6sYT1zORp+_bOL@mail.gmail.com>
+
+Hi Dscho & everyone,
+
+Thanks, and good point about large commits. For the most part we can adhere
+to "commit early, commit often," although certain kinds of changes (mass
+source file relocation, for example) look ugly in the history no matter what
+you do.
+
+Anyway, as mentioned in another thread, I have migrated the ImageJDev ImageJ
+repository over to SVN. I also set up Git on the new dev server, and imglib
+is still using git, so keeping our imglib repositories synced will hopefully
+continue to be straightforward.
+
+As for syncing ImageJ, I'm sure our SVN will diverge from both ImageJ and
+ImageJA?intentionally so as we refactor various things?so for the time being
+we would need to backport changes, improvements and bugfixes as they happen.
+When we all meet at the October conference, we can discuss the best longterm
+strategy to reconcile the various code branches.
+
+Regards,
+Curtis
+
+On Thu, Sep 2, 2010 at 2:21 AM, Johannes Schindelin <
+Johannes.Schindelin at gmx.de> wrote:
+
+> Hi,
+>
+> On Wed, 1 Sep 2010, Curtis Rueden wrote:
+>
+> > In conclusion, I am frankly frustrated with Git, and feel SVN would be
+> > an easier choice for both our own development team as well as the larger
+> > ImageJ community.
+>
+> If you're frustrated with Git, then it is certainly advisable to switch
+> away from it. An SCM should help you develop things, not distract from it.
+>
+> > However, I welcome discussion, as there are certainly downsides to
+> > switching away from Git.
+>
+> Not so many as you think: inclined developers can always use git-svn.
+>
+> However, you should make sure to uphold the discipline _not_ to commit
+> huge chunks of unreviewably large changes.
+>
+> This is the curse of Subversion: it is hard to polish patch series until
+> they shine. The dear consequence is often that you get a commit history
+> that is unreviewable. And what is unreviewable is not reviewed properly.
+>
+> For example, I would _positively_ hate it if I saw a single monster commit
+> adding the abstract plugin infrastructure. Remember: there are patches so
+> small and sweet that there are no obvious programming mistakes. And there
+> are patches so clunky and heavy and ugly that there are no obvious
+> programming mistakes.
+>
+> Ciao,
+> Dscho
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20100906/3476d1fc/attachment.html>
+
+From rwlentz at wisc.edu  Fri Sep 17 12:00:29 2010
+From: rwlentz at wisc.edu (Rick Lentz)
+Date: Fri, 17 Sep 2010 12:00:29 -0500
+Subject: [ImageJ-devel] Abstract Plugin Meeting Notes: Draft,
+ FYI Friday 17 September (0900-1025 CDT)
+In-Reply-To: <AANLkTimyWOOESqHDDW1DrkdXHdAru=-3MSsMY_P6yjnD@mail.gmail.com>
+References: <AANLkTimyWOOESqHDDW1DrkdXHdAru=-3MSsMY_P6yjnD@mail.gmail.com>
+Message-ID: <AANLkTinq2Wm7+KTKV0aAFdN3qooeBZP-74g8Qin4ufgz@mail.gmail.com>
+
+Grant and I discussed the imagej.plugin code and how it could be applied to
+ij.plugins.
+
+The annotation based plugin framework is designed to serve two purposes:
+Reduce Generic Dialog 'boilerplate' code in plugins
+Decouple GUI parameters to enable chaining and headless operations
+
+We looked at two specific examples to see how existing plugins would change
+by applying and adapting the imagej.plugin code.
+The first example we looked at was ij.plugin.Animator.  Animator is called
+by IJ.java's run() method using Executer.java.  The plugin implements a
+PlugIn requiring public void run(string args).  At first we considered using
+the imagej.plugin.RunnableAdaptor class to populate the Generic Dialog Box
+in a manner similar to the earlier work on Example_PlugIn.java.  Thus, the
+question arose on how to intercept control from the run(String args) call to
+meet the needs of placing logic in the Runnable run() method used by
+imagej.plugin.PlugInFunctions.
+
+ We then thought we should find a better starting example so we looked at a
+simple plugin, ij.plugin.CanvasResizer.  CanvasResizer uses the height and
+width of the current image to populate the dialog box.  We considered using
+ParameterHandler to get the fields and then modifying the prior to creating
+the dialog with setParameter method call.
+
+  This prompted us to consider other direct approaches of meeting the
+headless/GUI Decoupled plugin approaches (E.g. Map<String, Object>)
+requiring adapting the tasking outlined in the current
+trac<http://dev.imagejdev.org/trac/imagej/ticket/207>
+ ticket.
+
+Sincerely,
+
+Rick Lentz
+(608) 217 - 8592 (cell)
+Bascom Hall - "...ever encourage that continual and fearless sifting and
+winnowing by which alone the truth can be found"
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20100917/a8498644/attachment.html>
+
+From leek at broadinstitute.org  Thu Sep 23 13:32:06 2010
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Thu, 23 Sep 2010 14:32:06 -0400
+Subject: [ImageJ-devel] CellProfiler 2.0 / ImageJ 2.0
+Message-ID: <4C9B9D26.9020404@broadinstitute.org>
+
+  OK, I just finished 4 days of hacking to get CellProfiler to read the 
+@parameter tags. I also took the plugin that we use the most, 
+"Tubeness", and converted it to use the tags and removed its gui code 
+(dialog stuff + image display). The result: CellProfiler runs an ImageJ 
+plugin, displaying the parameters (including input and output images) as 
+settings in our module. In this case, "InputImage", "Sigma", "Use 
+calibration" and "Output image" are the parameters. The result appears 
+below, totally seamless.
+
+Curtis, I'll probably give you two pipelines: one that runs on the 
+current CellProfiler release with the old ImageJ and one that is my 
+personal build with a bleeding-edge ImageJ 2.0 build. This reinforces 
+the message we want to send:
+
+Your plugin is the manifestation of your method or algorithm which is 
+what's important to you.
+Your plugin conforms to the ImageJ 2.0 standard.
+Your method can be used by any software that accepts ImageJ 2.0 plugins.
+
+How cool.
+
+--Lee
+
+ImageJ 2.0 / CellProfiler 2.0
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20100923/03216167/attachment.html>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: cp-ij-20.PNG
+Type: image/png
+Size: 234684 bytes
+Desc: not available
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20100923/03216167/attachment.png>
+
+From adam.n.fraser at gmail.com  Thu Sep 23 21:27:15 2010
+From: adam.n.fraser at gmail.com (Adam Fraser)
+Date: Thu, 23 Sep 2010 22:27:15 -0400
+Subject: [ImageJ-devel] CellProfiler 2.0 / ImageJ 2.0
+In-Reply-To: <4C9B9D26.9020404@broadinstitute.org>
+References: <4C9B9D26.9020404@broadinstitute.org>
+Message-ID: <AANLkTimXdCUHcqpEqZXK35ny2ifNUY4FmTkuu5BZJHWv@mail.gmail.com>
+
+Awesome work! I think this is a killer example of the type of integration
+that ImageJ 2.0 is striving to promote and facilitate.
+
+On Thu, Sep 23, 2010 at 2:32 PM, Lee Kamentsky <leek at broadinstitute.org>wrote:
+
+>  OK, I just finished 4 days of hacking to get CellProfiler to read the
+> @parameter tags. I also took the plugin that we use the most, "Tubeness",
+> and converted it to use the tags and removed its gui code (dialog stuff +
+> image display). The result: CellProfiler runs an ImageJ plugin, displaying
+> the parameters (including input and output images) as settings in our
+> module. In this case, "InputImage", "Sigma", "Use calibration" and "Output
+> image" are the parameters. The result appears below, totally seamless.
+>
+> Curtis, I'll probably give you two pipelines: one that runs on the current
+> CellProfiler release with the old ImageJ and one that is my personal build
+> with a bleeding-edge ImageJ 2.0 build. This reinforces the message we want
+> to send:
+>
+> Your plugin is the manifestation of your method or algorithm which is
+> what's important to you.
+> Your plugin conforms to the ImageJ 2.0 standard.
+> Your method can be used by any software that accepts ImageJ 2.0 plugins.
+>
+> How cool.
+>
+> --Lee
+>
+> [image: ImageJ 2.0 / CellProfiler 2.0]
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20100923/e91c9562/attachment.html>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: not available
+Type: image/png
+Size: 234684 bytes
+Desc: not available
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20100923/e91c9562/attachment.png>
+
+From ctrueden at wisc.edu  Mon Sep 27 12:27:27 2010
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Mon, 27 Sep 2010 12:27:27 -0500
+Subject: [ImageJ-devel] Imglib project organization & Bio-Formats support
+Message-ID: <AANLkTim6c_sUjCAerJg4B=TdWcb4eDWSxhm3F6WvNewc@mail.gmail.com>
+
+Hi everyone,
+
+I have created a new branch on imglib.git called maven, which does two
+things:
+
+1) It reorganizes imglib as a Maven project.
+
+2) To achieve cleaner dependencies, it splits imglib into several
+subprojects:
+  * imglib ? core imglib infrastructure [dependencies: mpicbg]
+  * imglib-algorithms ? algorithm implementations [dependencies: imglib,
+mpicbg, mines-jtk]
+  * imglib-imagej ? ImageJ-specific display logic [dependencies: imglib,
+imglib-algorithms, imagej, mpicbg]
+  * imglib-io ? S&S's Bio-Formats support for imglib [dependencies: imglib,
+imglib-imagej, bio-formats]
+
+One major reason to do this is to avoid a circular dependency between imglib
+and ij, since we want ij-2.0 to depend on imglib core.
+
+Also, I have implemented a new imglib Bio-Formats reader at:
+  http://dev.imagejdev.org/svn/imagej/trunk/bf-imglib
+
+Unlike imglib-io, it fully supports N-dimensional data in imglib, and
+without any dependency on ImageJ. However, I am still polishing it a bit?it
+needs to do everything that imglib-io did, including setting physical XYZ
+calibration. Once it is ready, if you all agree, I could replace the old
+imglib-io implementation.
+
+Regarding Maven: I think it makes development in Eclipse much better (using
+the m2eclipse & m2eclipse Extras plugins). Project dependencies in Eclipse
+with Maven are extremely smart. For example: let's say I have bf-imglib open
+alone. For the dependencies (ij.jar and imglib.jar), Eclipse uses the ij.jar
+and imglib.jar present in the local Maven repository. But let's say I want
+to fix a bug in ImageJ that affects bf-imglib. I just open the ij Maven
+project, and the bf-imglib dependency magically becomes an Eclipse project
+reference rather than a binary JAR reference.
+
+Maven also solves the Eclipse configuration wars with conflicting .project,
+.classpath and .settings files being committed to the repository from
+various machines?you simply add these files to .gitignore and the files are
+generated locally when you first import the Maven project using m2eclipse.
+After that you can tweak your local project settings however you like.
+
+My questions are:
+
+1) Do you like this split project organization for imglib?
+
+2) What do you think of imglib using Maven in this way?
+
+3) Any initial thoughts on the bf-imglib implementation?
+
+If people are happy with these changes, I would like to merge the imglib
+maven branch to master, and maybe also move bf-imglib into the imglib git
+repository. If people have concerns, let's discuss them to find a better
+solution that works for everyone.
+
+Thanks,
+Curtis
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20100927/31ffc534/attachment.html>
+
+From saalfeld at mpi-cbg.de  Wed Sep 29 12:03:07 2010
+From: saalfeld at mpi-cbg.de (Stephan Saalfeld)
+Date: Wed, 29 Sep 2010 19:03:07 +0200
+Subject: [ImageJ-devel] Imglib project organization & Bio-Formats support
+In-Reply-To: <AANLkTim6c_sUjCAerJg4B=TdWcb4eDWSxhm3F6WvNewc@mail.gmail.com>
+References: <AANLkTim6c_sUjCAerJg4B=TdWcb4eDWSxhm3F6WvNewc@mail.gmail.com>
+Message-ID: <1285779787.1976.20.camel@saalfeld-laptop>
+
+Dear Curtis,
+
+I like the separation and I am looking forward to check maven as a
+builder.  What about you, Steffi and Johannes?
+
+Best,
+StephanS
+
+
+
+
+On Mon, 2010-09-27 at 12:27 -0500, Curtis Rueden wrote:
+> Hi everyone,
+> 
+> I have created a new branch on imglib.git called maven, which does two
+> things:
+> 
+> 1) It reorganizes imglib as a Maven project.
+> 
+> 2) To achieve cleaner dependencies, it splits imglib into several
+> subprojects:
+>   * imglib ? core imglib infrastructure [dependencies: mpicbg]
+>   * imglib-algorithms ? algorithm implementations [dependencies:
+> imglib, mpicbg, mines-jtk]
+>   * imglib-imagej ? ImageJ-specific display logic [dependencies:
+> imglib, imglib-algorithms, imagej, mpicbg]
+>   * imglib-io ? S&S's Bio-Formats support for imglib [dependencies:
+> imglib, imglib-imagej, bio-formats]
+> 
+> One major reason to do this is to avoid a circular dependency between
+> imglib and ij, since we want ij-2.0 to depend on imglib core.
+> 
+> Also, I have implemented a new imglib Bio-Formats reader at:
+>   http://dev.imagejdev.org/svn/imagej/trunk/bf-imglib
+> 
+> Unlike imglib-io, it fully supports N-dimensional data in imglib, and
+> without any dependency on ImageJ. However, I am still polishing it a
+> bit?it needs to do everything that imglib-io did, including setting
+> physical XYZ calibration. Once it is ready, if you all agree, I could
+> replace the old imglib-io implementation.
+> 
+> Regarding Maven: I think it makes development in Eclipse much better
+> (using the m2eclipse & m2eclipse Extras plugins). Project dependencies
+> in Eclipse with Maven are extremely smart. For example: let's say I
+> have bf-imglib open alone. For the dependencies (ij.jar and
+> imglib.jar), Eclipse uses the ij.jar and imglib.jar present in the
+> local Maven repository. But let's say I want to fix a bug in ImageJ
+> that affects bf-imglib. I just open the ij Maven project, and the
+> bf-imglib dependency magically becomes an Eclipse project reference
+> rather than a binary JAR reference.
+> 
+> Maven also solves the Eclipse configuration wars with
+> conflicting .project, .classpath and .settings files being committed
+> to the repository from various machines?you simply add these files
+> to .gitignore and the files are generated locally when you first
+> import the Maven project using m2eclipse. After that you can tweak
+> your local project settings however you like.
+> 
+> My questions are:
+> 
+> 1) Do you like this split project organization for imglib?
+> 
+> 2) What do you think of imglib using Maven in this way?
+> 
+> 3) Any initial thoughts on the bf-imglib implementation?
+> 
+> If people are happy with these changes, I would like to merge the
+> imglib maven branch to master, and maybe also move bf-imglib into the
+> imglib git repository. If people have concerns, let's discuss them to
+> find a better solution that works for everyone.
+> 
+> Thanks,
+> Curtis
+
+
+
+
+From Johannes.Schindelin at gmx.de  Wed Sep 29 19:52:28 2010
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Thu, 30 Sep 2010 02:52:28 +0200 (CEST)
+Subject: [ImageJ-devel] Imglib project organization & Bio-Formats support
+In-Reply-To: <1285779787.1976.20.camel@saalfeld-laptop>
+References: <AANLkTim6c_sUjCAerJg4B=TdWcb4eDWSxhm3F6WvNewc@mail.gmail.com>
+	<1285779787.1976.20.camel@saalfeld-laptop>
+Message-ID: <alpine.DEB.1.00.1009300246330.1887@bonsai2>
+
+Hi,
+
+On Wed, 29 Sep 2010, Stephan Saalfeld wrote:
+
+> I like the separation and I am looking forward to check maven as a
+> builder.  What about you, Steffi and Johannes?
+
+I also like the separation (obviously!).
+
+As to Maven: when I had to use it last time, it was very slow, but I am 
+known to be impatient.
+
+I agree, though, that it solves an important problem: every source code 
+repository of a non-trivial library seems to come with precompiled 
+3rd-party components. And if you use several of such libraries, you may 
+end up with different versions of the same 3rd-party component in the 
+classpath. Not good (remember the JNA cleanup I did recently? That was 
+_exactly_ that issue: jruby.jar's jna was hopelessly obsolete).
+
+So I provided a script in Fiji (bin/maven.sh) which downloads and runs 
+maven, exactly because it will be useful in the future.
+
+Ciao,
+Dscho
+
+P.S.: if you're interested why I made that script originally: I did it 
+between when Albert mentioned that clojure-contrib is a Maven'ized Git 
+repository now, and when Albert mentioned that clojure-contrib is no 
+longer necessary for our Clojure stuff... ;-)
+
+
+
+

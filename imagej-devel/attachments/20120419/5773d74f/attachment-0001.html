@@ -1,0 +1,58 @@
+<tt>
+Hi&nbsp;Stephan,&lt;br&gt;&lt;br&gt;Thanks&nbsp;for&nbsp;your&nbsp;reply&nbsp;about&nbsp;AWT&nbsp;in&nbsp;ImgLib2,&nbsp;and&nbsp;sorry&nbsp;my&nbsp;reply&nbsp;here&nbsp;is&nbsp;so&nbsp;long&nbsp;delayed.&lt;br&gt;&lt;br&gt;&lt;blockquote&nbsp;style=&quot;margin:0pt&nbsp;0pt&nbsp;0pt&nbsp;0.8ex;border-left:1px&nbsp;solid&nbsp;rgb(204,204,204);padding-left:1ex&quot;&nbsp;class=&quot;gmail_quote&quot;&gt;<br>
+<br>
+&lt;br&gt;&lt;/blockquote&gt;&lt;blockquote&nbsp;style=&quot;margin:0pt&nbsp;0pt&nbsp;0pt&nbsp;0.8ex;border-left:1px&nbsp;solid&nbsp;rgb(204,204,204);padding-left:1ex&quot;&nbsp;class=&quot;gmail_quote&quot;&gt;If&nbsp;dependency&nbsp;on&nbsp;AWT&nbsp;in&nbsp;imglib2-core&nbsp;is&nbsp;not&nbsp;wanted,&nbsp;then&nbsp;we&nbsp;should&nbsp;move&lt;br&gt;<br>
+the&nbsp;entire&nbsp;display&nbsp;package&nbsp;into&nbsp;a&nbsp;new&nbsp;sub-project&nbsp;imglib2-awt.&nbsp; However,&lt;br&gt;<br>
+the&nbsp;sole&nbsp;purpose&nbsp;ScreenImage&nbsp;interface&nbsp;being&nbsp;to&nbsp;return&nbsp;an&nbsp;awt&nbsp;Image&nbsp;it&lt;br&gt;<br>
+cannot&nbsp;be&nbsp;stripped&nbsp;from&nbsp;AWT&nbsp;dependency.&lt;br&gt;&lt;/blockquote&gt;&lt;div&gt;&lt;br&gt;It&nbsp;is&nbsp;not&nbsp;yet&nbsp;clear&nbsp;to&nbsp;me&nbsp;whether&nbsp;we&nbsp;should&nbsp;fully&nbsp;isolate&nbsp;the&nbsp;AWT&nbsp;references&nbsp;in&nbsp;imglib2&nbsp;core.&nbsp;We&nbsp;may&nbsp;indeed&nbsp;want&nbsp;to&nbsp;do&nbsp;so&nbsp;at&nbsp;some&nbsp;point,&nbsp;but&nbsp;it&nbsp;is&nbsp;certainly&nbsp;not&nbsp;urgent.&lt;br&gt;<br>
+<br>
+&lt;br&gt;The&nbsp;main&nbsp;design&nbsp;issue&nbsp;we&nbsp;are&nbsp;facing&nbsp;in&nbsp;ImageJ2&nbsp;is&nbsp;that&nbsp;we&nbsp;need&nbsp;a&nbsp;concrete,&nbsp;UI-agnostic&nbsp;DatasetView&nbsp;implementation&nbsp;that&nbsp;keeps&nbsp;a&nbsp;CompositeXYProjector&nbsp;object&nbsp;internally.&nbsp;Right&nbsp;now&nbsp;we&nbsp;are&nbsp;keeping&nbsp;an&nbsp;ARGBScreenImage&nbsp;internally&nbsp;too,&nbsp;but&nbsp;doing&nbsp;so&nbsp;introduces&nbsp;an&nbsp;indirect&nbsp;AWT&nbsp;dependency,&nbsp;which&nbsp;we&nbsp;have&nbsp;worked&nbsp;hard&nbsp;to&nbsp;avoid.&lt;br&gt;<br>
+<br>
+&lt;br&gt;Latest&nbsp;code&nbsp;is&nbsp;on&nbsp;the&nbsp;lee_headless-ctr&nbsp;branch&nbsp;here:&lt;br&gt;  &nbsp;&lt;a&nbsp;href=&quot;https://github.com/imagej/imagej/blob/lee_headless-ctr/core/data/src/main/java/imagej/data/display/DefaultDatasetView.java&quot;&gt;https://github.com/imagej/imagej/blob/lee_headless-ctr/core/data/src/main/java/imagej/data/display/DefaultDatasetView.java&lt;/a&gt;&lt;br&gt;<br>
+<br>
+&lt;br&gt;Probably&nbsp;the&nbsp;easiest&nbsp;way&nbsp;to&nbsp;avoid&nbsp;this&nbsp;issue&nbsp;will&nbsp;be&nbsp;to&nbsp;generalize&nbsp;the&nbsp;&quot;screenImage&quot;&nbsp;variable&nbsp;away&nbsp;from&nbsp;an&nbsp;ARGBScreenImage&nbsp;specifically&nbsp;and&nbsp;just&nbsp;use&nbsp;IterableInterval&lt;ARGBType&gt;&nbsp;instead.&lt;br&gt;&lt;br&gt;So,&nbsp;the&nbsp;only&nbsp;real&nbsp;potential&nbsp;reason&nbsp;to&nbsp;migrate&nbsp;ARGBScreenImage&nbsp;into&nbsp;a&nbsp;separate&nbsp;imglib2-awt&nbsp;project&nbsp;would&nbsp;be&nbsp;if&nbsp;it&nbsp;causes&nbsp;problems&nbsp;when&nbsp;targeting&nbsp;other&nbsp;platforms,&nbsp;such&nbsp;as&nbsp;compiling&nbsp;for&nbsp;Dalvik&nbsp;(i.e.,&nbsp;Android).&nbsp;But&nbsp;at&nbsp;the&nbsp;moment,&nbsp;anticipating&nbsp;any&nbsp;such&nbsp;issues&nbsp;is&nbsp;mere&nbsp;speculation—we&nbsp;shouldn&#39;t&nbsp;worry&nbsp;much&nbsp;until&nbsp;we&nbsp;try&nbsp;it&nbsp;and&nbsp;then&nbsp;we&nbsp;can&nbsp;address&nbsp;any&nbsp;actual&nbsp;problems&nbsp;one&nbsp;by&nbsp;one.&lt;br&gt;<br>
+<br>
+&lt;br&gt;&lt;/div&gt;&lt;blockquote&nbsp;style=&quot;margin:0pt&nbsp;0pt&nbsp;0pt&nbsp;0.8ex;border-left:1px&nbsp;solid&nbsp;rgb(204,204,204);padding-left:1ex&quot;&nbsp;class=&quot;gmail_quote&quot;&gt;&lt;br&gt;<br>
+The&nbsp;display&nbsp;package&nbsp;in&nbsp;its&nbsp;current&nbsp;for&nbsp;is&nbsp;all&nbsp;about&nbsp;generating&nbsp;an&nbsp;AWT&lt;br&gt;<br>
+image.&nbsp; Do&nbsp;you&nbsp;have&nbsp;an&nbsp;alternative&nbsp;display&nbsp;in&nbsp;mind?&nbsp; Is&nbsp;there&nbsp;any&nbsp;code?&lt;br&gt;&lt;/blockquote&gt;<br>
+<br>
+&lt;br&gt;I&nbsp;think&nbsp;the&nbsp;current&nbsp;ScreenImage&nbsp;implementation&nbsp;is&nbsp;good.&nbsp;We&nbsp;may&nbsp;want&nbsp;to&nbsp;rename&nbsp;it&nbsp;to&nbsp;&quot;AWTScreenImage&quot;&nbsp;though&nbsp;if&nbsp;we&nbsp;want&nbsp;its&nbsp;function&nbsp;to&nbsp;be&nbsp;unambiguous.&lt;br&gt;&lt;br&gt;We&nbsp;may&nbsp;also&nbsp;eventually&nbsp;need&nbsp;to&nbsp;create&nbsp;additional&nbsp;ScreenImage-like&nbsp;interfaces&nbsp;for&nbsp;other&nbsp;styles&nbsp;of&nbsp;image&nbsp;objects.&nbsp;It&nbsp;would&nbsp;probably&nbsp;be&nbsp;OK&nbsp;for&nbsp;them&nbsp;to&nbsp;live&nbsp;in&nbsp;the&nbsp;respective&nbsp;UI-specific&nbsp;packages&nbsp;of&nbsp;ImageJ2,&nbsp;though.&lt;br&gt;<br>
+<br>
+&lt;br&gt;For&nbsp;example,&nbsp;Apache&nbsp;Pivot&nbsp;has&nbsp;its&nbsp;own&nbsp;Image&nbsp;hierarchy,&nbsp;including&nbsp;a&nbsp;bitmap&nbsp;Picture&nbsp;class:&lt;br&gt;   &nbsp;&lt;a&nbsp;href=&quot;http://pivot.apache.org/2.0.1/docs/api/org/apache/pivot/wtk/media/Picture.html&quot;&gt;http://pivot.apache.org/2.0.1/docs/api/org/apache/pivot/wtk/media/Picture.html&lt;/a&gt;&lt;br&gt;<br>
+<br>
+&lt;br&gt;And&nbsp;on&nbsp;Android,&nbsp;we&nbsp;would&nbsp;probably&nbsp;need&nbsp;a&nbsp;Bitmap&nbsp;object:&lt;br&gt;   &nbsp;&lt;a&nbsp;href=&quot;http://developer.android.com/reference/android/graphics/Bitmap.html&quot;&gt;http://developer.android.com/reference/android/graphics/Bitmap.html&lt;/a&gt;&lt;br&gt;<br>
+&lt;br&gt;<br>
+All&nbsp;of&nbsp;this&nbsp;is&nbsp;doable&nbsp;at&nbsp;some&nbsp;later&nbsp;date!&lt;br&gt;&lt;br&gt;Regards,&lt;br&gt;Curtis&lt;br&gt;&lt;br&gt;P.S.&nbsp;Another&nbsp;reason&nbsp;to&nbsp;fully&nbsp;isolate&nbsp;AWT&nbsp;from&nbsp;imglib2&nbsp;core&nbsp;is&nbsp;that&nbsp;it&nbsp;is&nbsp;already&nbsp;so&nbsp;close&nbsp;to&nbsp;being&nbsp;AWT-free.&nbsp;Only&nbsp;five&nbsp;classes&nbsp;currently&nbsp;include&nbsp;any&nbsp;AWT&nbsp;references:&lt;br&gt;<br>
+<br>
+&lt;br&gt;src/main/java/net/imglib2/display/ARGBScreenImage.java&lt;br&gt;src/main/java/net/imglib2/display/ScreenImage.java&lt;br&gt;src/main/java/net/imglib2/display/UnsignedByteScreenImage.java&lt;br&gt;src/main/java/net/imglib2/outofbounds/OutOfBoundsMirrorFactory.java&lt;br&gt;<br>
+<br>
+src/main/java/net/imglib2/sampler/special/OrthoSliceCursor.java&lt;br&gt;&lt;br&gt;Of&nbsp;course,&nbsp;the&nbsp;first&nbsp;three&nbsp;are&nbsp;just&nbsp;the&nbsp;aforementioned&nbsp;ScreenImage&nbsp;stuff.&nbsp;And&nbsp;the&nbsp;other&nbsp;two&nbsp;don&#39;t&nbsp;actually&nbsp;use&nbsp;AWT&nbsp;at&nbsp;all—they&nbsp;just&nbsp;reference&nbsp;java.awt.Image&nbsp;in&nbsp;the&nbsp;javadoc.&lt;br&gt;<br>
+<br>
+&lt;br&gt;&lt;br&gt;&lt;div&nbsp;class=&quot;gmail_quote&quot;&gt;On&nbsp;Thu,&nbsp;Mar&nbsp;15,&nbsp;2012&nbsp;at&nbsp;8:18&nbsp;AM,&nbsp;Stephan&nbsp;Saalfeld&nbsp;&lt;span&nbsp;dir=&quot;ltr&quot;&gt;&lt;&lt;a&nbsp;href=&quot;mailto:saalfeld@mpi-cbg.de&quot;&gt;saalfeld@mpi-cbg.de&lt;/a&gt;&gt;&lt;/span&gt;&nbsp;wrote:&lt;br&gt;&lt;blockquote&nbsp;class=&quot;gmail_quote&quot;&nbsp;style=&quot;margin:0&nbsp;0&nbsp;0&nbsp;.8ex;border-left:1px&nbsp;#ccc&nbsp;solid;padding-left:1ex&quot;&gt;<br>
+<br>
+&lt;div&nbsp;class=&quot;im&quot;&gt;&lt;br&gt;<br>
+&gt;&nbsp;Note&nbsp;that&nbsp;we&nbsp;need&nbsp;to&nbsp;extract&nbsp;all&nbsp;code&nbsp;referencing&nbsp;AWT&nbsp;into&nbsp;a&nbsp;new&nbsp;component&lt;br&gt;<br>
+&gt;&nbsp;and&nbsp;confine&nbsp;AWT&#39;s&nbsp;use&nbsp;to&nbsp;that&nbsp;component.&nbsp;So&nbsp;we&nbsp;might&nbsp;need&nbsp;to&nbsp;either&nbsp;move&lt;br&gt;<br>
+&gt;&nbsp;ScreenImage&nbsp;out&nbsp;to,&nbsp;say,&nbsp;imglib2-awt&nbsp;or&nbsp;strip&nbsp;it&nbsp;from&nbsp;all&nbsp;mentions&nbsp;of&lt;br&gt;<br>
+&gt;&nbsp;AWT&#39;s&nbsp;classes&nbsp;and&nbsp;interfaces.&lt;br&gt;<br>
+&gt;&lt;br&gt;<br>
+&lt;br&gt;<br>
+&lt;/div&gt;If&nbsp;dependency&nbsp;on&nbsp;AWT&nbsp;in&nbsp;imglib2-core&nbsp;is&nbsp;not&nbsp;wanted,&nbsp;then&nbsp;we&nbsp;should&nbsp;move&lt;br&gt;<br>
+the&nbsp;entire&nbsp;display&nbsp;package&nbsp;into&nbsp;a&nbsp;new&nbsp;sub-project&nbsp;imglib2-awt.&nbsp; However,&lt;br&gt;<br>
+the&nbsp;sole&nbsp;purpose&nbsp;ScreenImage&nbsp;interface&nbsp;being&nbsp;to&nbsp;return&nbsp;an&nbsp;awt&nbsp;Image&nbsp;it&lt;br&gt;<br>
+cannot&nbsp;be&nbsp;stripped&nbsp;from&nbsp;AWT&nbsp;dependency.&lt;br&gt;<br>
+&lt;br&gt;<br>
+The&nbsp;display&nbsp;package&nbsp;in&nbsp;its&nbsp;current&nbsp;for&nbsp;is&nbsp;all&nbsp;about&nbsp;generating&nbsp;an&nbsp;AWT&lt;br&gt;<br>
+image.&nbsp; Do&nbsp;you&nbsp;have&nbsp;an&nbsp;alternative&nbsp;display&nbsp;in&nbsp;mind?&nbsp; Is&nbsp;there&nbsp;any&nbsp;code?&lt;br&gt;<br>
+&lt;br&gt;<br>
+Thanks&nbsp;and&nbsp;best,&lt;br&gt;<br>
+Stephan&lt;br&gt;<br>
+&lt;div&nbsp;class=&quot;HOEnZb&quot;&gt;&lt;div&nbsp;class=&quot;h5&quot;&gt;&lt;br&gt;<br>
+&lt;br&gt;<br>
+_______________________________________________&lt;br&gt;<br>
+ImageJ-devel&nbsp;mailing&nbsp;list&lt;br&gt;<br>
+&lt;a&nbsp;href=&quot;mailto:ImageJ-devel@imagej.net&quot;&gt;ImageJ-devel@imagej.net&lt;/a&gt;&lt;br&gt;<br>
+&lt;a&nbsp;href=&quot;http://imagej.net/mailman/listinfo/imagej-devel&quot;&nbsp;target=&quot;_blank&quot;&gt;http://imagej.net/mailman/listinfo/imagej-devel&lt;/a&gt;&lt;br&gt;<br>
+&lt;/div&gt;&lt;/div&gt;&lt;/blockquote&gt;&lt;/div&gt;&lt;br&gt;<br>
+
+</tt>

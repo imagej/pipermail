@@ -1,0 +1,160 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [fiji-devel] slow opening of tif files using scifio-based ImgOpener
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20slow%20opening%20of%20tif%20files%20using%0A%20scifio-based%20ImgOpener&In-Reply-To=%3Calpine.DEB.1.00.1303030724280.3794%40s15462909.onlinehome-server.info%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001433.html">
+   <LINK REL="Next"  HREF="001435.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [fiji-devel] slow opening of tif files using scifio-based ImgOpener</H1>
+    <B>Johannes Schindelin</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20slow%20opening%20of%20tif%20files%20using%0A%20scifio-based%20ImgOpener&In-Reply-To=%3Calpine.DEB.1.00.1303030724280.3794%40s15462909.onlinehome-server.info%3E"
+       TITLE="[ImageJ-devel] [fiji-devel] slow opening of tif files using scifio-based ImgOpener">Johannes.Schindelin at gmx.de
+       </A><BR>
+    <I>Sun Mar  3 01:10:39 CST 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001433.html">[ImageJ-devel] [fiji-devel] slow opening of tif files using scifio-based ImgOpener
+</A></li>
+        <LI>Next message: <A HREF="001435.html">[ImageJ-devel] Irregular CellContainers?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1434">[ date ]</a>
+              <a href="thread.html#1434">[ thread ]</a>
+              <a href="subject.html#1434">[ subject ]</a>
+              <a href="author.html#1434">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+On Sun, 3 Mar 2013, Johannes Schindelin wrote:
+
+&gt;<i> ByteBuffer, PlanarContainer, setGroupFiles(true):	best of 5: 1,629 ms
+</I>&gt;<i> ImageJ 1.x:						best of 5: 113 ms
+</I>
+More progress.
+
+Switching on file mapping brought it down to 1,115ms:
+
+	<A HREF="https://github.com/dscho/TifBenchmark/commit/1ac041e8f4ce5d935151fcfb70023f67f2a086df">https://github.com/dscho/TifBenchmark/commit/1ac041e8f4ce5d935151fcfb70023f67f2a086df</A>
+
+A minor improvement to 1,097ms was achieved by switching the ImageReader
+from using the Location delegator to using the real thing instead:
+
+	<A HREF="https://github.com/imagej/bioformats/commit/2bbf001061d13882234d07cdbd8cdcbfb9778675">https://github.com/imagej/bioformats/commit/2bbf001061d13882234d07cdbd8cdcbfb9778675</A>
+
+Switching the ZeissTIFFReader (which tries very hard to claim that it is
+responsible to open the files) from using a delegator to the real
+CaseInsensitiveLocation brought it down to 957ms:
+
+	<A HREF="https://github.com/imagej/bioformats/commit/ce94a9e8647a2f786bba3045b005ec0973df5e83">https://github.com/imagej/bioformats/commit/ce94a9e8647a2f786bba3045b005ec0973df5e83</A>
+
+A real game changer was to disallow the ZeissTIFFReader to blow away the
+cache of the CaseInsensitiveLocation class *every* *single* *time*,
+bringing the time down to 317ms:
+
+	<A HREF="https://github.com/imagej/bioformats/commit/33447f50a51356cdc0609164002f0860c724d5e9">https://github.com/imagej/bioformats/commit/33447f50a51356cdc0609164002f0860c724d5e9</A>
+
+My hunch is that there is serious room for improvement in the
+CaseInsensitiveLocation class. And probably even in the ZeissTIFFReader:
+there must be a nicer way to detect whether we are dealing with a Zeiss
+.tiff than to look at all files in the same directory, searching for files
+with a similar name -- and maybe even differ in capitalization, thanks
+Zeiss :-(.
+
+I could even imagine that with .tiff being such a common case with such a
+lot of subtypes that it will be *necessary* to add an own class of plugins
+for TIFF subtypes, so that the base TIFF reader can be chosen quickly as
+the one to use, without having to run through the complete list of readers
+when determining what is the correct reader. The subtype plugins would
+then have to implement a very fast test *after* we already know that it is
+a TIFF. Some of them could then even state that scanning through all the
+IFDs is not necessary (e.g. when it is detected that ImageJ 1.x wrote the
+file.).
+
+And finally, the profiling pointed out that I was right when I had a bad
+feeling about the #isThisType() method and wanted something less
+free-form, such as a combination of file extensions and patterns to match
+against the first kilobyte (much like the HandleExtraFileTypes class does
+it). Worse: the signature of isThisType() does not even allow sharing of a
+RandomAccessInputStream! And sure enough, a dominant part of the
+performance statistics are made up by opening gazillions of
+RandomAccessInputStreams, all for the exact same file, all reading pretty
+much the exact same bytes. Setting setAllowOpen(false) -- whose name I
+mistook as first to imply that we refuse to open files at all, hence
+preventing us from opening images altogether -- brings the time down to
+186ms:
+
+	<A HREF="https://github.com/dscho/TifBenchmark/commit/d10db689c36b668bb190b041f0582add33ef1990">https://github.com/dscho/TifBenchmark/commit/d10db689c36b668bb190b041f0582add33ef1990</A>
+
+Summary so far: the target is to come close to 115ms [*1*]. I started out
+with code that took a whopping 4,922ms. With a couple of tricks and
+shortcuts, I got it down to 186ms, not quite the 43x improvement I hoped
+for, but a 26x improvement still [*2*].
+
+Ciao,
+Dscho
+
+P.S.: One thing I almost forgot to mention: initializing the logger takes
+quite some time. It is a one-time cost, sure, but it is quite noticable
+when the first slice is opened (hence I excluded the first run from the
+performance profiling for now). We might want to do something about that,
+e.g. constructing a super-light-weight logger a la scijava-common's
+StderrLogService by default.
+
+Footnote *1*: ImageJ 1.x' new ImagePlus(path) wrapped as a float Img). We
+will probably not be able to reach that goal because the ImgOpener is
+intended to handle many more file formats than just TIFF, and it should
+also open images which are valid as far as the TIFF specification is
+concerned but which ImageJ 1.x completely fails on.
+
+Footnote *2*: The changes to SCIFIO, ImgOpener and to TifBenchmark are not
+ready yet for prime time, unfortunately. For example, I doubt that it will
+be a good idea to force people to use PlanarContainers all the time. We
+need to accelerate ImgOpener with ArrayContainers because they will be the
+common case (much better performance than PlanarContainers, but too
+limited for truly large images). We need to teach SCIFIO to determine in a
+more intelligent way when file grouping does not make sense at all, and to
+switch it off in that case. The CaseInsensitiveLocation needs a *lot* of
+improvement, I haven't even touched it yet. We also need to teach SCIFIO
+to stop being stubborn and re-use the RandomAccessInputStream when it
+comes to the readers to determine whether they want to handle the image.
+Maybe that is not enough, even, and we have to re-design the complete
+strategy how readers are picked. One thing is utterly clear, though: in
+its current form, the ImgOpener is not fit for daily use.
+
+
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001433.html">[ImageJ-devel] [fiji-devel] slow opening of tif files using scifio-based ImgOpener
+</A></li>
+	<LI>Next message: <A HREF="001435.html">[ImageJ-devel] Irregular CellContainers?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1434">[ date ]</a>
+              <a href="thread.html#1434">[ thread ]</a>
+              <a href="subject.html#1434">[ subject ]</a>
+              <a href="author.html#1434">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

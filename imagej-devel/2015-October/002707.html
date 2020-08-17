@@ -1,0 +1,285 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] API-breaking change in SpimData and BigDataViewer	projects
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20API-breaking%20change%20in%20SpimData%20and%20BigDataViewer%0A%09projects&In-Reply-To=%3C44A7F072-C289-43CA-82A9-4BB43E66A083%40mpi-cbg.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002708.html">
+   <LINK REL="Next"  HREF="002709.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] API-breaking change in SpimData and BigDataViewer	projects</H1>
+    <B>Tobias Pietzsch</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20API-breaking%20change%20in%20SpimData%20and%20BigDataViewer%0A%09projects&In-Reply-To=%3C44A7F072-C289-43CA-82A9-4BB43E66A083%40mpi-cbg.de%3E"
+       TITLE="[ImageJ-devel] API-breaking change in SpimData and BigDataViewer	projects">pietzsch at mpi-cbg.de
+       </A><BR>
+    <I>Thu Oct  1 12:41:43 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002708.html">[ImageJ-devel] EMBL Conference : Seeing is believing
+</A></li>
+        <LI>Next message: <A HREF="002709.html">[ImageJ-devel] [fiji-devel] API-breaking change in SpimData and BigDataViewer projects
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2707">[ date ]</a>
+              <a href="thread.html#2707">[ thread ]</a>
+              <a href="subject.html#2707">[ subject ]</a>
+              <a href="author.html#2707">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+very long email coming. Here is to quickly find out if you should bother reading it:
+I&#8217;m preparing an update to the spim-data and bigdataviewer-core projects, that might break your code if you are using BigDataViewer or SpimData APIs.
+If you are not using these APIs, then you can stop reading now -- nothing will change for users of the plugin.
+If you only use BDV as a visualization frontend, then most likely you will be not affected by the changes.
+If you wrote a BDV backend and/or SpimData ImgLoader, you WILL be affected. In the following I will describe how to fix your ImgLoaders.
+
+
+
+
+
+
+First some motivation, for why this API break is necessary:
+
+The basic idea of the API change is the following:
+So far, all BasicImgLoader&lt;T&gt; and derived interfaces have been generically typed on T, meaning that the ImgLoader would deliver images of type T for all timepoints and setups (angles, channels, etc).
+The new API moves the generic parameter one level deeper, to the setups. Now BasicImgLoader is not generic. It provides one BasicSetupImgLoader&lt;T&gt; for each setup.  T can be different for each setup.
+
+This will enable in the future to mix different types in one dataset. For example, in a multi-angle lightsheet dataset, raw you could have 16bit integer for the raw stacks of each angle, 32bit floating point for the multi-angle fusion and deconvolution result, and maybe 64 bit integers for some label fields that describe segmentation results etc. This could now all be stored in the same dataset.
+The introduction of this additional  BasicSetupImgLoader&lt;T&gt; interface level will also make it easy to merge datasets, where you combine in one dataset data from different sources (for example, raw data somewhere on a server, deconvolved data on a different sertver, segmentation result in local files, etc).
+
+
+
+
+Where is the code?
+
+The new API is implemented in the &#8220;types&#8221; branch of projects
+<A HREF="https://github.com/bigdataviewer/spimdata">https://github.com/bigdataviewer/spimdata</A> and
+<A HREF="https://github.com/bigdataviewer/bigdataviewer-core">https://github.com/bigdataviewer/bigdataviewer-core</A>
+
+In addition, I already fixed the following projects that are using the API:
+<A HREF="https://github.com/bigdataviewer/bigdataviewer-server">https://github.com/bigdataviewer/bigdataviewer-server</A>
+<A HREF="https://github.com/bigdataviewer/bigdataviewer_fiji">https://github.com/bigdataviewer/bigdataviewer_fiji</A>
+<A HREF="https://github.com/bigdataviewer/SPIM_Registration">https://github.com/bigdataviewer/SPIM_Registration</A>
+<A HREF="https://github.com/fiji/MaMuT">https://github.com/fiji/MaMuT</A>
+
+Everything is on branch &#8220;types&#8221;, with SNAPSHOT couplings between these projects.
+I plan to release it all in one go.
+
+
+
+
+What changed exactly?
+
+Basically, from a ImgLoader user perspective, instead of calling
+ViewId view = new ViewId( timepointId, setupId );
+imgloader.getImage( view );
+you will now call
+imgloader.getSetupImgLoader( setupId ).getImage( timepointId );
+
+There is one more change, which is unrelated (but I think this is a good time to put it in, while breaking API anyways).
+All  getImage() variants have additional optional parameter ImgLoaderHint... hints.
+This is used to pass hints to the ImgLoader implementations about how to best load the data. Currently, the only existing hint is ImgLoaderHints.LOAD_COMPLETELY. This is used in certain places in SPIM_Registration to tell BDV&#8217;s hdf5 ImgLoader that it should read the full image completely in one go (because this is faster than using a cached image when we already know that we will need to access every single pixel of the image). Of course, hints are just hints, and most ImgLoaders will just ignore them.
+
+ImgLoaders and SetupImgLoaders have been put into an interface hierarchy:
+
+BasicSetupImgLoader can give a T image for every timepoint.
+SetupImgLoader can additionally give a image converted to FloatType for every timepoint, and provide some metadata (this is required for SPIM_Reconstruction).
+BasicMultiResolutionSetupImgLoader has multiple resolutions of every T image for every timepoint.
+MultiResolutionSetupImgLoader provides both multi-resolution and float-converted data.
+ViewerSetupImgLoader is multi-resolution and provides additionally Volatile versions of each image (this is implemented by most bdv cached images)
+
+This hierarchy is paralleled by ImgLoaders:
+
+
+
+
+
+
+
+
+How can you fix your ImgLoader implementation?
+
+I tried to make that easy. The basic idea is the following:
+The old interface ImgLoader&lt;T&gt; (etc) is still available as LegacyImgLoader&lt;T&gt; (etc). You just use your old implementation and change &quot;implements ImgLoader&lt;T&gt;&quot; to &quot;implements LegacyImgLoader&lt;T&gt;&#8221;.
+There is a LegacyImgLoaderWrapper&lt;T&gt; (etc) class that you can extends to wrap your (old) implementation as a ImgLoader conforming to the new API.
+More detailed instructions below.
+
+To test, get the &#8220;types&#8221; branch of projects
+<A HREF="https://github.com/bigdataviewer/spimdata">https://github.com/bigdataviewer/spimdata</A> and
+<A HREF="https://github.com/bigdataviewer/bigdataviewer-core">https://github.com/bigdataviewer/bigdataviewer-core</A>
+Add SNAPSHOT dependencies in your projects pom.xml:
+		&lt;dependency&gt;
+			&lt;groupId&gt;sc.fiji&lt;/groupId&gt;
+			&lt;artifactId&gt;bigdataviewer-core&lt;/artifactId&gt;
+			&lt;version&gt;1.2.3-SNAPSHOT&lt;/version&gt;
+		&lt;/dependency&gt;
+		&lt;dependency&gt;
+			&lt;groupId&gt;sc.fiji&lt;/groupId&gt;
+			&lt;artifactId&gt;spim_data&lt;/artifactId&gt;
+			&lt;version&gt;1.0.0-beta-8-SNAPSHOT&lt;/version&gt;
+		&lt;/dependency&gt;
+and make the enforcer rules shut up about it:
+	&lt;properties&gt;&lt;enforcer.skip&gt;true&lt;/enforcer.skip&gt;&lt;/properties&gt;
+Now you should get compile errors...
+Fix them as indicated above, and detailed in the following.
+
+
+To adapt an &quot;old&quot; ImgLoader:
+
+Assume for example OldImageLoader
+
+1.) copy OldImageLoader to LegacyOldImageLoader
+
+2.) in LegacyOldImageLoader: change implements ImgLoader&lt;...&gt; to implements LegacyImgLoader&lt;...&gt;
+
+3.) Let OldImageLoader extends LegacyImgLoaderWrapper.
+	For each public constructor, just call super( new LegacyOldImageLoader( ... constructor parameters ... )
+	Remove the rest of the code.
+	This satisfies all requirements of the ImgLoader interface. If you need to expose additional public API from your OldImageLoader, you can forward to the LegacyOldImageLoader which is available as member variable legacyImgLoader.
+
+
+To adapt an &quot;old&quot; ViewerImgLoader:
+
+For example CatmaidImageLoader
+
+1.) copy CatmaidImageLoader to LegacyCatmaidImageLoader
+
+2.) in LegacyCatmaidImageLoader:
+
+2.1) change extends AbstractViewerImgLoader to extends AbstractLegacyViewerImgLoader:
+
+import bdv.AbstractViewerImgLoader;
+public class CatmaidImageLoader extends AbstractViewerImgLoader&lt; ARGBType, VolatileARGBType &gt;
+
+import bdv.spimdata.legacy.AbstractLegacyViewerImgLoader;
+public class LegacyCatmaidImageLoader extends AbstractLegacyViewerImgLoader&lt; ARGBType, VolatileARGBType &gt;
+
+2.2) if you use VolatileGlobalCellCache in your ImgLoader:
+VolatileGlobalCellCache no longer has generic parameters. The generic parameter moved to the per-image CellCache.
+Also VolatileGlobalCellCache is no longer constructed with an CacheArrayLoader. This also moved to the per-image CellCache.
+-&gt; Remove generics from VolatileGlobalCellCache
+-&gt; Add generic parameter to per-image CellCache
+-&gt; remove CacheArrayLoader parameter fron VolatileGlobalCellCache constructor. Instead, store your CacheArrayLoader into a member variable and use it to construct per-image CellCache.
+
+Here are all the lines that needed to be changed in LegacyCatmaidImageLoader:
+
+	private final VolatileGlobalCellCache&lt; VolatileIntArray &gt; cache;
+	...
+		cache = new VolatileGlobalCellCache&lt; VolatileIntArray &gt;(
+			new CatmaidVolatileIntArrayLoader( urlFormat, tileWidth, tileHeight, zScales ), 1, 1, numScales, 10 );
+	...
+		final CellCache&lt; VolatileIntArray &gt; c = cache.new VolatileCellCache&lt; VolatileIntArray &gt;( view.getTimePointId(), view.getViewSetupId(), level, cacheHints, loader );
+	...
+	public VolatileGlobalCellCache&lt; VolatileIntArray &gt; getCache()
+
+And here is what they changed to:
+
+	private final VolatileGlobalCellCache cache;
+
+	private final CatmaidVolatileIntArrayLoader loader;
+	...
+		cache = new VolatileGlobalCellCache( 1, 1, numScales, 10 );
+		loader = new CatmaidVolatileIntArrayLoader( urlFormat, tileWidth, tileHeight, zScales );
+	...
+		final CellCache&lt; VolatileIntArray &gt; c = cache.new VolatileCellCache&lt; VolatileIntArray &gt;( view.getTimePointId(), view.getViewSetupId(), level, cacheHints, loader );
+	...
+	public VolatileGlobalCellCache getCache()
+
+3.) Let CatmaidImageLoader extend LegacyViewerImgLoaderWrapper&lt; ARGBType, VolatileARGBType, LegacyCatmaidImageLoader &gt;
+	For each public constructor, just call super( new LegacyCatmaidImageLoader( ... constructor parameters ... )
+	Remove the rest of the code.
+
+	The full CatmaidImageLoader looks like this:
+
+package bdv.img.catmaid;
+
+import net.imglib2.type.numeric.ARGBType;
+import net.imglib2.type.volatiles.VolatileARGBType;
+import bdv.spimdata.legacy.LegacyViewerImgLoaderWrapper;
+
+public class CatmaidImageLoader extends LegacyViewerImgLoaderWrapper&lt; ARGBType, VolatileARGBType, LegacyCatmaidImageLoader &gt;
+{
+	public CatmaidImageLoader(
+			final long width,
+			final long height,
+			final long depth,
+			final double zScale,
+			final int numScales,
+			final String urlFormat,
+			final int tileWidth,
+			final int tileHeight )
+	{
+		super( new LegacyCatmaidImageLoader( width, height, depth, zScale, numScales, urlFormat, tileWidth, tileHeight ) );
+	}
+}
+
+
+
+
+
+
+It would be cool if you could update your ImgLoaders as soon as possible. If there are any problems I&#8217;ll be happy to help. If your project is on github, I can also just fix it for you. Just let me know!
+I plan to merge the types branches of the above mentioned projects into the respective masters and release artifacts next Monday (5. October), and unless there are objections I would upload to Fiji updater next Friday (9. October).
+
+best regards,
+Tobias
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20151001/5d4debe9/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20151001/5d4debe9/attachment-0001.html</A>&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: setupimgloaders.png
+Type: image/png
+Size: 18537 bytes
+Desc: not available
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20151001/5d4debe9/attachment-0002.png">http://imagej.net/pipermail/imagej-devel/attachments/20151001/5d4debe9/attachment-0002.png</A>&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: imgloaders.png
+Type: image/png
+Size: 11683 bytes
+Desc: not available
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20151001/5d4debe9/attachment-0003.png">http://imagej.net/pipermail/imagej-devel/attachments/20151001/5d4debe9/attachment-0003.png</A>&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20151001/5d4debe9/attachment-0001.pgp">http://imagej.net/pipermail/imagej-devel/attachments/20151001/5d4debe9/attachment-0001.pgp</A>&gt;
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002708.html">[ImageJ-devel] EMBL Conference : Seeing is believing
+</A></li>
+	<LI>Next message: <A HREF="002709.html">[ImageJ-devel] [fiji-devel] API-breaking change in SpimData and BigDataViewer projects
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2707">[ date ]</a>
+              <a href="thread.html#2707">[ thread ]</a>
+              <a href="subject.html#2707">[ subject ]</a>
+              <a href="author.html#2707">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

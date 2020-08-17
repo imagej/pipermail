@@ -1,0 +1,241 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Simple usage of ImageJ2 and ImgLib2
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Simple%20usage%20of%20ImageJ2%20and%20ImgLib2&In-Reply-To=%3CCADN69y%3DmS9c4QMMDgMohXdWVrRCN_5-nmMk%3DNSq0fm7N-OT%3Dxw%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001180.html">
+   <LINK REL="Next"  HREF="001182.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Simple usage of ImageJ2 and ImgLib2</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Simple%20usage%20of%20ImageJ2%20and%20ImgLib2&In-Reply-To=%3CCADN69y%3DmS9c4QMMDgMohXdWVrRCN_5-nmMk%3DNSq0fm7N-OT%3Dxw%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Simple usage of ImageJ2 and ImgLib2">ctrueden at wisc.edu
+       </A><BR>
+    <I>Fri Aug 10 10:19:20 CDT 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001180.html">[ImageJ-devel] FIXED - LOCI fails on current Fiji checkout	(help!!)
+</A></li>
+        <LI>Next message: <A HREF="001182.html">[ImageJ-devel] running macros on ImageJ2
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1181">[ date ]</a>
+              <a href="thread.html#1181">[ thread ]</a>
+              <a href="subject.html#1181">[ subject ]</a>
+              <a href="author.html#1181">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Padraig,
+
+
+&gt;<i> With a view to moving to imgLib2 and ImageJ2 I have been going through the
+</I>&gt;<i> Javadoc to try to display an image perform more complicated tasks.
+</I>
+
+We have added a simple tutorial on how to load and display a dataset in
+ImageJ2:
+
+
+<A HREF="https://github.com/imagej/imagej-tutorials/tree/master/load-and-display-dataset">https://github.com/imagej/imagej-tutorials/tree/master/load-and-display-dataset</A>
+
+You use the IOService to read in a Dataset, which is the data portion of an
+ImagePlus (no display or UI attached). You can then choose to display that
+dataset if you want using the DisplayService.
+
+
+&gt;<i> Ideally I would like to use Swing and get a Canvas containing the image
+</I>&gt;<i> and to be able to put this on a JFrame.
+</I>
+
+We have focused a lot on headless operation so far, so you can create a
+headless ImageJ context, load a dataset, and create a display for that
+dataset, all headless. And if you plug in the Swing (or other) UI, the
+display will be automatically visualized using that interface.
+
+However, thus far, we have not focused on an API for manually working with
+UI-specific objects such as JPanels. We really need another layer of
+services for that&#8212;in this case, probably a SwingService that can deliver
+things like SwingDisplayPanels and SwingDisplayWindows on demand.
+
+At the moment you could do something like the following, but there are
+still bugs:
+
+final IOService ioService = context.getService(IOService.class);
+ final Dataset data = ioService.loadDataset(&quot;data.tif&quot;);
+
+final ImageDisplay display = new DefaultImageDisplay();
+ display.setContext(context);
+display.display(data);
+
+final ThreadService threadService = context.getService(ThreadService.class);
+ threadService.queue(new Runnable() {
+
+@Override
+public void run() {
+ final SwingImageDisplayViewer displayViewer =
+new SwingSdiImageDisplayViewer();
+ final SwingDisplayWindow displayWindow = new SwingDisplayWindow();
+displayViewer.view(displayWindow, display);
+ final SwingDisplayPanel displayPanel = displayViewer.getPanel();
+
+final JFrame myFrame = new JFrame(&quot;My Frame&quot;);
+ myFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+myFrame.getContentPane().setLayout(new BorderLayout());
+ myFrame.getContentPane().add(displayPanel);
+myFrame.pack();
+myFrame.setVisible(true);
+ }
+});
+
+And it is certainly not the final API for this layer of functionality.
+
+
+
+I have gone through the ImageJ2 javadoc and I have found a range of classes
+&gt;<i> that seem relevant such as Defaultdataset, SwingSdiImageDisplayViewer,
+</I>&gt;<i> SwingDisplayPanel but
+</I>
+
+We are working on fleshing out the javadoc more, but ultimately tutorials
+are going to be a better route to learning the system if you don't already
+have some grounding in the basic ImageJ2 design. There will be some new
+tutorials in the next few weeks, with many more by the beta5 release in
+October.
+
+
+
+I keep running into errors with Services that don't exist because I am
+&gt;<i> probably not using ImageJ2 as intended.
+</I>
+
+Those errors are likely due to your classpath configuration. Are you using
+Maven for managing your project dependencies? If not, for simplicity, you
+could try using the imagej-2.0.0-SNAPSHOT-all.jar bundle of everything in
+one JAR; see this FAQ entry for pros and cons:
+
+    <A HREF="http://developer.imagej.net/faq#n213">http://developer.imagej.net/faq#n213</A>
+
+Regards,
+Curtis
+
+
+On Mon, Jul 16, 2012 at 3:13 AM, Padraig Looney &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">padraig.looney at gmail.com</A>&gt;wrote:
+
+&gt;<i> Dear list,
+</I>&gt;<i>
+</I>&gt;<i> Apologies if this posting is not in the correct place but I seem to have
+</I>&gt;<i> hit a brick wall in moving to ImgLib2 and ImageJ2.
+</I>&gt;<i>
+</I>&gt;<i> I have used ImageJ 1 without the the user interface for a variety of
+</I>&gt;<i> software projects. In Image J to open an Image I would use
+</I>&gt;<i>
+</I>&gt;<i> Opener opener = new opener();
+</I>&gt;<i> Imageplus imp = opener.openImage(&quot;someFile&quot;);
+</I>&gt;<i> imp.show();
+</I>&gt;<i>
+</I>&gt;<i> and from there I could perform the processing and change the display etc.
+</I>&gt;<i>
+</I>&gt;<i> With a view to moving to imgLib2 and ImageJ2 I have been going through the
+</I>&gt;<i> Javadoc to try to display an image perform more complicated tasks. So I
+</I>&gt;<i> have found this example among others on the Imglib2 site but in the imgLibs
+</I>&gt;<i> package there is no ImageJFunctions anymore.
+</I>&gt;<i>
+</I>&gt;<i> public &lt; T extends RealType&lt; T &gt; &amp; NativeType&lt; T &gt; &gt; Example1b()
+</I>&gt;<i>         throws ImgIOException, IncompatibleTypeException
+</I>&gt;<i>     {
+</I>&gt;<i>         // define the file to open
+</I>&gt;<i>         File file = new File( &quot;DrosophilaWing.tif&quot; );
+</I>&gt;<i>
+</I>&gt;<i>         // open with ImgOpener using an ArrayImgFactory, here the return
+</I>&gt;<i> type will be
+</I>&gt;<i>         // defined by the opener
+</I>&gt;<i>         // the opener will ignore the Type of the ArrayImgFactory
+</I>&gt;<i>         ImgFactory&lt; ? &gt; imgFactory = new ArrayImgFactory&lt; T &gt;();
+</I>&gt;<i>         Img&lt; T &gt; image = new ImgOpener().openImg( file.getAbsolutePath(),
+</I>&gt;<i> imgFactory );
+</I>&gt;<i>
+</I>&gt;<i>         // display it via ImgLib using ImageJ
+</I>&gt;<i>         ImageJFunctions.show( image );
+</I>&gt;<i>
+</I>&gt;<i>         // open with ImgOpener as Float using a CellImgFactory, it will
+</I>&gt;<i> be opened as float
+</I>&gt;<i>         // independent of the type of the image
+</I>&gt;<i>         // to enforce to open it as FloatType, an instance of FloatType
+</I>&gt;<i> has to be passed along
+</I>&gt;<i>         Img&lt; FloatType &gt; imageFloat = new ImgOpener().openImg(
+</I>&gt;<i> file.getAbsolutePath(),
+</I>&gt;<i>             new CellImgFactory&lt; FloatType &gt;( 10 ), new FloatType() );
+</I>&gt;<i>
+</I>&gt;<i>         // display it via ImgLib using ImageJ
+</I>&gt;<i>         ImageJFunctions.show( imageFloat );
+</I>&gt;<i>     }
+</I>&gt;<i>
+</I>&gt;<i> Ideally I would like to use Swing and get a Canvas containing the image
+</I>&gt;<i> and to be able to put this on a JFrame. I have gone through the ImageJ2
+</I>&gt;<i> javadoc and I have found a range of classes that seem relevant such as
+</I>&gt;<i> Defaultdataset, SwingSdiImageDisplayViewer, SwingDisplayPanel but I keep
+</I>&gt;<i> running into errors with Services that don't exist because I am probably
+</I>&gt;<i> not using ImageJ2 as intended.
+</I>&gt;<i>
+</I>&gt;<i> Many thanks
+</I>&gt;<i>
+</I>&gt;<i> Padraig Looney
+</I>&gt;<i> Medical Physicist
+</I>&gt;<i> Royal Surrey County Hospital
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20120810/fdda7bb2/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20120810/fdda7bb2/attachment.html</A>&gt;
+</PRE>
+
+
+
+
+
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001180.html">[ImageJ-devel] FIXED - LOCI fails on current Fiji checkout	(help!!)
+</A></li>
+	<LI>Next message: <A HREF="001182.html">[ImageJ-devel] running macros on ImageJ2
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1181">[ date ]</a>
+              <a href="thread.html#1181">[ thread ]</a>
+              <a href="subject.html#1181">[ subject ]</a>
+              <a href="author.html#1181">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

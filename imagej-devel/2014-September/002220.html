@@ -1,0 +1,134 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Using ImgLib2 with JavaFX and other questions.
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Using%20ImgLib2%20with%20JavaFX%20and%20other%20questions.&In-Reply-To=%3C43743BEC-655D-41D4-B051-5A8602D6617A%40mpi-cbg.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="002221.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Using ImgLib2 with JavaFX and other questions.</H1>
+    <B>Tobias Pietzsch</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Using%20ImgLib2%20with%20JavaFX%20and%20other%20questions.&In-Reply-To=%3C43743BEC-655D-41D4-B051-5A8602D6617A%40mpi-cbg.de%3E"
+       TITLE="[ImageJ-devel] Using ImgLib2 with JavaFX and other questions.">pietzsch at mpi-cbg.de
+       </A><BR>
+    <I>Tue Sep  2 06:59:10 CDT 2014</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="002221.html">[ImageJ-devel] manual threshold op
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2220">[ date ]</a>
+              <a href="thread.html#2220">[ thread ]</a>
+              <a href="subject.html#2220">[ subject ]</a>
+              <a href="author.html#2220">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Michael,
+
+On 29 Aug 2014, at 13:09, Michael Ellis &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">michael.ellis at dsuk.biz</A>&gt; wrote:
+
+&gt;<i> I am trying to learn about ImgLib2
+</I>&gt;<i> 
+</I>&gt;<i> In particular I could do with help for the following:
+</I>&gt;<i> 
+</I>&gt;<i> All my images will be 2D byte images typically of size 1300x1000.
+</I>&gt;<i> 
+</I>&gt;<i> How do I get an Img into a format compatible for displaying within JavaFX (rather than using ImageJFunctions.show() )?
+</I>&gt;<i> Assuming there is no explicit JavaFX support in ImgLib2, I think this boils down to producing and 24 bit RGB or 32bit ARGB image where I can access the data. But how do I do this?
+</I>
+Have a look at ARGBScreenImage which extends ArrayImg&lt; ARGBType, IntArray &gt;.
+This s a 2D image intended for displaying on screen. You can get to the underlying 32bit ARGB int[] array by
+	public int[] getData()
+or get it wrapped in a AWT BufferedImage by
+	public BufferedImage image()
+
+&gt;<i> 
+</I>&gt;<i> How would I combine multiple 2D 8 bit image planes (up to 7 planes, each with own colour table) and combine them under programatic control into a single RGB image where every pixel in the destination image dest[x, y] is a function of the pixels at src[plane, x, y]?
+</I>
+See
+net.imglib2.display.projector.composite.CompositeXYProjector
+or 
+net.imglib2.display.projector.composite.CompositeXYRandomAccessibleProjector
+They should do exactly what you need. Note, that they expect that [x, y] of your image to composite are the first two dimensions. So it would work with [x, y, &#8230;, plane, &#8230;].
+If you really have [plane, x, y], you can use Views.permute(...) to get a virtual view into your data as [x, y, plane].
+
+&gt;<i> 
+</I>&gt;<i> How would I  threshold a 2D Img producing a 1 bit Img?
+</I>
+You could simply do this by implementing a Converter&lt; __YourImageType__, BitType &gt; and then using Converters.convert(...) to get a virtual view into your data as a thresholded  1 bit image.
+
+&gt;<i> How would I fill holes in the binary thresholded Img?
+</I>
+Have a look through imglib2-algorithms, imglib2-algorithms, and imglib2-ops. There should be something there.
+
+&gt;<i> How could I identify and label objects in the binary thresholded Img and extract a concise description of the object boundaries (e.g. polygon, or chain code descriptions)?
+</I>
+To identify objects you could use
+net.imglib2.algorithm.labeling.AllConnectedComponents
+About the object descriptions, I don&#8217;t think we have anything for that, but I&#8217;m not sure. Maybe someone familiar with imglib2-ops can comment?
+
+best regards,
+Tobias
+
+&gt;<i> 
+</I>&gt;<i> How can I register a multiple  Imgs using cross correlation image registration?
+</I>&gt;<i> 
+</I>&gt;<i> Any help would be appreciated. I&#8217;m not looking for complete solutions to this and whilst this work is intended for a commercial product, I am happy to contribute all the source code examples I generate by way of investigating any of the above.
+</I>&gt;<i> 
+</I>&gt;<i> &#8212; Michael Ellis
+</I>&gt;<i> Digital Scientific UK Ltd.
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140902/01e96471/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20140902/01e96471/attachment.html</A>&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140902/01e96471/attachment.pgp">http://imagej.net/pipermail/imagej-devel/attachments/20140902/01e96471/attachment.pgp</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="002221.html">[ImageJ-devel] manual threshold op
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2220">[ date ]</a>
+              <a href="thread.html#2220">[ thread ]</a>
+              <a href="subject.html#2220">[ subject ]</a>
+              <a href="author.html#2220">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

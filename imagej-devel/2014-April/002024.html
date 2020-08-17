@@ -1,0 +1,165 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Maven problem
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Maven%20problem&In-Reply-To=%3CD2FE2CC5-6211-4A60-BDB0-6930E73435FA%40mpi-cbg.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002023.html">
+   <LINK REL="Next"  HREF="002025.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Maven problem</H1>
+    <B>Tobias Pietzsch</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Maven%20problem&In-Reply-To=%3CD2FE2CC5-6211-4A60-BDB0-6930E73435FA%40mpi-cbg.de%3E"
+       TITLE="[ImageJ-devel] Maven problem">pietzsch at mpi-cbg.de
+       </A><BR>
+    <I>Fri Apr 11 07:27:05 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002023.html">[ImageJ-devel] Maven problem
+</A></li>
+        <LI>Next message: <A HREF="002025.html">[ImageJ-devel] Maven problem
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2024">[ date ]</a>
+              <a href="thread.html#2024">[ thread ]</a>
+              <a href="subject.html#2024">[ subject ]</a>
+              <a href="author.html#2024">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Steffi,
+
+Projector2D has been replaced by IterableIntervalProjector2D recently in imglib2 core.
+Apparently the version of imglib2 core you have is more recent than 2.0.0-beta-25, because that one doesn't have this change yet.
+However, your imglib-ij project probably is build against the beta-25 and thinks Projector2D is still there.
+(I'm really not looking forward to the world of split imglib repositories, I fear we'll see a lot of problems like this&#8230;)
+
+
+Instead of overriding individually the version of imglib2, I would recommend just setting the version property in your pom to
+
+	&lt;properties&gt;
+		&lt;imglib2.version&gt;2.0.0-SNAPSHOT&lt;/imglib2.version&gt;
+	&lt;/properties&gt;
+
+Then in the actual dependencies don't give any version:
+
+		&lt;dependency&gt;
+			&lt;groupId&gt;net.imglib2&lt;/groupId&gt;
+			&lt;artifactId&gt;imglib2&lt;/artifactId&gt;
+		&lt;/dependency&gt;
+		&lt;dependency&gt;
+			&lt;groupId&gt;net.imglib2&lt;/groupId&gt;
+			&lt;artifactId&gt;imglib2-realtransform&lt;/artifactId&gt;
+		&lt;/dependency&gt;
+
+and it should pick the managed one which is now 2.0.0-SNAPSHOT.
+
+Could you try this?
+
+best regards,
+Tobias
+
+
+On Apr 11, 2014, at 10:16 AM, Stephan Preibisch &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">preibischs at janelia.hhmi.org</A>&gt; wrote:
+
+&gt;<i> Hi,
+</I>&gt;<i> 
+</I>&gt;<i> Christian helped me, I changed the version of ImgLib2 to ${imglib2.version}, now it works. 
+</I>&gt;<i> 
+</I>&gt;<i> But Eclipse doesn't recognize the opened project anymore (see screenshot). It also complains that &quot;Overriding managed version 2.0.0-beta-25 for imglib2&quot;, no idea what that means.
+</I>&gt;<i> 
+</I>&gt;<i> Again, any help would be great.
+</I>&gt;<i> 
+</I>&gt;<i> Thanks a lot,
+</I>&gt;<i> Steffi
+</I>&gt;<i> 
+</I>&gt;<i> &lt;Screen.jpeg&gt;
+</I>&gt;<i> On Apr 11, 2014, at 17:53 , Stephan Preibisch wrote:
+</I>&gt;<i> 
+</I>&gt;&gt;<i> Hi guys,
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> I am almost there with the new spimreconstruction branch (<A HREF="https://github.com/fiji/spimreconstruction/tree/newspimreconstruction">https://github.com/fiji/spimreconstruction/tree/newspimreconstruction</A>), and I re-implemented the first fusion in ImgLib2. Now I run into the problem that a simple
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> ImageJFunctions.show( ArrayImgs.floats( new long[]{ 300, 100, 200} ) );
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> fails with:
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> Exception in thread &quot;main&quot; java.lang.NoClassDefFoundError: net/imglib2/display/projector/Projector2D
+</I>&gt;&gt;<i> 	at net.imglib2.img.display.imagej.ImageJVirtualStack.&lt;init&gt;(ImageJVirtualStack.java:93)
+</I>&gt;&gt;<i> 	at net.imglib2.img.display.imagej.ImageJVirtualStackFloat.&lt;init&gt;(ImageJVirtualStackFloat.java:51)
+</I>&gt;&gt;<i> 	at net.imglib2.img.display.imagej.ImageJFunctions.wrapFloat(ImageJFunctions.java:238)
+</I>&gt;&gt;<i> 	at net.imglib2.img.display.imagej.ImageJFunctions.wrap(ImageJFunctions.java:170)
+</I>&gt;&gt;<i> 	at net.imglib2.img.display.imagej.ImageJFunctions.show(ImageJFunctions.java:219)
+</I>&gt;&gt;<i> 	at net.imglib2.img.display.imagej.ImageJFunctions.show(ImageJFunctions.java:123)
+</I>&gt;&gt;<i> 	at spim.fiji.plugin.Image_Fusion.run(Image_Fusion.java:40)
+</I>&gt;&gt;<i> 	at spim.fiji.plugin.Image_Fusion.main(Image_Fusion.java:104)
+</I>&gt;&gt;<i> Caused by: java.lang.ClassNotFoundException: net.imglib2.display.projector.Projector2D
+</I>&gt;&gt;<i> 	at java.net.URLClassLoader$1.run(URLClassLoader.java:202)
+</I>&gt;&gt;<i> 	at java.security.AccessController.doPrivileged(Native Method)
+</I>&gt;&gt;<i> 	at java.net.URLClassLoader.findClass(URLClassLoader.java:190)
+</I>&gt;&gt;<i> 	at java.lang.ClassLoader.loadClass(ClassLoader.java:306)
+</I>&gt;&gt;<i> 	at sun.misc.Launcher$AppClassLoader.loadClass(Launcher.java:301)
+</I>&gt;&gt;<i> 	at java.lang.ClassLoader.loadClass(ClassLoader.java:247)
+</I>&gt;&gt;<i> 	... 8 more
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> I have all imglib projects checked out, up-to-date and maven depencies updated.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> If anyone has any idea where this comes from would be great!
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> Thanks so much,
+</I>&gt;&gt;<i> Steffi
+</I>&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i> 
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140411/1df8f6bb/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20140411/1df8f6bb/attachment.html</A>&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140411/1df8f6bb/attachment.pgp">http://imagej.net/pipermail/imagej-devel/attachments/20140411/1df8f6bb/attachment.pgp</A>&gt;
+</PRE>
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002023.html">[ImageJ-devel] Maven problem
+</A></li>
+	<LI>Next message: <A HREF="002025.html">[ImageJ-devel] Maven problem
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2024">[ date ]</a>
+              <a href="thread.html#2024">[ thread ]</a>
+              <a href="subject.html#2024">[ subject ]</a>
+              <a href="author.html#2024">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

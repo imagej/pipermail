@@ -1,0 +1,166 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] MenuService/AbstractSwingUI issues
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20MenuService/AbstractSwingUI%20issues&In-Reply-To=%3CCADN69ykHqiHqpxtCi8GEoSzBR99BvaPUHR0N%2BRG%3D6FjXNL_BDQ%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000571.html">
+   <LINK REL="Next"  HREF="000572.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] MenuService/AbstractSwingUI issues</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20MenuService/AbstractSwingUI%20issues&In-Reply-To=%3CCADN69ykHqiHqpxtCi8GEoSzBR99BvaPUHR0N%2BRG%3D6FjXNL_BDQ%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] MenuService/AbstractSwingUI issues">ctrueden at wisc.edu
+       </A><BR>
+    <I>Tue Feb 21 15:55:46 CST 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000571.html">[ImageJ-devel] MenuService/AbstractSwingUI issues
+</A></li>
+        <LI>Next message: <A HREF="000572.html">[ImageJ-devel] Jenkins' jocoserious jeremiads
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#585">[ date ]</a>
+              <a href="thread.html#585">[ thread ]</a>
+              <a href="subject.html#585">[ subject ]</a>
+              <a href="author.html#585">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi everyone,
+
+Dscho and I have been discussing the ShadowMenu design, and we have a plans
+for several improvements:
+
+Multiple menu bars are not synced properly:
+  <A HREF="http://code.imagej.net/trac/imagej/ticket/985">http://code.imagej.net/trac/imagej/ticket/985</A>
+
+More context sensitivity is required for modules in menus:
+  <A HREF="http://code.imagej.net/trac/imagej/ticket/987">http://code.imagej.net/trac/imagej/ticket/987</A>
+
+More intelligent syncing between ShadowMenu and UI-specific menus:
+  <A HREF="http://code.imagej.net/trac/imagej/ticket/988">http://code.imagej.net/trac/imagej/ticket/988</A>
+
+it appears to me that AbstractSwingUI might be a bit too limiting at the
+&gt;<i> moment with its builtin assumption that there is only one appFrame and
+</I>&gt;<i> that all menu item changes should be applied to that appFrame's
+</I>&gt;<i> application menu bar.
+</I>&gt;<i>
+</I>
+&gt;<i> So now I face the problematic situation where method calls to a ShadowMenu
+</I>&gt;<i> (which was already connected to a given JMenuBar using the
+</I>&gt;<i> SwingJMenuBarCreator -- why are there so many layers BTW?
+</I>&gt;<i> AbstractMenuCreator&gt;AbstractSwingMenuCreator&gt;SwingJMenuBarCreator?) are
+</I>&gt;<i> always redirected to the IJ2 menu bar -- which is bad when you want them
+</I>&gt;<i> to appear in the Script Editor's menu bar.
+</I>&gt;<i>
+</I>
+Yes, hopefully addressing ticket #988 will solve this problem.
+
+Regarding the layers, for the benefit of any curious lurkers: there is an
+unfortunate extra layer whose sole purpose is to work around the fact that
+both Swing and AWT menu classes do not implement common interfaces where
+their methods overlap. For example, all three of JMenuBar, JMenu and
+JPopupMenu implement the common method add(JMenuItem) but there is no
+common superclass or superinterface containing this method which can be
+used in our code. So in short, we need separate JMenuBarCreator,
+JMenuCreator and JPopupMenuCreator classes. To maintain DRYness (Don't
+Repeat Yourself!) of code, there is an AbstractSwingMenuCreator class which
+provides most of the needed code, leaving the aforementioned three
+subclasses to implement a couple of remaining methods.
+
+Lastly, the overlong names are to avoid name clashes between classes. We
+have made an effort in ImageJ2 to avoid having two classes with the same
+name in different packages. For example, for brevity we could have
+imagej.ext.ui.swing.MenuCreator and imagej.ext.ui.awt.MenuCreator, both of
+which implement imagej.ext.menu.MenuCreator. But that would be quite
+confusing. In the case of Swing we could call the implementation e.g.
+JMenuCreator rather than SwingJMenuCreator. However, that would not work
+for AWT, which would simply be &quot;MenuCreator&quot; again, hence a name clash, so
+we chose AWTMenuCreator instead. For consistency, all the Swing stuff is
+generally called &quot;SwingThisOrThat&quot; with AWT called &quot;AWTThisOrThat&quot; and so
+on. If people strongly dislike these names, we welcome alternative
+suggestions.
+
+Now, the MenuEvent knows pretty well which ShadowMenu it belongs to, but
+&gt;<i> apparently no class feels responsible to retain the connection between the
+</I>&gt;<i> ShadowMenu and the SwingJMenuBarCreator used to turn this into an
+</I>&gt;<i> instance.
+</I>&gt;<i>
+</I>
+Right, ticket #988: maintain that connection.
+
+Consequently, I do not see where it was intended to resolve this issue
+&gt;<i> (this is related to the wasteful recreation of a complete menu bar
+</I>&gt;<i> whenever anything changed in any menu item).
+</I>&gt;<i>
+</I>
+Hopefully those tickets clarify the direction we are going with the menu
+system.
+
+Regards,
+Curtis
+
+
+On Mon, Feb 6, 2012 at 7:52 PM, Johannes Schindelin &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">schindelin at wisc.edu</A>&gt;wrote:
+
+&gt;<i> Hi,
+</I>&gt;<i>
+</I>&gt;<i> it appears to me that AbstractSwingUI might be a bit too limiting at the
+</I>&gt;<i> moment with its builtin assumption that there is only one appFrame and
+</I>&gt;<i> that all menu item changes should be applied to that appFrame's
+</I>&gt;<i> application menu bar.
+</I>&gt;<i>
+</I>&gt;<i> So now I face the problematic situation where method calls to a ShadowMenu
+</I>&gt;<i> (which was already connected to a given JMenuBar using the
+</I>&gt;<i> SwingJMenuBarCreator -- why are there so many layers BTW?
+</I>&gt;<i> AbstractMenuCreator&gt;AbstractSwingMenuCreator&gt;SwingJMenuBarCreator?) are
+</I>&gt;<i> always redirected to the IJ2 menu bar -- which is bad when you want them
+</I>&gt;<i> to appear in the Script Editor's menu bar.
+</I>&gt;<i>
+</I>&gt;<i> Now, the MenuEvent knows pretty well which ShadowMenu it belongs to, but
+</I>&gt;<i> apparently no class feels responsible to retain the connection between the
+</I>&gt;<i> ShadowMenu and the SwingJMenuBarCreator used to turn this into an
+</I>&gt;<i> instance.
+</I>&gt;<i>
+</I>&gt;<i> Consequently, I do not see where it was intended to resolve this issue
+</I>&gt;<i> (this is related to the wasteful recreation of a complete menu bar
+</I>&gt;<i> whenever anything changed in any menu item).
+</I>&gt;<i>
+</I>&gt;<i> Help?
+</I>&gt;<i> Johannes
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20120221/347d0365/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20120221/347d0365/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000571.html">[ImageJ-devel] MenuService/AbstractSwingUI issues
+</A></li>
+	<LI>Next message: <A HREF="000572.html">[ImageJ-devel] Jenkins' jocoserious jeremiads
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#585">[ date ]</a>
+              <a href="thread.html#585">[ thread ]</a>
+              <a href="subject.html#585">[ subject ]</a>
+              <a href="author.html#585">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

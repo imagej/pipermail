@@ -1,0 +1,110 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] MacOSX platform service issues
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20MacOSX%20platform%20service%20issues&In-Reply-To=%3Calpine.DEB.1.00.1307220130040.24252%40s15462909.onlinehome-server.info%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001711.html">
+   <LINK REL="Next"  HREF="001710.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] MacOSX platform service issues</H1>
+    <B>Johannes Schindelin</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20MacOSX%20platform%20service%20issues&In-Reply-To=%3Calpine.DEB.1.00.1307220130040.24252%40s15462909.onlinehome-server.info%3E"
+       TITLE="[ImageJ-devel] MacOSX platform service issues">schindelin at wisc.edu
+       </A><BR>
+    <I>Sun Jul 21 21:41:21 CDT 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001711.html">[ImageJ-devel] IOService changed
+</A></li>
+        <LI>Next message: <A HREF="001710.html">[ImageJ-devel] MacOSX platform service issues
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1709">[ date ]</a>
+              <a href="thread.html#1709">[ thread ]</a>
+              <a href="subject.html#1709">[ subject ]</a>
+              <a href="author.html#1709">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Barry,
+
+thanks for bringing the issue to my attention that my recent fix for Fiji
+(which now relies on ij-legacy to do the legacy patching in the hope that
+we can stabilize the code better that has been moved from fiji-compat to
+reconcile the Fiji and ImageJ2 legacy patches) broke the MacOSX-specific
+platform service startup.
+
+The issue is that when dropping a file (in particular, an image file) onto
+the Fiji (or for that matter, ImageJ) icon, contrary to widespread belief,
+MacOSX does *not* pass the path of said file to the program to-be-started
+via the command-line. Instead, it sends a platform-specific message that
+applications are expected to consume in a special, MacOSX-specific
+handler.
+
+You could call that a Cupertino time tax.
+
+Now, ImageJ 1.x solves this by adding an ApplicationListener. It has to --
+despite fact that the ApplicationListener is deprecated in very recent
+MacOSX versions -- to maintain backwards-compatibility with the last
+MacOSX versions supporting PowerPC-based computers.
+
+ImageJ2, in contrast, targets MacOSX 10.6 or newer, so it uses the new
+method -- which astonishingly does not allow adding ApplicationListeners,
+hence the problem you observed where the MacAdapter of ImageJ 1.x
+registering itself prevents ImageJ2 from starting up.
+
+The topic branch I started is designed to help the issue for 10.6 and
+newer by having a custom solution for the legacy mode: it registers an
+event listener and reacts upon the -- now platform-independent -- events.
+
+The only thing I need to change on that branch is to ensure that the
+MacOSX-specific part of the platform service starts up correctly and
+handles the MacOSX-specific event handling, delegating to the
+platform-independent event service of ImageJ2.
+
+After that, I still have to ascertain that things work correctly with
+MacOSX 10.5, the oldest MacOSX version I care to support with Fiji (10.4
+is too old because Apple limited the Java versions available for that
+MacOSX version to Java 1.4 -- which is really, really too limiting, not to
+mention old and slow).
+
+In essence: I ask you to have a little more patience while I work out a
+fix.
+
+Ciao,
+Johannes
+
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001711.html">[ImageJ-devel] IOService changed
+</A></li>
+	<LI>Next message: <A HREF="001710.html">[ImageJ-devel] MacOSX platform service issues
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1709">[ date ]</a>
+              <a href="thread.html#1709">[ thread ]</a>
+              <a href="subject.html#1709">[ subject ]</a>
+              <a href="author.html#1709">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,179 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Masking @Parameter from GUI harvesting ?
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Masking%20%40Parameter%20from%20GUI%20harvesting%20%3F&In-Reply-To=%3Cweb-159791561%40univ-paris7.fr%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002669.html">
+   <LINK REL="Next"  HREF="002676.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Masking @Parameter from GUI harvesting ?</H1>
+    <B>Adrian Daerr</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Masking%20%40Parameter%20from%20GUI%20harvesting%20%3F&In-Reply-To=%3Cweb-159791561%40univ-paris7.fr%3E"
+       TITLE="[ImageJ-devel] Masking @Parameter from GUI harvesting ?">adrian.daerr at univ-paris-diderot.fr
+       </A><BR>
+    <I>Sun Aug 23 06:44:19 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002669.html">[ImageJ-devel] RegionOfInterest vs Region
+</A></li>
+        <LI>Next message: <A HREF="002676.html">[ImageJ-devel] Masking @Parameter from GUI harvesting ?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2671">[ date ]</a>
+              <a href="thread.html#2671">[ thread ]</a>
+              <a href="subject.html#2671">[ subject ]</a>
+              <a href="author.html#2671">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Dear ImageJ developers,
+
+As I slowly learn more about IJ2 @Plugins, I have one question and 
+three minor comments that I would like to submit to you.
+
+1) How does one prevent a @Parameter from showing up in the harvesting
+GUI dialog, in the manner of a '@Parameter LogService log'? (more 
+below)
+
+2) A net.imagej.overlay.RectangleOverlay parameter, although properly
+populated, provoques an Exception after the execution of the command.
+(more details and stacktraces below)
+
+3) When a new preview is triggered, and that preview modifies numeric
+parameters, then the numeric values visible in the gui dialog are
+updated except for the NumericField on which input has triggered the
+call to preview().
+
+4) It would be nice if a parameter could have a label even if
+ItemVisibility is MESSAGE:
+   @Parameter(persist = false,
+              visibility = org.scijava.ItemVisibility.MESSAGE,
+              label = &quot;Current foo value&quot;)
+     private double foo = 0;
+(currently, at least on my box, the label is not shown in this case)
+Obviously a workaround is to build a String with label+foo instead.
+
+cheers,
+Adrian
+
+
+
+ad 1)
+How to prevent a @Parameter from showing up in the harvesting GUI
+dialog? Some seem to be masked by default (ImagePlus, LogService), but
+I did not find the appropriate annotation to make the parameter roi in
+the following not show up, although it is already properly populated
+by the rectangular selection of the active image ? There is no
+meaningful thing I can do with the associated selector in the dialog.
+
+     @Parameter private ImagePlus imp;
+     @Parameter private RectangleOverlay roi;
+     @Parameter private double a;
+
+
+ad 2)
+A net.imagej.overlay.RectangleOverlay parameter
+
+   @Parameter private RectangleOverlay roi;
+
+is properly populated when the Command is invoqued on an active image
+containing a rectangular selection. However it provoques an Exception
+after the execution of the command, when either the
+DefaultPrefService, or the Recorder if a persist=false attribute is
+added, apparently tries to record a 'null' value for an option. The
+two stacktraces are
+
+   [ERROR] Module threw exception
+   java.lang.NullPointerException
+	at 
+java.util.prefs.AbstractPreferences.put(AbstractPreferences.java:224)
+	at 
+org.scijava.prefs.DefaultPrefService.put(DefaultPrefService.java:183)
+	at 
+org.scijava.module.DefaultModuleService.save(DefaultModuleService.java:278)
+	at 
+org.scijava.module.process.SaveInputsPreprocessor.saveValue(SaveInputsPreprocessor.java:74)
+	at 
+org.scijava.module.process.SaveInputsPreprocessor.process(SaveInputsPreprocessor.java:65)
+	at org.scijava.module.ModuleRunner.preProcess(ModuleRunner.java:104)
+	at org.scijava.module.ModuleRunner.run(ModuleRunner.java:156)
+	at org.scijava.module.ModuleRunner.call(ModuleRunner.java:126)
+	at org.scijava.module.ModuleRunner.call(ModuleRunner.java:65)
+	at 
+org.scijava.thread.DefaultThreadService$2.call(DefaultThreadService.java:191)
+	at java.util.concurrent.FutureTask$Sync.innerRun(FutureTask.java:303)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:138)
+	at 
+java.util.concurrent.ThreadPoolExecutor$Worker.runTask(ThreadPoolExecutor.java:886)
+	at 
+java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:908)
+	at java.lang.Thread.run(Thread.java:662)
+
+   [ERROR] Module threw exception
+   java.lang.NullPointerException
+         at ij.plugin.frame.Recorder.addQuotes(Recorder.java:612)
+         at ij.plugin.frame.Recorder.recordOption(Recorder.java:362)
+         at 
+net.imagej.legacy.IJ1Helper.recordOption(IJ1Helper.java:467)
+         at 
+net.imagej.legacy.plugin.MacroRecorderPostprocessor.process(MacroRecorderPostprocessor.java:70)
+         at 
+org.scijava.module.ModuleRunner.postProcess(ModuleRunner.java:116)
+         at org.scijava.module.ModuleRunner.run(ModuleRunner.java:176)
+         at 
+org.scijava.module.ModuleRunner.call(ModuleRunner.java:126)
+         at org.scijava.module.ModuleRunner.call(ModuleRunner.java:65)
+         at 
+org.scijava.thread.DefaultThreadService$2.call(DefaultThreadService.java:191)
+         at 
+java.util.concurrent.FutureTask$Sync.innerRun(FutureTask.java:303)
+         at java.util.concurrent.FutureTask.run(FutureTask.java:138)
+         at 
+java.util.concurrent.ThreadPoolExecutor$Worker.runTask(ThreadPoolExecutor.java:886)
+         at 
+java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:908)
+         at java.lang.Thread.run(Thread.java:662)
+
+</PRE>
+
+
+
+
+
+
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002669.html">[ImageJ-devel] RegionOfInterest vs Region
+</A></li>
+	<LI>Next message: <A HREF="002676.html">[ImageJ-devel] Masking @Parameter from GUI harvesting ?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2671">[ date ]</a>
+              <a href="thread.html#2671">[ thread ]</a>
+              <a href="subject.html#2671">[ subject ]</a>
+              <a href="author.html#2671">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

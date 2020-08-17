@@ -1,0 +1,136 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] imglib2 FFT algorithm explanation
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20imglib2%20FFT%20algorithm%20explanation&In-Reply-To=%3CCAMWa8i2WehXh0Qp2bH5QH%2BhpDk18sgssyZsaJF-SJMA0eoLn%2BQ%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002164.html">
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] imglib2 FFT algorithm explanation</H1>
+    <B>Brian Northan</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20imglib2%20FFT%20algorithm%20explanation&In-Reply-To=%3CCAMWa8i2WehXh0Qp2bH5QH%2BhpDk18sgssyZsaJF-SJMA0eoLn%2BQ%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] imglib2 FFT algorithm explanation">bnorthan at gmail.com
+       </A><BR>
+    <I>Wed Jul 30 07:09:18 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002164.html">[ImageJ-devel] imglib2 FFT algorithm explanation
+</A></li>
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2165">[ date ]</a>
+              <a href="thread.html#2165">[ thread ]</a>
+              <a href="subject.html#2165">[ subject ]</a>
+              <a href="author.html#2165">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Sara
+
+I've worked quite a bit with these classes the last couple of years.  The
+list and Stephen Priebisch (the author) has been pretty helpful, so
+consider them the final authority, but here is some information that might
+be helpful.
+
+1.  The latest versions of the fft functions are in the fft2 directory.  (
+<A HREF="https://github.com/imglib/imglib/tree/master/algorithms/core/src/main/java/net/imglib2/algorithm/fft2">https://github.com/imglib/imglib/tree/master/algorithms/core/src/main/java/net/imglib2/algorithm/fft2</A>)
+they are a bit faster then those in 'fft'.  I believe the older versions
+are depreciated.
+
+2.  The newer FFT (FFT.java
+<A HREF="https://github.com/imglib/imglib/blob/master/algorithms/core/src/main/java/net/imglib2/algorithm/fft2/FFT.java">https://github.com/imglib/imglib/blob/master/algorithms/core/src/main/java/net/imglib2/algorithm/fft2/FFT.java</A>)
+calculates dimensions and subsequent padding value as the first step in
+*realToComplex*.  It looks like it always does it as to get the dimensions
+optimized for speed.  Mines also supports dimensions optimized for small
+size and *FFTMethods* supports this.
+
+Why, for example, if I transform a 256x256 image I get back a 281x560
+&gt;<i> spectrum
+</I>&gt;<i>
+</I>
+I not sure why this happened...  were you trying to compute a power
+spectrum??  Or just looking at the complex valued image that was returned
+after the FFT calculation??
+
+The convolution function automatically pads as to avoid circular
+convolution at the edges.  So if your kernel size is also 256 by 256 the
+numbers make sense.  The image would get padded to 512 by 512 and the input
+to the FFT padded a bit more (560 by 560 sounds right) after transform
+281X560 complex coefficients seems right.
+
+(as a side note it seems that power of 2s are not an efficient size for
+mines FFTs I guess I will have to look at the details of the PFA algorithm
+to understand why... thanks for pointing out that mines uses PFA)
+
+Brian
+
+&gt;<i>
+</I>&gt;&gt;<i>
+</I>
+On Fri, Jul 25, 2014 at 8:07 AM, SARA SCHIESARO &lt;
+<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">sara.schiesaro at student.unife.it</A>&gt; wrote:
+
+&gt;<i> Hi all,
+</I>&gt;<i> I've already worked with FourierTransform and FFTConvolution classes, I've
+</I>&gt;<i> also studied their codes in order to adapt them to my program, anyway I
+</I>&gt;<i> still have some doubts about those classes and I hope you can help me!
+</I>&gt;<i>
+</I>&gt;<i> First, dimensions of the output resulting from the FourierTransform and
+</I>&gt;<i> those of the fftKernel in the FFTConvolution class differ from those of the
+</I>&gt;<i> input images, why? Why, for example, if I transform a 256x256 image I get
+</I>&gt;<i> back a 281x560 spectrum?
+</I>&gt;<i>
+</I>&gt;<i> Secondly, trying to find out an answer to the first doubt I have, I find
+</I>&gt;<i> out that the spectrum dimensions are calculated by using the package
+</I>&gt;<i> edu.mines.jtk.dsp and in particular the classes FftReal/FftComplex, both
+</I>&gt;<i> based on the Pfacc class. Comments to the Pfacc class said that this class
+</I>&gt;<i> implements the PFA algorithm for the FFT computation, so my second doubt is
+</I>&gt;<i> this: do the FourierTransform and FFTConvolution classes implement the PFA
+</I>&gt;<i> algorithm?
+</I>&gt;<i>
+</I>&gt;<i> I really need to find it out in order to continue my work, so any help
+</I>&gt;<i> will be appreciated!
+</I>&gt;<i> Thanks a lot,
+</I>&gt;<i>
+</I>&gt;<i> Sara S.
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140730/e7fdac36/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20140730/e7fdac36/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002164.html">[ImageJ-devel] imglib2 FFT algorithm explanation
+</A></li>
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2165">[ date ]</a>
+              <a href="thread.html#2165">[ thread ]</a>
+              <a href="subject.html#2165">[ subject ]</a>
+              <a href="author.html#2165">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

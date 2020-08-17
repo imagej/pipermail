@@ -1,0 +1,170 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Helper script for fixup commits
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Helper%20script%20for%20fixup%20commits&In-Reply-To=%3Calpine.DEB.1.00.1302050038250.32206%40s15462909.onlinehome-server.info%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001402.html">
+   <LINK REL="Next"  HREF="001393.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Helper script for fixup commits</H1>
+    <B>Johannes Schindelin</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Helper%20script%20for%20fixup%20commits&In-Reply-To=%3Calpine.DEB.1.00.1302050038250.32206%40s15462909.onlinehome-server.info%3E"
+       TITLE="[ImageJ-devel] Helper script for fixup commits">schindelin at wisc.edu
+       </A><BR>
+    <I>Mon Feb  4 17:55:29 CST 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001402.html">[ImageJ-devel] Auto Threshold in ImageJ2
+</A></li>
+        <LI>Next message: <A HREF="001393.html">[ImageJ-devel] Helper script for fixup commits
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1391">[ date ]</a>
+              <a href="thread.html#1391">[ thread ]</a>
+              <a href="subject.html#1391">[ subject ]</a>
+              <a href="author.html#1391">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Curtis,
+
+as promised, a little Perl script to help with fixup commits.
+
+For everybody who wonders what I am talking about: my preferred workflow
+involves topic branches for projects involving more than one commit
+(single commits are not worth the hassle). For this, I start with
+
+	git checkout -b &lt;name&gt;
+
+(Actually, very often I do have changes already, but that's okay, I can
+still make a new branch from the current state.)
+
+Then I make changes and commit and rewrite the topic branch frequently.
+
+For example, when I find that I made a mistake in the first commit, but I
+am already on the fourth commit in the topic branch, I commit a &quot;fixup&quot;:
+
+	git commit --fixup HEAD^^^
+
+This tells Git to look at the third-last commit, take the first line,
+prepend it with &quot;fixup! &quot; and commit with that message. Such a
+specially-crafted commit message is interpreted by &quot;git rebase -i
+--autosquash&quot; to mean that it should reorder the commits so that the fixup
+commit can amend the original one.
+
+After a couple of commits, my topic branch would look a bit like this:
+
+	&lt;hash&gt;   &lt;first-line&gt;
+	01234567 Fix typos in the README
+	cafebabe Format LICENSE
+	fedcba98 fixup! Fix typos in the README
+	223387ab Add another author
+
+When calling &quot;git rebase -i --autosquash origin/master&quot; -- assuming that I
+started my topic branch directly on origin/master -- Git would present me
+with an &quot;edit script&quot; like this:
+
+	pick 01234567 Fix typos in the README
+	fixup fedcba98 fixup! Fix typos in the README
+	pick cafebabe Format LICENSE
+	pick 223387ab Add another author
+
+The &quot;fixup&quot; means that the second commit will be applied, but these
+changes will be merged into the first commit.
+
+I could ask rebase for further changes, such as &quot;reword&quot;ing the rather
+unhelpful commit message of the now-last commit, but usually I keep things
+as they are with the autosquash'ed reordering.
+
+If you grow tired -- as did I -- of having to type &quot;--autosquash&quot; all the
+time: do what I did:
+
+	git config --global rebase.autosquash true
+
+That will make that rather helpful behavior the default.
+
+I try to document such things on the Fiji Wiki, of course:
+<A HREF="http://fiji.sc/Topic_branches">http://fiji.sc/Topic_branches</A>
+
+Back to you Curtis: I did write that Perl script which finds out what
+commit you should rebase onto, but the truth is that
+
+	git rebase -i --autosquash $(git merge-base HEAD origin/master)
+
+would work just as well: interactive rebase is clever enough not to
+rewrite the first commits when there is no need to. In other words, it
+does not re-commit any commit when it would have the same parent.
+
+Ciao,
+Dscho
+-------------- next part --------------
+#!/usr/bin/perl
+
+my $countdown = 100;
+my %fixups = ();
+my $commit = '';
+
+open(my $in, '-|', 'git', 'log', '--format=%h:%s', 'origin/master..');
+while (&lt;$in&gt;) {
+	s/\r*\n*$//;
+	if (/^([0-9a-f]*):(.*)$/) {
+		my $hash = $1;
+		my $oneline = $2;
+
+		if ($oneline =~ /^fixup! (.*)$/) {
+			$fixups{$1} = 1;
+		} elsif ($fixups{$oneline} ne undef) {
+			$commit = $hash;
+			delete $fixups{$oneline};
+		}
+	}
+	if (0 &lt; keys(%fixups)) {
+		$countdown = 100;
+	} else {
+		$countdown--;
+		if ($countdown &lt;= 0) {
+			last;
+		}
+	}
+}
+close($in);
+
+if ($commit ne '') {
+	system('git', 'rebase', '-i', $commit . '^');
+}
+</PRE>
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001402.html">[ImageJ-devel] Auto Threshold in ImageJ2
+</A></li>
+	<LI>Next message: <A HREF="001393.html">[ImageJ-devel] Helper script for fixup commits
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1391">[ date ]</a>
+              <a href="thread.html#1391">[ thread ]</a>
+              <a href="subject.html#1391">[ subject ]</a>
+              <a href="author.html#1391">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

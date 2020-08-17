@@ -1,0 +1,2719 @@
+From raghuramsathyam at yahoo.com  Fri Feb  1 15:03:18 2013
+From: raghuramsathyam at yahoo.com (raghuram sathyam)
+Date: Fri, 1 Feb 2013 13:03:18 -0800 (PST)
+Subject: [ImageJ-devel] hi!!
+Message-ID: <1359752598.56046.YahooMailNeo@web160806.mail.bf1.yahoo.com>
+
+hello!
+
+
+http://www.altcomcr.net/like.html
+
+
+
+
+
+.
+
+
+
+
+
+
+
+
+
+
+
+
+raghuram sathyam
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130201/f34ea9df/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Mon Feb  4 16:50:37 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Mon, 4 Feb 2013 23:50:37 +0100 (CET)
+Subject: [ImageJ-devel] Auto Threshold in ImageJ2
+Message-ID: <alpine.DEB.1.00.1302042349200.32206@s15462909.onlinehome-server.info>
+
+Hi Gabriel,
+
+we would like to include your code (or a derivative thereof) in ImageJ2.
+Just to be sure: the code in question is this one:
+
+http://fiji.sc/cgi-bin/gitweb.cgi?p=fiji.git;a=blob;f=src-plugins/Auto_Threshold/src/main/java/fiji/threshold/Auto_Threshold.java;h=d09e56d5671c91d367f39607375bb0b40290f7e4;hb=refs/heads/master
+
+Would you be willing to relicense that code to BSD?
+
+Thanks,
+Dscho
+
+
+From schindelin at wisc.edu  Mon Feb  4 17:55:29 2013
+From: schindelin at wisc.edu (Johannes Schindelin)
+Date: Tue, 05 Feb 2013 00:55:29 +0100 (CET)
+Subject: [ImageJ-devel] Helper script for fixup commits
+Message-ID: <alpine.DEB.1.00.1302050038250.32206@s15462909.onlinehome-server.info>
+
+Hi Curtis,
+
+as promised, a little Perl script to help with fixup commits.
+
+For everybody who wonders what I am talking about: my preferred workflow
+involves topic branches for projects involving more than one commit
+(single commits are not worth the hassle). For this, I start with
+
+	git checkout -b <name>
+
+(Actually, very often I do have changes already, but that's okay, I can
+still make a new branch from the current state.)
+
+Then I make changes and commit and rewrite the topic branch frequently.
+
+For example, when I find that I made a mistake in the first commit, but I
+am already on the fourth commit in the topic branch, I commit a "fixup":
+
+	git commit --fixup HEAD^^^
+
+This tells Git to look at the third-last commit, take the first line,
+prepend it with "fixup! " and commit with that message. Such a
+specially-crafted commit message is interpreted by "git rebase -i
+--autosquash" to mean that it should reorder the commits so that the fixup
+commit can amend the original one.
+
+After a couple of commits, my topic branch would look a bit like this:
+
+	<hash>   <first-line>
+	01234567 Fix typos in the README
+	cafebabe Format LICENSE
+	fedcba98 fixup! Fix typos in the README
+	223387ab Add another author
+
+When calling "git rebase -i --autosquash origin/master" -- assuming that I
+started my topic branch directly on origin/master -- Git would present me
+with an "edit script" like this:
+
+	pick 01234567 Fix typos in the README
+	fixup fedcba98 fixup! Fix typos in the README
+	pick cafebabe Format LICENSE
+	pick 223387ab Add another author
+
+The "fixup" means that the second commit will be applied, but these
+changes will be merged into the first commit.
+
+I could ask rebase for further changes, such as "reword"ing the rather
+unhelpful commit message of the now-last commit, but usually I keep things
+as they are with the autosquash'ed reordering.
+
+If you grow tired -- as did I -- of having to type "--autosquash" all the
+time: do what I did:
+
+	git config --global rebase.autosquash true
+
+That will make that rather helpful behavior the default.
+
+I try to document such things on the Fiji Wiki, of course:
+http://fiji.sc/Topic_branches
+
+Back to you Curtis: I did write that Perl script which finds out what
+commit you should rebase onto, but the truth is that
+
+	git rebase -i --autosquash $(git merge-base HEAD origin/master)
+
+would work just as well: interactive rebase is clever enough not to
+rewrite the first commits when there is no need to. In other words, it
+does not re-commit any commit when it would have the same parent.
+
+Ciao,
+Dscho
+-------------- next part --------------
+#!/usr/bin/perl
+
+my $countdown = 100;
+my %fixups = ();
+my $commit = '';
+
+open(my $in, '-|', 'git', 'log', '--format=%h:%s', 'origin/master..');
+while (<$in>) {
+	s/\r*\n*$//;
+	if (/^([0-9a-f]*):(.*)$/) {
+		my $hash = $1;
+		my $oneline = $2;
+
+		if ($oneline =~ /^fixup! (.*)$/) {
+			$fixups{$1} = 1;
+		} elsif ($fixups{$oneline} ne undef) {
+			$commit = $hash;
+			delete $fixups{$oneline};
+		}
+	}
+	if (0 < keys(%fixups)) {
+		$countdown = 100;
+	} else {
+		$countdown--;
+		if ($countdown <= 0) {
+			last;
+		}
+	}
+}
+close($in);
+
+if ($commit ne '') {
+	system('git', 'rebase', '-i', $commit . '^');
+}
+
+From ctrueden at wisc.edu  Tue Feb  5 13:00:53 2013
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Tue, 5 Feb 2013 13:00:53 -0600
+Subject: [ImageJ-devel] Can you compare two images(for example two jpeg
+	images)
+In-Reply-To: <CACupdpUNMXG2xtAHgTJXG129=ieKpdY58rSFAsb-MW_jjhaeDg@mail.gmail.com>
+References: <CA+O+kVUw9Zrzj-HfBxEFGkT12adu+om2bQW2LoTmjQo3W79tcA@mail.gmail.com>
+	<CACupdpUNMXG2xtAHgTJXG129=ieKpdY58rSFAsb-MW_jjhaeDg@mail.gmail.com>
+Message-ID: <CADN69ykBibRzkPT3gAvMSQnCqM=1yoh16q8PQPY5DPCWvZ9=Hg@mail.gmail.com>
+
+Hi Shouvanik,
+
+> I want to take two images (possibly jpeg etc.) and compare them to find
+> whether they are equal or unequal.
+
+One simple way is to use the Image Calculator plugin of ImageJ (in the
+Process menu) to subtract one image from the other. This only works if they
+were both produced using the exact same acquisition mechanism and settings.
+
+I also suggest using a lossless file format (i.e., not JPEG) when doing
+quantitative analysis. See this page for details:
+
+    http://fiji.sc/IP_Principles
+
+> Does the api (written by you) "ImgLib2" anyway supports this.
+
+You could certainly use ImgLib2 to subtract two images. The base ImgLib2
+library supports this via the use of cursors that iterate over your images,
+so that you can perform the subtraction and/or comparison pixel-by-pixel.
+The ImgLib2 OPS extension supports doing this in a functional way over the
+entire image at once.
+
+See the ImgLib2 Examples for an introduction to ImgLib2:
+
+    http://fiji.sc/ImgLib2_Examples
+
+There is not a lot of documentation on ImgLib2 OPS yet but you can read an
+overview of sorts at:
+
+    https://groups.google.com/d/msg/fiji-devel/YDqzss-mQjI/mbFiZIeOTPgJ
+
+HTH,
+Curtis
+
+P.S. I am not a main author of ImgLib2: that distinction goes to Stephan
+Saalfeld, Stephan Priebisch and Tobias Pietzsch. And Barry DeZonia is the
+main author of ImgLib2 OPS.
+
+
+On Tue, Feb 5, 2013 at 12:20 AM, Shouvanik Haldar <
+shouvanik.haldar at gmail.com> wrote:
+
+> Hi,
+>
+> Greetings!
+>
+> I am trying hard to arrive at a solution. I want to take two images
+> (possibly jpeg etc.) and compare them to find whether they are equal or
+> unequal.
+>
+> Does the api (written by you) "ImgLib2" anyway supports this.
+>
+> Many thanks in advance for your help.
+>
+> --
+> Thanks,
+> *Shouvanik*
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130205/7506e632/attachment.html>
+
+From ctrueden at wisc.edu  Tue Feb  5 13:53:00 2013
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Tue, 5 Feb 2013 13:53:00 -0600
+Subject: [ImageJ-devel] Helper script for fixup commits
+In-Reply-To: <alpine.DEB.1.00.1302050038250.32206@s15462909.onlinehome-server.info>
+References: <alpine.DEB.1.00.1302050038250.32206@s15462909.onlinehome-server.info>
+Message-ID: <CADN69y=wrF3cuue5aStp-s+SqJzSEzkHgiLm=B=1Cf54uFnMSg@mail.gmail.com>
+
+Hi Dscho,
+
+> as promised, a little Perl script to help with fixup commits.
+
+Thank you very much!
+
+FYI, I have committed the script, together with your comments, here:
+
+    https://github.com/ctrueden/ctr-scripts/commit/35f37efe
+
+I also added the alias "fix = !fixup-rebase" to my .gitconfig. Works like a
+charm.
+
+Cheers,
+Curtis
+
+
+On Mon, Feb 4, 2013 at 5:55 PM, Johannes Schindelin <schindelin at wisc.edu>wrote:
+
+> Hi Curtis,
+>
+> as promised, a little Perl script to help with fixup commits.
+>
+> For everybody who wonders what I am talking about: my preferred workflow
+> involves topic branches for projects involving more than one commit
+> (single commits are not worth the hassle). For this, I start with
+>
+>         git checkout -b <name>
+>
+> (Actually, very often I do have changes already, but that's okay, I can
+> still make a new branch from the current state.)
+>
+> Then I make changes and commit and rewrite the topic branch frequently.
+>
+> For example, when I find that I made a mistake in the first commit, but I
+> am already on the fourth commit in the topic branch, I commit a "fixup":
+>
+>         git commit --fixup HEAD^^^
+>
+> This tells Git to look at the third-last commit, take the first line,
+> prepend it with "fixup! " and commit with that message. Such a
+> specially-crafted commit message is interpreted by "git rebase -i
+> --autosquash" to mean that it should reorder the commits so that the fixup
+> commit can amend the original one.
+>
+> After a couple of commits, my topic branch would look a bit like this:
+>
+>         <hash>   <first-line>
+>         01234567 Fix typos in the README
+>         cafebabe Format LICENSE
+>         fedcba98 fixup! Fix typos in the README
+>         223387ab Add another author
+>
+> When calling "git rebase -i --autosquash origin/master" -- assuming that I
+> started my topic branch directly on origin/master -- Git would present me
+> with an "edit script" like this:
+>
+>         pick 01234567 Fix typos in the README
+>         fixup fedcba98 fixup! Fix typos in the README
+>         pick cafebabe Format LICENSE
+>         pick 223387ab Add another author
+>
+> The "fixup" means that the second commit will be applied, but these
+> changes will be merged into the first commit.
+>
+> I could ask rebase for further changes, such as "reword"ing the rather
+> unhelpful commit message of the now-last commit, but usually I keep things
+> as they are with the autosquash'ed reordering.
+>
+> If you grow tired -- as did I -- of having to type "--autosquash" all the
+> time: do what I did:
+>
+>         git config --global rebase.autosquash true
+>
+> That will make that rather helpful behavior the default.
+>
+> I try to document such things on the Fiji Wiki, of course:
+> http://fiji.sc/Topic_branches
+>
+> Back to you Curtis: I did write that Perl script which finds out what
+> commit you should rebase onto, but the truth is that
+>
+>         git rebase -i --autosquash $(git merge-base HEAD origin/master)
+>
+> would work just as well: interactive rebase is clever enough not to
+> rewrite the first commits when there is no need to. In other words, it
+> does not re-commit any commit when it would have the same parent.
+>
+> Ciao,
+> Dscho
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130205/795e70f9/attachment.html>
+
+From pietzsch at mpi-cbg.de  Tue Feb  5 18:10:45 2013
+From: pietzsch at mpi-cbg.de (Tobias Pietzsch)
+Date: Wed, 6 Feb 2013 01:10:45 +0100
+Subject: [ImageJ-devel] slow opening of tif files using scifio-based
+	ImgOpener
+Message-ID: <1F7E8677-98CF-4DB6-87A4-2D3E6AFCD1F9@mpi-cbg.de>
+
+Hi,
+
+recently I ran across a problem with the scifio-based ImgOpener of ImgLib2.
+I wanted to load stacks from series of tif files which were all in the same directory (about 100.000 of them).
+With ImgOpener, this was imbearably slow, so I decided to load the files using ImageJ1 and wrapping the resulting ImagePluses into imglib2 containers.
+
+Today, I created a benchmark, that illustrates the problem.
+You can find it here: https://github.com/tpietzsch/TifBenchmark
+It is derived from Johannes' https://github.com/imagej/minimal-ij1-plugin, so you can simply import the maven project in Eclipse and try it out easily.
+
+The results are disillusioning.
+With just a single tif, scifio opens the file 10x slower than ImageJ1. Bad, but maybe bearable.
+With 100.000 tif files in the same directory, scifio is 400x slower! That is 0.1s for loading 50 tifs from ImageJ vs 55s using scifio!!!
+
+Can anyone explain this behavior?
+This needs to be fixed if we expect anyone to seriously use the ImgOpener?
+
+best regards,
+Tobias
+
+From melissa at glencoesoftware.com  Tue Feb  5 20:08:47 2013
+From: melissa at glencoesoftware.com (Melissa Linkert)
+Date: Tue, 5 Feb 2013 21:08:47 -0500
+Subject: [ImageJ-devel] [fiji-devel] slow opening of tif files using
+ scifio-based ImgOpener
+In-Reply-To: <1F7E8677-98CF-4DB6-87A4-2D3E6AFCD1F9@mpi-cbg.de>
+References: <1F7E8677-98CF-4DB6-87A4-2D3E6AFCD1F9@mpi-cbg.de>
+Message-ID: <20130206020847.GA22377@medusa>
+
+Hi Tobias,
+
+> recently I ran across a problem with the scifio-based ImgOpener of ImgLib2.
+> I wanted to load stacks from series of tif files which were all in the same directory (about 100.000 of them).
+> With ImgOpener, this was imbearably slow, so I decided to load the files using ImageJ1 and wrapping the resulting ImagePluses into imglib2 containers.
+> 
+> Today, I created a benchmark, that illustrates the problem.
+> You can find it here: https://github.com/tpietzsch/TifBenchmark
+> It is derived from Johannes' https://github.com/imagej/minimal-ij1-plugin, so you can simply import the maven project in Eclipse and try it out easily.
+> 
+> The results are disillusioning.
+> With just a single tif, scifio opens the file 10x slower than ImageJ1. Bad, but maybe bearable.
+> With 100.000 tif files in the same directory, scifio is 400x slower! That is 0.1s for loading 50 tifs from ImageJ vs 55s using scifio!!!
+> 
+> Can anyone explain this behavior?
+
+Bio-Formats/SCIFIO is known to be slower than ImageJ when opening plain
+TIFF files.  See:
+
+http://trac.openmicroscopy.org.uk/ome/ticket/9228
+
+That ticket (and several other performance improvements in Bio-Formats) are at
+the top of my to-do list for the next few weeks.
+
+Regards,
+-Melissa
+
+On Wed, Feb 06, 2013 at 01:10:45AM +0100, Tobias Pietzsch wrote:
+> Hi,
+> 
+> recently I ran across a problem with the scifio-based ImgOpener of ImgLib2.
+> I wanted to load stacks from series of tif files which were all in the same directory (about 100.000 of them).
+> With ImgOpener, this was imbearably slow, so I decided to load the files using ImageJ1 and wrapping the resulting ImagePluses into imglib2 containers.
+> 
+> Today, I created a benchmark, that illustrates the problem.
+> You can find it here: https://github.com/tpietzsch/TifBenchmark
+> It is derived from Johannes' https://github.com/imagej/minimal-ij1-plugin, so you can simply import the maven project in Eclipse and try it out easily.
+> 
+> The results are disillusioning.
+> With just a single tif, scifio opens the file 10x slower than ImageJ1. Bad, but maybe bearable.
+> With 100.000 tif files in the same directory, scifio is 400x slower! That is 0.1s for loading 50 tifs from ImageJ vs 55s using scifio!!!
+> 
+> Can anyone explain this behavior?
+> This needs to be fixed if we expect anyone to seriously use the ImgOpener?
+> 
+> best regards,
+> Tobias
+> 
+> -- 
+> -- 
+> Please avoid top-posting, and please make sure to reply-to-all!
+> 
+> Mailing list web interface: http://groups.google.com/group/fiji-devel
+> 
+> --- 
+> You received this message because you are subscribed to the Google Groups "Fiji-devel" group.
+> To unsubscribe from this group and stop receiving emails from it, send an email to fiji-devel+unsubscribe at googlegroups.com.
+> For more options, visit https://groups.google.com/groups/opt_out.
+> 
+> 
+
+
+From G.Landini at bham.ac.uk  Wed Feb  6 02:41:44 2013
+From: G.Landini at bham.ac.uk (Gabriel Landini)
+Date: Wed, 06 Feb 2013 08:41:44 +0000
+Subject: [ImageJ-devel] Auto Threshold in ImageJ2
+In-Reply-To: <alpine.DEB.1.00.1302042349200.32206@s15462909.onlinehome-server.info>
+References: <alpine.DEB.1.00.1302042349200.32206@s15462909.onlinehome-server.info>
+Message-ID: <33179420.E6PKf8B5ak@ds170>
+
+On Monday 04 Feb 2013 22:50:37 Johannes Schindelin wrote:
+> we would like to include your code (or a derivative thereof) in ImageJ2.
+> Just to be sure: the code in question is this one:
+
+Hi Dscho,
+ 
+> http://fiji.sc/cgi-bin/gitweb.cgi?p=fiji.git;a=blob;f=src-plugins/Auto_Thres
+> hold/src/main/java/fiji/threshold/Auto_Threshold.java;h=d09e56d5671c91d367f3
+> 9607375bb0b40290f7e4;hb=refs/heads/master
+> 
+> Would you be willing to relicense that code to BSD?
+
+Yes, that is fine.
+Same for the Auto Local Threshold if you are planning to make it a built in 
+command.
+
+Now that we are at it, I haven't checked the histogram in the IJ2 applet, but 
+in IJ1, the frequency of the largest bin gets trimmed down (for display 
+purposes) when it is too large to still be able to show what the frequencies 
+in the other bins are. While this might be useful for display (so you do not 
+see only one large bin value), it is quite confusing if it is not clearly 
+explained beforehand (there is a mismatch between the listed histogram and the 
+displayed one). Can this be an option, rather than the only way it works?
+
+Cheers
+
+Gabriel
+
+
+
+From pietzsch at mpi-cbg.de  Wed Feb  6 11:07:43 2013
+From: pietzsch at mpi-cbg.de (Tobias Pietzsch)
+Date: Wed, 6 Feb 2013 18:07:43 +0100
+Subject: [ImageJ-devel] [fiji-devel] slow opening of tif files using
+	scifio-based ImgOpener
+In-Reply-To: <20130206020847.GA22377@medusa>
+References: <1F7E8677-98CF-4DB6-87A4-2D3E6AFCD1F9@mpi-cbg.de>
+	<20130206020847.GA22377@medusa>
+Message-ID: <31AB18A8-D332-4662-A32B-0ECC2A6417D1@mpi-cbg.de>
+
+Hi Melissa,
+
+That is awesome! Thanks a lot for tackling these problems.
+
+Out of curiosity, could you briefly explain (if there is an easy explanation) why the 100.000-files-issue happens?
+Is bioformats analyzing the directory the TIFF file lives in? Is there a way to turn this off?
+
+best regards,
+Tobias
+
+On Feb 6, 2013, at 3:08 AM, Melissa Linkert wrote:
+
+> Hi Tobias,
+> 
+>> recently I ran across a problem with the scifio-based ImgOpener of ImgLib2.
+>> I wanted to load stacks from series of tif files which were all in the same directory (about 100.000 of them).
+>> With ImgOpener, this was imbearably slow, so I decided to load the files using ImageJ1 and wrapping the resulting ImagePluses into imglib2 containers.
+>> 
+>> Today, I created a benchmark, that illustrates the problem.
+>> You can find it here: https://github.com/tpietzsch/TifBenchmark
+>> It is derived from Johannes' https://github.com/imagej/minimal-ij1-plugin, so you can simply import the maven project in Eclipse and try it out easily.
+>> 
+>> The results are disillusioning.
+>> With just a single tif, scifio opens the file 10x slower than ImageJ1. Bad, but maybe bearable.
+>> With 100.000 tif files in the same directory, scifio is 400x slower! That is 0.1s for loading 50 tifs from ImageJ vs 55s using scifio!!!
+>> 
+>> Can anyone explain this behavior?
+> 
+> Bio-Formats/SCIFIO is known to be slower than ImageJ when opening plain
+> TIFF files.  See:
+> 
+> http://trac.openmicroscopy.org.uk/ome/ticket/9228
+> 
+> That ticket (and several other performance improvements in Bio-Formats) are at
+> the top of my to-do list for the next few weeks.
+> 
+> Regards,
+> -Melissa
+> 
+> On Wed, Feb 06, 2013 at 01:10:45AM +0100, Tobias Pietzsch wrote:
+>> Hi,
+>> 
+>> recently I ran across a problem with the scifio-based ImgOpener of ImgLib2.
+>> I wanted to load stacks from series of tif files which were all in the same directory (about 100.000 of them).
+>> With ImgOpener, this was imbearably slow, so I decided to load the files using ImageJ1 and wrapping the resulting ImagePluses into imglib2 containers.
+>> 
+>> Today, I created a benchmark, that illustrates the problem.
+>> You can find it here: https://github.com/tpietzsch/TifBenchmark
+>> It is derived from Johannes' https://github.com/imagej/minimal-ij1-plugin, so you can simply import the maven project in Eclipse and try it out easily.
+>> 
+>> The results are disillusioning.
+>> With just a single tif, scifio opens the file 10x slower than ImageJ1. Bad, but maybe bearable.
+>> With 100.000 tif files in the same directory, scifio is 400x slower! That is 0.1s for loading 50 tifs from ImageJ vs 55s using scifio!!!
+>> 
+>> Can anyone explain this behavior?
+>> This needs to be fixed if we expect anyone to seriously use the ImgOpener?
+>> 
+>> best regards,
+>> Tobias
+>> 
+>> -- 
+>> -- 
+>> Please avoid top-posting, and please make sure to reply-to-all!
+>> 
+>> Mailing list web interface: http://groups.google.com/group/fiji-devel
+>> 
+>> --- 
+>> You received this message because you are subscribed to the Google Groups "Fiji-devel" group.
+>> To unsubscribe from this group and stop receiving emails from it, send an email to fiji-devel+unsubscribe at googlegroups.com.
+>> For more options, visit https://groups.google.com/groups/opt_out.
+>> 
+>> 
+
+
+
+From sapristi at gmail.com  Wed Feb  6 11:13:21 2013
+From: sapristi at gmail.com (Albert Cardona)
+Date: Wed, 6 Feb 2013 12:13:21 -0500
+Subject: [ImageJ-devel] [fiji-devel] slow opening of tif files using
+	scifio-based ImgOpener
+In-Reply-To: <31AB18A8-D332-4662-A32B-0ECC2A6417D1@mpi-cbg.de>
+References: <1F7E8677-98CF-4DB6-87A4-2D3E6AFCD1F9@mpi-cbg.de>
+	<20130206020847.GA22377@medusa>
+	<31AB18A8-D332-4662-A32B-0ECC2A6417D1@mpi-cbg.de>
+Message-ID: <CAJj13__OTjTO8WL5Cv_kBBH3Er2fCFcPFgXp4Vqp1DyMXM_mig@mail.gmail.com>
+
+2013/2/6 Tobias Pietzsch <pietzsch at mpi-cbg.de>
+
+> Hi Melissa,
+>
+> That is awesome! Thanks a lot for tackling these problems.
+>
+> Out of curiosity, could you briefly explain (if there is an easy
+> explanation) why the 100.000-files-issue happens?
+> Is bioformats analyzing the directory the TIFF file lives in? Is there a
+> way to turn this off?
+>
+
+
+Yes, Bio-formats analyzes the folder. Some formats are multi-file.
+
+Albert
+
+-- 
+http://albert.rierol.net
+http://www.ini.uzh.ch/~acardona/
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130206/8ac50332/attachment.html>
+
+From ctrueden at wisc.edu  Wed Feb  6 11:35:36 2013
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Wed, 6 Feb 2013 11:35:36 -0600
+Subject: [ImageJ-devel] [fiji-devel] slow opening of tif files using
+	scifio-based ImgOpener
+In-Reply-To: <CAJj13__OTjTO8WL5Cv_kBBH3Er2fCFcPFgXp4Vqp1DyMXM_mig@mail.gmail.com>
+References: <1F7E8677-98CF-4DB6-87A4-2D3E6AFCD1F9@mpi-cbg.de>
+	<20130206020847.GA22377@medusa>
+	<31AB18A8-D332-4662-A32B-0ECC2A6417D1@mpi-cbg.de>
+	<CAJj13__OTjTO8WL5Cv_kBBH3Er2fCFcPFgXp4Vqp1DyMXM_mig@mail.gmail.com>
+Message-ID: <CADN69ym_AjoaJi3TN5T-_1PV54ECVpG=FkROZxS_hzLsJHH07g@mail.gmail.com>
+
+Hi all,
+
+> Is there a way to turn this off?
+
+Yes, you can call imageOpener.setAllowOpenFiles(false) which will prevent
+Bio-Formats from doing any directory listings or opening up any files for
+the purposes of determining the file format. However, if you set this flag,
+some file formats will be improperly identified.
+
+Out of curiosity: how much does the benchmark improve if that flag is set
+inside ImgOpener's createReader method? Another thing you could test, to
+determine the performance impact, is to change "new ImageReader" to "new
+TiffReader", which explicitly tells ImgOpener to assume everything is a
+TIFF.
+
+If such changes vastly improve the ImgOpener performance, we could consider
+adding another ImgOpener signature that lets you explicitly specify the
+file format.
+
+> Bio-formats analyzes the folder. Some formats are multi-file.
+
+Indeed. And some files are even considered a different file format
+depending on which other files are present in the same or nearby
+directories.
+
+Regards,
+Curtis
+
+P.S. to Melissa: Johannes has some ideas for improving the TIFF reader
+performance too, which he plans to explore over the next few days. We will
+keep you posted on any progress.
+
+
+On Wed, Feb 6, 2013 at 11:13 AM, Albert Cardona <sapristi at gmail.com> wrote:
+
+> 2013/2/6 Tobias Pietzsch <pietzsch at mpi-cbg.de>
+>
+>> Hi Melissa,
+>>
+>> That is awesome! Thanks a lot for tackling these problems.
+>>
+>> Out of curiosity, could you briefly explain (if there is an easy
+>> explanation) why the 100.000-files-issue happens?
+>> Is bioformats analyzing the directory the TIFF file lives in? Is there a
+>> way to turn this off?
+>>
+>
+>
+> Yes, Bio-formats analyzes the folder. Some formats are multi-file.
+>
+> Albert
+>
+> --
+> http://albert.rierol.net
+> http://www.ini.uzh.ch/~acardona/
+>
+> --
+> --
+> Please avoid top-posting, and please make sure to reply-to-all!
+>
+> Mailing list web interface: http://groups.google.com/group/fiji-devel
+>
+> ---
+> You received this message because you are subscribed to the Google Groups
+> "Fiji-devel" group.
+> To unsubscribe from this group and stop receiving emails from it, send an
+> email to fiji-devel+unsubscribe at googlegroups.com.
+> For more options, visit https://groups.google.com/groups/opt_out.
+>
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130206/a3bee41e/attachment.html>
+
+From pietzsch at mpi-cbg.de  Thu Feb  7 09:21:51 2013
+From: pietzsch at mpi-cbg.de (Tobias Pietzsch)
+Date: Thu, 7 Feb 2013 16:21:51 +0100
+Subject: [ImageJ-devel] [fiji-devel] slow opening of tif files using
+	scifio-based ImgOpener
+In-Reply-To: <CADN69ym_AjoaJi3TN5T-_1PV54ECVpG=FkROZxS_hzLsJHH07g@mail.gmail.com>
+References: <1F7E8677-98CF-4DB6-87A4-2D3E6AFCD1F9@mpi-cbg.de>
+	<20130206020847.GA22377@medusa>
+	<31AB18A8-D332-4662-A32B-0ECC2A6417D1@mpi-cbg.de>
+	<CAJj13__OTjTO8WL5Cv_kBBH3Er2fCFcPFgXp4Vqp1DyMXM_mig@mail.gmail.com>
+	<CADN69ym_AjoaJi3TN5T-_1PV54ECVpG=FkROZxS_hzLsJHH07g@mail.gmail.com>
+Message-ID: <A0BB56BF-C408-4D12-971F-B95D63BB222D@mpi-cbg.de>
+
+Hi Curtis,
+
+Ok, I tried the things you suggested as well as the setGroupFiles( false ) suggested by Lee.
+Here are the results:
+
+baseline (unmodified ImgOpener):
+loading 50 tif images using ImageJ, 10000 other tif files in same directory
+median: 141 ms
+loading 50 tif images using ImgOpener, 10000 other tif files in same directory
+median: 6953 ms
+
+with setAllowOpenFiles( false ):
+loading 50 tif images using ImgOpener, 10000 other tif files in same directory
+median: 5972 ms
+
+with setGroupFiles( false ):
+loading 50 tif images using ImgOpener, 10000 other tif files in same directory
+median: 2331 ms
+
+with both,  setAllowOpenFiles( false ) and setGroupFiles( false ):
+loading 50 tif images using ImgOpener, 10000 other tif files in same directory
+median: 1070 ms
+
+with TiffReader:
+loading 50 tif images using ImgOpener, 10000 other tif files in same directory
+median: 5061 ms
+
+with TiffReader and setGroupFiles( false ):
+loading 50 tif images using ImgOpener, 10000 other tif files in same directory
+median: 568 ms
+
+
+
+
+For comparison, the case where there are no other files in the directory
+baseline (unmodified ImgOpener):
+loading 50 tif images using ImageJ, 0 other tif files in same directory
+median: 140 ms
+loading 50 tif images using ImgOpener, 0 other tif files in same directory
+median: 1804 ms
+
+
+with TiffReader and setGroupFiles( false ):
+loading 50 tif images using ImgOpener, 0 other tif files in same directory
+median: 552 ms
+
+That's still 4x slower than ImageJ1 but already getting a lot closer. Nice!
+
+best regards,
+Tobias
+
+
+On Feb 6, 2013, at 6:35 PM, Curtis Rueden wrote:
+
+> Hi all,
+> 
+> > Is there a way to turn this off?
+> 
+> Yes, you can call imageOpener.setAllowOpenFiles(false) which will prevent Bio-Formats from doing any directory listings or opening up any files for the purposes of determining the file format. However, if you set this flag, some file formats will be improperly identified.
+> 
+> Out of curiosity: how much does the benchmark improve if that flag is set inside ImgOpener's createReader method? Another thing you could test, to determine the performance impact, is to change "new ImageReader" to "new TiffReader", which explicitly tells ImgOpener to assume everything is a TIFF.
+> 
+> If such changes vastly improve the ImgOpener performance, we could consider adding another ImgOpener signature that lets you explicitly specify the file format.
+> 
+> > Bio-formats analyzes the folder. Some formats are multi-file.
+> 
+> Indeed. And some files are even considered a different file format depending on which other files are present in the same or nearby directories.
+> 
+> Regards,
+> Curtis
+> 
+> P.S. to Melissa: Johannes has some ideas for improving the TIFF reader performance too, which he plans to explore over the next few days. We will keep you posted on any progress.
+> 
+> 
+> On Wed, Feb 6, 2013 at 11:13 AM, Albert Cardona <sapristi at gmail.com> wrote:
+> 2013/2/6 Tobias Pietzsch <pietzsch at mpi-cbg.de>
+> Hi Melissa,
+> 
+> That is awesome! Thanks a lot for tackling these problems.
+> 
+> Out of curiosity, could you briefly explain (if there is an easy explanation) why the 100.000-files-issue happens?
+> Is bioformats analyzing the directory the TIFF file lives in? Is there a way to turn this off?
+> 
+> 
+> Yes, Bio-formats analyzes the folder. Some formats are multi-file.
+> 
+> Albert
+> 
+> -- 
+> http://albert.rierol.net
+> http://www.ini.uzh.ch/~acardona/
+> 
+> -- 
+> -- 
+> Please avoid top-posting, and please make sure to reply-to-all!
+>  
+> Mailing list web interface: http://groups.google.com/group/fiji-devel
+>  
+> --- 
+> You received this message because you are subscribed to the Google Groups "Fiji-devel" group.
+> To unsubscribe from this group and stop receiving emails from it, send an email to fiji-devel+unsubscribe at googlegroups.com.
+> For more options, visit https://groups.google.com/groups/opt_out.
+>  
+>  
+> 
+
+
+
+From Johannes.Schindelin at gmx.de  Thu Feb  7 09:54:48 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Thu, 7 Feb 2013 16:54:48 +0100 (CET)
+Subject: [ImageJ-devel] [fiji-devel] slow opening of tif files using
+ scifio-based ImgOpener
+In-Reply-To: <A0BB56BF-C408-4D12-971F-B95D63BB222D@mpi-cbg.de>
+References: <1F7E8677-98CF-4DB6-87A4-2D3E6AFCD1F9@mpi-cbg.de>
+	<20130206020847.GA22377@medusa>
+	<31AB18A8-D332-4662-A32B-0ECC2A6417D1@mpi-cbg.de>
+	<CAJj13__OTjTO8WL5Cv_kBBH3Er2fCFcPFgXp4Vqp1DyMXM_mig@mail.gmail.com>
+	<CADN69ym_AjoaJi3TN5T-_1PV54ECVpG=FkROZxS_hzLsJHH07g@mail.gmail.com>
+	<A0BB56BF-C408-4D12-971F-B95D63BB222D@mpi-cbg.de>
+Message-ID: <alpine.DEB.1.00.1302071651210.32206@s15462909.onlinehome-server.info>
+
+Hi Tobias,
+
+On Thu, 7 Feb 2013, Tobias Pietzsch wrote:
+
+> Ok, I tried the things you suggested as well as the setGroupFiles( false
+> ) suggested by Lee.  Here are the results:
+> 
+> baseline (unmodified ImgOpener):
+> loading 50 tif images using ImageJ, 10000 other tif files in same directory
+> median: 141 ms
+> loading 50 tif images using ImgOpener, 10000 other tif files in same directory
+> median: 6953 ms
+> 
+> with setAllowOpenFiles( false ):
+> loading 50 tif images using ImgOpener, 10000 other tif files in same directory
+> median: 5972 ms
+> 
+> with setGroupFiles( false ):
+> loading 50 tif images using ImgOpener, 10000 other tif files in same directory
+> median: 2331 ms
+> 
+> with both,  setAllowOpenFiles( false ) and setGroupFiles( false ):
+> loading 50 tif images using ImgOpener, 10000 other tif files in same directory
+> median: 1070 ms
+> 
+> with TiffReader:
+> loading 50 tif images using ImgOpener, 10000 other tif files in same directory
+> median: 5061 ms
+> 
+> with TiffReader and setGroupFiles( false ):
+> loading 50 tif images using ImgOpener, 10000 other tif files in same directory
+> median: 568 ms
+> 
+> 
+> 
+> 
+> For comparison, the case where there are no other files in the directory
+> baseline (unmodified ImgOpener):
+> loading 50 tif images using ImageJ, 0 other tif files in same directory
+> median: 140 ms
+> loading 50 tif images using ImgOpener, 0 other tif files in same directory
+> median: 1804 ms
+> 
+> 
+> with TiffReader and setGroupFiles( false ):
+> loading 50 tif images using ImgOpener, 0 other tif files in same directory
+> median: 552 ms
+> 
+> That's still 4x slower than ImageJ1 but already getting a lot closer. Nice!
+
+Thanks for the detailed comparison. I will add code to perform these
+timing tests more automatically and try to get at the root of the problem
+as I indicated in a private conversation previously (using OProfile).
+
+Ciao,
+Dscho
+
+
+From ctrueden at wisc.edu  Thu Feb  7 12:18:19 2013
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Thu, 7 Feb 2013 12:18:19 -0600
+Subject: [ImageJ-devel] Auto Threshold in ImageJ2
+In-Reply-To: <33179420.E6PKf8B5ak@ds170>
+References: <alpine.DEB.1.00.1302042349200.32206@s15462909.onlinehome-server.info>
+	<33179420.E6PKf8B5ak@ds170>
+Message-ID: <CADN69ymPsF4kmpssm4pdhqW6ALDAp5XFHX+v87SwLWd53qykPg@mail.gmail.com>
+
+Hi Gabriel,
+
+> > Can you clarify what is the reason not to be doing under GPL2 or 3?
+>
+> We do not get funding by the NIH if we insist on GPL, hence the move
+> to the BSD license.
+
+In addition to funding, it is also about the ImageJ community itself, which
+is quite diverse. There are many people (e.g., Bob Dougherty) who use
+ImageJ who rely on the fact that it is not copyleft-licensed. By using GPL
+as the license for ImageJ2 core, we would be splintering the community,
+which is something we are very much trying to avoid doing. There will of
+course continue to be a place for GPL-licensed code within the Fiji project.
+
+> > Would you be willing to relicense that code to BSD?
+>
+> Yes, that is fine.
+> Same for the Auto Local Threshold if you are planning to make it a
+> built in command.
+
+Thank you!
+
+> > It would piss me off if somebody decides to make a derivative code
+> > which is closed source. But perhaps you can clarify this a bit?
+>
+> In reality, those people who make derivative closed source code are
+> just in for a lot of pain. They will get no support, take all the
+> blame for bugs, do not get any updates automatically, and in general
+> are despised. Not to mention ridiculed by sending a mail to them, Cc:
+> the public mailing lists, pointing to Curtis' brilliant Open Science
+> text.
+>
+> So I am not worried about such people.
+
+It is true that by licensing the code under BSD, people will have the
+ability to incorporate it into closed-source products. But as Johannes
+says, there are substantial tradeoffs to doing that.
+
+> Now that we are at it, I haven't checked the histogram in the IJ2
+> applet, but in IJ1, the frequency of the largest bin gets trimmed down
+> (for display purposes) when it is too large to still be able to show
+> what the frequencies in the other bins are. While this might be useful
+> for display (so you do not see only one large bin value), it is quite
+> confusing if it is not clearly explained beforehand (there is a
+> mismatch between the listed histogram and the displayed one). Can this
+> be an option, rather than the only way it works?
+
+Thanks for the suggestion. Barry is currently making good progress on
+threshold support in ImageJ2, but we haven't implemented histograms yet. We
+will certainly avoid that sort of silent magic?I completely agree that
+there should be an explicit toggle for that sort of thing.
+
+Regards,
+Curtis
+
+
+On Wed, Feb 6, 2013 at 2:41 AM, Gabriel Landini <G.Landini at bham.ac.uk>wrote:
+
+> On Monday 04 Feb 2013 22:50:37 Johannes Schindelin wrote:
+> > we would like to include your code (or a derivative thereof) in ImageJ2.
+> > Just to be sure: the code in question is this one:
+>
+> Hi Dscho,
+>
+> >
+> http://fiji.sc/cgi-bin/gitweb.cgi?p=fiji.git;a=blob;f=src-plugins/Auto_Thres
+> >
+> hold/src/main/java/fiji/threshold/Auto_Threshold.java;h=d09e56d5671c91d367f3
+> > 9607375bb0b40290f7e4;hb=refs/heads/master
+> >
+> > Would you be willing to relicense that code to BSD?
+>
+> Yes, that is fine.
+> Same for the Auto Local Threshold if you are planning to make it a built in
+> command.
+>
+> Now that we are at it, I haven't checked the histogram in the IJ2 applet,
+> but
+> in IJ1, the frequency of the largest bin gets trimmed down (for display
+> purposes) when it is too large to still be able to show what the
+> frequencies
+> in the other bins are. While this might be useful for display (so you do
+> not
+> see only one large bin value), it is quite confusing if it is not clearly
+> explained beforehand (there is a mismatch between the listed histogram and
+> the
+> displayed one). Can this be an option, rather than the only way it works?
+>
+> Cheers
+>
+> Gabriel
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130207/2964d67f/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Sat Feb  9 13:19:15 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Sat, 9 Feb 2013 20:19:15 +0100 (CET)
+Subject: [ImageJ-devel] Sorry: disk full on dev
+Message-ID: <alpine.DEB.1.00.1302092018000.32206@s15462909.onlinehome-server.info>
+
+Hi all,
+
+I am sorry that Jenkins had a couple of problems in the last couple of
+hours. I managed to fill up the disk by making backups of the OpenSPIM
+wiki (http://openspim.org/) which is hosted on the same machine.
+
+Fixed now, the backups go to another disk.
+
+Ciao,
+Dscho
+
+
+From bdezonia at gmail.com  Mon Feb 11 09:51:16 2013
+From: bdezonia at gmail.com (Barry DeZonia)
+Date: Mon, 11 Feb 2013 09:51:16 -0600
+Subject: [ImageJ-devel] Fwd: Hist thresh toolbox license question
+In-Reply-To: <alpine.LRH.2.02.1302111210380.15465@savukolibri.cs.tut.fi>
+References: <CAKcvfuSmuawSDO3WyrEC5Kg4Y0ot9xy_41AKGBYe1tODQNMQeg@mail.gmail.com>
+	<alpine.LRH.2.02.1302111210380.15465@savukolibri.cs.tut.fi>
+Message-ID: <CAKcvfuSWiu3ekB_RD=b5u_6+fqrXK_GkGgF4ZuM5VD4iy51fhQ@mail.gmail.com>
+
+That's great Antti - thanks! I am CCing my coworker Johannes here. He can
+better answer your question re: what needs to be done on your end.
+
+---------- Forwarded message ----------
+From: Antti Niemist? <antti.niemisto at tut.fi>
+Date: Mon, Feb 11, 2013 at 4:25 AM
+Subject: Re: Hist thresh toolbox license question
+To: Barry DeZonia <bdezonia at gmail.com>
+
+
+Hello Barry,
+
+I would be happy to do so. What exactly would you need me to do? I think
+dual licensing with both GPL and BSD would be the way to go here.
+
+Maybe of importance here, Carn? Draug has include some of the same code in
+the Octave-forge Image package, with my permission of course. This is under
+GPL. The following links provide more info on that:
+
+http://octave.sourceforge.net/**image/index.html<http://octave.sourceforge.net/image/index.html>
+http://sourceforge.net/p/**octave/code/11597/tree/trunk/**
+octave-forge/main/image/inst/**graythresh.m<http://sourceforge.net/p/octave/code/11597/tree/trunk/octave-forge/main/image/inst/graythresh.m>
+http://sourceforge.net/p/**octave/code/11597/tree/trunk/**
+octave-forge/main/image/NEWS<http://sourceforge.net/p/octave/code/11597/tree/trunk/octave-forge/main/image/NEWS>
+
+Best regards,
+Antti Niemist?
+
+
+
+On Thu, 7 Feb 2013, Barry DeZonia wrote:
+
+ Hello Antti,
+> I am a software developer at the University of Wisconsin working on the
+> ImageJ2 project (NIH funded open source project). ImageJ2 (see
+> http://www.imagejdev.org/) is a ground up rewrite of ImageJ. We work
+> closely
+> with the developers of Fiji (see http://fiji.sc/). One of the Fiji
+> developers (Gabriel Landini) wrote a thresholding plugin that uses some of
+> your GPL licensed code (4 methods tagged with your name). The relevant
+> source code is here(http://fiji.sc/cgi-bin/**gitweb.cgi?p=fiji.git;a=blob;
+> **f=src-plugins/Auto_Thr<http://fiji.sc/cgi-bin/gitweb.cgi?p=fiji.git;a=blob;f=src-plugins/Auto_Thr>
+>  eshold/src/main/java/fiji/**threshold/Auto_Threshold.java)**. Anyhow we
+> would
+> like to include some of your ported code in ImageJ2 but our funding
+> requires
+> us to release source under a BSD license. Would you consider relicensing
+> these method implementations (see source code methods MinErrorI(),
+> Minimum(), Percentile(), and Intermodes()) under a BSD license? Thank you
+> for your consideration.
+>
+> Regards,
+>
+> Barry
+>
+>
+>
+-- 
+Antti Niemist? DSc(Tech)              office: TE410
+Research Fellow                       phone:  +358-40-849-0587 (GSM)
+Department of Signal Processing               +358-3-3115-4989 (fax)
+Tampere University of Technology      URI:    http://www.cs.tut.fi/~ant/
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130211/f6a50d83/attachment.html>
+
+From schindelin at wisc.edu  Mon Feb 11 11:41:28 2013
+From: schindelin at wisc.edu (Johannes Schindelin)
+Date: Mon, 11 Feb 2013 18:41:28 +0100 (CET)
+Subject: [ImageJ-devel] Fwd: Hist thresh toolbox license question
+In-Reply-To: <CAKcvfuSWiu3ekB_RD=b5u_6+fqrXK_GkGgF4ZuM5VD4iy51fhQ@mail.gmail.com>
+References: <CAKcvfuSmuawSDO3WyrEC5Kg4Y0ot9xy_41AKGBYe1tODQNMQeg@mail.gmail.com>
+	<alpine.LRH.2.02.1302111210380.15465@savukolibri.cs.tut.fi>
+	<CAKcvfuSWiu3ekB_RD=b5u_6+fqrXK_GkGgF4ZuM5VD4iy51fhQ@mail.gmail.com>
+Message-ID: <alpine.DEB.1.00.1302111835090.32206@s15462909.onlinehome-server.info>
+
+Hi,
+
+On Mon, 11 Feb 2013, Barry DeZonia wrote:
+
+> From: Antti Niemist? <antti.niemisto at tut.fi>
+> 
+> I would be happy to do so. What exactly would you need me to do? I think
+> dual licensing with both GPL and BSD would be the way to go here.
+
+Dual licensing would be perfectly acceptable.
+
+> Maybe of importance here, Carn? Draug has include some of the same code
+> in the Octave-forge Image package, with my permission of course. This is
+> under GPL.
+
+Thank you for the links.
+
+However, we would like to use the algorithms in ImageJ2 (written in Java):
+http://developer.imagej.net/ (and https://github.com/imagej/imagej).
+
+In another mail thread (which I would merge with this one if I had more
+time), we asked Gabriel Landini (who would have been Cc:ed if this mail
+was in the same thread), who transformed your code into a GPLed
+ImageJ plugin, whether he would be willing to relicense the code so we
+would not have to rewrite it:
+
+http://imagej.net/pipermail/imagej-devel/2013-February/001390.html
+
+It was only after his positive answer that we realized that part of the
+code was derived from your GPLed code and we would require your
+willingness to relicense to use the transformed code.
+
+Thanks,
+Dscho
+
+
+From G.Landini at bham.ac.uk  Mon Feb 11 11:59:19 2013
+From: G.Landini at bham.ac.uk (Gabriel Landini)
+Date: Mon, 11 Feb 2013 17:59:19 +0000
+Subject: [ImageJ-devel] Fwd: Hist thresh toolbox license question
+In-Reply-To: <alpine.DEB.1.00.1302111835090.32206@s15462909.onlinehome-server.info>
+References: <CAKcvfuSmuawSDO3WyrEC5Kg4Y0ot9xy_41AKGBYe1tODQNMQeg@mail.gmail.com>
+	<CAKcvfuSWiu3ekB_RD=b5u_6+fqrXK_GkGgF4ZuM5VD4iy51fhQ@mail.gmail.com>
+	<alpine.DEB.1.00.1302111835090.32206@s15462909.onlinehome-server.info>
+Message-ID: <8671552.DjC2n6KSjE@ds170>
+
+On Monday 11 Feb 2013 17:41:28 Johannes Schindelin wrote:
+> In another mail thread (which I would merge with this one if I had more
+> time), we asked Gabriel Landini (who would have been Cc:ed if this mail
+> was in the same thread), who transformed your code into a GPLed
+> ImageJ plugin, whether he would be willing to relicense the code so we
+> would not have to rewrite it:
+> 
+> http://imagej.net/pipermail/imagej-devel/2013-February/001390.html
+> 
+> It was only after his positive answer that we realized that part of the
+> code was derived from your GPLed code and we would require your
+> willingness to relicense to use the transformed code.
+
+Hi everybody,
+Just to clarify, I did let Antti know that I was intending to port some of his 
+Matlab code into Java for ImageJ and that was releases (as in his code) as 
+GPL. Original exchange follows below.
+
+You may want to contact Emre Celebi <emrecelebi1980 at gmail.com>
+about some other methods included in the code. He was aware that I was 
+implementing some of his methods from the the Fourier package (in sourceforge) 
+in Java.
+
+Cheers
+Gabriel
+
+==============================
+On Sun, 15 Mar 2009, Gabriel Landini wrote:
+
+> Hello Antti,
+>
+> I found your excellent thresholding presentations and Matlab code in the
+> web.
+> I want to port some of the methods to ImageJ, but I have no Matlab, so I 
+> have been trying to imagine what some of the code does.
+>
+> I implemented the Intermodes algorithm, but I get a threshold of 88 in the
+> Cameraman image, while your presentation shows a value of 89.
+>
+> I checked and rechecked the code, I get 2 modes with values of 12 and 164
+> (after 48 iterations) and so the threshold is 88.
+>
+> Am I missing some obvious detail (such as 1 being added to the threshold?).I
+> do not see that in the Matlab code.
+> I can send the java code if you wished to look at it.
+>
+> Many thanks in advance for any hints.
+> Best wishes,
+>
+> Gabriel
+
+
+Re: Threhsholds
+From:	Antti Niemist? <ant at cs.tut.fi>
+To:	Gabriel Landini <G.Landini at bham.ac.uk>
+Date:	16/03/2009 20:28
+Hello Gabriel,
+
+It's great to hear that you are finding my little thresholding toolbox 
+useful.
+
+Are you sure that the cameraman image is exactly the same one as the one 
+that I used? Mine is the one that came with MATLAB. Subtle differences in 
+pixel values (that do not even affect what the image looks like) might 
+affect the threshold that you get.
+
+The modes that I get are 13 and 165, so yours are off by one. Could it be 
+an indexing problem? That just crossed my mind since indexing starts from 
+zero in Java (if I'm not mistaken).
+
+Also, the convolution on line 38 of th_intermodes.m might be something 
+that you implemented differently. The line is y = conv2(y,h,'same'); Since 
+I use the option 'same', the output y is the samze size as the input y. 
+Therefore, how the input y is padded has an effect on the output. MATLAB 
+uses zero padding, so if you used some other padding, the threshold might 
+end up being different.
+
+Good luck!
+
+Sincerely,
+Antti Niemist?
+
+==============================
+
+
+
+
+From G.Landini at bham.ac.uk  Mon Feb 11 17:34:30 2013
+From: G.Landini at bham.ac.uk (Gabriel Landini)
+Date: Mon, 11 Feb 2013 23:34:30 +0000
+Subject: [ImageJ-devel] Fwd: Hist thresh toolbox license question
+In-Reply-To: <alpine.LRH.2.02.1302120108480.15465@savukolibri.cs.tut.fi>
+References: <CAKcvfuSmuawSDO3WyrEC5Kg4Y0ot9xy_41AKGBYe1tODQNMQeg@mail.gmail.com>
+	<alpine.DEB.1.00.1302111835090.32206@s15462909.onlinehome-server.info>
+	<alpine.LRH.2.02.1302120108480.15465@savukolibri.cs.tut.fi>
+Message-ID: <1569410.bJ8aLc57fJ@linux-itys.site>
+
+On Monday 11 Feb 2013 23:23:11 Antti Niemist? wrote:
+> Then that's what we'll do. I actually found a little bug in one of the
+> methods (th_maxlik) some time ago, so I was thinking I'll put out a new
+> version of the toolbox with that fixed. I'm not exactly a software guy and
+> do not routinely deal with licensing, so can you give me a walkthrough as
+> to how to go about making this new release with a dual BSD/GPL license? Or
+> point me to one? I'll then update the toolbox page at
+> http://www.cs.tut.fi/~ant/histthresh/ The bug fix is ready so I'll get
+> this up as soon as the licensing is sorted.
+
+Hi Antti,
+The maximum likelihood estimator method was never implemented in the ImageJ 
+plugin because I could never make it replicate the results of the Matlab code. 
+Best wishes
+
+Gabriel
+
+
+
+From antti.niemisto at tut.fi  Mon Feb 11 17:23:11 2013
+From: antti.niemisto at tut.fi (=?ISO-8859-15?Q?Antti_Niemist=F6?=)
+Date: Tue, 12 Feb 2013 01:23:11 +0200 (EET)
+Subject: [ImageJ-devel] Fwd: Hist thresh toolbox license question
+In-Reply-To: <alpine.DEB.1.00.1302111835090.32206@s15462909.onlinehome-server.info>
+References: <CAKcvfuSmuawSDO3WyrEC5Kg4Y0ot9xy_41AKGBYe1tODQNMQeg@mail.gmail.com>
+	<alpine.LRH.2.02.1302111210380.15465@savukolibri.cs.tut.fi>
+	<CAKcvfuSWiu3ekB_RD=b5u_6+fqrXK_GkGgF4ZuM5VD4iy51fhQ@mail.gmail.com>
+	<alpine.DEB.1.00.1302111835090.32206@s15462909.onlinehome-server.info>
+Message-ID: <alpine.LRH.2.02.1302120108480.15465@savukolibri.cs.tut.fi>
+
+Hi,
+
+On Mon, 11 Feb 2013, Johannes Schindelin wrote:
+
+> Hi,
+>
+> On Mon, 11 Feb 2013, Barry DeZonia wrote:
+>
+>> From: Antti Niemist? <antti.niemisto at tut.fi>
+>>
+>> I would be happy to do so. What exactly would you need me to do? I think
+>> dual licensing with both GPL and BSD would be the way to go here.
+>
+> Dual licensing would be perfectly acceptable.
+
+Then that's what we'll do. I actually found a little bug in one of the 
+methods (th_maxlik) some time ago, so I was thinking I'll put out a new 
+version of the toolbox with that fixed. I'm not exactly a software guy and 
+do not routinely deal with licensing, so can you give me a walkthrough as 
+to how to go about making this new release with a dual BSD/GPL license? Or 
+point me to one? I'll then update the toolbox page at 
+http://www.cs.tut.fi/~ant/histthresh/ The bug fix is ready so I'll get 
+this up as soon as the licensing is sorted.
+
+-- 
+Antti Niemist? DSc(Tech)              office: TE410
+Research Fellow                       phone:  +358-40-849-0587 (GSM)
+Department of Signal Processing               +358-3-3115-4989 (fax)
+Tampere University of Technology      URI:    http://www.cs.tut.fi/~ant/
+
+
+From schindelin at wisc.edu  Tue Feb 12 11:43:09 2013
+From: schindelin at wisc.edu (Johannes Schindelin)
+Date: Tue, 12 Feb 2013 18:43:09 +0100 (CET)
+Subject: [ImageJ-devel] Fwd: Hist thresh toolbox license question
+In-Reply-To: <8671552.DjC2n6KSjE@ds170>
+References: <CAKcvfuSmuawSDO3WyrEC5Kg4Y0ot9xy_41AKGBYe1tODQNMQeg@mail.gmail.com>
+	<CAKcvfuSWiu3ekB_RD=b5u_6+fqrXK_GkGgF4ZuM5VD4iy51fhQ@mail.gmail.com>
+	<alpine.DEB.1.00.1302111835090.32206@s15462909.onlinehome-server.info>
+	<8671552.DjC2n6KSjE@ds170>
+Message-ID: <alpine.DEB.1.00.1302121840220.32206@s15462909.onlinehome-server.info>
+
+Hi Emri,
+
+background: we are developing ImageJ2, the next generation of ImageJ, and
+would like to include autho-threshold code that was apparently transformed
+from your code.  For this, we would like to get your consent to relicense
+the (Java) code to the Simple BSD license.
+
+We would appreciate your contribution for the benefit of tens of thousands
+of biologists using ImageJ today (probably even more).
+
+Thanks,
+Johannes
+
+On Mon, 11 Feb 2013, Gabriel Landini wrote:
+
+> On Monday 11 Feb 2013 17:41:28 Johannes Schindelin wrote:
+>
+> > In another mail thread (which I would merge with this one if I had more
+> > time), we asked Gabriel Landini (who would have been Cc:ed if this mail
+> > was in the same thread), who transformed your code into a GPLed
+> > ImageJ plugin, whether he would be willing to relicense the code so we
+> > would not have to rewrite it:
+> > 
+> > http://imagej.net/pipermail/imagej-devel/2013-February/001390.html
+> > 
+> > It was only after his positive answer that we realized that part of the
+> > code was derived from your GPLed code and we would require your
+> > willingness to relicense to use the transformed code.
+> 
+> Hi everybody,
+> Just to clarify, I did let Antti know that I was intending to port some of his 
+> Matlab code into Java for ImageJ and that was releases (as in his code) as 
+> GPL. Original exchange follows below.
+> 
+> You may want to contact Emre Celebi <emrecelebi1980 at gmail.com>
+> about some other methods included in the code. He was aware that I was 
+> implementing some of his methods from the the Fourier package (in sourceforge) 
+> in Java.
+> 
+> Cheers
+> Gabriel
+> 
+> ==============================
+> On Sun, 15 Mar 2009, Gabriel Landini wrote:
+> 
+> > Hello Antti,
+> >
+> > I found your excellent thresholding presentations and Matlab code in the
+> > web.
+> > I want to port some of the methods to ImageJ, but I have no Matlab, so I 
+> > have been trying to imagine what some of the code does.
+> >
+> > I implemented the Intermodes algorithm, but I get a threshold of 88 in the
+> > Cameraman image, while your presentation shows a value of 89.
+> >
+> > I checked and rechecked the code, I get 2 modes with values of 12 and 164
+> > (after 48 iterations) and so the threshold is 88.
+> >
+> > Am I missing some obvious detail (such as 1 being added to the threshold?).I
+> > do not see that in the Matlab code.
+> > I can send the java code if you wished to look at it.
+> >
+> > Many thanks in advance for any hints.
+> > Best wishes,
+> >
+> > Gabriel
+> 
+> 
+> Re: Threhsholds
+> From:	Antti Niemist? <ant at cs.tut.fi>
+> To:	Gabriel Landini <G.Landini at bham.ac.uk>
+> Date:	16/03/2009 20:28
+> Hello Gabriel,
+> 
+> It's great to hear that you are finding my little thresholding toolbox 
+> useful.
+> 
+> Are you sure that the cameraman image is exactly the same one as the one 
+> that I used? Mine is the one that came with MATLAB. Subtle differences in 
+> pixel values (that do not even affect what the image looks like) might 
+> affect the threshold that you get.
+> 
+> The modes that I get are 13 and 165, so yours are off by one. Could it be 
+> an indexing problem? That just crossed my mind since indexing starts from 
+> zero in Java (if I'm not mistaken).
+> 
+> Also, the convolution on line 38 of th_intermodes.m might be something 
+> that you implemented differently. The line is y = conv2(y,h,'same'); Since 
+> I use the option 'same', the output y is the samze size as the input y. 
+> Therefore, how the input y is padded has an effect on the output. MATLAB 
+> uses zero padding, so if you used some other padding, the threshold might 
+> end up being different.
+> 
+> Good luck!
+> 
+> Sincerely,
+> Antti Niemist?
+> 
+> ==============================
+> 
+> 
+> 
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+> 
+
+
+From schindelin at wisc.edu  Tue Feb 12 11:44:44 2013
+From: schindelin at wisc.edu (Johannes Schindelin)
+Date: Tue, 12 Feb 2013 18:44:44 +0100 (CET)
+Subject: [ImageJ-devel] Fwd: Hist thresh toolbox license question
+In-Reply-To: <alpine.LRH.2.02.1302120108480.15465@savukolibri.cs.tut.fi>
+References: <CAKcvfuSmuawSDO3WyrEC5Kg4Y0ot9xy_41AKGBYe1tODQNMQeg@mail.gmail.com>
+	<alpine.LRH.2.02.1302111210380.15465@savukolibri.cs.tut.fi>
+	<CAKcvfuSWiu3ekB_RD=b5u_6+fqrXK_GkGgF4ZuM5VD4iy51fhQ@mail.gmail.com>
+	<alpine.DEB.1.00.1302111835090.32206@s15462909.onlinehome-server.info>
+	<alpine.LRH.2.02.1302120108480.15465@savukolibri.cs.tut.fi>
+Message-ID: <alpine.DEB.1.00.1302121843440.32206@s15462909.onlinehome-server.info>
+
+Hi Antti,
+
+On Tue, 12 Feb 2013, Antti Niemist? wrote:
+
+> On Mon, 11 Feb 2013, Johannes Schindelin wrote:
+> 
+> > On Mon, 11 Feb 2013, Barry DeZonia wrote:
+> >
+> > > From: Antti Niemist? <antti.niemisto at tut.fi>
+> > >
+> > > I would be happy to do so. What exactly would you need me to do? I
+> > > think dual licensing with both GPL and BSD would be the way to go
+> > > here.
+> >
+> > Dual licensing would be perfectly acceptable.
+> 
+> Then that's what we'll do.
+
+Perfect. This email should actually be enough for us to go forward (no
+need to relicense your Matlab code, unless you want to, of course ;-)).
+
+Thanks,
+Johannes
+
+
+From antti.niemisto at tut.fi  Tue Feb 12 12:19:42 2013
+From: antti.niemisto at tut.fi (=?ISO-8859-15?Q?Antti_Niemist=F6?=)
+Date: Tue, 12 Feb 2013 20:19:42 +0200 (EET)
+Subject: [ImageJ-devel] Fwd: Hist thresh toolbox license question
+In-Reply-To: <alpine.DEB.1.00.1302121843440.32206@s15462909.onlinehome-server.info>
+References: <CAKcvfuSmuawSDO3WyrEC5Kg4Y0ot9xy_41AKGBYe1tODQNMQeg@mail.gmail.com>
+	<alpine.LRH.2.02.1302111210380.15465@savukolibri.cs.tut.fi>
+	<CAKcvfuSWiu3ekB_RD=b5u_6+fqrXK_GkGgF4ZuM5VD4iy51fhQ@mail.gmail.com>
+	<alpine.DEB.1.00.1302111835090.32206@s15462909.onlinehome-server.info>
+	<alpine.LRH.2.02.1302120108480.15465@savukolibri.cs.tut.fi>
+	<alpine.DEB.1.00.1302121843440.32206@s15462909.onlinehome-server.info>
+Message-ID: <alpine.LRH.2.02.1302122018340.15465@savukolibri.cs.tut.fi>
+
+Hi Johannes,
+
+On Tue, 12 Feb 2013, Johannes Schindelin wrote:
+
+> Hi Antti,
+>
+> On Tue, 12 Feb 2013, Antti Niemist? wrote:
+>
+>> On Mon, 11 Feb 2013, Johannes Schindelin wrote:
+>>
+>>> On Mon, 11 Feb 2013, Barry DeZonia wrote:
+>>>
+>>>> From: Antti Niemist? <antti.niemisto at tut.fi>
+>>>>
+>>>> I would be happy to do so. What exactly would you need me to do? I
+>>>> think dual licensing with both GPL and BSD would be the way to go
+>>>> here.
+>>>
+>>> Dual licensing would be perfectly acceptable.
+>>
+>> Then that's what we'll do.
+>
+> Perfect. This email should actually be enough for us to go forward (no
+> need to relicense your Matlab code, unless you want to, of course ;-)).
+
+Perfect. The less hassle for me the better. I just want the community to 
+be able to benefit from my earlier work.
+
+-- 
+Antti Niemist? DSc(Tech)              office: TE410
+Research Fellow                       phone:  +358-40-849-0587 (GSM)
+Department of Signal Processing               +358-3-3115-4989 (fax)
+Tampere University of Technology      URI:    http://www.cs.tut.fi/~ant/
+
+
+From emrecelebi1980 at gmail.com  Tue Feb 12 12:59:39 2013
+From: emrecelebi1980 at gmail.com (Emre Celebi)
+Date: Tue, 12 Feb 2013 12:59:39 -0600
+Subject: [ImageJ-devel] Fwd: Hist thresh toolbox license question
+In-Reply-To: <alpine.DEB.1.00.1302121840220.32206@s15462909.onlinehome-server.info>
+References: <CAKcvfuSmuawSDO3WyrEC5Kg4Y0ot9xy_41AKGBYe1tODQNMQeg@mail.gmail.com>
+	<CAKcvfuSWiu3ekB_RD=b5u_6+fqrXK_GkGgF4ZuM5VD4iy51fhQ@mail.gmail.com>
+	<alpine.DEB.1.00.1302111835090.32206@s15462909.onlinehome-server.info>
+	<8671552.DjC2n6KSjE@ds170>
+	<alpine.DEB.1.00.1302121840220.32206@s15462909.onlinehome-server.info>
+Message-ID: <511A911B.1070605@gmail.com>
+
+Hi Johannes,
+
+You have my consent.
+
+Good luck,
+
+Emre
+
+On 2/12/2013 11:43 AM, Johannes Schindelin wrote:
+> developing ImageJ2, the next generation of ImageJ, and
+> would like to include autho-threshold code that was apparently transformed
+> from your code.  For this, we would like to get your consent to relicense
+> the (Java) code to the Simple BSD license.
+>
+> We would appreciate your contribution for the benefit of tens of thousands
+> of biologists using ImageJ today (probably even more).
+>
+> Thanks,
+> Johannes
+
+
+
+From schindelin at wisc.edu  Tue Feb 12 13:34:22 2013
+From: schindelin at wisc.edu (Johannes Schindelin)
+Date: Tue, 12 Feb 2013 20:34:22 +0100 (CET)
+Subject: [ImageJ-devel] Fwd: Hist thresh toolbox license question
+In-Reply-To: <1569410.bJ8aLc57fJ@linux-itys.site>
+References: <CAKcvfuSmuawSDO3WyrEC5Kg4Y0ot9xy_41AKGBYe1tODQNMQeg@mail.gmail.com>
+	<alpine.DEB.1.00.1302111835090.32206@s15462909.onlinehome-server.info>
+	<alpine.LRH.2.02.1302120108480.15465@savukolibri.cs.tut.fi>
+	<1569410.bJ8aLc57fJ@linux-itys.site>
+Message-ID: <alpine.DEB.1.00.1302122033510.32206@s15462909.onlinehome-server.info>
+
+Hi Gabriel and Antti,
+
+On Mon, 11 Feb 2013, Gabriel Landini wrote:
+
+> On Monday 11 Feb 2013 23:23:11 Antti Niemist? wrote:
+> > Then that's what we'll do. I actually found a little bug in one of the
+> > methods (th_maxlik) some time ago, so I was thinking I'll put out a
+> > new version of the toolbox with that fixed. I'm not exactly a software
+> > guy and do not routinely deal with licensing, so can you give me a
+> > walkthrough as to how to go about making this new release with a dual
+> > BSD/GPL license? Or point me to one? I'll then update the toolbox page
+> > at http://www.cs.tut.fi/~ant/histthresh/ The bug fix is ready so I'll
+> > get this up as soon as the licensing is sorted.
+> 
+> The maximum likelihood estimator method was never implemented in the
+> ImageJ plugin because I could never make it replicate the results of the
+> Matlab code. 
+
+I look forward to trying that maximum likelihood method!
+
+Ciao,
+Johannes
+
+
+From G.Landini at bham.ac.uk  Tue Feb 12 14:15:31 2013
+From: G.Landini at bham.ac.uk (Gabriel Landini)
+Date: Tue, 12 Feb 2013 20:15:31 +0000
+Subject: [ImageJ-devel] Fwd: Hist thresh toolbox license question
+In-Reply-To: <alpine.DEB.1.00.1302122033510.32206@s15462909.onlinehome-server.info>
+References: <CAKcvfuSmuawSDO3WyrEC5Kg4Y0ot9xy_41AKGBYe1tODQNMQeg@mail.gmail.com>
+	<1569410.bJ8aLc57fJ@linux-itys.site>
+	<alpine.DEB.1.00.1302122033510.32206@s15462909.onlinehome-server.info>
+Message-ID: <34019224.OTfODJtkXc@linux-itys.site>
+
+On Tuesday 12 Feb 2013 19:34:22 Johannes Schindelin wrote:
+> I look forward to trying that maximum likelihood method!
+
+So do I :-) but I spent a lot of time trying to find out what was wrong and I 
+gave up in the end. Look forward to see the new code by Antti.
+
+Regards to all
+
+Gabriel
+
+
+
+From Johannes.Schindelin at gmx.de  Tue Feb 12 16:58:29 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Tue, 12 Feb 2013 23:58:29 +0100 (CET)
+Subject: [ImageJ-devel] Netbeans and Maven
+In-Reply-To: <3C7514B7E7E76C499962737F8BE1358A01322BA5@SCOMP0936.wurnet.nl>
+References: <3C7514B7E7E76C499962737F8BE1358A0130700E@SCOMP0936.wurnet.nl>
+	<alpine.DEB.1.00.1301150053580.32206@s15462909.onlinehome-server.info>
+	<3C7514B7E7E76C499962737F8BE1358A0130DB63@SCOMP0936.wurnet.nl>
+	<CADN69ymHLoJ18dBPxXHx-L2PshFgDqq7b7hFWjAWe545oXLSDw@mail.gmail.com>
+	<3C7514B7E7E76C499962737F8BE1358A01322BA5@SCOMP0936.wurnet.nl>
+Message-ID: <alpine.DEB.1.00.1302122356070.32206@s15462909.onlinehome-server.info>
+
+Hi Gerrit,
+
+On Tue, 29 Jan 2013, Polder, Gerrit wrote:
+
+> thanks to fixing my other problems I now have I version which I would
+> like to add to a personal update site.
+> So I followed the instructions on the link you provide me.
+> After filling in the values I get the question to upload an empty db.xml.gz.
+> When I click ok nothing happens. Here is a screenshot and the java exceptions I get in the console:
+> 
+> [cid:4CE37434-F5E4-419E-AC6E-30D561CC54A8 at wurnet.nl]
+
+It should work if you prefix the path with "file:". In your case it would
+read:
+
+	file:/var/www/bommel/fijiplugins/
+
+(I hope that the code adds a trailing slash, it should do that at least.)
+
+> Found 0 plugins.
+> Uncaught exception in thread Thread[AWT-EventQueue-0,6,main]
+> java.lang.NullPointerException
+> at imagej.updater.core.FilesUploader.<init>(FilesUploader.java:97)
+
+That indicates a problem with the uploader service. I'll try to reproduce
+here...
+
+Ciao,
+Johannes
+
+
+From Johannes.Schindelin at gmx.de  Tue Feb 12 17:14:42 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Wed, 13 Feb 2013 00:14:42 +0100 (CET)
+Subject: [ImageJ-devel] Netbeans and Maven
+In-Reply-To: <alpine.DEB.1.00.1302122356070.32206@s15462909.onlinehome-server.info>
+References: <3C7514B7E7E76C499962737F8BE1358A0130700E@SCOMP0936.wurnet.nl>
+	<alpine.DEB.1.00.1301150053580.32206@s15462909.onlinehome-server.info>
+	<3C7514B7E7E76C499962737F8BE1358A0130DB63@SCOMP0936.wurnet.nl>
+	<CADN69ymHLoJ18dBPxXHx-L2PshFgDqq7b7hFWjAWe545oXLSDw@mail.gmail.com>
+	<3C7514B7E7E76C499962737F8BE1358A01322BA5@SCOMP0936.wurnet.nl>
+	<alpine.DEB.1.00.1302122356070.32206@s15462909.onlinehome-server.info>
+Message-ID: <alpine.DEB.1.00.1302130011010.32206@s15462909.onlinehome-server.info>
+
+Hi Gerrit,
+
+On Tue, 12 Feb 2013, Johannes Schindelin wrote:
+
+> On Tue, 29 Jan 2013, Polder, Gerrit wrote:
+> 
+> > thanks to fixing my other problems I now have I version which I would
+> > like to add to a personal update site.
+> > So I followed the instructions on the link you provide me.
+> > After filling in the values I get the question to upload an empty db.xml.gz.
+> > When I click ok nothing happens. Here is a screenshot and the java exceptions I get in the console:
+> > 
+> > [cid:4CE37434-F5E4-419E-AC6E-30D561CC54A8 at wurnet.nl]
+> 
+> It should work if you prefix the path with "file:". In your case it would
+> read:
+> 
+> 	file:/var/www/bommel/fijiplugins/
+
+Oops. I missed that you want to upload to an SSH server. I guess the
+problem is as I indicated a couple of weeks ago (and as you might have
+guessed, I really did not get around to take care of it until today):
+initializing upload sites via SSH only works if you have
+ij-updater-ssh.jar installed (it comes from the ImageJ update site and is
+*not* installed by default).
+
+So for the time being, could you look for that file in the uninstalled
+files view in the advanced mode of the updater and install it?
+
+Thanks,
+Johannes
+
+
+From schindelin at wisc.edu  Tue Feb 12 17:31:22 2013
+From: schindelin at wisc.edu (Johannes Schindelin)
+Date: Wed, 13 Feb 2013 00:31:22 +0100 (CET)
+Subject: [ImageJ-devel] Netbeans and Maven
+In-Reply-To: <alpine.DEB.1.00.1302130011010.32206@s15462909.onlinehome-server.info>
+References: <3C7514B7E7E76C499962737F8BE1358A0130700E@SCOMP0936.wurnet.nl>
+	<alpine.DEB.1.00.1301150053580.32206@s15462909.onlinehome-server.info>
+	<3C7514B7E7E76C499962737F8BE1358A0130DB63@SCOMP0936.wurnet.nl>
+	<CADN69ymHLoJ18dBPxXHx-L2PshFgDqq7b7hFWjAWe545oXLSDw@mail.gmail.com>
+	<3C7514B7E7E76C499962737F8BE1358A01322BA5@SCOMP0936.wurnet.nl>
+	<alpine.DEB.1.00.1302122356070.32206@s15462909.onlinehome-server.info>
+	<alpine.DEB.1.00.1302130011010.32206@s15462909.onlinehome-server.info>
+Message-ID: <alpine.DEB.1.00.1302130021460.32206@s15462909.onlinehome-server.info>
+
+Hi Gerrit,
+
+On Wed, 13 Feb 2013, Johannes Schindelin wrote:
+
+> On Tue, 12 Feb 2013, Johannes Schindelin wrote:
+> 
+> I guess the problem is as I indicated a couple of weeks ago (and as you
+> might have guessed, I really did not get around to take care of it until
+> today): initializing upload sites via SSH only works if you have
+> ij-updater-ssh.jar installed (it comes from the ImageJ update site and
+> is *not* installed by default).
+> 
+> So for the time being, could you look for that file in the uninstalled
+> files view in the advanced mode of the updater and install it?
+
+Actually, it seems that something else went wrong in your Fiji. Is there
+some other message in the Console before what you reported? I do get
+something along the lines
+
+	...
+	'jars/rsyntaxtextarea.jar' from update site 'Fiji' shadows the one
+		from update site 'ImageJ'
+	Found 293 plugins.
+	Created service: imagej.htread.DefaultThreadService
+	Created service: imagej.event.DefaultEventService
+	Created service: imagej.plugin.DefaultPluginService
+	Found 3 upload mechanisms.
+	...
+
+Later on I do get
+
+	...
+	Found 219 plugins.
+	Created service: imagej.htread.DefaultThreadService
+	Created service: imagej.event.DefaultEventService
+	Created service: imagej.plugin.DefaultPluginService
+	Found 1 upload mechanisms.
+	...
+
+and then when I try something similar to you (initialize an update site
+via SSH), after tons of "file: ..." and "dependency ..." lines:
+
+	Uncaught exception in thread Thread[AWT-EventQueue-0,6,main]
+	java.lang.IllegalArgumentException: No uploader found for protocol ssh
+	...
+
+I will work on that issue (which can be worked around as I suggested, by
+installing ij-updater-ssh.jar first, or as I suggested originally, by
+installing to a local directory using the file:localhost "SSH host" and
+then copying the files over to the final destination) that the SSH upload
+protocol should be installed transparently when needed.
+
+Ciao,
+Johannes
+
+
+From gerrit.polder at wur.nl  Wed Feb 13 02:13:06 2013
+From: gerrit.polder at wur.nl (Gerrit Polder)
+Date: Wed, 13 Feb 2013 09:13:06 +0100
+Subject: [ImageJ-devel] Netbeans and Maven
+In-Reply-To: <alpine.DEB.1.00.1302130021460.32206@s15462909.onlinehome-server.info>
+References: <3C7514B7E7E76C499962737F8BE1358A0130700E@SCOMP0936.wurnet.nl>
+	<alpine.DEB.1.00.1301150053580.32206@s15462909.onlinehome-server.info>
+	<3C7514B7E7E76C499962737F8BE1358A0130DB63@SCOMP0936.wurnet.nl>
+	<CADN69ymHLoJ18dBPxXHx-L2PshFgDqq7b7hFWjAWe545oXLSDw@mail.gmail.com>
+	<3C7514B7E7E76C499962737F8BE1358A01322BA5@SCOMP0936.wurnet.nl>
+	<alpine.DEB.1.00.1302122356070.32206@s15462909.onlinehome-server.info>
+	<alpine.DEB.1.00.1302130011010.32206@s15462909.onlinehome-server.info>
+	<alpine.DEB.1.00.1302130021460.32206@s15462909.onlinehome-server.info>
+Message-ID: <9BEB9EEE-A9C3-4096-88BE-A068DD67C2EB@wur.nl>
+
+Johannes,
+
+oops, forgot to mention here, sorry about that, but my problem was solved by installing a fresh new fiji setup.
+after that everything worked as expected.
+
+Gerrit.
+
+On 13 Feb 2013, at 00:31, Johannes Schindelin <schindelin at wisc.edu>
+ wrote:
+
+> Hi Gerrit,
+> 
+> On Wed, 13 Feb 2013, Johannes Schindelin wrote:
+> 
+>> On Tue, 12 Feb 2013, Johannes Schindelin wrote:
+>> 
+>> I guess the problem is as I indicated a couple of weeks ago (and as you
+>> might have guessed, I really did not get around to take care of it until
+>> today): initializing upload sites via SSH only works if you have
+>> ij-updater-ssh.jar installed (it comes from the ImageJ update site and
+>> is *not* installed by default).
+>> 
+>> So for the time being, could you look for that file in the uninstalled
+>> files view in the advanced mode of the updater and install it?
+> 
+> Actually, it seems that something else went wrong in your Fiji. Is there
+> some other message in the Console before what you reported? I do get
+> something along the lines
+> 
+> 	...
+> 	'jars/rsyntaxtextarea.jar' from update site 'Fiji' shadows the one
+> 		from update site 'ImageJ'
+> 	Found 293 plugins.
+> 	Created service: imagej.htread.DefaultThreadService
+> 	Created service: imagej.event.DefaultEventService
+> 	Created service: imagej.plugin.DefaultPluginService
+> 	Found 3 upload mechanisms.
+> 	...
+> 
+> Later on I do get
+> 
+> 	...
+> 	Found 219 plugins.
+> 	Created service: imagej.htread.DefaultThreadService
+> 	Created service: imagej.event.DefaultEventService
+> 	Created service: imagej.plugin.DefaultPluginService
+> 	Found 1 upload mechanisms.
+> 	...
+> 
+> and then when I try something similar to you (initialize an update site
+> via SSH), after tons of "file: ..." and "dependency ..." lines:
+> 
+> 	Uncaught exception in thread Thread[AWT-EventQueue-0,6,main]
+> 	java.lang.IllegalArgumentException: No uploader found for protocol ssh
+> 	...
+> 
+> I will work on that issue (which can be worked around as I suggested, by
+> installing ij-updater-ssh.jar first, or as I suggested originally, by
+> installing to a local directory using the file:localhost "SSH host" and
+> then copying the files over to the final destination) that the SSH upload
+> protocol should be installed transparently when needed.
+> 
+> Ciao,
+> Johannes
+> 
+> 
+
+-------------------------------------------------- 
+dr. ing. G (Gerrit) Polder 
+Wageningen UR, Biometris 
+P.O.Box 100, 6700 AC Wageningen, the Netherlands 
+http://www.wageningenur.nl/en/Persons/dr.ing.-G-Gerrit-Polder.htm
+email: gerrit.polder at wur.nl 
+phone: +31.317.480751 
+
+
+
+
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130213/a7a44daf/attachment-0001.html>
+
+From antti.niemisto at tut.fi  Wed Feb 13 08:15:45 2013
+From: antti.niemisto at tut.fi (=?ISO-8859-15?Q?Antti_Niemist=F6?=)
+Date: Wed, 13 Feb 2013 16:15:45 +0200 (EET)
+Subject: [ImageJ-devel] Fwd: Hist thresh toolbox license question
+In-Reply-To: <alpine.DEB.1.00.1302122033510.32206@s15462909.onlinehome-server.info>
+References: <CAKcvfuSmuawSDO3WyrEC5Kg4Y0ot9xy_41AKGBYe1tODQNMQeg@mail.gmail.com>
+	<alpine.DEB.1.00.1302111835090.32206@s15462909.onlinehome-server.info>
+	<alpine.LRH.2.02.1302120108480.15465@savukolibri.cs.tut.fi>
+	<1569410.bJ8aLc57fJ@linux-itys.site> 
+	<alpine.DEB.1.00.1302122033510.32206@s15462909.onlinehome-server.info>
+Message-ID: <alpine.LRH.2.02.1302131611430.15465@savukolibri.cs.tut.fi>
+
+Hi Johannes,
+
+On Tue, 12 Feb 2013, Johannes Schindelin wrote:
+
+> Hi Gabriel and Antti,
+>
+> On Mon, 11 Feb 2013, Gabriel Landini wrote:
+>
+>> On Monday 11 Feb 2013 23:23:11 Antti Niemist? wrote:
+>>> Then that's what we'll do. I actually found a little bug in one of the
+>>> methods (th_maxlik) some time ago, so I was thinking I'll put out a
+>>> new version of the toolbox with that fixed. I'm not exactly a software
+>>> guy and do not routinely deal with licensing, so can you give me a
+>>> walkthrough as to how to go about making this new release with a dual
+>>> BSD/GPL license? Or point me to one? I'll then update the toolbox page
+>>> at http://www.cs.tut.fi/~ant/histthresh/ The bug fix is ready so I'll
+>>> get this up as soon as the licensing is sorted.
+>>
+>> The maximum likelihood estimator method was never implemented in the
+>> ImageJ plugin because I could never make it replicate the results of the
+>> Matlab code.
+>
+> I look forward to trying that maximum likelihood method!
+
+The updated version of the maximum likelihood method is now available with 
+the brand new release 1.03 of HistThresh Toolbox for MATLAB at 
+http://www.cs.tut.fi/~ant/histthresh/
+
+I hope that it is useful to you.
+
+-- 
+Antti Niemist? DSc(Tech)              office: TE410
+Research Fellow                       phone:  +358-40-849-0587 (GSM)
+Department of Signal Processing               +358-3-3115-4989 (fax)
+Tampere University of Technology      URI:    http://www.cs.tut.fi/~ant/
+
+
+From bdezonia at gmail.com  Mon Feb 18 15:13:42 2013
+From: bdezonia at gmail.com (Barry DeZonia)
+Date: Mon, 18 Feb 2013 15:13:42 -0600
+Subject: [ImageJ-devel] Fwd: Hist thresh toolbox license question
+In-Reply-To: <alpine.LRH.2.02.1302131611430.15465@savukolibri.cs.tut.fi>
+References: <CAKcvfuSmuawSDO3WyrEC5Kg4Y0ot9xy_41AKGBYe1tODQNMQeg@mail.gmail.com>
+	<alpine.DEB.1.00.1302111835090.32206@s15462909.onlinehome-server.info>
+	<alpine.LRH.2.02.1302120108480.15465@savukolibri.cs.tut.fi>
+	<1569410.bJ8aLc57fJ@linux-itys.site>
+	<alpine.DEB.1.00.1302122033510.32206@s15462909.onlinehome-server.info>
+	<alpine.LRH.2.02.1302131611430.15465@savukolibri.cs.tut.fi>
+Message-ID: <CAKcvfuTu5SdbyPcLVnGk3_-mwP3ez0fqLo-KDjpQHDtimsx=jA@mail.gmail.com>
+
+Thanks Antti. I've already begun porting it into ImageJ2. I noticed that
+the release includes a tweak to the th_minimum.m code. I was going to
+incorporate it into our stuff but came across three versions (one our own)
+and wanted to make sure that if our code differs it is a mistake and not a
+bug we found.
+
+At the end of th_minimum.m the code looks like this in 1.02:
+
+% The threshold is the minimum between the two peaks.
+for k = 2:n
+  if y(k-1) > y(k) & y(k+1) > y(k)
+    T = k-1;
+  end
+end
+
+Our version (I believe ported from 1.02) is very similar except the test
+line looks like:
+
+  if y(k-1) > y(k) & y(k+1) >= y(k)   // NOTICE THE SINGLE >= INSTEAD OF >
+
+Finally your much changed version looks like this in 1.03:
+
+% The threshold is the minimum between the two peaks.
+peakfound = false;
+for k = 2:n
+  if y(k-1) < y(k) & y(k+1) < y(k)
+    peakfound = true;
+  end
+  if peakfound  & y(k-1) >= y(k) & y(k+1) >= y(k)
+    T = k-1;
+    return
+  end
+end
+
+I think Gabriel can shed light maybe on our change and if it was by design
+or not. (Gabriel its been present since 1.0). And I see your new version is
+>='s on both ends. So maybe this email is overkill. Any clarification on
+your thinking re: the 1.03 change would be appreciated.
+
+
+On Wed, Feb 13, 2013 at 8:15 AM, Antti Niemist? <antti.niemisto at tut.fi>wrote:
+
+> Hi Johannes,
+>
+>
+> On Tue, 12 Feb 2013, Johannes Schindelin wrote:
+>
+>  Hi Gabriel and Antti,
+>>
+>> On Mon, 11 Feb 2013, Gabriel Landini wrote:
+>>
+>>  On Monday 11 Feb 2013 23:23:11 Antti Niemist? wrote:
+>>>
+>>>> Then that's what we'll do. I actually found a little bug in one of the
+>>>> methods (th_maxlik) some time ago, so I was thinking I'll put out a
+>>>> new version of the toolbox with that fixed. I'm not exactly a software
+>>>> guy and do not routinely deal with licensing, so can you give me a
+>>>> walkthrough as to how to go about making this new release with a dual
+>>>> BSD/GPL license? Or point me to one? I'll then update the toolbox page
+>>>> at http://www.cs.tut.fi/~ant/**histthresh/<http://www.cs.tut.fi/~ant/histthresh/>The bug fix is ready so I'll
+>>>> get this up as soon as the licensing is sorted.
+>>>>
+>>>
+>>> The maximum likelihood estimator method was never implemented in the
+>>> ImageJ plugin because I could never make it replicate the results of the
+>>> Matlab code.
+>>>
+>>
+>> I look forward to trying that maximum likelihood method!
+>>
+>
+> The updated version of the maximum likelihood method is now available with
+> the brand new release 1.03 of HistThresh Toolbox for MATLAB at
+> http://www.cs.tut.fi/~ant/**histthresh/<http://www.cs.tut.fi/~ant/histthresh/>
+>
+> I hope that it is useful to you.
+>
+>
+> --
+> Antti Niemist? DSc(Tech)              office: TE410
+> Research Fellow                       phone:  +358-40-849-0587 (GSM)
+> Department of Signal Processing               +358-3-3115-4989 (fax)
+> Tampere University of Technology      URI:    http://www.cs.tut.fi/~ant/
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130218/36f321a0/attachment.html>
+
+From antti.niemisto at tut.fi  Mon Feb 18 16:01:14 2013
+From: antti.niemisto at tut.fi (=?ISO-8859-15?Q?Antti_Niemist=F6?=)
+Date: Tue, 19 Feb 2013 00:01:14 +0200 (EET)
+Subject: [ImageJ-devel] Fwd: Hist thresh toolbox license question
+In-Reply-To: <CAKcvfuTu5SdbyPcLVnGk3_-mwP3ez0fqLo-KDjpQHDtimsx=jA@mail.gmail.com>
+References: <CAKcvfuSmuawSDO3WyrEC5Kg4Y0ot9xy_41AKGBYe1tODQNMQeg@mail.gmail.com>
+	<alpine.DEB.1.00.1302111835090.32206@s15462909.onlinehome-server.info>
+	<alpine.LRH.2.02.1302120108480.15465@savukolibri.cs.tut.fi>
+	<1569410.bJ8aLc57fJ@linux-itys.site>
+	<alpine.DEB.1.00.1302122033510.32206@s15462909.onlinehome-server.info>
+	<alpine.LRH.2.02.1302131611430.15465@savukolibri.cs.tut.fi>
+	<CAKcvfuTu5SdbyPcLVnGk3_-mwP3ez0fqLo-KDjpQHDtimsx=jA@mail.gmail.com>
+Message-ID: <alpine.LRH.2.02.1302182342000.15465@savukolibri.cs.tut.fi>
+
+Hello,
+
+It seems like your ported version does not produce the correct threshold 
+between the two peaks in the smoothed histogram in certain cases where you 
+have flat areas in the smoothed histogram.
+
+For example, try this one.
+
+I = 40*ones(40);
+I(10:30,10:30) = 120;
+T = th_minimum(I);
+
+You'll find the threshold becomes 121. This is of course not between the 
+two peaks at 40 and 120.
+
+The code in v1.02 did not assign any value to the threshold in this 
+example case and in similar cases, so it clearly needed to be fixed.
+
+I now realize that a much more elegant fix than what I put in v1.03 would 
+be this (gives T=41 in my simple example):
+
+for k = 2:n
+   if y(k-1) > y(k) & y(k+1) >= y(k)
+     T = k-1;
+     break
+   end
+end
+
+The "break" from the loop is essential, in addition to changing the latter 
+">" to a ">=". I would definitely use this code in your port.
+
+Antti
+
+
+On Mon, 18 Feb 2013, Barry DeZonia wrote:
+
+> Thanks Antti. I've already begun porting it into ImageJ2. I noticed that the
+> release includes a tweak to the th_minimum.m code. I was going to
+> incorporate it into our stuff but came across three versions (one our own)
+> and wanted to make sure that if our code differs it is a mistake and not a
+> bug we found.
+> At the end of th_minimum.m the code looks like this in 1.02:
+> 
+> % The threshold is the minimum between the two peaks.
+> for k = 2:n
+> ? if y(k-1) > y(k) & y(k+1) > y(k)
+> ? ? T = k-1;
+> ? end
+> end
+> 
+> Our version (I believe ported from 1.02) is very similar except the test
+> line looks like:
+> 
+> ? if y(k-1) > y(k) & y(k+1) >= y(k) ? // NOTICE THE SINGLE >= INSTEAD OF >
+> 
+> Finally your much changed version looks like this in 1.03:
+> 
+> % The threshold is the minimum between the two peaks.
+> peakfound = false;
+> for k = 2:n
+> ? if y(k-1) < y(k) & y(k+1) < y(k)
+> ? ? peakfound = true;
+> ? end
+> ? if peakfound ?& y(k-1) >= y(k) & y(k+1) >= y(k)
+> ? ? T = k-1;
+> ? ? return
+> ? end
+> end
+> 
+> I think Gabriel can shed light maybe on our change and if it was by design
+> or not. (Gabriel its been present since 1.0). And I see your new version is
+> >='s on both ends. So maybe this email is overkill. Any clarification on
+> your thinking re: the 1.03 change would be appreciated.
+> 
+> 
+> On Wed, Feb 13, 2013 at 8:15 AM, Antti Niemist? <antti.niemisto at tut.fi>
+> wrote:
+>       Hi Johannes,
+>
+>       On Tue, 12 Feb 2013, Johannes Schindelin wrote:
+>
+>             Hi Gabriel and Antti,
+>
+>             On Mon, 11 Feb 2013, Gabriel Landini wrote:
+>
+>                   On Monday 11 Feb 2013 23:23:11 Antti
+>                   Niemist? wrote:
+>                         Then that's what we'll do. I
+>                         actually found a little bug
+>                         in one of the
+>                         methods (th_maxlik) some
+>                         time ago, so I was thinking
+>                         I'll put out a
+>                         new version of the toolbox
+>                         with that fixed. I'm not
+>                         exactly a software
+>                         guy and do not routinely
+>                         deal with licensing, so can
+>                         you give me a
+>                         walkthrough as to how to go
+>                         about making this new
+>                         release with a dual
+>                         BSD/GPL license? Or point me
+>                         to one? I'll then update the
+>                         toolbox page
+>                         at
+>                         http://www.cs.tut.fi/~ant/histthresh/
+>                         The bug fix is ready so I'll
+>                         get this up as soon as the
+>                         licensing is sorted.
+> 
+>
+>                   The maximum likelihood estimator method
+>                   was never implemented in the
+>                   ImageJ plugin because I could never make
+>                   it replicate the results of the
+>                   Matlab code.
+> 
+>
+>             I look forward to trying that maximum likelihood
+>             method!
+> 
+> 
+> The updated version of the maximum likelihood method is now available
+> with the brand new release 1.03 of HistThresh Toolbox for MATLAB at
+> http://www.cs.tut.fi/~ant/histthresh/
+> 
+> I hope that it is useful to you.
+> 
+> --
+> Antti Niemist? DSc(Tech) ? ? ? ? ? ? ?office: TE410
+> Research Fellow ? ? ? ? ? ? ? ? ? ? ? phone: ?+358-40-849-0587 (GSM)
+> Department of Signal Processing ? ? ? ? ? ? ? +358-3-3115-4989 (fax)
+> Tampere University of Technology ? ? ?URI: ?
+> ?http://www.cs.tut.fi/~ant/
+> 
+> 
+> 
+>
+
+-- 
+Antti Niemist? DSc(Tech)              office: TE410
+Research Fellow                       phone:  +358-40-849-0587 (GSM)
+Department of Signal Processing               +358-3-3115-4989 (fax)
+Tampere University of Technology      URI:    http://www.cs.tut.fi/~ant/
+
+
+From G.Landini at bham.ac.uk  Mon Feb 18 16:39:23 2013
+From: G.Landini at bham.ac.uk (Gabriel Landini)
+Date: Mon, 18 Feb 2013 22:39:23 +0000
+Subject: [ImageJ-devel] Fwd: Hist thresh toolbox license question
+In-Reply-To: <CAKcvfuTu5SdbyPcLVnGk3_-mwP3ez0fqLo-KDjpQHDtimsx=jA@mail.gmail.com>
+References: <CAKcvfuSmuawSDO3WyrEC5Kg4Y0ot9xy_41AKGBYe1tODQNMQeg@mail.gmail.com>
+	<alpine.LRH.2.02.1302131611430.15465@savukolibri.cs.tut.fi>
+	<CAKcvfuTu5SdbyPcLVnGk3_-mwP3ez0fqLo-KDjpQHDtimsx=jA@mail.gmail.com>
+Message-ID: <2218556.LQ7fOxbLqH@linux-itys.site>
+
+On Monday 18 Feb 2013 21:13:42 Barry DeZonia wrote:
+> I think Gabriel can shed light maybe on our change and if it was by design
+> or not. (Gabriel its been present since 1.0). And I see your new version is
+> >='s on both ends. So maybe this email is overkill. Any clarification on
+> your thinking re: the 1.03 change would be appreciated.
+
+Hi,
+I am almost sure that the ">" was changed to ">=" because the algorithm might 
+not find the threshold in the smoothed histogram if the values between the 
+peaks are constant.
+
+So it is possible to have a smoothed bimodal histogram in which the test 
+y(k-1) > y(k) & y(k+1) > y(k)
+is never passed.
+Relaxing the ">" to ">=" finds a threshold which is the first value of the 
+minimum in the smoothed histogram.
+
+Cheers
+
+Gabriel
+
+
+
+
+From G.Landini at bham.ac.uk  Tue Feb 19 05:08:58 2013
+From: G.Landini at bham.ac.uk (Gabriel Landini)
+Date: Tue, 19 Feb 2013 11:08:58 +0000
+Subject: [ImageJ-devel] Fwd: Hist thresh toolbox license question
+In-Reply-To: <alpine.LRH.2.02.1302182342000.15465@savukolibri.cs.tut.fi>
+References: <CAKcvfuSmuawSDO3WyrEC5Kg4Y0ot9xy_41AKGBYe1tODQNMQeg@mail.gmail.com>
+	<CAKcvfuTu5SdbyPcLVnGk3_-mwP3ez0fqLo-KDjpQHDtimsx=jA@mail.gmail.com>
+	<alpine.LRH.2.02.1302182342000.15465@savukolibri.cs.tut.fi>
+Message-ID: <1643485.WSYIA9d1mD@ds170>
+
+On Monday 18 Feb 2013 22:01:14 Antti Niemist? wrote:
+> It seems like your ported version does not produce the correct threshold
+> between the two peaks in the smoothed histogram in certain cases where you
+> have flat areas in the smoothed histogram.
+> 
+> For example, try this one.
+> 
+> I = 40*ones(40);
+> I(10:30,10:30) = 120;
+> T = th_minimum(I);
+> 
+> You'll find the threshold becomes 121. This is of course not between the
+> two peaks at 40 and 120.
+> 
+> The code in v1.02 did not assign any value to the threshold in this
+> example case and in similar cases, so it clearly needed to be fixed.
+> 
+> I now realize that a much more elegant fix than what I put in v1.03 would
+> be this (gives T=41 in my simple example):
+> 
+> for k = 2:n
+>    if y(k-1) > y(k) & y(k+1) >= y(k)
+>      T = k-1;
+>      break
+>    end
+> end
+> 
+> The "break" from the loop is essential, in addition to changing the latter
+> ">" to a ">=". I would definitely use this code in your port.
+
+Hi again,
+Barry: I seem to have discussed this with Antti that in matlab the arrays 
+start at 1, so the counts for greyscale 0 are in the index 1.
+So for the Java version, the threshold should be set at:
+ T=k;
+
+You want the threshold at y(k), that bin should be smaller than y(k-1).
+BTW that is what the current IJ plugin does. Antti codes compensates for the 
+indexes starting at 1. IJ does not need that.
+
+And do you really need the Break statement?
+If there are 2 peaks guaranteed, then a 2nd instance of the test would not be 
+found. Or am I wrong?
+
+Cheers
+Gabriel
+
+
+
+
+From antti.niemisto at tut.fi  Tue Feb 19 06:52:34 2013
+From: antti.niemisto at tut.fi (=?ISO-8859-15?Q?Antti_Niemist=F6?=)
+Date: Tue, 19 Feb 2013 14:52:34 +0200 (EET)
+Subject: [ImageJ-devel] Fwd: Hist thresh toolbox license question
+In-Reply-To: <1643485.WSYIA9d1mD@ds170>
+References: <CAKcvfuSmuawSDO3WyrEC5Kg4Y0ot9xy_41AKGBYe1tODQNMQeg@mail.gmail.com>
+	<CAKcvfuTu5SdbyPcLVnGk3_-mwP3ez0fqLo-KDjpQHDtimsx=jA@mail.gmail.com>
+	<alpine.LRH.2.02.1302182342000.15465@savukolibri.cs.tut.fi>
+	<1643485.WSYIA9d1mD@ds170>
+Message-ID: <alpine.LRH.2.02.1302191439400.15465@savukolibri.cs.tut.fi>
+
+On Tue, 19 Feb 2013, Gabriel Landini wrote:
+
+> On Monday 18 Feb 2013 22:01:14 Antti Niemist? wrote:
+>> It seems like your ported version does not produce the correct threshold
+>> between the two peaks in the smoothed histogram in certain cases where you
+>> have flat areas in the smoothed histogram.
+>>
+>> For example, try this one.
+>>
+>> I = 40*ones(40);
+>> I(10:30,10:30) = 120;
+>> T = th_minimum(I);
+>>
+>> You'll find the threshold becomes 121. This is of course not between the
+>> two peaks at 40 and 120.
+>>
+>> The code in v1.02 did not assign any value to the threshold in this
+>> example case and in similar cases, so it clearly needed to be fixed.
+>>
+>> I now realize that a much more elegant fix than what I put in v1.03 would
+>> be this (gives T=41 in my simple example):
+>>
+>> for k = 2:n
+>>    if y(k-1) > y(k) & y(k+1) >= y(k)
+>>      T = k-1;
+>>      break
+>>    end
+>> end
+>>
+>> The "break" from the loop is essential, in addition to changing the latter
+>> ">" to a ">=". I would definitely use this code in your port.
+>
+> Hi again,
+> Barry: I seem to have discussed this with Antti that in matlab the arrays
+> start at 1, so the counts for greyscale 0 are in the index 1.
+> So for the Java version, the threshold should be set at:
+> T=k;
+>
+> You want the threshold at y(k), that bin should be smaller than y(k-1).
+> BTW that is what the current IJ plugin does. Antti codes compensates for the
+> indexes starting at 1. IJ does not need that.
+>
+> And do you really need the Break statement?
+> If there are 2 peaks guaranteed, then a 2nd instance of the test would not be
+> found. Or am I wrong?
+
+Hi,
+
+The break statement is needed for cases where the smoothed historgram has 
+a flat tail on the right hand side of the second peak. The test is 
+satisfied in that case due to changing the latter ">" to a ">=" (which was 
+needed to make sure that the test is satisfied in case there is a flat 
+area between the two peaks).
+
+These flat areas do not occur with most images, but with simple images 
+like the one I used as an example in my previous email, it does happen, 
+typically with a tail of zeros in the smoothed histogram. And when it 
+does, without the break statement the threshold value that is returned is 
+on the right hand side of the second peak, as opposed to between the peaks 
+like it should.
+
+-- 
+Antti Niemist? DSc(Tech)              office: TE410
+Research Fellow                       phone:  +358-40-849-0587 (GSM)
+Department of Signal Processing               +358-3-3115-4989 (fax)
+Tampere University of Technology      URI:    http://www.cs.tut.fi/~ant/
+
+
+From G.Landini at bham.ac.uk  Tue Feb 19 07:09:04 2013
+From: G.Landini at bham.ac.uk (Gabriel Landini)
+Date: Tue, 19 Feb 2013 13:09:04 +0000
+Subject: [ImageJ-devel] Fwd: Hist thresh toolbox license question
+In-Reply-To: <alpine.LRH.2.02.1302191439400.15465@savukolibri.cs.tut.fi>
+References: <CAKcvfuSmuawSDO3WyrEC5Kg4Y0ot9xy_41AKGBYe1tODQNMQeg@mail.gmail.com>
+	<1643485.WSYIA9d1mD@ds170>
+	<alpine.LRH.2.02.1302191439400.15465@savukolibri.cs.tut.fi>
+Message-ID: <4471871.W4jlxRWJmN@ds170>
+
+On Tuesday 19 Feb 2013 12:52:34 Antti Niemist? wrote:
+> The break statement is needed for cases where the smoothed historgram has
+> a flat tail on the right hand side of the second peak.
+
+Oh, yes, you are right! that break stops it at the first occurrence.
+Thanks for clarifying this.
+
+Cheers
+
+Gabriel
+
+
+
+
+
+
+From bdezonia at gmail.com  Tue Feb 19 16:38:58 2013
+From: bdezonia at gmail.com (Barry DeZonia)
+Date: Tue, 19 Feb 2013 16:38:58 -0600
+Subject: [ImageJ-devel] Histogram
+In-Reply-To: <CADN69ymEaVDssqc1o5v5zc62eiyc4mn+J=wBjpCmJ17G6nQcFw@mail.gmail.com>
+References: <4F8DAC5B.6000900@uni-konstanz.de>
+	<CADN69ymEaVDssqc1o5v5zc62eiyc4mn+J=wBjpCmJ17G6nQcFw@mail.gmail.com>
+Message-ID: <CAKcvfuRmF_NZrAm5bU6R1piXmmVe1Q-GdkvOK0MM2LQ_tO5gnA@mail.gmail.com>
+
+Hey guys,
+
+I am interested in what the fallout was of your earlier discussion here. I
+am looking at the Histogram code now and relevant ImageJ2 tickets.
+Christian, why didn't you modify Larry's code to work with Iterable<T>?
+What solutions did you end up using in KNIP? Is it something we should
+adapt into Imglib2?
+
+
+On Thu, Apr 19, 2012 at 1:30 PM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+
+> Hi Christian,
+>
+> Hope you don't mind me CCing imagej-devel as this topic may be of general
+> interest.
+>
+>
+>  I'm currently trying to get rid of redundant implementations in kniplib
+>> and imglib2 and I just started to have a look at the Histogram.
+>> The Histogram we use in KNIPLIB is pretty basic, so I had a look at the
+>> implementation of Larry Lindsey in net.imglib2.algorithm.stats.
+>>
+>> The current version I can't use as it has it requires and Img<T> or a
+>> RealCursor<T> and we just have an Iterable<T> in our cases ;)
+>> I just remembered some mails going around in March that you plan to have
+>> a new implementation of the histogram?
+>>
+>
+> Yes, we do plan to improve the Histogram implementation. I fear we will
+> not have time to look at it until after the Barcelona conference though.
+> For now I have filed a ticket:
+>     http://trac.imagej.net/ticket/1128
+>
+> I CCed you and Martin on it. Actually, I should make Trac accounts for you
+> guys (so you can file and edit tickets), but we may switch to using the
+> GitHub issue tracker anyway; need to sort out what would be best for
+> everyone.
+>
+> In the meantime, you are welcome to take a crack at it, if you have the
+> time!
+>
+> Regards,
+> Curtis
+>
+>
+> On Tue, Apr 17, 2012 at 12:46 PM, Christian Dietz <
+> christian.dietz at uni-konstanz.de> wrote:
+>
+>> Hi Curtis,
+>>
+>> I'm currently trying to get rid of redundant implementations in kniplib
+>> and imglib2 and I just started to have a look at the Histogram.
+>> The Histogram we use in KNIPLIB is pretty basic, so I had a look at the
+>> implementation of Larry Lindsey in net.imglib2.algorithm.stats.
+>>
+>> The current version I can't use as it has it requires and Img<T> or a
+>> RealCursor<T> and we just have an Iterable<T> in our cases ;)
+>> I just remembered some mails going around in March that you plan to have
+>> a new implementation of the histogram?
+>>
+>> Thank you and greetings to Barry,
+>>
+>> Christian
+>>
+>>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130219/1f9b808a/attachment.html>
+
+From michael.zinsmaier at gmx.de  Wed Feb 20 01:57:33 2013
+From: michael.zinsmaier at gmx.de (Michael Zinsmaier)
+Date: Wed, 20 Feb 2013 08:57:33 +0100
+Subject: [ImageJ-devel] Fwd: Hist thresh toolbox license question
+In-Reply-To: <4471871.W4jlxRWJmN@ds170>
+References: <CAKcvfuSmuawSDO3WyrEC5Kg4Y0ot9xy_41AKGBYe1tODQNMQeg@mail.gmail.com>
+	<1643485.WSYIA9d1mD@ds170>
+	<alpine.LRH.2.02.1302191439400.15465@savukolibri.cs.tut.fi>
+	<4471871.W4jlxRWJmN@ds170>
+Message-ID: <512481ED.3040005@gmx.de>
+
+hm with worcestersauce very dangerous (according to SouthPark 
+http://www.southpark.de/clips/149890/worcesterso?e)
+but the recipe sounds good (-:
+
+Am Dienstag, 19. Februar 2013 14:09:04 schrieb Gabriel Landini:
+> On Tuesday 19 Feb 2013 12:52:34 Antti Niemist? wrote:
+>> The break statement is needed for cases where the smoothed historgram has
+>> a flat tail on the right hand side of the second peak.
+>
+> Oh, yes, you are right! that break stops it at the first occurrence.
+> Thanks for clarifying this.
+>
+> Cheers
+>
+> Gabriel
+
+>
+>
+>
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+
+
+
+
+From michael.zinsmaier at gmx.de  Wed Feb 20 02:04:12 2013
+From: michael.zinsmaier at gmx.de (Michael Zinsmaier)
+Date: Wed, 20 Feb 2013 09:04:12 +0100
+Subject: [ImageJ-devel] Fwd: Hist thresh toolbox license question
+In-Reply-To: <4471871.W4jlxRWJmN@ds170>
+References: <CAKcvfuSmuawSDO3WyrEC5Kg4Y0ot9xy_41AKGBYe1tODQNMQeg@mail.gmail.com>
+	<1643485.WSYIA9d1mD@ds170>
+	<alpine.LRH.2.02.1302191439400.15465@savukolibri.cs.tut.fi>
+	<4471871.W4jlxRWJmN@ds170>
+Message-ID: <5124837C.6060707@gmx.de>
+
+sry wrong email list
+
+> On Tuesday 19 Feb 2013 12:52:34 Antti Niemist? wrote:
+>> The break statement is needed for cases where the smoothed historgram has
+>> a flat tail on the right hand side of the second peak.
+>
+> Oh, yes, you are right! that break stops it at the first occurrence.
+> Thanks for clarifying this.
+>
+> Cheers
+>
+> Gabriel
+>
+>
+>
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+
+
+
+
+From schindelin at wisc.edu  Wed Feb 20 11:58:15 2013
+From: schindelin at wisc.edu (Johannes Schindelin)
+Date: Wed, 20 Feb 2013 18:58:15 +0100 (CET)
+Subject: [ImageJ-devel] Fwd: Hist thresh toolbox license question
+In-Reply-To: <5124837C.6060707@gmx.de>
+References: <CAKcvfuSmuawSDO3WyrEC5Kg4Y0ot9xy_41AKGBYe1tODQNMQeg@mail.gmail.com>
+	<1643485.WSYIA9d1mD@ds170>
+	<alpine.LRH.2.02.1302191439400.15465@savukolibri.cs.tut.fi>
+	<4471871.W4jlxRWJmN@ds170> <5124837C.6060707@gmx.de>
+Message-ID: <alpine.DEB.1.00.1302201856020.32206@s15462909.onlinehome-server.info>
+
+Hi Michael,
+
+On Wed, 20 Feb 2013, Michael Zinsmaier wrote:
+
+> sry wrong email list
+
+I found that avoiding top-posting and quoting only those parts of the
+original mail I am responding to not only helps the recipients understand
+better what I mean and save time because they do not have to reconstruct
+what the heck I am talking about, but also helps with avoiding
+mis-directed mails.
+
+Ciao,
+Johannes
+
+
+From bugzilla at fiji.sc  Sun Feb 24 11:55:17 2013
+From: bugzilla at fiji.sc (bugzilla at fiji.sc)
+Date: Sun, 24 Feb 2013 17:55:17 +0000
+Subject: [ImageJ-devel] [Bug 572] New: while analyzing particles from stack
+ (imported image sequence) analyzes same picture n times instead of stack
+ from n pictures when using anything other then default threshold
+Message-ID: <bug-572-194@http.fiji.sc/bugzilla/>
+
+http://fiji.sc/bugzilla/show_bug.cgi?id=572
+
+            Bug ID: 572
+           Summary: while analyzing particles from stack (imported image
+                    sequence) analyzes same picture n times instead of
+                    stack from n pictures when using anything other then
+                    default threshold
+    Classification: Unclassified
+           Product: Fiji
+           Version: unspecified
+          Hardware: PC
+                OS: Windows
+            Status: NEW
+          Severity: normal
+          Priority: P3
+         Component: ImageJ2
+          Assignee: imagej-devel at imagej.net
+          Reporter: robrecht.ebinger at hotmail.com
+
+While trying to analyze some beads (pictures taken with microscope) 
+i've been testing out some different threshold for my sequence of pictures.
+Whenever i sue something different then default, ImageJ aswell as fiji does not
+cycle through the pictures. When i upload a series of 40 pictures, then
+threshold it in something different then default. Then click Analyze particles
+(with show outline) . The results are 40 times the same, when looking at the
+outline is see ImageJ/fiji has taken my last picture and analyzed it 40 times
+(and not any of the 39 other slices). Because the default threshold is not the
+best for me it ll make analyzing my series pretty hard.
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130224/09f1922b/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Sun Feb 24 17:00:17 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Sun, 24 Feb 2013 17:00:17 -0600 (CST)
+Subject: [ImageJ-devel] Fix_Updater.js can now initialize Fiji/ImageJ2 in
+ any existing ImageJ 1.x
+Message-ID: <alpine.DEB.1.00.1302241651190.3450@bonsai2>
+
+Hi all,
+
+I just made a couple of changes so that importing the URL
+
+	https://raw.github.com/fiji/fiji/master/plugins/Scripts/Plugins/Utilities/Fix_Updater.js
+
+via File>Import>URL... will open a Javascript which, when executed, will
+start the ImageJ updater and select all Fiji/ImageJ2 components for
+installation.
+
+Ciao,
+Johannes
+
+
+From ctrueden at wisc.edu  Mon Feb 25 13:45:11 2013
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Mon, 25 Feb 2013 13:45:11 -0600
+Subject: [ImageJ-devel] Fwd: SciJava Common plugin framework
+In-Reply-To: <CADN69ykYmqNvZFtAEx2AunkPdhHApoZdjHCEvCTGdRx05Q=9_w@mail.gmail.com>
+References: <CADN69ykYmqNvZFtAEx2AunkPdhHApoZdjHCEvCTGdRx05Q=9_w@mail.gmail.com>
+Message-ID: <CADN69y=CSUH6sq+vjL-U12sawTXyaiDRBHL9ZDkf4d_AqoSFQw@mail.gmail.com>
+
+Hi all,
+
+For those not on the scijava mailing list (see http://www.scijava.org/ for
+details), we have recently improved the ImageJ2 plugin framework to be more
+general, rebranding it the SciJava Common plugin framework.
+
+As some of you already know, SciJava is an umbrella effort to unify efforts
+across several different software projects, including ImageJ2, Fiji,
+ImgLib2, Bio-Formats, SCIFIO, OMERO, CellProfiler, KNIME, Icy and more. The
+primary goal is to share code as much as is practical, and have common
+standards (e.g, for regions of interests) even when it is not.
+
+The SciJava Common framework gives us a very small, common place to put
+shared functionality across these projects. For example, the improved
+plugin framework means that ImageJ2 plugins (e.g., commands) and SCIFIO
+plugins (e.g., file format readers) are now two flavors of the same
+kool-aid.
+
+See below for further details.
+
+Regards,
+Curtis
+
+
+---------- Forwarded message ----------
+From: Curtis Rueden <ctrueden at wisc.edu>
+Date: Tue, Feb 19, 2013 at 11:22 AM
+Subject: SciJava Common plugin framework
+To: SciJava <scijava at googlegroups.com>
+
+
+Hi everyone,
+
+In the past few days, I factored out the ImageJ2 plugin framework from
+ImageJ2 core, migrating it into SciJava Common [1].
+
+SciJava Common now provides a plugin framework, with an extensible
+mechanism for service discovery, driven by the SezPoz library, so that
+plugins can be loaded dynamically. We have already updated ImageJ2 to use
+it, and are in the process of refactoring SCIFIO to use it as well.
+
+SCIFIO and ImageJ2 were both using SezPoz for extensibility/discovery, and
+had each invented their own simple application contexts to support this.
+Using a common library greatly improves DRYness, and truly cements SCIFIO
+as *the* driving I/O library for ImageJ2 and ImgLib2 [2].
+
+In short, we figured: with ImageJ2 and SCIFIO being developed in the same
+office, and both of them part of this common SciJava effort, there really
+was no excuse not to reuse code between them.
+
+In addition, we have been desiring a way to add extensibility features to
+ImgLib2, without creating a circular dependency on ImageJ2, and this will
+now be possible. That is, parts of ImgLib2 could now depend on SciJava
+Common if they wish to provide new types of plugins (e.g., OPS functions)
+with automatic discovery.
+
+This refactoring also migrates the ImageJ event subsystem into SciJava
+Common, meaning that anything using SciJava Common now gets a pub/sub style
+event system for free. (This will also be useful for SCIFIO/Bio-Formats and
+ImgLib2, since a long-standing issue has been better hooks into ongoing
+operations.)
+
+SciJava Common has two dependencies, SezPoz [3] and EventBus [4], both of
+which are completely encapsulated such that downstream code does not
+directly depend on either library. So in the future, we could theoretically
+switch to a different discovery mechanism or event library with no
+downstream code changes.
+
+Still to do: improve SciJava Common's logging implementation. We have an
+SLF4J-based LogService (as well as a stderr-based one, for simplicity), but
+it needs to work in a more granular way, with a separate logger for each
+calling class, similar to how Bio-Formats works now. But I want to avoid
+the need to manually configure a logger in downstream code; it should
+rather "just work". This will give more flexibility when configuring
+logging.
+
+Lastly, just for fun, some SLOC counts (Java only) as of today:
+
+SciJava Common: 8K
+ImgLib1: 37K
+ImageJ2: 75K
+ImageJ1: 96K
+ImgLib2: 101K
+OMERO: 392K [all components, Java only]
+Fiji: 506K [no submodules]
+Bio-Formats: 584K [develop branch]
+SCIFIO: 619K [hinerm/scifio-wrappers branch]
+
+And remember, kids: every line of code is a liability!
+
+Regards,
+Curtis
+
+[1] https://github.com/scijava/scijava-common
+[2] http://trac.imagej.net/ticket/9
+[3] http://sezpoz.java.net/
+[4] http://eventbus.org/
+
+P.S. Did you know sloccount has concurrency issues?
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130225/2630e63e/attachment.html>
+

@@ -1,0 +1,421 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Bug in creation of CompositeXYProjectors in DefaultDatasetView
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Bug%20in%20creation%20of%20CompositeXYProjectors%20in%0A%20DefaultDatasetView&In-Reply-To=%3C1373977587.2772.51.camel%40saalfeld-thinkpad%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001701.html">
+   <LINK REL="Next"  HREF="001695.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Bug in creation of CompositeXYProjectors in DefaultDatasetView</H1>
+    <B>Stephan Saalfeld</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Bug%20in%20creation%20of%20CompositeXYProjectors%20in%0A%20DefaultDatasetView&In-Reply-To=%3C1373977587.2772.51.camel%40saalfeld-thinkpad%3E"
+       TITLE="[ImageJ-devel] Bug in creation of CompositeXYProjectors in DefaultDatasetView">saalfeld at mpi-cbg.de
+       </A><BR>
+    <I>Tue Jul 16 07:26:27 CDT 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001701.html">[ImageJ-devel] Bug in creation of CompositeXYProjectors in	DefaultDatasetView
+</A></li>
+        <LI>Next message: <A HREF="001695.html">[ImageJ-devel] Upcoming, exciting changes in Fiji
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1702">[ date ]</a>
+              <a href="thread.html#1702">[ thread ]</a>
+              <a href="subject.html#1702">[ subject ]</a>
+              <a href="author.html#1702">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+ImageJ1's composition is exclusively additive, and it ignores alpha
+values.  I think, in the current discussion, we're mixing additive color
+composition with alpha blending.  So let's try to disentangle:
+
+Let's have 4 arbitrary RGB colors c1, c2, c3, c4.  Then, additive
+composition means that
+
+c = c1 + c2 + c3 + c4
+
+, that's the ImageJ1 model.
+
+If we add alpha to it we do not actually mean alpha but a weight
+(normalized by 255, so 0 -&gt; 0 and 255 -&gt; 1.0), then
+
+c = a1 * c1 + a2 * c2 + a3 * c3 + a4 * c4
+
+I consider this a useful extension, but it remains unclear what to do
+with the resulting alpha value.  My guess is that it does not have much
+meaning and so adding it up and cropping or just setting it to 1.0
+(0xff) is both fine.
+
+The other operation is alpha blending which is the composition series:
+
+c12 = a2 * c2 + (1 - a2) * a1 * c1,  a12 = a2 + (1 - a2) * a1
+c123 = a3 * c3 + (1 - a3) * a12 * c12,  a123 = a3 + (1 - a3) * a12
+c1234 = a4 * c4 + (1 - a4) * a123 * c123,  a1234 = a4 + (1 - a4) * a123
+
+Additive composition makes little sense on top of anything but 0, alpha
+composition is possible on arbitrary c0.
+
+There are many other forms of composition possible, e.g. filtering
+(multiplication), color/hue/intensity mixing, absolute or signed
+differences, ...  it therefore seems a bit overstating to name either of
+them THE Composition ;).
+
+CompositeXYProjector implements the non-weighted addition as in ImageJ1
+treating alpha as a fourth channel.
+
+
+Speaking about projectors:  I would prefer if we had only one
+2D-projector.  It is not necessary to choose which dimensions to treat
+as x,y as there is Views.permute(RA[I], int, int).  To project axes
+other than 0,1, we could have factory methods like
+Projectors.project(RAI, int x, int y) that first permute the axes and
+then project 0,1.  That has the benefit that there is no index lookup if
+you really project x,y.
+
+I also think that we do not need CompositeProjectors any longer.  I have
+recently added view.composite.Composite etc. and the method
+Views.collapse as a construct to achieve the desired behavior in a more
+general way.  The trailing dimension of an RA[I] can be collapsed into
+an (n-1)-dimensional RA[I] of Composites.  Composites can then be
+converted with Converters and (Converters.convert) to get the desired
+composition which then may be x,y-projected.
+
+Of course there are many ways to achieve the same result.  I just like
+this one most as I have the impression that it implements the minimum
+required operations in the most generic/extensible fashion.  E.g. adding
+new compositions as discussed above means writing a new Converter, no
+clutter.  Please don't hesitate to prove me wrong.  E.g., I didn't
+consider potential performance penalties much yet.
+
+I'll try to find time tomorrow to make a few benchmarks.
+
+Best,
+Stephan
+
+
+
+On Mon, 2013-07-15 at 17:28 -0500, Aivar Grislis wrote: 
+&gt;<i> &gt; I believe ImageJ1 treats it [RGBCMY] as additive. Look at the sample 
+</I>&gt;<i> &gt; &quot;Organ of Corti&quot; -- the current behavior of ImageJ2 causes that sample 
+</I>&gt;<i> &gt; to appear the same as it does in IJ1. Before we added the 
+</I>&gt;<i> &gt; bounds-checking code, it erroneously wrapped pixel values.
+</I>&gt;<i> By not being additive I meant C is a secondary color composed of 
+</I>&gt;<i> primaries G &amp; B, etc.  In the sense of 
+</I>&gt;<i> <A HREF="http://en.wikipedia.org/wiki/Additive_color">http://en.wikipedia.org/wiki/Additive_color</A> .
+</I>&gt;<i> 
+</I>&gt;<i> Okay, &quot;Organ of Corti&quot; uses RGBK (and K is even worse than my example of 
+</I>&gt;<i> C since it has all three RGB components not just G &amp; B) and yet it works 
+</I>&gt;<i> as an image.  It's useful because the areas lit up in each channel are 
+</I>&gt;<i> fairly distinct.  If these areas overlapped the bounds-checking code 
+</I>&gt;<i> would come into play in the overlapping pixels and some highlights would 
+</I>&gt;<i> get squashed and some colors distorted (when one component is squashed 
+</I>&gt;<i> but not the others).  But even if the code did a better job of combining 
+</I>&gt;<i> the colors of overlapping areas you'd still have visual ambiguity in 
+</I>&gt;<i> these areas (since eyes can't distinguish C from G + B).  So now I'm 
+</I>&gt;<i> thinking the code works well as is.
+</I>&gt;<i> &gt; It was intended to be more general than only the cases Aivar 
+</I>&gt;<i> &gt; mentioned, and instead provided additive support for *any* color table 
+</I>&gt;<i> &gt; per channel you throw at it, the same as ImageJ1's CompositeImages do.
+</I>&gt;<i> Sure, it shouldn't crash and burn if you put Fire on one channel and Ice 
+</I>&gt;<i> on another but that's not usable visually unless the areas lit up in 
+</I>&gt;<i> each channel are distinct.  If you have a lot of overlap and you want 
+</I>&gt;<i> the colors to add up meaningfully you're better off sticking with 
+</I>&gt;<i> primary additive colors for your channel LUTs.
+</I>&gt;<i> 
+</I>&gt;<i> On 7/15/13 3:53 PM, Curtis Rueden wrote:
+</I>&gt;<i> &gt; Hi all,
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; &gt; the bigger issue is RGBCMY is not an additive color system.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; I believe ImageJ1 treats it as additive. Look at the sample &quot;Organ of 
+</I>&gt;<i> &gt; Corti&quot; -- the current behavior of ImageJ2 causes that sample to appear 
+</I>&gt;<i> &gt; the same as it does in IJ1. Before we added the bounds-checking code, 
+</I>&gt;<i> &gt; it erroneously wrapped pixel values.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; As for the alpha stuff, I will try to digest and reply soon but I am 
+</I>&gt;<i> &gt; way too tired at this moment. I just wanted to clarify why the code is 
+</I>&gt;<i> &gt; the way it is. It was intended to be more general than only the cases 
+</I>&gt;<i> &gt; Aivar mentioned, and instead provided additive support for *any* color 
+</I>&gt;<i> &gt; table per channel you throw at it, the same as ImageJ1's 
+</I>&gt;<i> &gt; CompositeImages do.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Regards,
+</I>&gt;<i> &gt; Curtis
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; On Mon, Jul 15, 2013 at 3:46 PM, Aivar Grislis &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">grislis at wisc.edu</A> 
+</I>&gt;<i> &gt; &lt;mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">grislis at wisc.edu</A>&gt;&gt; wrote:
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;     I think CompositeXYProjector is meant to handle the following cases:
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;     1) Rendering LUT images, a single converter is used. Grayscale
+</I>&gt;<i> &gt;     images are included here.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;     2) Rendering RGB images, three converters are used. These use
+</I>&gt;<i> &gt;     red-only, green-only, and blue-only LUTs.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;     3) I believe it's also intended to work with images with &gt; 3
+</I>&gt;<i> &gt;     channels, using C, M, and Y for the excess channels.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;     The existing code works well for cases 1 &amp; 2.  Case 3 adds the
+</I>&gt;<i> &gt;     possibility of overflow, if your red converter gives you a value
+</I>&gt;<i> &gt;     of 255 for the red component but your magenta converter adds
+</I>&gt;<i> &gt;     another 255.  Currently the code just limits the value to 255 in
+</I>&gt;<i> &gt;     that case. Some sort of blending might work better here, but the
+</I>&gt;<i> &gt;     bigger issue is RGBCMY is not an additive color system. If you see
+</I>&gt;<i> &gt;     a cyan blotch you don't know if its in both the G &amp; B channels or
+</I>&gt;<i> &gt;     just the C channel.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;     Aivar
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;     On 7/15/13 2:40 PM, Lee Kamentsky wrote:
+</I>&gt;<i> &gt;&gt;     Thanks for answering Aivar,
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt;     I think what your reply did for me is to have me take a step back
+</I>&gt;<i> &gt;&gt;     and consider what we're modeling. If you look at my replies
+</I>&gt;<i> &gt;&gt;     below, I think that the best solution is to use a model where the
+</I>&gt;<i> &gt;&gt;     background is white and each successive layer filters out some of
+</I>&gt;<i> &gt;&gt;     that background, like a gel. A layer attenuates the underlying
+</I>&gt;<i> &gt;&gt;     layer by a fraction of (1 - alpha/255 * (1 - red/255)), resulting
+</I>&gt;<i> &gt;&gt;     in no attenuation for 255 and attenuation of alpha/255 for zero.
+</I>&gt;<i> &gt;&gt;     We can then use a red converter that returns a value of 255 for
+</I>&gt;<i> &gt;&gt;     the blue and green channels and the model and math work correctly.
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt;     On Mon, Jul 15, 2013 at 1:59 PM, Aivar Grislis &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">grislis at wisc.edu</A>
+</I>&gt;<i> &gt;&gt;     &lt;mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">grislis at wisc.edu</A>&gt;&gt; wrote:
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt;         I have an ImgPlus backed by an RGB PlanarImg of
+</I>&gt;<i> &gt;&gt;&gt;         UnsignedByteType and ARGBType.alpha(value) is 255 for all of
+</I>&gt;<i> &gt;&gt;&gt;         them, so aSum is 765. It would appear that the correct
+</I>&gt;<i> &gt;&gt;&gt;         solution would be to divide aSum by 3.
+</I>&gt;<i> &gt;&gt;         Isn't it unusual to define an alpha for each color component,
+</I>&gt;<i> &gt;&gt;         generally you have a single A associated with a combined
+</I>&gt;<i> &gt;&gt;         RGB?  So averaging the three alphas might make sense here,
+</I>&gt;<i> &gt;&gt;         because I think they should all be the same value.
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt;     I think you're right, the model always is that each pixel has an
+</I>&gt;<i> &gt;&gt;     alpha value that applies to R, G and B. The image I was using was
+</I>&gt;<i> &gt;&gt;     the Clown example image. DefaultDatasetView.initializeView
+</I>&gt;<i> &gt;&gt;     constructs three RealLUTConverters for the projector, one for
+</I>&gt;<i> &gt;&gt;     red, one for green and one for blue which sends you down this
+</I>&gt;<i> &gt;&gt;     rabbit hole.
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt;         In addition, there's no scaling of the individual red, green
+</I>&gt;<i> &gt;&gt;&gt;         and blue values by their channel's alpha. If the input were
+</I>&gt;<i> &gt;&gt;&gt;         two index-color images, each of which had different alphas,
+</I>&gt;<i> &gt;&gt;&gt;         the code should multiply the r, g and b values by the alphas
+</I>&gt;<i> &gt;&gt;&gt;         before summing and then divide by the total alpha in the
+</I>&gt;<i> &gt;&gt;&gt;         end. The alpha in this case *should* be the sum of alphas
+</I>&gt;<i> &gt;&gt;&gt;         divided by the number of channels.
+</I>&gt;<i> &gt;&gt;         I think alpha processing is more cumulative, done layer by
+</I>&gt;<i> &gt;&gt;         layer in some defined layer order.  For a given pixel say the
+</I>&gt;<i> &gt;&gt;         current output pixel value is ARGB1 and you are compositing a
+</I>&gt;<i> &gt;&gt;         second image with value ARGB2 on top of it:  For the red
+</I>&gt;<i> &gt;&gt;         channel the output color should be ((255 - alpha(ARGB2)) *
+</I>&gt;<i> &gt;&gt;         red(ARGB1) + alpha(ARGB2) * red(ARGB2)) / 255.  The alpha of
+</I>&gt;<i> &gt;&gt;         ARGB1 is not involved.
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt;     I think that's a valid interpretation. I've always used
+</I>&gt;<i> &gt;&gt;     (alpha(ARGB1) * red(ARGB1) + alpha(ARGB2) * red(ARGB2)) /
+</I>&gt;<i> &gt;&gt;     (alpha(ARGB1) + alpha(ARGB2)) because I assumed the alpha
+</I>&gt;<i> &gt;&gt;     indicated the
+</I>&gt;<i> &gt;&gt;     strength of the blending of each source. In any case, the code as
+</I>&gt;<i> &gt;&gt;     it stands doesn't do either of these.
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt;         In other words, if you add a layer that is completely opaque
+</I>&gt;<i> &gt;&gt;         you no longer have to consider any of the colors or alpha
+</I>&gt;<i> &gt;&gt;         values underneath it.
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt;         I think the bigger issue here is this code is specifically
+</I>&gt;<i> &gt;&gt;         designed to composite red, green and blue image layers.  It's
+</I>&gt;<i> &gt;&gt;         a special case since for a given pixel the red comes from the
+</I>&gt;<i> &gt;&gt;         red layer, blue from blue layer, and green from green layer. 
+</I>&gt;<i> &gt;&gt;         These layers shouldn't be completely opaque, since the colors
+</I>&gt;<i> &gt;&gt;         wouldn't combine at all then or completely transparent since
+</I>&gt;<i> &gt;&gt;         then they wouldn't contribute any color.  I don't think
+</I>&gt;<i> &gt;&gt;         transparency is useful here.
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt;     So this is an argument for blending instead of layering -
+</I>&gt;<i> &gt;&gt;     transparency would be useful if the images were blended and
+</I>&gt;<i> &gt;&gt;     treated as if on a par with each other, allowing the user to
+</I>&gt;<i> &gt;&gt;     emphasize one channel or the other.
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt;         It's also possible that a multichannel image with &gt; 3
+</I>&gt;<i> &gt;&gt;         channels is being displayed with more color channels, namely
+</I>&gt;<i> &gt;&gt;         cyan, magenta, and yellow.  The code here is designed to stop
+</I>&gt;<i> &gt;&gt;         overflow, but I'm not convinced those extended color channels
+</I>&gt;<i> &gt;&gt;         would combine meaningfully.
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt;         Aivar
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt;         In addition, there's no scaling of the individual red, green
+</I>&gt;<i> &gt;&gt;&gt;         and blue values by their channel's alpha. If the input were
+</I>&gt;<i> &gt;&gt;&gt;         two index-color images, each of which had different alphas,
+</I>&gt;<i> &gt;&gt;&gt;         the code should multiply the r, g and b values by the alphas
+</I>&gt;<i> &gt;&gt;&gt;         before summing and then divide by the total alpha in the
+</I>&gt;<i> &gt;&gt;&gt;         end. The alpha in this case *should* be the sum of alphas
+</I>&gt;<i> &gt;&gt;&gt;         divided by the number of channels.
+</I>&gt;<i> &gt;&gt;         I think alpha processing is cumulative layer by layer.
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt;         This brings up some interesting questions:
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt;         1) If the first, bottom-most layer is transparent, what color
+</I>&gt;<i> &gt;&gt;         should show through?  Black, white?  Or perhaps it's best to
+</I>&gt;<i> &gt;&gt;         ignore this base layer transparency.
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt;     Maybe the model should be that the background is white and
+</I>&gt;<i> &gt;&gt;     successive layers are like gel filters on top. In that case,
+</I>&gt;<i> &gt;&gt;     you'd have:
+</I>&gt;<i> &gt;&gt;     red = (255 - alpha(ARGB2) *(255 - red(ARGB2))/255) * red(ARGB1)
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt;     And maybe that points to what the true solution is. For the
+</I>&gt;<i> &gt;&gt;     default, we could change things so that red channel would have
+</I>&gt;<i> &gt;&gt;     blue = 255 and green = 255 and the first composition would change
+</I>&gt;<i> &gt;&gt;     only the red channel.
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt;         2) If you wanted to composite several transparent images, how
+</I>&gt;<i> &gt;&gt;         do you calculate the transparency of the composite?  I'm not
+</I>&gt;<i> &gt;&gt;         sure this is something we need to do.
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt;         Aivar
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt;         On 7/15/13 10:31 AM, Lee Kamentsky wrote:
+</I>&gt;<i> &gt;&gt;&gt;         Hi all,
+</I>&gt;<i> &gt;&gt;&gt;         I'm looking at the code for
+</I>&gt;<i> &gt;&gt;&gt;         net.imglib2.display.CompositeXYProjector and as I step
+</I>&gt;<i> &gt;&gt;&gt;         through it, it's clear that the alpha calculation isn't
+</I>&gt;<i> &gt;&gt;&gt;         being handled correctly. Here's the code as it stands now,
+</I>&gt;<i> &gt;&gt;&gt;         line 190 roughly:
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt;         for ( int i = 0; i &lt; size; i++ )
+</I>&gt;<i> &gt;&gt;&gt;         {
+</I>&gt;<i> &gt;&gt;&gt;         sourceRandomAccess.setPosition( currentPositions[ i ],
+</I>&gt;<i> &gt;&gt;&gt;         dimIndex );
+</I>&gt;<i> &gt;&gt;&gt;         currentConverters[ i ].convert( sourceRandomAccess.get(), bi );
+</I>&gt;<i> &gt;&gt;&gt;         // accumulate converted result
+</I>&gt;<i> &gt;&gt;&gt;         final int value = bi.get();
+</I>&gt;<i> &gt;&gt;&gt;         final int a = ARGBType.alpha( value );
+</I>&gt;<i> &gt;&gt;&gt;         final int r = ARGBType.red( value );
+</I>&gt;<i> &gt;&gt;&gt;         final int g = ARGBType.green( value );
+</I>&gt;<i> &gt;&gt;&gt;         final int b = ARGBType.blue( value );
+</I>&gt;<i> &gt;&gt;&gt;         aSum += a;
+</I>&gt;<i> &gt;&gt;&gt;         rSum += r;
+</I>&gt;<i> &gt;&gt;&gt;         gSum += g;
+</I>&gt;<i> &gt;&gt;&gt;         bSum += b;
+</I>&gt;<i> &gt;&gt;&gt;         }
+</I>&gt;<i> &gt;&gt;&gt;         if ( aSum &gt; 255 )
+</I>&gt;<i> &gt;&gt;&gt;         aSum = 255;
+</I>&gt;<i> &gt;&gt;&gt;         if ( rSum &gt; 255 )
+</I>&gt;<i> &gt;&gt;&gt;         rSum = 255;
+</I>&gt;<i> &gt;&gt;&gt;         if ( gSum &gt; 255 )
+</I>&gt;<i> &gt;&gt;&gt;         gSum = 255;
+</I>&gt;<i> &gt;&gt;&gt;         if ( bSum &gt; 255 )
+</I>&gt;<i> &gt;&gt;&gt;         bSum = 255;
+</I>&gt;<i> &gt;&gt;&gt;         targetCursor.get().set( ARGBType.rgba( rSum, gSum, bSum,
+</I>&gt;<i> &gt;&gt;&gt;         aSum ) );
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt;         I have an ImgPlus backed by an RGB PlanarImg of
+</I>&gt;<i> &gt;&gt;&gt;         UnsignedByteType and ARGBType.alpha(value) is 255 for all of
+</I>&gt;<i> &gt;&gt;&gt;         them, so aSum is 765. It would appear that the correct
+</I>&gt;<i> &gt;&gt;&gt;         solution would be to divide aSum by 3. In addition, there's
+</I>&gt;<i> &gt;&gt;&gt;         no scaling of the individual red, green and blue values by
+</I>&gt;<i> &gt;&gt;&gt;         their channel's alpha. If the input were two index-color
+</I>&gt;<i> &gt;&gt;&gt;         images, each of which had different alphas, the code should
+</I>&gt;<i> &gt;&gt;&gt;         multiply the r, g and b values by the alphas before summing
+</I>&gt;<i> &gt;&gt;&gt;         and then divide by the total alpha in the end. The alpha in
+</I>&gt;<i> &gt;&gt;&gt;         this case *should* be the sum of alphas divided by the
+</I>&gt;<i> &gt;&gt;&gt;         number of channels.
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt;         However, I think the problem is deeper than that. For an RGB
+</I>&gt;<i> &gt;&gt;&gt;         ImgPlus, there are three LUTs and each of them has an alpha
+</I>&gt;<i> &gt;&gt;&gt;         of 255, but that alpha only applies to one of the colors in
+</I>&gt;<i> &gt;&gt;&gt;         the LUT. When you're compositing images and weighing them
+</I>&gt;<i> &gt;&gt;&gt;         equally, if two are black and one is white, then the result
+</I>&gt;<i> &gt;&gt;&gt;         is 1/3 of the white intensity - if you translate that to
+</I>&gt;<i> &gt;&gt;&gt;         red, green and blue images, the resulting intensity will be
+</I>&gt;<i> &gt;&gt;&gt;         1/3 of that desired. This might sound weird, but the only
+</I>&gt;<i> &gt;&gt;&gt;         solution that works out mathematically is for the
+</I>&gt;<i> &gt;&gt;&gt;         defaultLUTs in the DefaultDatasetView to use color tables
+</I>&gt;<i> &gt;&gt;&gt;         that return values that are 3x those of ColorTables.RED,
+</I>&gt;<i> &gt;&gt;&gt;         GREEN and BLUE. Thinking about it, I'm afraid this *is* the
+</I>&gt;<i> &gt;&gt;&gt;         correct model and each channel really is 3x brighter than
+</I>&gt;<i> &gt;&gt;&gt;         possible.
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt;         It took me quite a bit of back and forth to come up with the
+</I>&gt;<i> &gt;&gt;&gt;         above... I hope you all understand what I'm saying and
+</I>&gt;<i> &gt;&gt;&gt;         understand the problem and counter-intuitive solution and
+</I>&gt;<i> &gt;&gt;&gt;         have the patience to follow it. Dscho, if you made it this
+</I>&gt;<i> &gt;&gt;&gt;         far - you're the mathematician, what's your take?
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt;         --Lee
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt;
+</I>&gt;<i> &gt;&gt;&gt;         _______________________________________________
+</I>&gt;<i> &gt;&gt;&gt;         ImageJ-devel mailing list
+</I>&gt;<i> &gt;&gt;&gt;         <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>  &lt;mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>&gt;
+</I>&gt;<i> &gt;&gt;&gt;         <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt;         _______________________________________________
+</I>&gt;<i> &gt;&gt;         ImageJ-devel mailing list
+</I>&gt;<i> &gt;&gt;         <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A> &lt;mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>&gt;
+</I>&gt;<i> &gt;&gt;         <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;&gt;
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;     _______________________________________________
+</I>&gt;<i> &gt;     ImageJ-devel mailing list
+</I>&gt;<i> &gt;     <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A> &lt;mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>&gt;
+</I>&gt;<i> &gt;     <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;
+</I>&gt;<i> 
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001701.html">[ImageJ-devel] Bug in creation of CompositeXYProjectors in	DefaultDatasetView
+</A></li>
+	<LI>Next message: <A HREF="001695.html">[ImageJ-devel] Upcoming, exciting changes in Fiji
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1702">[ date ]</a>
+              <a href="thread.html#1702">[ thread ]</a>
+              <a href="subject.html#1702">[ subject ]</a>
+              <a href="author.html#1702">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

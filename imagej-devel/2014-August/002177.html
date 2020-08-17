@@ -1,0 +1,134 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] ImageJ quits twice
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImageJ%20quits%20twice&In-Reply-To=%3CCADN69ymGF0hFv0W6a4JCdTh9oQsUR_fhouOm-a%3DD8ZcgchhC_w%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002183.html">
+   <LINK REL="Next"  HREF="002178.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] ImageJ quits twice</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImageJ%20quits%20twice&In-Reply-To=%3CCADN69ymGF0hFv0W6a4JCdTh9oQsUR_fhouOm-a%3DD8ZcgchhC_w%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] ImageJ quits twice">ctrueden at wisc.edu
+       </A><BR>
+    <I>Wed Aug  6 16:19:43 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002183.html">[ImageJ-devel] ImageJ2 library set up and referencing?
+</A></li>
+        <LI>Next message: <A HREF="002178.html">[ImageJ-devel] ImageJ quits twice
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2177">[ date ]</a>
+              <a href="thread.html#2177">[ thread ]</a>
+              <a href="subject.html#2177">[ subject ]</a>
+              <a href="author.html#2177">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi everyone,
+
+Today I spent some time fixing a new quitting-related bug in ImageJ2: the
+&quot;ImageJ quits twice&quot; bug. This was an OS-X-specific bug, related to the Mac
+application menu handling.
+
+When quitting via Apple &gt; Quit (or Cmd+Q), ImageJ would show two different
+sets of dialogs: the usual ones, and another one that said simply &quot;Quit
+ImageJ?&quot; with OK/Cancel. Relatedly, ImageJ would also show two About
+dialogs when you say Apple &gt; About, and take two different actions when you
+say Apple &gt; Preferences. In a nutshell, this unfortunate behavior was
+because both ImageJ 1.x and ImageJ2 were trying to handle those actions.
+
+The problem has now been fixed, and made it onto the respective master
+branches, as follows:
+
+EventHandler: add optional key attribute
+<A HREF="https://github.com/scijava/scijava-common/commit/bdf746798cbea51fddc4822f220bba2d909be0b8">https://github.com/scijava/scijava-common/commit/bdf746798cbea51fddc4822f220bba2d909be0b8</A>
+
+Which makes possible:
+
+DefaultAppEventService: specify subscription keys
+<A HREF="https://github.com/scijava/scijava-common/commit/6b1fd5fc3c7f00f8d443d2447f72b016caf378f1">https://github.com/scijava/scijava-common/commit/6b1fd5fc3c7f00f8d443d2447f72b016caf378f1</A>
+
+Which makes the following fully work:
+
+Fix the &quot;Fiji quits twice&quot; bug ;-)
+<A HREF="https://github.com/imagej/imagej-legacy/commit/a9cfa620f694dd7af8d0224d399b47adaef20942">https://github.com/imagej/imagej-legacy/commit/a9cfa620f694dd7af8d0224d399b47adaef20942</A>
+
+Please note that these fixes have _not_ been uploaded to the Updater yet,
+but we will do so as soon as we can. There will be a slew of releases by
+the end of this week.
+
+Regards,
+Curtis
+
+P.S. For the very technically inclined (*squints at Dscho*), as well as the
+archives:
+
+I want to describe one detail while it's still fresh in my mind. In the
+SciJava Common application framework, if you have multiple services that
+implement the same service interface, both annotated with &quot;@Plugin(type =
+Service.class)&quot;, then a full-blown application context will instantiate one
+of each. _However_, if one of them extends the other, the story is
+different. In the case of AppEventService, there is a
+DefaultAppEventService in scijava-common, a CoreAppEventService in
+imagej-plugins-commands and now a LegacyAppEventService in imagej-legacy.
+Both of the latter two extend the Default one. Hence, when the Context is
+initializing its services, it creates them in priority order: 1)
+LegacyAppEventService [high]; 2) CoreAppEventService [normal]; and 3)
+DefaultAppEventService [low]. Except that when it is time to create the
+DefaultAppEventService, the ServiceHelper skips creating it because there
+is already one present in the context. _Two_, actually!
+
+This has a weird ramification on event handling. As long as we had only
+CoreAppEventService and DefaultAppEventService, there is only one
+AppEventService instance in the context, so only one receives the
+App*Events, so all is well. As soon as we added LegacyAppEventService,
+though, suddenly a full context has _two_ different AppEventService
+implementations, _both_ of which are receiving the App*Event notifications.
+So each of them was trying to handle the events, resulting in the double
+quit behavior.
+
+The fix is described in the GitHub links above. We might need to make _all_
+@EventHandler methods have some default non-empty key based on their class
+and method signature. Otherwise, it will only be possible to override
+behavior of EventHandler methods that take care to provide such a key.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140806/1627a81a/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20140806/1627a81a/attachment.html</A>&gt;
+</PRE>
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002183.html">[ImageJ-devel] ImageJ2 library set up and referencing?
+</A></li>
+	<LI>Next message: <A HREF="002178.html">[ImageJ-devel] ImageJ quits twice
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2177">[ date ]</a>
+              <a href="thread.html#2177">[ thread ]</a>
+              <a href="subject.html#2177">[ subject ]</a>
+              <a href="author.html#2177">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,247 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] imagej-ops : outputop-service branch
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20imagej-ops%20%3A%20outputop-service%20branch&In-Reply-To=%3C1434221560.1643.10.camel%40uni-konstanz.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002587.html">
+   <LINK REL="Next"  HREF="002591.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] imagej-ops : outputop-service branch</H1>
+    <B>Christian Dietz</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20imagej-ops%20%3A%20outputop-service%20branch&In-Reply-To=%3C1434221560.1643.10.camel%40uni-konstanz.de%3E"
+       TITLE="[ImageJ-devel] imagej-ops : outputop-service branch">christian.dietz at uni-konstanz.de
+       </A><BR>
+    <I>Sat Jun 13 13:52:40 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002587.html">[ImageJ-devel] imagej-ops : outputop-service branch
+</A></li>
+        <LI>Next message: <A HREF="002591.html">[ImageJ-devel] imagej-ops : outputop-service branch
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2590">[ date ]</a>
+              <a href="thread.html#2590">[ thread ]</a>
+              <a href="subject.html#2590">[ subject ]</a>
+              <a href="author.html#2590">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Jay,
+
+this is great feedback. Thank you. As you already mentioned in your
+E-Mail, the API of the OpResolver, FeatureService etc is highly unstable
+at the moment as the development still is on a topic-branch of
+ImageJ-Ops (which is also in 0.x at the moment). However, I'm really
+trying to get this stuff merged to master soon. Therefore, I will start
+(and actually already started) a series of more atomar Pull-Requests on
+ImageJ-Ops to get all the stuff merged. It would be amazing if you can
+also have a look at the PRs and give some comments and feedback on the
+individual functionality.
+
+Please find more answers in-line. Again, thank you for your feedback!
+Great that the stuff is used out there already ;-)
+
+Christian
+
+
+
+On Sa, 2015-06-13 at 03:29 -0500, Jay Warrick wrote: 
+&gt;<i> Hi All,
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> I chatted with Curtis Rueden a bit today about trying this
+</I>&gt;<i> developmental feature extraction stuff out. He said I should note any
+</I>&gt;<i> successes or challenges as it might help your progress. He suggested
+</I>&gt;<i> potentially to post on the pull request but it seemed a bit long for
+</I>&gt;<i> there.
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> First of all, fantastic stuff. You are bringing so much quantitative
+</I>&gt;<i> power to the fingertips of a lot of individuals like myself. Thank
+</I>&gt;<i> you! Secondly, sorry if I'm using anything inappropriately in the
+</I>&gt;<i> rundown below but this is my best shot at trying to give you some
+</I>&gt;<i> feedback on my attempt to use your code. Also, I totally realize
+</I>&gt;<i> things are still in flux so I didn't necessarily have expectations
+</I>&gt;<i> that all this stuff would work immediately for me.
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> As of what was synced to the imagej-ops : outputop-service branch
+</I>&gt;<i> tonight, I was able to successfully get measures from a
+</I>&gt;<i> `FirstOrderStatFeatureSet` for a set of `LabelRegion`s that I got from
+</I>&gt;<i> a `Img&lt;UnsignedByteType&gt;` using `ConnectedComponents` (from latest
+</I>&gt;<i> ImgLib2-algorithm SNAPSHOT but just temporarily copied to its own
+</I>&gt;<i> class local for this test) and apply them to an
+</I>&gt;<i> `Img&lt;UnsignedShortType&gt;` using `Regions.sample(myLabelRegion, myImg)`.
+</I>
+This is 100% correct. The new CCA should soon be part of the stable
+imglib2-algorithms. We will also make it available in Ops as soon as it
+was released with imglib2-algorithms. Thanks for tpietzsch for the
+implementation!
+
+Anyway, I'm working on several Ops will make your live easier when
+trying to extract and loop over LabelRegions. 
+
+&gt;<i> I think I did most of these tests using connected components detected
+</I>&gt;<i> using a 4-connected structuring element (if that matters at all).
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> I ran into an issue with the `GeometricFeatureSet` where I got a 
+</I>&gt;<i> `````
+</I>&gt;<i> java.lang.ArrayIndexOutOfBoundsException: -1
+</I>&gt;<i> java.util.ArrayList.elementData(ArrayList.java:400)
+</I>&gt;<i> java.util.ArrayList.remove(ArrayList.java:477)
+</I>&gt;<i> net.imagej.ops.geometric.polygon.DefaultConvexHullOp.run(DefaultConvexHullOp.java:127)
+</I>&gt;<i> `````
+</I>&gt;<i> All my regions are quite sizeable (all between 1000 and 6000 pixels,
+</I>&gt;<i> see end of email) so I'm not sure why this would happen. I'm basically
+</I>&gt;<i> doing the following for this test using the same regions as I used
+</I>&gt;<i> with the `FirstOrderStatFeatureSet`
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> `````
+</I>&gt;<i> GeometricFeatureSet opGeometric =
+</I>&gt;<i> ij.op().op(GeometricFeatureSet.class, LabelRegion.class);
+</I>&gt;<i> List&lt;Pair&lt;String, DoubleType&gt;&gt; results =
+</I>&gt;<i> opGeometric.getFeatureList(Regions.iterable(myLabelRegion));
+</I>&gt;<i> `````
+</I>
+The GeometricFeatureSet is really something we have to work on. Thanks
+for the report. I also found some serious problems with the design of
+several methods and I hope that I can fix it next week.
+
+&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> I'm also having a problem with `Haralick2DFeatureSet` using those same
+</I>&gt;<i> `LabelRegion`s.
+</I>&gt;<i> `````
+</I>&gt;<i> java.lang.ArrayIndexOutOfBoundsException: -1
+</I>&gt;<i> net.imglib2.roi.labeling.LabelRegion.dimension(LabelRegion.java:459)
+</I>&gt;<i> net.imglib2.AbstractWrappedInterval.dimension(AbstractWrappedInterval.java:59)
+</I>&gt;<i> net.imagej.ops.features.haralick.helper.CooccurrenceMatrix2D.run(CooccurrenceMatrix2D.java:119)
+</I>&gt;<i> `````
+</I>&gt;<i> I'm testing the `Haralick2DFeatureSet` as follows...
+</I>&gt;<i> ````
+</I>&gt;<i> Haralick2DFeatureSet&lt;UnsignedShortType&gt; opHaralick2DHor =
+</I>&gt;<i> ij.op(Haralick2DFeatureSet.class,
+</I>&gt;<i> (IterableInterval&lt;UnsignedShortType&gt;) image, 8d, 1d, &quot;HORIZONTAL&quot;);
+</I>&gt;<i> List&lt;Pair&lt;String, DoubleType&gt;&gt; results =
+</I>&gt;<i> opHaralick2DHor.getFeatureList(Regions.sample(myLabelRegion, image));
+</I>&gt;<i> `````
+</I>
+This is something we have to look into as soon as we file the Haralick
+PR. I will turn your code into a test and make sure that it works.
+
+&gt;<i> 
+</I>&gt;<i> The `HistogramFeatureSet` appears to work. I think I don't have my
+</I>&gt;<i> image adjusted right to see appropriate values in the histogram output
+</I>&gt;<i> though as I seem to get all 0's. I assumed the &quot;number of bins&quot;
+</I>&gt;<i> parameter would autoscale the data according to the image type (e.g.,
+</I>&gt;<i> UnsignedShortType image scaled to fit in 256 levels/bins) but I can
+</I>&gt;<i> see why that was likely a bad assumption.
+</I>
+This should actually happen. I will double-check. Again, as soon as we
+file the &quot;HistogramFeature&quot; PR, it would be great if you could test
+again. 
+&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> The `ImageMomentsFeatureSet` seems to work fine.
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> I got the following error trying to use the `Zernike` feature set...
+</I>&gt;<i> `````
+</I>&gt;<i> java.lang.NumberFormatException
+</I>&gt;<i> java.math.BigDecimal.&lt;init&gt;(BigDecimal.java:470)
+</I>&gt;<i> java.math.BigDecimal.&lt;init&gt;(BigDecimal.java:739)
+</I>&gt;<i> java.math.BigDecimal.valueOf(BigDecimal.java:1069)
+</I>&gt;<i> net.imagej.types.BigComplex.setReal(BigComplex.java:225)
+</I>&gt;<i> net.imagej.ops.features.zernike.ZernikeComputer.normalize(ZernikeComputer.java:193)
+</I>&gt;<i> net.imagej.ops.features.zernike.ZernikeComputer.fastZernikeComputation(ZernikeComputer.java:151)
+</I>&gt;<i> `````
+</I>&gt;<i> I'm using it as follows on the 8-bit mask image
+</I>&gt;<i> `````
+</I>&gt;<i> ZernikeFeatureSet&lt;UnsignedByteType&gt; opZernike =
+</I>&gt;<i> ij.op().op(ZernikeFeatureSet.class,
+</I>&gt;<i> (IterableInterval&lt;UnsignedByteType&gt;) mask, true, true, 1, 3);
+</I>&gt;<i> List&lt;Pair&lt;String, DoubleType&gt;&gt; results =
+</I>&gt;<i> opZernike.getFeatureList(Regions.sample(myLabelRegion, mask));
+</I>&gt;<i> `````
+</I>
+I will forward it to the implementor of Zernike. Seems that there are
+some tests missing.
+
+&gt;<i> 
+</I>&gt;<i> I figured, in case I'm doing a bunch of things wrong, it would be
+</I>&gt;<i> easier for you to just have the data I'm using to see if you get the
+</I>&gt;<i> same issues using your own code. The images that I'm using are here...
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i>  <A HREF="https://drive.google.com/folderview?id=0BzopfqjGpdu8flBNTHdjXzN2eUJhR1NCNmNTbHJ5T3RNVDJRbmdwVnJiYnI0Nk43ZXp3QzA&amp;usp=sharing">https://drive.google.com/folderview?id=0BzopfqjGpdu8flBNTHdjXzN2eUJhR1NCNmNTbHJ5T3RNVDJRbmdwVnJiYnI0Nk43ZXp3QzA&amp;usp=sharing</A>
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> The folder includes a small txt output of only the label regions that
+</I>&gt;<i> I'm analyzing (their pixel areas and centers of mass), given I am not
+</I>&gt;<i> using all labeled objects that come from the connected components
+</I>&gt;<i> analysis. Lastly, my label indices start at 0 if you are looking to
+</I>&gt;<i> match up output from ConnectedComponents with this.
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> If you have any feedback on where I might be doing things wrong,
+</I>&gt;<i> please let me know.
+</I>&gt;<i> 
+</I>
+Thanks for the data. We will also soon have a Image Segment Feature Node
+within KNIME and also use the KNIME testing system to find the last(...)
+bugs. Maybe this node can also help you extracting features for your
+data!
+
+&gt;<i> 
+</I>&gt;<i> Thanks!
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> Jay
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>
+
+
+</PRE>
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002587.html">[ImageJ-devel] imagej-ops : outputop-service branch
+</A></li>
+	<LI>Next message: <A HREF="002591.html">[ImageJ-devel] imagej-ops : outputop-service branch
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2590">[ date ]</a>
+              <a href="thread.html#2590">[ thread ]</a>
+              <a href="subject.html#2590">[ subject ]</a>
+              <a href="author.html#2590">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

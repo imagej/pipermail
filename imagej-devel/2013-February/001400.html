@@ -1,0 +1,169 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [fiji-devel] slow opening of tif files using	scifio-based ImgOpener
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20slow%20opening%20of%20tif%20files%20using%0A%09scifio-based%20ImgOpener&In-Reply-To=%3CA0BB56BF-C408-4D12-971F-B95D63BB222D%40mpi-cbg.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001399.html">
+   <LINK REL="Next"  HREF="001401.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [fiji-devel] slow opening of tif files using	scifio-based ImgOpener</H1>
+    <B>Tobias Pietzsch</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20slow%20opening%20of%20tif%20files%20using%0A%09scifio-based%20ImgOpener&In-Reply-To=%3CA0BB56BF-C408-4D12-971F-B95D63BB222D%40mpi-cbg.de%3E"
+       TITLE="[ImageJ-devel] [fiji-devel] slow opening of tif files using	scifio-based ImgOpener">pietzsch at mpi-cbg.de
+       </A><BR>
+    <I>Thu Feb  7 09:21:51 CST 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001399.html">[ImageJ-devel] [fiji-devel] slow opening of tif files using	scifio-based ImgOpener
+</A></li>
+        <LI>Next message: <A HREF="001401.html">[ImageJ-devel] [fiji-devel] slow opening of tif files using scifio-based ImgOpener
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1400">[ date ]</a>
+              <a href="thread.html#1400">[ thread ]</a>
+              <a href="subject.html#1400">[ subject ]</a>
+              <a href="author.html#1400">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Curtis,
+
+Ok, I tried the things you suggested as well as the setGroupFiles( false ) suggested by Lee.
+Here are the results:
+
+baseline (unmodified ImgOpener):
+loading 50 tif images using ImageJ, 10000 other tif files in same directory
+median: 141 ms
+loading 50 tif images using ImgOpener, 10000 other tif files in same directory
+median: 6953 ms
+
+with setAllowOpenFiles( false ):
+loading 50 tif images using ImgOpener, 10000 other tif files in same directory
+median: 5972 ms
+
+with setGroupFiles( false ):
+loading 50 tif images using ImgOpener, 10000 other tif files in same directory
+median: 2331 ms
+
+with both,  setAllowOpenFiles( false ) and setGroupFiles( false ):
+loading 50 tif images using ImgOpener, 10000 other tif files in same directory
+median: 1070 ms
+
+with TiffReader:
+loading 50 tif images using ImgOpener, 10000 other tif files in same directory
+median: 5061 ms
+
+with TiffReader and setGroupFiles( false ):
+loading 50 tif images using ImgOpener, 10000 other tif files in same directory
+median: 568 ms
+
+
+
+
+For comparison, the case where there are no other files in the directory
+baseline (unmodified ImgOpener):
+loading 50 tif images using ImageJ, 0 other tif files in same directory
+median: 140 ms
+loading 50 tif images using ImgOpener, 0 other tif files in same directory
+median: 1804 ms
+
+
+with TiffReader and setGroupFiles( false ):
+loading 50 tif images using ImgOpener, 0 other tif files in same directory
+median: 552 ms
+
+That's still 4x slower than ImageJ1 but already getting a lot closer. Nice!
+
+best regards,
+Tobias
+
+
+On Feb 6, 2013, at 6:35 PM, Curtis Rueden wrote:
+
+&gt;<i> Hi all,
+</I>&gt;<i> 
+</I>&gt;<i> &gt; Is there a way to turn this off?
+</I>&gt;<i> 
+</I>&gt;<i> Yes, you can call imageOpener.setAllowOpenFiles(false) which will prevent Bio-Formats from doing any directory listings or opening up any files for the purposes of determining the file format. However, if you set this flag, some file formats will be improperly identified.
+</I>&gt;<i> 
+</I>&gt;<i> Out of curiosity: how much does the benchmark improve if that flag is set inside ImgOpener's createReader method? Another thing you could test, to determine the performance impact, is to change &quot;new ImageReader&quot; to &quot;new TiffReader&quot;, which explicitly tells ImgOpener to assume everything is a TIFF.
+</I>&gt;<i> 
+</I>&gt;<i> If such changes vastly improve the ImgOpener performance, we could consider adding another ImgOpener signature that lets you explicitly specify the file format.
+</I>&gt;<i> 
+</I>&gt;<i> &gt; Bio-formats analyzes the folder. Some formats are multi-file.
+</I>&gt;<i> 
+</I>&gt;<i> Indeed. And some files are even considered a different file format depending on which other files are present in the same or nearby directories.
+</I>&gt;<i> 
+</I>&gt;<i> Regards,
+</I>&gt;<i> Curtis
+</I>&gt;<i> 
+</I>&gt;<i> P.S. to Melissa: Johannes has some ideas for improving the TIFF reader performance too, which he plans to explore over the next few days. We will keep you posted on any progress.
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> On Wed, Feb 6, 2013 at 11:13 AM, Albert Cardona &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">sapristi at gmail.com</A>&gt; wrote:
+</I>&gt;<i> 2013/2/6 Tobias Pietzsch &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pietzsch at mpi-cbg.de</A>&gt;
+</I>&gt;<i> Hi Melissa,
+</I>&gt;<i> 
+</I>&gt;<i> That is awesome! Thanks a lot for tackling these problems.
+</I>&gt;<i> 
+</I>&gt;<i> Out of curiosity, could you briefly explain (if there is an easy explanation) why the 100.000-files-issue happens?
+</I>&gt;<i> Is bioformats analyzing the directory the TIFF file lives in? Is there a way to turn this off?
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> Yes, Bio-formats analyzes the folder. Some formats are multi-file.
+</I>&gt;<i> 
+</I>&gt;<i> Albert
+</I>&gt;<i> 
+</I>&gt;<i> -- 
+</I>&gt;<i> <A HREF="http://albert.rierol.net">http://albert.rierol.net</A>
+</I>&gt;<i> <A HREF="http://www.ini.uzh.ch/~acardona/">http://www.ini.uzh.ch/~acardona/</A>
+</I>&gt;<i> 
+</I>&gt;<i> -- 
+</I>&gt;<i> -- 
+</I>&gt;<i> Please avoid top-posting, and please make sure to reply-to-all!
+</I>&gt;<i>  
+</I>&gt;<i> Mailing list web interface: <A HREF="http://groups.google.com/group/fiji-devel">http://groups.google.com/group/fiji-devel</A>
+</I>&gt;<i>  
+</I>&gt;<i> --- 
+</I>&gt;<i> You received this message because you are subscribed to the Google Groups &quot;Fiji-devel&quot; group.
+</I>&gt;<i> To unsubscribe from this group and stop receiving emails from it, send an email to <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">fiji-devel+unsubscribe at googlegroups.com.</A>
+</I>&gt;<i> For more options, visit <A HREF="https://groups.google.com/groups/opt_out.">https://groups.google.com/groups/opt_out.</A>
+</I>&gt;<i>  
+</I>&gt;<i>  
+</I>&gt;<i> 
+</I>
+
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001399.html">[ImageJ-devel] [fiji-devel] slow opening of tif files using	scifio-based ImgOpener
+</A></li>
+	<LI>Next message: <A HREF="001401.html">[ImageJ-devel] [fiji-devel] slow opening of tif files using scifio-based ImgOpener
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1400">[ date ]</a>
+              <a href="thread.html#1400">[ thread ]</a>
+              <a href="subject.html#1400">[ subject ]</a>
+              <a href="author.html#1400">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

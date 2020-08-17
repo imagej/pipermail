@@ -1,0 +1,169 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] SCIFIO via Avian
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20SCIFIO%20via%20Avian&In-Reply-To=%3Calpine.DEB.1.00.1312050352150.1191%40s15462909.onlinehome-server.info%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001829.html">
+   <LINK REL="Next"  HREF="001831.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] SCIFIO via Avian</H1>
+    <B>Johannes Schindelin</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20SCIFIO%20via%20Avian&In-Reply-To=%3Calpine.DEB.1.00.1312050352150.1191%40s15462909.onlinehome-server.info%3E"
+       TITLE="[ImageJ-devel] SCIFIO via Avian">Johannes.Schindelin at gmx.de
+       </A><BR>
+    <I>Wed Dec  4 21:28:54 CST 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001829.html">[ImageJ-devel] SCIFIO via Avian
+</A></li>
+        <LI>Next message: <A HREF="001831.html">[ImageJ-devel] [VIGRA] Avian VM and Bio-Formats
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1830">[ date ]</a>
+              <a href="thread.html#1830">[ thread ]</a>
+              <a href="subject.html#1830">[ subject ]</a>
+              <a href="author.html#1830">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Tobi,
+
+On Thu, 5 Dec 2013, Tobias Pietzsch wrote:
+
+&gt;<i> I made a benchmark for ArrayImg backed by
+</I>&gt;<i> - primitive arrays
+</I>&gt;<i> - direct buffers
+</I>&gt;<i> - sun.misc.Unsafe (off-heap memory)
+</I>&gt;<i> <A HREF="https://github.com/imagej/imglib/blob/2e1929873e2f4bafcfe9d90ad616fedb8b7ed4f0/tests/src/test/java/net/imglib2/img/BufferAndUnsafeBenchmark.java">https://github.com/imagej/imglib/blob/2e1929873e2f4bafcfe9d90ad616fedb8b7ed4f0/tests/src/test/java/net/imglib2/img/BufferAndUnsafeBenchmark.java</A>
+</I>&gt;<i> (in branch &quot;buffer-and-unsafe&quot;)
+</I>
+Thanks!
+
+&gt;<i> On my computer, the result is that Unsafe is the about the same speed as primitive arrays. Direct buffers are consistently slower:
+</I>&gt;<i> 
+</I>&gt;<i> copy image using class net.imglib2.img.array.ArrayImgFactory
+</I>&gt;<i> median: 52 ms
+</I>&gt;<i> 
+</I>&gt;<i> copy image using class net.imglib2.img.array.ArrayImgUnsafeFactory
+</I>&gt;<i> median: 52 ms
+</I>&gt;<i> 
+</I>&gt;<i> copy image using class net.imglib2.img.array.ArrayImgBufferFactory
+</I>&gt;<i> median: 59 ms
+</I>
+Okay. But please, do not use the Median for measuring the performance. All
+you are doing is to confuse the benchmark with noise: the theoretically
+optimal runtime can really not be measured in multi-process environments,
+but at least we know that it can only be reached, never succeeded. For
+that reason, best-of-5 is a well-established technique to measure
+performance. (By necessity, the Median will be a worse approximation to
+the time you would like to determine than the best time...)
+
+&gt;<i> The not-so-good news is that using the same type backed by different
+</I>&gt;<i> accesses will make the calls into the ByteAccess (or whatever the type
+</I>&gt;<i> is) polymorphic, spoiling it for the JIT (at least if both are used from
+</I>&gt;<i> the same call-site).
+</I>
+Yes, this is something we will need to address sooner or later. As I
+demonstrated at our hackathon in Madison, I have a couple of good ideas.
+It just needs a proper home for them, and I think scijava-ops is actually
+the best place.
+
+&gt;<i> I think, we should go for the sun.misc.Unsafe for now.
+</I>
+Fair enough.
+
+&gt;<i> If it really turns out to be a show-stopper, we will have to look into
+</I>&gt;<i> using primitive arrays and pinning. One downside of that would be that
+</I>&gt;<i> then the memory must be owned by Java, so it would be a problem for the
+</I>&gt;<i> Avian integration.
+</I>
+No, not at all. Avian has very good memory management.
+
+But Avian also supports Unsafe, even if other JVMs might not (Unsafe is
+not a part of the official Java API, after all, with Oracle's JVM you
+still have to play dirty tricks to access Unsafe).
+
+In contrast to Oracle's JVM, Avian makes accessing Unsafe very easy and
+not only that: Avian's JIT will completely inline the memory accesses via
+Unsafe:
+
+	<A HREF="https://github.com/ReadyTalk/avian/blob/master/src/compile.cpp#L3965">https://github.com/ReadyTalk/avian/blob/master/src/compile.cpp#L3965</A>
+
+In effect, Avian's access via Unsafe is -- apart from the one-time cost of
+JITting the code at the start of the program -- *as* performant as native
+C accesses would be.
+
+&gt;<i> Another downside is that JNI implementations are not forced to pin the
+</I>&gt;<i> array, they may just decide to copy the data.
+</I>
+That's not quite correct: the larger the data structure you are accessing,
+the more less possible it is that the JNI implementation can move the data
+around. This is not dictated by the standard, but by simple considerations
+of practicability.
+
+&gt;<i> I also made a imglib2-vigra branch that uses Unsafe
+</I>&gt;<i> <A HREF="https://github.com/tpietzsch/vigra-imglib2/commits/unsafe">https://github.com/tpietzsch/vigra-imglib2/commits/unsafe</A> (requires the
+</I>&gt;<i> buffer-and-unsafe branch of imglib2).
+</I>
+Great!
+
+In related news, I managed to get literally all the important changes into
+Avian that are required to run SCIFIO (in the process being the top #4
+committer of Avian).
+
+Also in related news, the nar-maven-plugin is already at version
+3.0.0-rc-2, available via Maven Central (Tobi, rc-2 already has the
+changes you wanted for javah, no need to depentd on a SNAPSHOT release
+that was never deployed). Just for the record, I am top #3 committer of
+the nar-maven-plugin project and now co-maintainer with Curtis Rueden,
+all driven by the vigra-imglib2 project.
+
+My next steps will be a little slower because real work caught up with me.
+But my plan is to provide an easy way to compile the native part of
+vigra-imglib2. Part of the solution will be to have Avian and VIGRA as
+submodules (I know, Git submodules could have been designed much better,
+but for the task at hand, they come in handy). To address the rest of the
+problem Ulli faced, I will modify the Maven project so that the output
+will be a C++ library that has Avian and SCIFIO/ImgLib2 compiled-in,
+without the need to compile other stuff manually or install too many other
+components (although C++ compiler and CMake will always have to be
+installed by the user, unfortunately).
+
+Ciao,
+Johannes
+
+</PRE>
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001829.html">[ImageJ-devel] SCIFIO via Avian
+</A></li>
+	<LI>Next message: <A HREF="001831.html">[ImageJ-devel] [VIGRA] Avian VM and Bio-Formats
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1830">[ date ]</a>
+              <a href="thread.html#1830">[ thread ]</a>
+              <a href="subject.html#1830">[ subject ]</a>
+              <a href="author.html#1830">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

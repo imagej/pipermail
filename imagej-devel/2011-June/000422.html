@@ -1,0 +1,123 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] EuclideanSpace and imagej.display.Display
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20EuclideanSpace%20and%20imagej.display.Display&In-Reply-To=%3C4de92b82.8c00e50a.0bee.3c54%40mx.google.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000424.html">
+   <LINK REL="Next"  HREF="000430.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] EuclideanSpace and imagej.display.Display</H1>
+    <B>Lee Kamentsky</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20EuclideanSpace%20and%20imagej.display.Display&In-Reply-To=%3C4de92b82.8c00e50a.0bee.3c54%40mx.google.com%3E"
+       TITLE="[ImageJ-devel] EuclideanSpace and imagej.display.Display">leek at broadinstitute.org
+       </A><BR>
+    <I>Fri Jun  3 13:44:16 CDT 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000424.html">[ImageJ-devel] what jar contains	ome.xml.model.primitives.PositiveFloat
+</A></li>
+        <LI>Next message: <A HREF="000430.html">[ImageJ-devel] EuclideanSpace and imagej.display.Display
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#422">[ date ]</a>
+              <a href="thread.html#422">[ thread ]</a>
+              <a href="subject.html#422">[ subject ]</a>
+              <a href="author.html#422">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>I'm running into a number of problems with overlays that are caused by 
+the fact that the EuclideanSpace is now defined on the Dataset and not 
+on the Display used to composite datasets and overlays. There are more 
+than a few issues:
+
+    * Trac issue ImageJ 558 - the user takes a Z-stack, multichannel
+      image and thresholds it to get a BinaryMaskOverlay and associated
+      ROI. The ROI is properly defined in a 4-dimensional space.
+      However, when displayed, a single X/Y plane should be sampled and
+      displayed, but there is no mechanism to retrieve the plane being
+      displayed or the color display mode. The code iterates through the
+      entire stack and that's what causes it to update slowly.
+
+    * Datasets have axes which capture the metadata of what a particular
+      dimension means. Overlays don't have that.
+    * Channels are really categorical, not ordinal - there's no reason
+      the red channel is zero, the green is one and the blue is two and,
+      with a channel-stack, the DAPI channel in one image might be the
+      PI channel in a second. You can properly relate one channel to the
+      other through metadata, but overlays don't have that.
+    * You might want to composite datasets - take two images and place
+      them adjacently. What happens if they have different axes? What
+      happens if they have different channel layouts?
+
+So, what I'm thinking is the following:
+
+    * A display represents the EuclideanSpace that's used to composite
+      overlays and datasets.  Think of the display as a big
+      N-dimensional container and the overlays and datasets float inside
+      that container.
+          o The display has a set of axes that are the union of all of
+            the axes that appear in the view data objects.
+          o There are two behaviors for a view object that does not have
+            an axis in the space. Perhaps the user selects the behavior?:
+                + The value in space outside of a single plane defined
+                  by a coordinate location along the axis is nan or null.
+                + The value in space along the missing axis is the same
+                  at all locations along that axis.
+    * A display window holds the information about what plane is being
+      displayed and how the channels are composited.
+          o The views are asked to display according to the plane
+            information. A plane is an interval where the min=max for
+            all dimensions but X and Y. The views could construct
+            appropriate projectors based on the interval. The display
+            window should also control the channel compositing
+            information and the views should reference the display
+            window's compositing information instead of maintaining
+            their own copies.
+    * Perhaps there is a SpatialDataObject or perhaps the DataObject is
+      always spatial. In any case, the axis information and channel
+      metadata should be pushed up the inheritance hierarchy so that
+      Overlay has a first-class representation of that and operations
+      that generate overlays from datasets copy the information to the
+      overlays they create.
+    * There is a spectral dimension, but the channel axis doesn't
+      capture that. Channels are categorical and should have names so
+      they can be matched in the same way that axes are matched.
+
+It's some work to refactor these things, but as the code base grows and 
+becomes more entrenched it will become increasingly difficult to 
+refactor, so we should do it sooner rather than later. I don't think 
+this is much coding at this point and if you look at the code, there are 
+places where this organization clarifies some things.
+
+--Lee
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20110603/14a97dcb/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20110603/14a97dcb/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000424.html">[ImageJ-devel] what jar contains	ome.xml.model.primitives.PositiveFloat
+</A></li>
+	<LI>Next message: <A HREF="000430.html">[ImageJ-devel] EuclideanSpace and imagej.display.Display
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#422">[ date ]</a>
+              <a href="thread.html#422">[ thread ]</a>
+              <a href="subject.html#422">[ subject ]</a>
+              <a href="author.html#422">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,4287 @@
+From schindelin at wisc.edu  Wed Oct  1 10:17:08 2014
+From: schindelin at wisc.edu (Johannes Schindelin)
+Date: Wed, 01 Oct 2014 17:17:08 +0200 (CEST)
+Subject: [ImageJ-devel] [fiji-devel] imglib2-neon project for runtime
+ bytecode transformation
+In-Reply-To: <6E2CCEE4-D9AC-455A-B830-8CBC0D20D49F@mpi-cbg.de>
+References: <F8939ED5-C4E5-4B41-89CC-9CB4D567B7A5@mpi-cbg.de>
+	<alpine.DEB.1.00.1409251742180.990@s15462909.onlinehome-server.info>
+	<6E2CCEE4-D9AC-455A-B830-8CBC0D20D49F@mpi-cbg.de>
+Message-ID: <alpine.DEB.1.00.1409302114240.990@s15462909.onlinehome-server.info>
+
+Hi Tobias,
+
+On Tue, 30 Sep 2014, Tobias Pietzsch wrote:
+
+> On 25 Sep 2014, at 19:58, Johannes Schindelin <schindelin at wisc.edu> wrote:
+>
+> > It is great that you continue our conversation from the hackathon last
+> > year in Madison:
+> >
+> > 	http://fiji.sc/2013-05-03_-_ImgLib2_Hackathon_in_Madison
+> >
+> > I am very glad that you have returned to this work, with a promising
+> > initial foray into a general solution.
+>
+> I need to make clear that (ex-)neon is not a continuation of our
+> hackathon conversation.
+
+I apologize, then. I just thought that your work was intended to address
+one of the two major advices I raised at the hackathon (in person, I did
+not think of writing it up): 1) ImgLib2 should be made easier to use e.g.
+for life scientists and 2) ImgLib2 should pay more attention to being
+performant by default.
+
+It does look that your work addresses 2) so I am happy.
+
+> 	It should be clear, that this will never (!) produce something
+> 	that runs faster than the optimistically compiled code, that is,
+> 	the case where polymorphism was not realized at runtime.
+
+This has not been clear to me, thanks for clarifying.
+
+> [...] in my opinion [replacing algorithms by handcrafted code] is a
+> complementary approach. The advantage is potentially higher performance.
+> The drawback is that you basically hand-code things. It?s targeted at a
+> specific library and/or application. If the library code changes too
+> much, it is likely to break.
+
+Oh, but I stressed the point at the hackathon that my demonstration was
+intended to show where the performance needs to be, not how to reach it.
+
+In the meantime, it has become even more obvious to me that a generic data
+processing framework requires a proper API to allow overriding generic
+algorithm implementations with specific, hand-optimized code, and that the
+original implementation must not be allowed to prevent the hand-optimized
+code from being executed.
+
+> Sorry for being so nit-picky about it
+
+In contrast, I am happy that the conversation about the performance of
+data processing in ImageJ2 continues!
+
+> There is overlap between OpenJDK and ASM people. ASM is used in the JDK
+> itself (to implement java 8 lambda expressions for example).
+
+Speaking of Java 8: you might want to consider using its Scala-inspired
+features instead. This would limit the use for the general audience, but it
+would probably benefit greatly individual developers who can afford to switch
+to Java 8.
+
+> > [...] If you have a chance to explore OPS in depth before the
+> > hackathon, it would be very helpful to expedite later discussion [...]
+> > because it provides the necessary infrastructure already, matured over
+> > a course of several iterations.
+>
+> I?ve been following ImageJ-Ops loosely. As I understand it still very
+> much in flux and documentation is very sparse. I?m looking forward to
+> learn about it in personal discussion at the hackathon. I?ll probably
+> not be able to get an in-depth look before.
+
+If you do find some time in the next weeks to look at the Ops tutorials
+https://github.com/imagej/imagej-tutorials/tree/master/using-ops and
+https://github.com/imagej/imagej-tutorials/tree/master/create-a-new-op
+it will help the discussion. Do not worry if you do not find the time: the
+issue of ImgLib2 release management is the real topic of the hackathon, and
+we will be plenty busy with it.
+
+> Does ImageJ2 use custom ClassLoaders?
+
+By virtue of the legacy ImageJ 1.x's PluginClassLoader loading all the
+plugin classes: yes.
+
+Thank you for keeping the conversation going,
+Johannes
+
+
+From pietzsch at mpi-cbg.de  Wed Oct  1 13:08:57 2014
+From: pietzsch at mpi-cbg.de (Tobias Pietzsch)
+Date: Wed, 1 Oct 2014 20:08:57 +0200
+Subject: [ImageJ-devel] [fiji-devel] imglib2-neon project for runtime
+	bytecode transformation
+In-Reply-To: <alpine.DEB.1.00.1409302114240.990@s15462909.onlinehome-server.info>
+References: <F8939ED5-C4E5-4B41-89CC-9CB4D567B7A5@mpi-cbg.de>
+	<alpine.DEB.1.00.1409251742180.990@s15462909.onlinehome-server.info>
+	<6E2CCEE4-D9AC-455A-B830-8CBC0D20D49F@mpi-cbg.de>
+	<alpine.DEB.1.00.1409302114240.990@s15462909.onlinehome-server.info>
+Message-ID: <77318DB6-74F6-43AB-BD84-931E501CED5A@mpi-cbg.de>
+
+Hi Johannes,
+
+On 01 Oct 2014, at 17:17, Johannes Schindelin <schindelin at wisc.edu> wrote:
+
+> Speaking of Java 8: you might want to consider using its Scala-inspired
+> features instead. This would limit the use for the general audience, but it
+> would probably benefit greatly individual developers who can afford to switch
+> to Java 8.
+
+Could you please elaborate this a bit? I?m not sure which features you mean and how I could utilize them.
+
+> If you do find some time in the next weeks to look at the Ops tutorials
+> https://github.com/imagej/imagej-tutorials/tree/master/using-ops and
+> https://github.com/imagej/imagej-tutorials/tree/master/create-a-new-op
+> it will help the discussion. Do not worry if you do not find the time: the
+> issue of ImgLib2 release management is the real topic of the hackathon, and
+> we will be plenty busy with it.
+
+Oh, then it?s all good, I already looked at those tutorials.
+
+I agree that the focus of the hackathon should be on the ImgLib2 release.
+
+> 
+>> Does ImageJ2 use custom ClassLoaders?
+> 
+> By virtue of the legacy ImageJ 1.x's PluginClassLoader loading all the
+> plugin classes: yes.
+
+Hmm, that is probably too far down the chain. We would need a place to intercept loading of the core classes. After these classes have been loaded it?s too late.
+If there is no elaborate ClassLoader magic going on, what would be the problem with using a Java Agent?
+Let?s look into this at the hackathon if we find the time.
+
+best regards,
+Tobias
+
+> 
+> Thank you for keeping the conversation going,
+> Johannes
+> 
+> -- 
+> -- 
+> Please avoid top-posting, and please make sure to reply-to-all!
+> 
+> Mailing list web interface: http://groups.google.com/group/fiji-devel
+> 
+> --- 
+> You received this message because you are subscribed to the Google Groups "Fiji-devel" group.
+> To unsubscribe from this group and stop receiving emails from it, send an email to fiji-devel+unsubscribe at googlegroups.com.
+> For more options, visit https://groups.google.com/d/optout.
+
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20141001/9ee40d6b/attachment.pgp>
+
+From ctrueden at wisc.edu  Wed Oct  1 16:58:24 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Wed, 1 Oct 2014 16:58:24 -0500
+Subject: [ImageJ-devel] ImageJ OPS hackathon results
+Message-ID: <CADN69yn+DsNBCbpD2Sf-R79EOmtL8qZef7Y3SzHQKTfAdfqRwg@mail.gmail.com>
+
+Hi everyone,
+
+The ImageJ2 and KNIME Image Processing teams met in Madison during the week
+of September 15 - 19, to work on ImageJ OPS, which seeks to be a unifying
+library for scientific image processing.
+
+On behalf of the OPS development team, I am pleased to announce the results
+of that hackathon, including accomplishments, project goals and milestones.
+See the news post for full details:
+
+http://imagej.net/2014-10-01_-_ImageJ_OPS_Hackathon
+
+Regards,
+Curtis Rueden
+ImageJ2 project lead
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20141001/2b64137b/attachment.html>
+
+From ctrueden at wisc.edu  Thu Oct  2 12:35:49 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Thu, 2 Oct 2014 12:35:49 -0500
+Subject: [ImageJ-devel] ImageJ OPS hackathon results
+In-Reply-To: <F4C499B0-9448-428A-969F-CDE67F18B1FF@wisc.edu>
+References: <CADN69yn+DsNBCbpD2Sf-R79EOmtL8qZef7Y3SzHQKTfAdfqRwg@mail.gmail.com>
+	<F4C499B0-9448-428A-969F-CDE67F18B1FF@wisc.edu>
+Message-ID: <CADN69ykrOuJ5213GRKSi_-4ROtoSV7i-ZwbnvKyELZ9pFzXy=A@mail.gmail.com>
+
+Hi Jay,
+
+> Am I right that Ops sort of occupies the niche between ImgLib2 and
+> ImageJ Plugins... something that makes it easier to do the image
+> manipulations but can be reused a bit more easily given they don't
+> require many of the Service parameters and preprocessors that many of
+> the plugins take/need?
+
+Yes, OPS is intended for pure image processing operations and functions.
+The rule of thumb is that they be deterministic, and have no side effects.
+So you give same inputs, you get same outputs, every time. Many of them are
+also multithreadable, though that is not a requirement. And OPS are also
+supposed to be "static" rather than dynamic -- i.e., they shouldn't have a
+variable number of input or output parameters, unlike commands in general.
+
+That said, OPS are still allowed to depend on services, but it is expected
+that the service methods you call will not compromise the determinism of
+the op -- i.e., only utility methods of services should really be used.
+Perhaps in the future we could add annotations to each service method
+indicating what sort of method it is, and hence where it is "safe" to use.
+
+I want to thank you for your feedback and discussion from a few months ago,
+regarding reuse of ImageJ2 commands in JEX. Your perspective provided some
+of the inspiration for the design of OPS, because it became clear that we
+need a "pure functional" layer for image processing that does not rely on
+side effects from services, etc. The idea is that KNIME Image Processing,
+CellProfiler, OMERO, JEX, etc., can all consume and expose the ops with the
+assumption that they will behave well (work headless, etc.).
+
+Regards,
+Curtis
+
+
+On Thu, Oct 2, 2014 at 12:08 PM, Jay Warrick <warrick at wisc.edu> wrote:
+
+> Looks promising. Am I right that Ops sort of occupies the niche between
+> ImgLib2 and ImageJ Plugins... something that makes it easier to do the
+> image manipulations but can be reused a bit more easily given they don't
+> require many of the Service parameters and preprocessors that many of the
+> plugins take/need?
+>
+> On Oct 1, 2014, at 4:58 PM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+>
+> Hi everyone,
+>
+> The ImageJ2 and KNIME Image Processing teams met in Madison during the
+> week of September 15 - 19, to work on ImageJ OPS, which seeks to be a
+> unifying library for scientific image processing.
+>
+> On behalf of the OPS development team, I am pleased to announce the
+> results of that hackathon, including accomplishments, project goals and
+> milestones. See the news post for full details:
+>
+> http://imagej.net/2014-10-01_-_ImageJ_OPS_Hackathon
+>
+> Regards,
+> Curtis Rueden
+> ImageJ2 project lead
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20141002/6bbcba10/attachment.html>
+
+From warrick at wisc.edu  Thu Oct  2 16:53:05 2014
+From: warrick at wisc.edu (Jay Warrick)
+Date: Thu, 02 Oct 2014 16:53:05 -0500
+Subject: [ImageJ-devel] ImageJ OPS hackathon results
+In-Reply-To: <CADN69ykrOuJ5213GRKSi_-4ROtoSV7i-ZwbnvKyELZ9pFzXy=A@mail.gmail.com>
+References: <CADN69yn+DsNBCbpD2Sf-R79EOmtL8qZef7Y3SzHQKTfAdfqRwg@mail.gmail.com>
+	<F4C499B0-9448-428A-969F-CDE67F18B1FF@wisc.edu>
+	<CADN69ykrOuJ5213GRKSi_-4ROtoSV7i-ZwbnvKyELZ9pFzXy=A@mail.gmail.com>
+Message-ID: <A6EFD3B5-01A6-485A-99EC-F9A3770A5522@wisc.edu>
+
+Curtis - Sweet! I like it. I can see myself making small packages of Ops for things we do in our research that we could easily make available for others. It's also a great way for us to reuse capabilities across different JEX functions we create that allows us to share them with the rest of the community instead of just creating static methods hoarded in various "utility classes" in our software, not that we would ever do that :-)
+
+Curtis and everyone else :-) - First of all, thanks to all for their hard work to lay the foundation for this really useful Ops package. 2 things, though, I would appreciate some help with. Although I've looked at most of the Ops and the tutorials on creating and using Ops, I still have a couple questions.
+
+1) When should we use the "Command" style method of doing things where all information is specified using the @Parameter methodology and run via the "run" method, and when should we use the "Function" style of things with a typed input and output "compute" method? Advantages/disadvantages of each? Can you get by with either?
+
+2) I couldn't see how some of the @Parameter objects would be or are injected or set. What is the "sleekest" method for setting these parameters if I wanted to use these Ops in my own program without resorting to setting private Parameter fields accessible etc (e.g., the @Parameter private T threshold;" of the ApplyConstantThreshold.java Op)? Am I forgetting some tool/method for easily injecting/setting Op/Command parameters? It seems like calls to ij.op().<whatever> only pass parameters to compute method and don't do any @Parameter object injection/setting. Am I wrong? Or, eventually, would these Ops have getters and setters. Are getters and setters automatically generated already that I'm not aware of by just looking over the code?
+
+Thanks,
+
+Jay
+
+
+
+
+On Oct 2, 2014, at 12:35 PM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+
+> Hi Jay,
+> 
+> > Am I right that Ops sort of occupies the niche between ImgLib2 and
+> > ImageJ Plugins... something that makes it easier to do the image
+> > manipulations but can be reused a bit more easily given they don't
+> > require many of the Service parameters and preprocessors that many of
+> > the plugins take/need?
+> 
+> Yes, OPS is intended for pure image processing operations and functions. The rule of thumb is that they be deterministic, and have no side effects. So you give same inputs, you get same outputs, every time. Many of them are also multithreadable, though that is not a requirement. And OPS are also supposed to be "static" rather than dynamic -- i.e., they shouldn't have a variable number of input or output parameters, unlike commands in general.
+> 
+> That said, OPS are still allowed to depend on services, but it is expected that the service methods you call will not compromise the determinism of the op -- i.e., only utility methods of services should really be used. Perhaps in the future we could add annotations to each service method indicating what sort of method it is, and hence where it is "safe" to use.
+> 
+> I want to thank you for your feedback and discussion from a few months ago, regarding reuse of ImageJ2 commands in JEX. Your perspective provided some of the inspiration for the design of OPS, because it became clear that we need a "pure functional" layer for image processing that does not rely on side effects from services, etc. The idea is that KNIME Image Processing, CellProfiler, OMERO, JEX, etc., can all consume and expose the ops with the assumption that they will behave well (work headless, etc.).
+> 
+> Regards,
+> Curtis
+> 
+> 
+> On Thu, Oct 2, 2014 at 12:08 PM, Jay Warrick <warrick at wisc.edu> wrote:
+> Looks promising. Am I right that Ops sort of occupies the niche between ImgLib2 and ImageJ Plugins... something that makes it easier to do the image manipulations but can be reused a bit more easily given they don't require many of the Service parameters and preprocessors that many of the plugins take/need?
+> 
+> On Oct 1, 2014, at 4:58 PM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+> 
+>> Hi everyone,
+>> 
+>> The ImageJ2 and KNIME Image Processing teams met in Madison during the week of September 15 - 19, to work on ImageJ OPS, which seeks to be a unifying library for scientific image processing.
+>> 
+>> On behalf of the OPS development team, I am pleased to announce the results of that hackathon, including accomplishments, project goals and milestones. See the news post for full details:
+>> 
+>> http://imagej.net/2014-10-01_-_ImageJ_OPS_Hackathon
+>> 
+>> Regards,
+>> Curtis Rueden
+>> ImageJ2 project lead
+>> _______________________________________________
+>> ImageJ-devel mailing list
+>> ImageJ-devel at imagej.net
+>> http://imagej.net/mailman/listinfo/imagej-devel
+> 
+> 
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20141002/78bcc4d1/attachment.html>
+
+From warrick at wisc.edu  Fri Oct  3 07:21:48 2014
+From: warrick at wisc.edu (Jay Warrick)
+Date: Fri, 03 Oct 2014 07:21:48 -0500
+Subject: [ImageJ-devel] ImageJ OPS hackathon results
+In-Reply-To: <A6EFD3B5-01A6-485A-99EC-F9A3770A5522@wisc.edu>
+References: <CADN69yn+DsNBCbpD2Sf-R79EOmtL8qZef7Y3SzHQKTfAdfqRwg@mail.gmail.com>
+	<F4C499B0-9448-428A-969F-CDE67F18B1FF@wisc.edu>
+	<CADN69ykrOuJ5213GRKSi_-4ROtoSV7i-ZwbnvKyELZ9pFzXy=A@mail.gmail.com>
+	<A6EFD3B5-01A6-485A-99EC-F9A3770A5522@wisc.edu>
+Message-ID: <5ADF0478-77FC-4F79-9CD5-4E08A90E75D3@wisc.edu>
+
+Hi All, 
+
+After looking at some of the test classes I can see a partial answer to #2 which is that the ops.run(<name>, <args>) method can be used to set both compute method arguments and @Parameter objects via the magic of modules and the OpsMatchingService. However, how are potential ambiguities resolved when trying to set two parameters of the same type? For example, if I had..
+
+@Parameter
+double min;
+
+@Parameter
+double max;
+
+and I called my Op with ops.run("MyOp", 10.0, 100.0). 
+
+How does this call know which to assign to min and which to max? Order that it is listed in the Op class def and order of args provided to the ops.run() methods? 
+
+Thanks,
+
+Jay
+
+On Oct 2, 2014, at 4:53 PM, Jay Warrick <warrick at wisc.edu> wrote:
+
+> Curtis - Sweet! I like it. I can see myself making small packages of Ops for things we do in our research that we could easily make available for others. It's also a great way for us to reuse capabilities across different JEX functions we create that allows us to share them with the rest of the community instead of just creating static methods hoarded in various "utility classes" in our software, not that we would ever do that :-)
+> 
+> Curtis and everyone else :-) - First of all, thanks to all for their hard work to lay the foundation for this really useful Ops package. 2 things, though, I would appreciate some help with. Although I've looked at most of the Ops and the tutorials on creating and using Ops, I still have a couple questions.
+> 
+> 1) When should we use the "Command" style method of doing things where all information is specified using the @Parameter methodology and run via the "run" method, and when should we use the "Function" style of things with a typed input and output "compute" method? Advantages/disadvantages of each? Can you get by with either?
+> 
+> 2) I couldn't see how some of the @Parameter objects would be or are injected or set. What is the "sleekest" method for setting these parameters if I wanted to use these Ops in my own program without resorting to setting private Parameter fields accessible etc (e.g., the @Parameter private T threshold;" of the ApplyConstantThreshold.java Op)? Am I forgetting some tool/method for easily injecting/setting Op/Command parameters? It seems like calls to ij.op().<whatever> only pass parameters to compute method and don't do any @Parameter object injection/setting. Am I wrong? Or, eventually, would these Ops have getters and setters. Are getters and setters automatically generated already that I'm not aware of by just looking over the code?
+> 
+> Thanks,
+> 
+> Jay
+> 
+> 
+> 
+> 
+> On Oct 2, 2014, at 12:35 PM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+> 
+>> Hi Jay,
+>> 
+>> > Am I right that Ops sort of occupies the niche between ImgLib2 and
+>> > ImageJ Plugins... something that makes it easier to do the image
+>> > manipulations but can be reused a bit more easily given they don't
+>> > require many of the Service parameters and preprocessors that many of
+>> > the plugins take/need?
+>> 
+>> Yes, OPS is intended for pure image processing operations and functions. The rule of thumb is that they be deterministic, and have no side effects. So you give same inputs, you get same outputs, every time. Many of them are also multithreadable, though that is not a requirement. And OPS are also supposed to be "static" rather than dynamic -- i.e., they shouldn't have a variable number of input or output parameters, unlike commands in general.
+>> 
+>> That said, OPS are still allowed to depend on services, but it is expected that the service methods you call will not compromise the determinism of the op -- i.e., only utility methods of services should really be used. Perhaps in the future we could add annotations to each service method indicating what sort of method it is, and hence where it is "safe" to use.
+>> 
+>> I want to thank you for your feedback and discussion from a few months ago, regarding reuse of ImageJ2 commands in JEX. Your perspective provided some of the inspiration for the design of OPS, because it became clear that we need a "pure functional" layer for image processing that does not rely on side effects from services, etc. The idea is that KNIME Image Processing, CellProfiler, OMERO, JEX, etc., can all consume and expose the ops with the assumption that they will behave well (work headless, etc.).
+>> 
+>> Regards,
+>> Curtis
+>> 
+>> 
+>> On Thu, Oct 2, 2014 at 12:08 PM, Jay Warrick <warrick at wisc.edu> wrote:
+>> Looks promising. Am I right that Ops sort of occupies the niche between ImgLib2 and ImageJ Plugins... something that makes it easier to do the image manipulations but can be reused a bit more easily given they don't require many of the Service parameters and preprocessors that many of the plugins take/need?
+>> 
+>> On Oct 1, 2014, at 4:58 PM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+>> 
+>>> Hi everyone,
+>>> 
+>>> The ImageJ2 and KNIME Image Processing teams met in Madison during the week of September 15 - 19, to work on ImageJ OPS, which seeks to be a unifying library for scientific image processing.
+>>> 
+>>> On behalf of the OPS development team, I am pleased to announce the results of that hackathon, including accomplishments, project goals and milestones. See the news post for full details:
+>>> 
+>>> http://imagej.net/2014-10-01_-_ImageJ_OPS_Hackathon
+>>> 
+>>> Regards,
+>>> Curtis Rueden
+>>> ImageJ2 project lead
+>>> _______________________________________________
+>>> ImageJ-devel mailing list
+>>> ImageJ-devel at imagej.net
+>>> http://imagej.net/mailman/listinfo/imagej-devel
+>> 
+>> 
+> 
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20141003/dd9df550/attachment-0001.html>
+
+From ctrueden at wisc.edu  Fri Oct  3 12:39:16 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Fri, 3 Oct 2014 12:39:16 -0500
+Subject: [ImageJ-devel] ImageJ OPS hackathon results
+In-Reply-To: <A6EFD3B5-01A6-485A-99EC-F9A3770A5522@wisc.edu>
+References: <CADN69yn+DsNBCbpD2Sf-R79EOmtL8qZef7Y3SzHQKTfAdfqRwg@mail.gmail.com>
+	<F4C499B0-9448-428A-969F-CDE67F18B1FF@wisc.edu>
+	<CADN69ykrOuJ5213GRKSi_-4ROtoSV7i-ZwbnvKyELZ9pFzXy=A@mail.gmail.com>
+	<A6EFD3B5-01A6-485A-99EC-F9A3770A5522@wisc.edu>
+Message-ID: <CADN69ymcEaxBcei_AF-j+aTw15jJNE0Chao12H9jgvVJQJuAaQ@mail.gmail.com>
+
+Hi Jay,
+
+> 1) When should we use the "Command" style method of doing things where
+> all information is specified using the @Parameter methodology and run
+> via the "run" method, and when should we use the "Function" style of
+> things with a typed input and output "compute" method?
+> Advantages/disadvantages of each? Can you get by with either?
+
+We started OPS with the "Command" paradigm, then found that for the vast
+majority of ops, there was one "special" input over which you want to
+iterate (either per pixel, or in a multi-threaded context, or both), and
+one main output of the op. That common case is a Function (you extend
+either AbstractStrictFunction or AbstractOutputFunction, depending on
+whether you want to force the caller to pass in a preallocated output or
+not).
+
+In short: use Function if you want your op to usable by the "map" op to
+execute it iteratively over an entire image (e.g., an Iterable or
+IterableInterval). Use a plain Op if you don't need that, don't care or are
+lazy.
+
+As always in programming: model your code after existing code ("when in
+Rome") for best results.
+
+> 2) I couldn't see how some of the @Parameter objects would be or are
+> injected or set.
+
+Calling OpService#run to execute the op automatically finds the best
+matching op, and then injects the parameter values in the specified order.
+
+> how are potential ambiguities resolved when trying to set two
+> parameters of the same type?
+...
+> Order that it is listed in the Op class def and order of args provided
+> to the ops.run() methods?
+
+Yes. The order defined in the class must match the order of arguments given
+to the OpService#run method.
+
+Call OpService#help(String) for a full list of ops with the given name,
+including expected parameters.
+
+Regards,
+Curtis
+
+On Thu, Oct 2, 2014 at 4:53 PM, Jay Warrick <warrick at wisc.edu> wrote:
+
+> Curtis - Sweet! I like it. I can see myself making small packages of Ops
+> for things we do in our research that we could easily make available for
+> others. It's also a great way for us to reuse capabilities across different
+> JEX functions we create that allows us to share them with the rest of the
+> community instead of just creating static methods hoarded in various
+> "utility classes" in our software, not that we would ever do that :-)
+>
+> Curtis and everyone else :-) - First of all, thanks to all for their hard
+> work to lay the foundation for this really useful Ops package. 2 things,
+> though, I would appreciate some help with. Although I've looked at most of
+> the Ops and the tutorials on creating and using Ops, I still have a couple
+> questions.
+>
+> 1) When should we use the "Command" style method of doing things where all
+> information is specified using the @Parameter methodology and run via the
+> "run" method, and when should we use the "Function" style of things with a
+> typed input and output "compute" method? Advantages/disadvantages of each?
+> Can you get by with either?
+>
+> 2) I couldn't see how some of the @Parameter objects would be or are
+> injected or set. What is the "sleekest" method for setting these parameters
+> if I wanted to use these Ops in my own program without resorting to setting
+> private Parameter fields accessible etc (e.g., the @Parameter
+> private T threshold;" of the ApplyConstantThreshold.java Op)? Am I
+> forgetting some tool/method for easily injecting/setting Op/Command
+> parameters? It seems like calls to ij.op().<whatever> only pass parameters
+> to compute method and don't do any @Parameter object injection/setting. Am
+> I wrong? Or, eventually, would these Ops have getters and setters. Are
+> getters and setters automatically generated already that I'm not aware of
+> by just looking over the code?
+>
+> Thanks,
+>
+> Jay
+>
+>
+>
+>
+> On Oct 2, 2014, at 12:35 PM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+>
+> Hi Jay,
+>
+> > Am I right that Ops sort of occupies the niche between ImgLib2 and
+> > ImageJ Plugins... something that makes it easier to do the image
+> > manipulations but can be reused a bit more easily given they don't
+> > require many of the Service parameters and preprocessors that many of
+> > the plugins take/need?
+>
+> Yes, OPS is intended for pure image processing operations and functions.
+> The rule of thumb is that they be deterministic, and have no side effects.
+> So you give same inputs, you get same outputs, every time. Many of them are
+> also multithreadable, though that is not a requirement. And OPS are also
+> supposed to be "static" rather than dynamic -- i.e., they shouldn't have a
+> variable number of input or output parameters, unlike commands in general.
+>
+> That said, OPS are still allowed to depend on services, but it is expected
+> that the service methods you call will not compromise the determinism of
+> the op -- i.e., only utility methods of services should really be used.
+> Perhaps in the future we could add annotations to each service method
+> indicating what sort of method it is, and hence where it is "safe" to use.
+>
+> I want to thank you for your feedback and discussion from a few months
+> ago, regarding reuse of ImageJ2 commands in JEX. Your perspective provided
+> some of the inspiration for the design of OPS, because it became clear that
+> we need a "pure functional" layer for image processing that does not rely
+> on side effects from services, etc. The idea is that KNIME Image
+> Processing, CellProfiler, OMERO, JEX, etc., can all consume and expose the
+> ops with the assumption that they will behave well (work headless, etc.).
+>
+> Regards,
+> Curtis
+>
+>
+> On Thu, Oct 2, 2014 at 12:08 PM, Jay Warrick <warrick at wisc.edu> wrote:
+>
+>> Looks promising. Am I right that Ops sort of occupies the niche between
+>> ImgLib2 and ImageJ Plugins... something that makes it easier to do the
+>> image manipulations but can be reused a bit more easily given they don't
+>> require many of the Service parameters and preprocessors that many of the
+>> plugins take/need?
+>>
+>> On Oct 1, 2014, at 4:58 PM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+>>
+>> Hi everyone,
+>>
+>> The ImageJ2 and KNIME Image Processing teams met in Madison during the
+>> week of September 15 - 19, to work on ImageJ OPS, which seeks to be a
+>> unifying library for scientific image processing.
+>>
+>> On behalf of the OPS development team, I am pleased to announce the
+>> results of that hackathon, including accomplishments, project goals and
+>> milestones. See the news post for full details:
+>>
+>> http://imagej.net/2014-10-01_-_ImageJ_OPS_Hackathon
+>>
+>> Regards,
+>> Curtis Rueden
+>> ImageJ2 project lead
+>> _______________________________________________
+>> ImageJ-devel mailing list
+>> ImageJ-devel at imagej.net
+>> http://imagej.net/mailman/listinfo/imagej-devel
+>>
+>>
+>>
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20141003/ffdade03/attachment.html>
+
+From ctrueden at wisc.edu  Fri Oct  3 12:53:42 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Fri, 3 Oct 2014 12:53:42 -0500
+Subject: [ImageJ-devel] pom-fiji TrackMate update?
+In-Reply-To: <18366A2A-7F5E-4E81-A954-282E9D639873@gmail.com>
+References: <5C275889-D156-47A9-B3D7-205FD74AE089@gmail.com>
+	<5414381F.8010101@pasteur.fr>
+	<C10C3E67-8D09-42BC-946D-9A85C711B86C@gmail.com>
+	<541452A3.6050305@pasteur.fr>
+	<0EE0E1BA-83F3-4BEB-9457-3FA62F3920BA@gmail.com>
+	<4472093D-D0E8-4BDF-A24E-F667FFB6BB5E@gmail.com>
+	<FB2E708E-74E8-4BC0-9AEF-7A1C2621B564@gmail.com>
+	<708EEE79-789F-4A5C-A4D6-FBA01DCF8E74@gmail.com>
+	<18366A2A-7F5E-4E81-A954-282E9D639873@gmail.com>
+Message-ID: <CADN69y=AXRw8BdjbbXYFzYyOTX8BW=fBBppBYZ+QmaJeJzZuCw@mail.gmail.com>
+
+Hi Jay,
+
+> In TrackMate v 2.5 pom there is...
+>
+> <parent>
+> <groupId>sc.fiji</groupId>
+> <artifactId>pom-fiji</artifactId>
+> <version>2.0.0-beta-1-SNAPSHOT</version>
+> <relativePath/>
+> </parent>
+> <artifactId>TrackMate_</artifactId>
+> <version>2.5.0</version>
+> <name>plugins/TrackMate_.jar</name>
+
+OK, I finally made a little time to look at this.
+
+Yes, this is a major problem with TrackMate's releases. Version 2.5.0
+inherits from sc.fiji:pom-fiji:2.0.0-beta-1-SNAPSHOT. This is forbidden in
+Maven terms -- a release must depend only on other releases.
+
+This is a consequence of the fact that Fiji artifacts do not use the
+maven-release-plugin for releases, and hence nothing ever actually enforces
+that stipulation. The solution will be for all Fiji plugins to extend a
+_release_ version of the pom-fiji parent, not a SNAPSHOT version.
+
+We are moving in that direction... but until we complete that migration,
+downstream artifacts such as JEX will _not_ be stable when they depend on a
+Fiji project such as TrackMate, _even if_ the dependency purports to be a
+"release" version! Caveat emptor.
+
+Regards,
+Curtis
+
+On Sun, Sep 14, 2014 at 7:40 AM, Jay Warrick <jay.w.warrick at gmail.com>
+wrote:
+
+> I changed the subject line from Re: [ImageJ-devel] Maven TrackMate
+> Dependency Question because of the following...
+>
+> Oh boy, really at the extent of my knowledge... but I think I may have it,
+> is this what is happening??? Is maven pulling TrackMate v 2.3 via TrackMate
+> v2.5 and fiji?
+>
+> In TrackMate v 2.5 pom there is...
+>
+> <parent>
+> <groupId>sc.fiji</groupId>
+> <artifactId>pom-fiji</artifactId>
+> <version>2.0.0-beta-1-SNAPSHOT</version>
+> <relativePath/>
+> </parent>
+> <artifactId>TrackMate_</artifactId>
+> <version>2.5.0</version>
+> <name>plugins/TrackMate_.jar</name>
+>
+> which thus pulls in pom-fiji 2.0.0-beta-1-SNAPSHOT where there is the
+> following...
+>
+> <fiji-compat.version>2.0.0-SNAPSHOT</fiji-compat.version>
+>
+> and
+>
+> <dependency>
+> <groupId>sc.fiji</groupId>
+> <artifactId>fiji-compat</artifactId>
+> </dependency>
+>
+> The pom for fiji-compat uses pom-fiji 2.0.0-SNAPSHOT as parent
+>
+> <parent>
+> <groupId>sc.fiji</groupId>
+> <artifactId>pom-fiji</artifactId>
+> <version>2.0.0-SNAPSHOT</version>
+> <relativePath/>
+> </parent><
+> artifactId>fiji-compat</artifactId>
+> <name>jars/fiji-compat.jar</name>
+>
+> The pom-fiji 2.0.0-SNAPSHOT has the following
+>
+> <TrackMate.version>2.3.0-SNAPSHOT</TrackMate.version>
+>
+> and
+>
+> <dependency>
+> <groupId>sc.fiji</groupId>
+> <artifactId>TrackMate_</artifactId>
+> <version>${TrackMate.version}</version>
+> </dependency>
+>
+> Thus, ?maybe? with TrackMate v 2.5's pom parent being pom-fiji
+> 2.0.0-beta-1-SNAPSHOT, fiji-compate 2.0.0-SNAPSHOT gets pulled in which
+> pulls pom-fiji 2.0.0-SNAPSHOT which tries to pulls in TrackMate v 2.3 which
+> then tries to use <groupId>${jama.groupId}</groupId> instead of
+> <groupId>gov.nist.math</groupId> for jama.
+>
+> Is this counter to what is intended or is there some maven magic which
+> should right this "wrong"? If it is not intended and could be affecting
+> things, what might be the fix?
+>
+> Thanks all,
+>
+> Jay
+>
+>
+> On Sep 14, 2014, at 6:51 AM, Jay Warrick <jay.w.warrick at gmail.com> wrote:
+>
+> Ok. So this makes more sense...  TrackMate v 2.3 uses
+> the <groupId>${jama.groupId}</groupId> which causes the error, which was
+> fixed by TrackMate v2.5 which uses <groupId>gov.nist.math</groupId>.
+>
+> So the whole issue boils down to, "Why is maven trying to do ANYTHING with
+> v 2.3 when I can't find a single dependency on this version? If I can get
+> Maven to stop looking for v 2.3 my issue will be solved.
+>
+> Thoughts on where to search for hidden/residual links to v 2.3 given what
+> I've checked already?
+>
+> Thanks,
+>
+> Jay
+>
+> On Sep 14, 2014, at 6:45 AM, Jay Warrick <jay.w.warrick at gmail.com> wrote:
+>
+> I think never mind. Still learning about Maven, but it looks like the
+> groupID is assumed the same as the parent so you TrackMate doesn't need to
+> define it. Should have guessed this based on how everything else seems to
+> work in Maven.
+>
+> On Sep 14, 2014, at 6:15 AM, Jay Warrick <jay.w.warrick at gmail.com> wrote:
+>
+> If this might be on the right track, is there any way to test this on my
+> end? Use offline mode and go into my .m2 repository and muck with poms or
+> something?
+> On Sep 14, 2014, at 6:11 AM, Jay Warrick <jay.w.warrick at gmail.com> wrote:
+>
+> Hi JY,
+>
+> Could it be a problem with the TrackMate groupId? Searching the internet
+> with the error string brought up this past issue with jama and SPIM...
+>
+> https://groups.google.com/forum/#!topic/fiji-devel/zEhBIf1bZEA
+>
+> When I look at the TrackMate pom, I don't think I see a "groupId" defined
+> for the TrackMate plugin. Hard for me to completely decipher in the issue
+> discussion if this would cause the problem I'm seeing or if it would merely
+> prevent the imageJ/Fiji folks from "seeing" that such a problem exists.
+>
+> Stephan Preibisch, Curtis, and Dscho - Does that sound like the right
+> track? Thoughts?
+>
+> Thanks,
+>
+> Jay
+>
+> On Sep 13, 2014, at 9:20 AM, Jean-Yves Tinevez <tinevez at pasteur.fr> wrote:
+>
+>  On 13-Sep-14 16:01, Jay Warrick wrote:
+>
+> Hi Jean-Yves,
+>
+>  Thanks for the quick reply! Here are the poms for my multi module
+> project. I added to the default "pom.xml" names to make things easier to
+> follow. The Master pom is the parent pom for each of my project modules.
+> The parent of Master is scijava. The JEX module has essentially one class,
+> Main which calls the main class in Core. Core contains essentially the
+> whole program including the dependency on TrackMate. Broken contains broken
+> code for one reason or another but doesn't really come into play as the
+> Broken module is not part of the build process. It is "disabled" using a
+> profile within the JEX module. Despite this, I still confirmed it didn't
+> depend on TrackMate 2.3 using the Eclipse dependency hierarchy viewer, just
+> in case.
+>
+>
+> Ok thank you for the crystal clear report.
+> We are on the verge of what I know of maven. However I remember having a
+> similar issue that was fixed by making the parent of the master pom the
+> fiji plugin pom, like for TrackMate pom.
+>
+> Any chance you could just try that first?
+> jy
+>
+>
+> ------------------------------
+>    <http://www.avast.com/>
+>
+> This email is free from viruses and malware because avast! Antivirus
+> <http://www.avast.com/> protection is active.
+>
+>  _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20141003/55617007/attachment-0001.html>
+
+From jay.w.warrick at gmail.com  Fri Oct  3 13:50:24 2014
+From: jay.w.warrick at gmail.com (Jay Warrick)
+Date: Fri, 3 Oct 2014 13:50:24 -0500
+Subject: [ImageJ-devel] pom-fiji TrackMate update?
+In-Reply-To: <CADN69y=AXRw8BdjbbXYFzYyOTX8BW=fBBppBYZ+QmaJeJzZuCw@mail.gmail.com>
+References: <5C275889-D156-47A9-B3D7-205FD74AE089@gmail.com>
+	<5414381F.8010101@pasteur.fr>
+	<C10C3E67-8D09-42BC-946D-9A85C711B86C@gmail.com>
+	<541452A3.6050305@pasteur.fr>
+	<0EE0E1BA-83F3-4BEB-9457-3FA62F3920BA@gmail.com>
+	<4472093D-D0E8-4BDF-A24E-F667FFB6BB5E@gmail.com>
+	<FB2E708E-74E8-4BC0-9AEF-7A1C2621B564@gmail.com>
+	<708EEE79-789F-4A5C-A4D6-FBA01DCF8E74@gmail.com>
+	<18366A2A-7F5E-4E81-A954-282E9D639873@gmail.com>
+	<CADN69y=AXRw8BdjbbXYFzYyOTX8BW=fBBppBYZ+QmaJeJzZuCw@mail.gmail.com>
+Message-ID: <4CA1ED0D-8D1C-4243-B319-3ED9227B2872@gmail.com>
+
+Thanks Curtis.
+
+Cheers,
+
+Jay
+
+
+On Oct 3, 2014, at 12:53 PM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+
+> Hi Jay,
+> 
+> > In TrackMate v 2.5 pom there is...
+> > 
+> > <parent>
+> > 	<groupId>sc.fiji</groupId>
+> > 	<artifactId>pom-fiji</artifactId>
+> > 	<version>2.0.0-beta-1-SNAPSHOT</version>
+> > 	<relativePath/>
+> > </parent>
+> > <artifactId>TrackMate_</artifactId>
+> > <version>2.5.0</version>
+> > <name>plugins/TrackMate_.jar</name>
+> 
+> OK, I finally made a little time to look at this.
+> 
+> Yes, this is a major problem with TrackMate's releases. Version 2.5.0 inherits from sc.fiji:pom-fiji:2.0.0-beta-1-SNAPSHOT. This is forbidden in Maven terms -- a release must depend only on other releases.
+> 
+> This is a consequence of the fact that Fiji artifacts do not use the maven-release-plugin for releases, and hence nothing ever actually enforces that stipulation. The solution will be for all Fiji plugins to extend a _release_ version of the pom-fiji parent, not a SNAPSHOT version.
+> 
+> We are moving in that direction... but until we complete that migration, downstream artifacts such as JEX will _not_ be stable when they depend on a Fiji project such as TrackMate, _even if_ the dependency purports to be a "release" version! Caveat emptor.
+> 
+> Regards,
+> Curtis
+> 
+> On Sun, Sep 14, 2014 at 7:40 AM, Jay Warrick <jay.w.warrick at gmail.com> wrote:
+> I changed the subject line from Re: [ImageJ-devel] Maven TrackMate Dependency Question because of the following...
+> 
+> Oh boy, really at the extent of my knowledge... but I think I may have it, is this what is happening??? Is maven pulling TrackMate v 2.3 via TrackMate v2.5 and fiji?
+> 
+> In TrackMate v 2.5 pom there is...
+> 
+> <parent>
+> 	<groupId>sc.fiji</groupId>
+> 	<artifactId>pom-fiji</artifactId>
+> 	<version>2.0.0-beta-1-SNAPSHOT</version>
+> 	<relativePath/>
+> </parent>
+> <artifactId>TrackMate_</artifactId>
+> <version>2.5.0</version>
+> <name>plugins/TrackMate_.jar</name>
+> 
+> which thus pulls in pom-fiji 2.0.0-beta-1-SNAPSHOT where there is the following...
+> 
+> <fiji-compat.version>2.0.0-SNAPSHOT</fiji-compat.version>
+> 
+> and 
+> 
+> <dependency>
+> 	<groupId>sc.fiji</groupId>
+> 	<artifactId>fiji-compat</artifactId>
+> </dependency>
+> 
+> The pom for fiji-compat uses pom-fiji 2.0.0-SNAPSHOT as parent
+> 
+> <parent>
+> 	<groupId>sc.fiji</groupId>
+> 	<artifactId>pom-fiji</artifactId>
+> 	<version>2.0.0-SNAPSHOT</version>
+> 	<relativePath/>
+> </parent><
+> artifactId>fiji-compat</artifactId>
+> <name>jars/fiji-compat.jar</name>
+> 
+> The pom-fiji 2.0.0-SNAPSHOT has the following
+> 
+> <TrackMate.version>2.3.0-SNAPSHOT</TrackMate.version>
+> 
+> and 
+> 
+> <dependency>
+> 	<groupId>sc.fiji</groupId>
+> 	<artifactId>TrackMate_</artifactId>
+> 	<version>${TrackMate.version}</version>
+> </dependency>
+> 
+> Thus, ?maybe? with TrackMate v 2.5's pom parent being pom-fiji 2.0.0-beta-1-SNAPSHOT, fiji-compate 2.0.0-SNAPSHOT gets pulled in which pulls pom-fiji 2.0.0-SNAPSHOT which tries to pulls in TrackMate v 2.3 which then tries to use <groupId>${jama.groupId}</groupId> instead of <groupId>gov.nist.math</groupId> for jama. 
+> 
+> Is this counter to what is intended or is there some maven magic which should right this "wrong"? If it is not intended and could be affecting things, what might be the fix? 
+> 
+> Thanks all,
+> 
+> Jay
+> 
+> 
+> On Sep 14, 2014, at 6:51 AM, Jay Warrick <jay.w.warrick at gmail.com> wrote:
+> 
+>> Ok. So this makes more sense...  TrackMate v 2.3 uses the <groupId>${jama.groupId}</groupId> which causes the error, which was fixed by TrackMate v2.5 which uses <groupId>gov.nist.math</groupId>.
+>> 
+>> So the whole issue boils down to, "Why is maven trying to do ANYTHING with v 2.3 when I can't find a single dependency on this version? If I can get Maven to stop looking for v 2.3 my issue will be solved.
+>> 
+>> Thoughts on where to search for hidden/residual links to v 2.3 given what I've checked already?
+>> 
+>> Thanks,
+>> 
+>> Jay
+>> 
+>> On Sep 14, 2014, at 6:45 AM, Jay Warrick <jay.w.warrick at gmail.com> wrote:
+>> 
+>>> I think never mind. Still learning about Maven, but it looks like the groupID is assumed the same as the parent so you TrackMate doesn't need to define it. Should have guessed this based on how everything else seems to work in Maven.
+>>> 
+>>> On Sep 14, 2014, at 6:15 AM, Jay Warrick <jay.w.warrick at gmail.com> wrote:
+>>> 
+>>>> If this might be on the right track, is there any way to test this on my end? Use offline mode and go into my .m2 repository and muck with poms or something?
+>>>> On Sep 14, 2014, at 6:11 AM, Jay Warrick <jay.w.warrick at gmail.com> wrote:
+>>>> 
+>>>>> Hi JY,
+>>>>> 
+>>>>> Could it be a problem with the TrackMate groupId? Searching the internet with the error string brought up this past issue with jama and SPIM...
+>>>>> 
+>>>>> https://groups.google.com/forum/#!topic/fiji-devel/zEhBIf1bZEA
+>>>>> 
+>>>>> When I look at the TrackMate pom, I don't think I see a "groupId" defined for the TrackMate plugin. Hard for me to completely decipher in the issue discussion if this would cause the problem I'm seeing or if it would merely prevent the imageJ/Fiji folks from "seeing" that such a problem exists.
+>>>>> 
+>>>>> Stephan Preibisch, Curtis, and Dscho - Does that sound like the right track? Thoughts?
+>>>>> 
+>>>>> Thanks,
+>>>>> 
+>>>>> Jay
+>>>>> 
+>>>>> On Sep 13, 2014, at 9:20 AM, Jean-Yves Tinevez <tinevez at pasteur.fr> wrote:
+>>>>> 
+>>>>>> On 13-Sep-14 16:01, Jay Warrick wrote:
+>>>>>>> Hi Jean-Yves,
+>>>>>>> 
+>>>>>>> Thanks for the quick reply! Here are the poms for my multi module project. I added to the default "pom.xml" names to make things easier to follow. The Master pom is the parent pom for each of my project modules. The parent of Master is scijava. The JEX module has essentially one class, Main which calls the main class in Core. Core contains essentially the whole program including the dependency on TrackMate. Broken contains broken code for one reason or another but doesn't really come into play as the Broken module is not part of the build process. It is "disabled" using a profile within the JEX module. Despite this, I still confirmed it didn't depend on TrackMate 2.3 using the Eclipse dependency hierarchy viewer, just in case.
+>>>>>> 
+>>>>>> Ok thank you for the crystal clear report. 
+>>>>>> We are on the verge of what I know of maven. However I remember having a similar issue that was fixed by making the parent of the master pom the fiji plugin pom, like for TrackMate pom.
+>>>>>> 
+>>>>>> Any chance you could just try that first?
+>>>>>> jy
+>>>>>> 
+>>>>>> 
+>>>>>>  	
+>>>>>> This email is free from viruses and malware because avast! Antivirus protection is active.
+>>>>>> 
+>>>>>> 
+>>>>>> _______________________________________________
+>>>>>> ImageJ-devel mailing list
+>>>>>> ImageJ-devel at imagej.net
+>>>>>> http://imagej.net/mailman/listinfo/imagej-devel
+>>>>> 
+>>>>> _______________________________________________
+>>>>> ImageJ-devel mailing list
+>>>>> ImageJ-devel at imagej.net
+>>>>> http://imagej.net/mailman/listinfo/imagej-devel
+>>>> 
+>>>> _______________________________________________
+>>>> ImageJ-devel mailing list
+>>>> ImageJ-devel at imagej.net
+>>>> http://imagej.net/mailman/listinfo/imagej-devel
+>>> 
+>>> _______________________________________________
+>>> ImageJ-devel mailing list
+>>> ImageJ-devel at imagej.net
+>>> http://imagej.net/mailman/listinfo/imagej-devel
+>> 
+> 
+> 
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+> 
+> 
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20141003/4c91a03d/attachment.html>
+
+From tinevez at pasteur.fr  Fri Oct  3 14:54:08 2014
+From: tinevez at pasteur.fr (Jean-Yves Tinevez)
+Date: Fri, 03 Oct 2014 21:54:08 +0200
+Subject: [ImageJ-devel] pom-fiji TrackMate update?
+In-Reply-To: <CADN69y=AXRw8BdjbbXYFzYyOTX8BW=fBBppBYZ+QmaJeJzZuCw@mail.gmail.com>
+References: <5C275889-D156-47A9-B3D7-205FD74AE089@gmail.com>	<5414381F.8010101@pasteur.fr>	<C10C3E67-8D09-42BC-946D-9A85C711B86C@gmail.com>	<541452A3.6050305@pasteur.fr>	<0EE0E1BA-83F3-4BEB-9457-3FA62F3920BA@gmail.com>	<4472093D-D0E8-4BDF-A24E-F667FFB6BB5E@gmail.com>	<FB2E708E-74E8-4BC0-9AEF-7A1C2621B564@gmail.com>	<708EEE79-789F-4A5C-A4D6-FBA01DCF8E74@gmail.com>	<18366A2A-7F5E-4E81-A954-282E9D639873@gmail.com>
+	<CADN69y=AXRw8BdjbbXYFzYyOTX8BW=fBBppBYZ+QmaJeJzZuCw@mail.gmail.com>
+Message-ID: <542EFEE0.1020708@pasteur.fr>
+
+
+> OK, I finally made a little time to look at this.
+>
+> Yes, this is a major problem with TrackMate's releases. Version 2.5.0 
+> inherits from sc.fiji:pom-fiji:2.0.0-beta-1-SNAPSHOT. This is 
+> forbidden in Maven terms -- a release must depend only on other releases.
+
+
+
+Woops sorry I did not know.
+How can I fix this?
+best
+jy
+
+---
+This email is free from viruses and malware because avast! Antivirus protection is active.
+http://www.avast.com
+
+
+
+From hiner at wisc.edu  Fri Oct  3 15:23:32 2014
+From: hiner at wisc.edu (Mark Hiner)
+Date: Fri, 3 Oct 2014 15:23:32 -0500
+Subject: [ImageJ-devel] pom-fiji TrackMate update?
+In-Reply-To: <542EFEE0.1020708@pasteur.fr>
+References: <5C275889-D156-47A9-B3D7-205FD74AE089@gmail.com>
+	<5414381F.8010101@pasteur.fr>
+	<C10C3E67-8D09-42BC-946D-9A85C711B86C@gmail.com>
+	<541452A3.6050305@pasteur.fr>
+	<0EE0E1BA-83F3-4BEB-9457-3FA62F3920BA@gmail.com>
+	<4472093D-D0E8-4BDF-A24E-F667FFB6BB5E@gmail.com>
+	<FB2E708E-74E8-4BC0-9AEF-7A1C2621B564@gmail.com>
+	<708EEE79-789F-4A5C-A4D6-FBA01DCF8E74@gmail.com>
+	<18366A2A-7F5E-4E81-A954-282E9D639873@gmail.com>
+	<CADN69y=AXRw8BdjbbXYFzYyOTX8BW=fBBppBYZ+QmaJeJzZuCw@mail.gmail.com>
+	<542EFEE0.1020708@pasteur.fr>
+Message-ID: <CA+B=mGqFJG6ncWuRLOEDEE_BVawu9UvfrdOHwWUbRWQiKQhiqQ@mail.gmail.com>
+
+Hi J-Y,
+
+>Woops sorry I did not know.
+
+When TrackMate 2.5.0 was released there actually wasn't a pom-fiji release
+to pin to.. so don't be too hard on yourself. :)
+
+>How can I fix this?
+
+You could update TrackMate's parent pom to the latest pom-fiji release
+<https://github.com/fiji/pom-fiji/releases>. However, that beta-0 release
+is fairly old (last commit is from July 24th) so you may need something
+more recent. Also, it doesn't completely solve the issue since you do have
+other sc.fiji dependencies in TrackMate... so until we convert everything
+to a release coupling, things won't truly be stable and reproducible.
+
+Johannes is out for the weekend.. I will talk with him on Monday about how
+we want to release pom-fiji:beta-1, and transition everything to release
+couplings.
+
+Regards,
+Mark
+
+
+
+On Fri, Oct 3, 2014 at 2:54 PM, Jean-Yves Tinevez <tinevez at pasteur.fr>
+wrote:
+
+>
+>  OK, I finally made a little time to look at this.
+>>
+>> Yes, this is a major problem with TrackMate's releases. Version 2.5.0
+>> inherits from sc.fiji:pom-fiji:2.0.0-beta-1-SNAPSHOT. This is forbidden
+>> in Maven terms -- a release must depend only on other releases.
+>>
+>
+>
+>
+> Woops sorry I did not know.
+> How can I fix this?
+> best
+> jy
+>
+> ---
+> This email is free from viruses and malware because avast! Antivirus
+> protection is active.
+> http://www.avast.com
+>
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20141003/31b35685/attachment-0001.html>
+
+From jay.w.warrick at gmail.com  Fri Oct  3 16:22:44 2014
+From: jay.w.warrick at gmail.com (Jay Warrick)
+Date: Fri, 3 Oct 2014 16:22:44 -0500
+Subject: [ImageJ-devel] pom-fiji TrackMate update?
+In-Reply-To: <CA+B=mGqFJG6ncWuRLOEDEE_BVawu9UvfrdOHwWUbRWQiKQhiqQ@mail.gmail.com>
+References: <5C275889-D156-47A9-B3D7-205FD74AE089@gmail.com>
+	<5414381F.8010101@pasteur.fr>
+	<C10C3E67-8D09-42BC-946D-9A85C711B86C@gmail.com>
+	<541452A3.6050305@pasteur.fr>
+	<0EE0E1BA-83F3-4BEB-9457-3FA62F3920BA@gmail.com>
+	<4472093D-D0E8-4BDF-A24E-F667FFB6BB5E@gmail.com>
+	<FB2E708E-74E8-4BC0-9AEF-7A1C2621B564@gmail.com>
+	<708EEE79-789F-4A5C-A4D6-FBA01DCF8E74@gmail.com>
+	<18366A2A-7F5E-4E81-A954-282E9D639873@gmail.com>
+	<CADN69y=AXRw8BdjbbXYFzYyOTX8BW=fBBppBYZ+QmaJeJzZuCw@mail.gmail.com>
+	<542EFEE0.1020708@pasteur.fr>
+	<CA+B=mGqFJG6ncWuRLOEDEE_BVawu9UvfrdOHwWUbRWQiKQhiqQ@mail.gmail.com>
+Message-ID: <D3A20499-0AB7-43A4-8952-7E05F55AA551@gmail.com>
+
+Thanks all.
+
+On Oct 3, 2014, at 3:23 PM, Mark Hiner <hiner at wisc.edu> wrote:
+
+> Hi J-Y,
+> 
+> >Woops sorry I did not know.
+> 
+> When TrackMate 2.5.0 was released there actually wasn't a pom-fiji release to pin to.. so don't be too hard on yourself. :)
+> 
+> >How can I fix this?
+> 
+> You could update TrackMate's parent pom to the latest pom-fiji release. However, that beta-0 release is fairly old (last commit is from July 24th) so you may need something more recent. Also, it doesn't completely solve the issue since you do have other sc.fiji dependencies in TrackMate... so until we convert everything to a release coupling, things won't truly be stable and reproducible.
+> 
+> Johannes is out for the weekend.. I will talk with him on Monday about how we want to release pom-fiji:beta-1, and transition everything to release couplings.
+> 
+> Regards,
+> Mark
+> 
+> 
+> 
+> On Fri, Oct 3, 2014 at 2:54 PM, Jean-Yves Tinevez <tinevez at pasteur.fr> wrote:
+> 
+> OK, I finally made a little time to look at this.
+> 
+> Yes, this is a major problem with TrackMate's releases. Version 2.5.0 inherits from sc.fiji:pom-fiji:2.0.0-beta-1-SNAPSHOT. This is forbidden in Maven terms -- a release must depend only on other releases.
+> 
+> 
+> 
+> Woops sorry I did not know.
+> How can I fix this?
+> best
+> jy
+> 
+> ---
+> This email is free from viruses and malware because avast! Antivirus protection is active.
+> http://www.avast.com
+> 
+> 
+> 
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+> 
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20141003/76e7d07a/attachment.html>
+
+From warrick at wisc.edu  Fri Oct  3 17:25:47 2014
+From: warrick at wisc.edu (Jay Warrick)
+Date: Fri, 03 Oct 2014 17:25:47 -0500
+Subject: [ImageJ-devel] ImageJ OPS hackathon results
+In-Reply-To: <CADN69ymcEaxBcei_AF-j+aTw15jJNE0Chao12H9jgvVJQJuAaQ@mail.gmail.com>
+References: <CADN69yn+DsNBCbpD2Sf-R79EOmtL8qZef7Y3SzHQKTfAdfqRwg@mail.gmail.com>
+	<F4C499B0-9448-428A-969F-CDE67F18B1FF@wisc.edu>
+	<CADN69ykrOuJ5213GRKSi_-4ROtoSV7i-ZwbnvKyELZ9pFzXy=A@mail.gmail.com>
+	<A6EFD3B5-01A6-485A-99EC-F9A3770A5522@wisc.edu>
+	<CADN69ymcEaxBcei_AF-j+aTw15jJNE0Chao12H9jgvVJQJuAaQ@mail.gmail.com>
+Message-ID: <BA61CCAE-C973-4358-BF45-21D37F0213D8@wisc.edu>
+
+Very helpful. Thanks.
+
+Not that I need this capability, but is there the potential to create a OpService#run method that would take, for example, alternating strings and objects to allow calls to be "more explicit" or "transparent" (i.e., OpService#runExplicit("myOp", "max", max, "min", min) and potentially more extensible in case order of arguments change or there end up being additional optional arguments. Obviously you link yourself to names as opposed to order. I guess there is always a give and take with these things.
+
+I could try and draft up such a method if you think it useful and doesn't go against what you are trying to shoot for.
+
+Cheers,
+
+Jay
+
+
+
+On Oct 3, 2014, at 12:39 PM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+
+> Hi Jay,
+> 
+> > 1) When should we use the "Command" style method of doing things where
+> > all information is specified using the @Parameter methodology and run
+> > via the "run" method, and when should we use the "Function" style of
+> > things with a typed input and output "compute" method?
+> > Advantages/disadvantages of each? Can you get by with either?
+> 
+> We started OPS with the "Command" paradigm, then found that for the vast majority of ops, there was one "special" input over which you want to iterate (either per pixel, or in a multi-threaded context, or both), and one main output of the op. That common case is a Function (you extend either AbstractStrictFunction or AbstractOutputFunction, depending on whether you want to force the caller to pass in a preallocated output or not).
+> 
+> In short: use Function if you want your op to usable by the "map" op to execute it iteratively over an entire image (e.g., an Iterable or IterableInterval). Use a plain Op if you don't need that, don't care or are lazy.
+> 
+> As always in programming: model your code after existing code ("when in Rome") for best results.
+> 
+> > 2) I couldn't see how some of the @Parameter objects would be or are
+> > injected or set.
+> 
+> Calling OpService#run to execute the op automatically finds the best matching op, and then injects the parameter values in the specified order.
+> 
+> > how are potential ambiguities resolved when trying to set two
+> > parameters of the same type?
+> ...
+> > Order that it is listed in the Op class def and order of args provided
+> > to the ops.run() methods? 
+> 
+> Yes. The order defined in the class must match the order of arguments given to the OpService#run method.
+> 
+> Call OpService#help(String) for a full list of ops with the given name, including expected parameters.
+> 
+> Regards,
+> Curtis
+> 
+> On Thu, Oct 2, 2014 at 4:53 PM, Jay Warrick <warrick at wisc.edu> wrote:
+> Curtis - Sweet! I like it. I can see myself making small packages of Ops for things we do in our research that we could easily make available for others. It's also a great way for us to reuse capabilities across different JEX functions we create that allows us to share them with the rest of the community instead of just creating static methods hoarded in various "utility classes" in our software, not that we would ever do that :-)
+> 
+> Curtis and everyone else :-) - First of all, thanks to all for their hard work to lay the foundation for this really useful Ops package. 2 things, though, I would appreciate some help with. Although I've looked at most of the Ops and the tutorials on creating and using Ops, I still have a couple questions.
+> 
+> 1) When should we use the "Command" style method of doing things where all information is specified using the @Parameter methodology and run via the "run" method, and when should we use the "Function" style of things with a typed input and output "compute" method? Advantages/disadvantages of each? Can you get by with either?
+> 
+> 2) I couldn't see how some of the @Parameter objects would be or are injected or set. What is the "sleekest" method for setting these parameters if I wanted to use these Ops in my own program without resorting to setting private Parameter fields accessible etc (e.g., the @Parameter private T threshold;" of the ApplyConstantThreshold.java Op)? Am I forgetting some tool/method for easily injecting/setting Op/Command parameters? It seems like calls to ij.op().<whatever> only pass parameters to compute method and don't do any @Parameter object injection/setting. Am I wrong? Or, eventually, would these Ops have getters and setters. Are getters and setters automatically generated already that I'm not aware of by just looking over the code?
+> 
+> Thanks,
+> 
+> Jay
+> 
+> 
+> 
+> 
+> On Oct 2, 2014, at 12:35 PM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+> 
+>> Hi Jay,
+>> 
+>> > Am I right that Ops sort of occupies the niche between ImgLib2 and
+>> > ImageJ Plugins... something that makes it easier to do the image
+>> > manipulations but can be reused a bit more easily given they don't
+>> > require many of the Service parameters and preprocessors that many of
+>> > the plugins take/need?
+>> 
+>> Yes, OPS is intended for pure image processing operations and functions. The rule of thumb is that they be deterministic, and have no side effects. So you give same inputs, you get same outputs, every time. Many of them are also multithreadable, though that is not a requirement. And OPS are also supposed to be "static" rather than dynamic -- i.e., they shouldn't have a variable number of input or output parameters, unlike commands in general.
+>> 
+>> That said, OPS are still allowed to depend on services, but it is expected that the service methods you call will not compromise the determinism of the op -- i.e., only utility methods of services should really be used. Perhaps in the future we could add annotations to each service method indicating what sort of method it is, and hence where it is "safe" to use.
+>> 
+>> I want to thank you for your feedback and discussion from a few months ago, regarding reuse of ImageJ2 commands in JEX. Your perspective provided some of the inspiration for the design of OPS, because it became clear that we need a "pure functional" layer for image processing that does not rely on side effects from services, etc. The idea is that KNIME Image Processing, CellProfiler, OMERO, JEX, etc., can all consume and expose the ops with the assumption that they will behave well (work headless, etc.).
+>> 
+>> Regards,
+>> Curtis
+>> 
+>> 
+>> On Thu, Oct 2, 2014 at 12:08 PM, Jay Warrick <warrick at wisc.edu> wrote:
+>> Looks promising. Am I right that Ops sort of occupies the niche between ImgLib2 and ImageJ Plugins... something that makes it easier to do the image manipulations but can be reused a bit more easily given they don't require many of the Service parameters and preprocessors that many of the plugins take/need?
+>> 
+>> On Oct 1, 2014, at 4:58 PM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+>> 
+>>> Hi everyone,
+>>> 
+>>> The ImageJ2 and KNIME Image Processing teams met in Madison during the week of September 15 - 19, to work on ImageJ OPS, which seeks to be a unifying library for scientific image processing.
+>>> 
+>>> On behalf of the OPS development team, I am pleased to announce the results of that hackathon, including accomplishments, project goals and milestones. See the news post for full details:
+>>> 
+>>> http://imagej.net/2014-10-01_-_ImageJ_OPS_Hackathon
+>>> 
+>>> Regards,
+>>> Curtis Rueden
+>>> ImageJ2 project lead
+>>> _______________________________________________
+>>> ImageJ-devel mailing list
+>>> ImageJ-devel at imagej.net
+>>> http://imagej.net/mailman/listinfo/imagej-devel
+>> 
+>> 
+> 
+> 
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20141003/c6ba2616/attachment.html>
+
+From ctrueden at wisc.edu  Fri Oct  3 17:36:48 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Fri, 3 Oct 2014 17:36:48 -0500
+Subject: [ImageJ-devel] ImageJ OPS hackathon results
+In-Reply-To: <BA61CCAE-C973-4358-BF45-21D37F0213D8@wisc.edu>
+References: <CADN69yn+DsNBCbpD2Sf-R79EOmtL8qZef7Y3SzHQKTfAdfqRwg@mail.gmail.com>
+	<F4C499B0-9448-428A-969F-CDE67F18B1FF@wisc.edu>
+	<CADN69ykrOuJ5213GRKSi_-4ROtoSV7i-ZwbnvKyELZ9pFzXy=A@mail.gmail.com>
+	<A6EFD3B5-01A6-485A-99EC-F9A3770A5522@wisc.edu>
+	<CADN69ymcEaxBcei_AF-j+aTw15jJNE0Chao12H9jgvVJQJuAaQ@mail.gmail.com>
+	<BA61CCAE-C973-4358-BF45-21D37F0213D8@wisc.edu>
+Message-ID: <CADN69ykJymrEP+vXp5V_HkB7g_DQ-5GOO1QuE9jU33oQFs3+pg@mail.gmail.com>
+
+Hi Jay,
+
+> is there the potential to create a OpService#run method that would
+> take, for example, alternating strings and objects to allow calls to
+> be "more explicit" or "transparent"
+
+All Ops are Modules, and the ModuleService has this feature:
+
+http://jenkins.imagej.net/job/SciJava-common-javadoc/javadoc/org/scijava/command/CommandService.html#run(java.lang.Class,%20boolean,%20java.lang.Object..
+.)
+
+Or more type-safe using a Map<String, Object>:
+
+http://jenkins.imagej.net/job/SciJava-common-javadoc/javadoc/org/scijava/command/CommandService.html#run(java.lang.Class,%20boolean,%20java.util.Map)
+
+Regards,
+Curtis
+
+On Fri, Oct 3, 2014 at 5:25 PM, Jay Warrick <warrick at wisc.edu> wrote:
+
+> Very helpful. Thanks.
+>
+> Not that I need this capability, but is there the potential to create a
+> OpService#run method that would take, for example, alternating strings and
+> objects to allow calls to be "more explicit" or "transparent" (i.e.,
+> OpService#runExplicit("myOp", "max", max, "min", min) and potentially more
+> extensible in case order of arguments change or there end up being
+> additional optional arguments. Obviously you link yourself to names as
+> opposed to order. I guess there is always a give and take with these things.
+>
+> I could try and draft up such a method if you think it useful and doesn't
+> go against what you are trying to shoot for.
+>
+> Cheers,
+>
+> Jay
+>
+>
+>
+> On Oct 3, 2014, at 12:39 PM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+>
+> Hi Jay,
+>
+> > 1) When should we use the "Command" style method of doing things where
+> > all information is specified using the @Parameter methodology and run
+> > via the "run" method, and when should we use the "Function" style of
+> > things with a typed input and output "compute" method?
+> > Advantages/disadvantages of each? Can you get by with either?
+>
+> We started OPS with the "Command" paradigm, then found that for the vast
+> majority of ops, there was one "special" input over which you want to
+> iterate (either per pixel, or in a multi-threaded context, or both), and
+> one main output of the op. That common case is a Function (you extend
+> either AbstractStrictFunction or AbstractOutputFunction, depending on
+> whether you want to force the caller to pass in a preallocated output or
+> not).
+>
+> In short: use Function if you want your op to usable by the "map" op to
+> execute it iteratively over an entire image (e.g., an Iterable or
+> IterableInterval). Use a plain Op if you don't need that, don't care or are
+> lazy.
+>
+> As always in programming: model your code after existing code ("when in
+> Rome") for best results.
+>
+> > 2) I couldn't see how some of the @Parameter objects would be or are
+> > injected or set.
+>
+> Calling OpService#run to execute the op automatically finds the best
+> matching op, and then injects the parameter values in the specified order.
+>
+> > how are potential ambiguities resolved when trying to set two
+> > parameters of the same type?
+> ...
+> > Order that it is listed in the Op class def and order of args provided
+> > to the ops.run() methods?
+>
+> Yes. The order defined in the class must match the order of arguments
+> given to the OpService#run method.
+>
+> Call OpService#help(String) for a full list of ops with the given name,
+> including expected parameters.
+>
+> Regards,
+> Curtis
+>
+> On Thu, Oct 2, 2014 at 4:53 PM, Jay Warrick <warrick at wisc.edu> wrote:
+>
+>> Curtis - Sweet! I like it. I can see myself making small packages of Ops
+>> for things we do in our research that we could easily make available for
+>> others. It's also a great way for us to reuse capabilities across different
+>> JEX functions we create that allows us to share them with the rest of the
+>> community instead of just creating static methods hoarded in various
+>> "utility classes" in our software, not that we would ever do that :-)
+>>
+>> Curtis and everyone else :-) - First of all, thanks to all for their hard
+>> work to lay the foundation for this really useful Ops package. 2 things,
+>> though, I would appreciate some help with. Although I've looked at most of
+>> the Ops and the tutorials on creating and using Ops, I still have a couple
+>> questions.
+>>
+>> 1) When should we use the "Command" style method of doing things where
+>> all information is specified using the @Parameter methodology and run via
+>> the "run" method, and when should we use the "Function" style of things
+>> with a typed input and output "compute" method? Advantages/disadvantages of
+>> each? Can you get by with either?
+>>
+>> 2) I couldn't see how some of the @Parameter objects would be or are
+>> injected or set. What is the "sleekest" method for setting these parameters
+>> if I wanted to use these Ops in my own program without resorting to setting
+>> private Parameter fields accessible etc (e.g., the @Parameter
+>> private T threshold;" of the ApplyConstantThreshold.java Op)? Am I
+>> forgetting some tool/method for easily injecting/setting Op/Command
+>> parameters? It seems like calls to ij.op().<whatever> only pass parameters
+>> to compute method and don't do any @Parameter object injection/setting. Am
+>> I wrong? Or, eventually, would these Ops have getters and setters. Are
+>> getters and setters automatically generated already that I'm not aware of
+>> by just looking over the code?
+>>
+>> Thanks,
+>>
+>> Jay
+>>
+>>
+>>
+>>
+>> On Oct 2, 2014, at 12:35 PM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+>>
+>> Hi Jay,
+>>
+>> > Am I right that Ops sort of occupies the niche between ImgLib2 and
+>> > ImageJ Plugins... something that makes it easier to do the image
+>> > manipulations but can be reused a bit more easily given they don't
+>> > require many of the Service parameters and preprocessors that many of
+>> > the plugins take/need?
+>>
+>> Yes, OPS is intended for pure image processing operations and functions.
+>> The rule of thumb is that they be deterministic, and have no side effects.
+>> So you give same inputs, you get same outputs, every time. Many of them are
+>> also multithreadable, though that is not a requirement. And OPS are also
+>> supposed to be "static" rather than dynamic -- i.e., they shouldn't have a
+>> variable number of input or output parameters, unlike commands in general.
+>>
+>> That said, OPS are still allowed to depend on services, but it is
+>> expected that the service methods you call will not compromise the
+>> determinism of the op -- i.e., only utility methods of services should
+>> really be used. Perhaps in the future we could add annotations to each
+>> service method indicating what sort of method it is, and hence where it is
+>> "safe" to use.
+>>
+>> I want to thank you for your feedback and discussion from a few months
+>> ago, regarding reuse of ImageJ2 commands in JEX. Your perspective provided
+>> some of the inspiration for the design of OPS, because it became clear that
+>> we need a "pure functional" layer for image processing that does not rely
+>> on side effects from services, etc. The idea is that KNIME Image
+>> Processing, CellProfiler, OMERO, JEX, etc., can all consume and expose the
+>> ops with the assumption that they will behave well (work headless, etc.).
+>>
+>> Regards,
+>> Curtis
+>>
+>>
+>> On Thu, Oct 2, 2014 at 12:08 PM, Jay Warrick <warrick at wisc.edu> wrote:
+>>
+>>> Looks promising. Am I right that Ops sort of occupies the niche between
+>>> ImgLib2 and ImageJ Plugins... something that makes it easier to do the
+>>> image manipulations but can be reused a bit more easily given they don't
+>>> require many of the Service parameters and preprocessors that many of the
+>>> plugins take/need?
+>>>
+>>> On Oct 1, 2014, at 4:58 PM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+>>>
+>>> Hi everyone,
+>>>
+>>> The ImageJ2 and KNIME Image Processing teams met in Madison during the
+>>> week of September 15 - 19, to work on ImageJ OPS, which seeks to be a
+>>> unifying library for scientific image processing.
+>>>
+>>> On behalf of the OPS development team, I am pleased to announce the
+>>> results of that hackathon, including accomplishments, project goals and
+>>> milestones. See the news post for full details:
+>>>
+>>> http://imagej.net/2014-10-01_-_ImageJ_OPS_Hackathon
+>>>
+>>> Regards,
+>>> Curtis Rueden
+>>> ImageJ2 project lead
+>>> _______________________________________________
+>>> ImageJ-devel mailing list
+>>> ImageJ-devel at imagej.net
+>>> http://imagej.net/mailman/listinfo/imagej-devel
+>>>
+>>>
+>>>
+>>
+>>
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20141003/0864475b/attachment-0001.html>
+
+From warrick at wisc.edu  Fri Oct  3 18:01:47 2014
+From: warrick at wisc.edu (Jay Warrick)
+Date: Fri, 03 Oct 2014 18:01:47 -0500
+Subject: [ImageJ-devel] ImageJ OPS hackathon results
+In-Reply-To: <CADN69ykJymrEP+vXp5V_HkB7g_DQ-5GOO1QuE9jU33oQFs3+pg@mail.gmail.com>
+References: <CADN69yn+DsNBCbpD2Sf-R79EOmtL8qZef7Y3SzHQKTfAdfqRwg@mail.gmail.com>
+	<F4C499B0-9448-428A-969F-CDE67F18B1FF@wisc.edu>
+	<CADN69ykrOuJ5213GRKSi_-4ROtoSV7i-ZwbnvKyELZ9pFzXy=A@mail.gmail.com>
+	<A6EFD3B5-01A6-485A-99EC-F9A3770A5522@wisc.edu>
+	<CADN69ymcEaxBcei_AF-j+aTw15jJNE0Chao12H9jgvVJQJuAaQ@mail.gmail.com>
+	<BA61CCAE-C973-4358-BF45-21D37F0213D8@wisc.edu>
+	<CADN69ykJymrEP+vXp5V_HkB7g_DQ-5GOO1QuE9jU33oQFs3+pg@mail.gmail.com>
+Message-ID: <3F9B5C10-6BD1-4498-AB86-16A7B8F92D99@wisc.edu>
+
+Awesome. Forgot this. Thanks!
+
+J
+
+> On Oct 3, 2014, at 5:36 PM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+> 
+> Hi Jay,
+> 
+> > is there the potential to create a OpService#run method that would
+> > take, for example, alternating strings and objects to allow calls to
+> > be "more explicit" or "transparent"
+> 
+> All Ops are Modules, and the ModuleService has this feature:
+> 
+> http://jenkins.imagej.net/job/SciJava-common-javadoc/javadoc/org/scijava/command/CommandService.html#run(java.lang.Class,%20boolean,%20java.lang.Object...)
+> 
+> Or more type-safe using a Map<String, Object>:
+> 
+> http://jenkins.imagej.net/job/SciJava-common-javadoc/javadoc/org/scijava/command/CommandService.html#run(java.lang.Class,%20boolean,%20java.util.Map)
+> 
+> Regards,
+> Curtis
+> 
+>> On Fri, Oct 3, 2014 at 5:25 PM, Jay Warrick <warrick at wisc.edu> wrote:
+>> Very helpful. Thanks.
+>> 
+>> Not that I need this capability, but is there the potential to create a OpService#run method that would take, for example, alternating strings and objects to allow calls to be "more explicit" or "transparent" (i.e., OpService#runExplicit("myOp", "max", max, "min", min) and potentially more extensible in case order of arguments change or there end up being additional optional arguments. Obviously you link yourself to names as opposed to order. I guess there is always a give and take with these things.
+>> 
+>> I could try and draft up such a method if you think it useful and doesn't go against what you are trying to shoot for.
+>> 
+>> Cheers,
+>> 
+>> Jay
+>> 
+>> 
+>> 
+>>> On Oct 3, 2014, at 12:39 PM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+>>> 
+>>> Hi Jay,
+>>> 
+>>> > 1) When should we use the "Command" style method of doing things where
+>>> > all information is specified using the @Parameter methodology and run
+>>> > via the "run" method, and when should we use the "Function" style of
+>>> > things with a typed input and output "compute" method?
+>>> > Advantages/disadvantages of each? Can you get by with either?
+>>> 
+>>> We started OPS with the "Command" paradigm, then found that for the vast majority of ops, there was one "special" input over which you want to iterate (either per pixel, or in a multi-threaded context, or both), and one main output of the op. That common case is a Function (you extend either AbstractStrictFunction or AbstractOutputFunction, depending on whether you want to force the caller to pass in a preallocated output or not).
+>>> 
+>>> In short: use Function if you want your op to usable by the "map" op to execute it iteratively over an entire image (e.g., an Iterable or IterableInterval). Use a plain Op if you don't need that, don't care or are lazy.
+>>> 
+>>> As always in programming: model your code after existing code ("when in Rome") for best results.
+>>> 
+>>> > 2) I couldn't see how some of the @Parameter objects would be or are
+>>> > injected or set.
+>>> 
+>>> Calling OpService#run to execute the op automatically finds the best matching op, and then injects the parameter values in the specified order.
+>>> 
+>>> > how are potential ambiguities resolved when trying to set two
+>>> > parameters of the same type?
+>>> ...
+>>> > Order that it is listed in the Op class def and order of args provided
+>>> > to the ops.run() methods? 
+>>> 
+>>> Yes. The order defined in the class must match the order of arguments given to the OpService#run method.
+>>> 
+>>> Call OpService#help(String) for a full list of ops with the given name, including expected parameters.
+>>> 
+>>> Regards,
+>>> Curtis
+>>> 
+>>>> On Thu, Oct 2, 2014 at 4:53 PM, Jay Warrick <warrick at wisc.edu> wrote:
+>>>> Curtis - Sweet! I like it. I can see myself making small packages of Ops for things we do in our research that we could easily make available for others. It's also a great way for us to reuse capabilities across different JEX functions we create that allows us to share them with the rest of the community instead of just creating static methods hoarded in various "utility classes" in our software, not that we would ever do that :-)
+>>>> 
+>>>> Curtis and everyone else :-) - First of all, thanks to all for their hard work to lay the foundation for this really useful Ops package. 2 things, though, I would appreciate some help with. Although I've looked at most of the Ops and the tutorials on creating and using Ops, I still have a couple questions.
+>>>> 
+>>>> 1) When should we use the "Command" style method of doing things where all information is specified using the @Parameter methodology and run via the "run" method, and when should we use the "Function" style of things with a typed input and output "compute" method? Advantages/disadvantages of each? Can you get by with either?
+>>>> 
+>>>> 2) I couldn't see how some of the @Parameter objects would be or are injected or set. What is the "sleekest" method for setting these parameters if I wanted to use these Ops in my own program without resorting to setting private Parameter fields accessible etc (e.g., the @Parameter private T threshold;" of the ApplyConstantThreshold.java Op)? Am I forgetting some tool/method for easily injecting/setting Op/Command parameters? It seems like calls to ij.op().<whatever> only pass parameters to compute method and don't do any @Parameter object injection/setting. Am I wrong? Or, eventually, would these Ops have getters and setters. Are getters and setters automatically generated already that I'm not aware of by just looking over the code?
+>>>> 
+>>>> Thanks,
+>>>> 
+>>>> Jay
+>>>> 
+>>>> 
+>>>> 
+>>>> 
+>>>>> On Oct 2, 2014, at 12:35 PM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+>>>>> 
+>>>>> Hi Jay,
+>>>>> 
+>>>>> > Am I right that Ops sort of occupies the niche between ImgLib2 and
+>>>>> > ImageJ Plugins... something that makes it easier to do the image
+>>>>> > manipulations but can be reused a bit more easily given they don't
+>>>>> > require many of the Service parameters and preprocessors that many of
+>>>>> > the plugins take/need?
+>>>>> 
+>>>>> Yes, OPS is intended for pure image processing operations and functions. The rule of thumb is that they be deterministic, and have no side effects. So you give same inputs, you get same outputs, every time. Many of them are also multithreadable, though that is not a requirement. And OPS are also supposed to be "static" rather than dynamic -- i.e., they shouldn't have a variable number of input or output parameters, unlike commands in general.
+>>>>> 
+>>>>> That said, OPS are still allowed to depend on services, but it is expected that the service methods you call will not compromise the determinism of the op -- i.e., only utility methods of services should really be used. Perhaps in the future we could add annotations to each service method indicating what sort of method it is, and hence where it is "safe" to use.
+>>>>> 
+>>>>> I want to thank you for your feedback and discussion from a few months ago, regarding reuse of ImageJ2 commands in JEX. Your perspective provided some of the inspiration for the design of OPS, because it became clear that we need a "pure functional" layer for image processing that does not rely on side effects from services, etc. The idea is that KNIME Image Processing, CellProfiler, OMERO, JEX, etc., can all consume and expose the ops with the assumption that they will behave well (work headless, etc.).
+>>>>> 
+>>>>> Regards,
+>>>>> Curtis
+>>>>> 
+>>>>> 
+>>>>>> On Thu, Oct 2, 2014 at 12:08 PM, Jay Warrick <warrick at wisc.edu> wrote:
+>>>>>> Looks promising. Am I right that Ops sort of occupies the niche between ImgLib2 and ImageJ Plugins... something that makes it easier to do the image manipulations but can be reused a bit more easily given they don't require many of the Service parameters and preprocessors that many of the plugins take/need?
+>>>>>> 
+>>>>>>> On Oct 1, 2014, at 4:58 PM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+>>>>>>> 
+>>>>>>> Hi everyone,
+>>>>>>> 
+>>>>>>> The ImageJ2 and KNIME Image Processing teams met in Madison during the week of September 15 - 19, to work on ImageJ OPS, which seeks to be a unifying library for scientific image processing.
+>>>>>>> 
+>>>>>>> On behalf of the OPS development team, I am pleased to announce the results of that hackathon, including accomplishments, project goals and milestones. See the news post for full details:
+>>>>>>> 
+>>>>>>> http://imagej.net/2014-10-01_-_ImageJ_OPS_Hackathon
+>>>>>>> 
+>>>>>>> Regards,
+>>>>>>> Curtis Rueden
+>>>>>>> ImageJ2 project lead
+>>>>>>> _______________________________________________
+>>>>>>> ImageJ-devel mailing list
+>>>>>>> ImageJ-devel at imagej.net
+>>>>>>> http://imagej.net/mailman/listinfo/imagej-devel
+> 
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20141003/9dadee40/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Mon Oct  6 01:24:49 2014
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Mon, 6 Oct 2014 08:24:49 +0200 (CEST)
+Subject: [ImageJ-devel] pom-fiji beta 1, was Re:  pom-fiji TrackMate update?
+In-Reply-To: <CA+B=mGqFJG6ncWuRLOEDEE_BVawu9UvfrdOHwWUbRWQiKQhiqQ@mail.gmail.com>
+References: <5C275889-D156-47A9-B3D7-205FD74AE089@gmail.com>
+	<5414381F.8010101@pasteur.fr>
+	<C10C3E67-8D09-42BC-946D-9A85C711B86C@gmail.com>
+	<541452A3.6050305@pasteur.fr>
+	<0EE0E1BA-83F3-4BEB-9457-3FA62F3920BA@gmail.com>
+	<4472093D-D0E8-4BDF-A24E-F667FFB6BB5E@gmail.com>
+	<FB2E708E-74E8-4BC0-9AEF-7A1C2621B564@gmail.com>
+	<708EEE79-789F-4A5C-A4D6-FBA01DCF8E74@gmail.com>
+	<18366A2A-7F5E-4E81-A954-282E9D639873@gmail.com>
+	<CADN69y=AXRw8BdjbbXYFzYyOTX8BW=fBBppBYZ+QmaJeJzZuCw@mail.gmail.com>
+	<542EFEE0.1020708@pasteur.fr>
+	<CA+B=mGqFJG6ncWuRLOEDEE_BVawu9UvfrdOHwWUbRWQiKQhiqQ@mail.gmail.com>
+Message-ID: <alpine.DEB.1.00.1410060823100.990@s15462909.onlinehome-server.info>
+
+Hi Mark,
+
+On Fri, 3 Oct 2014, Mark Hiner wrote:
+
+> You could update TrackMate's parent pom to the latest pom-fiji release
+> <https://github.com/fiji/pom-fiji/releases>. However, that beta-0
+> release is fairly old (last commit is from July 24th) so you may need
+> something more recent.
+
+I really tried to push for a beta-1 that actually has release couplings
+all over. It is very tedious a battle, though, because a couple of Fiji
+subprojects seem to want to be in eternal snapshot land...
+
+Ciao,
+Dscho
+
+
+From saalfelds at janelia.hhmi.org  Wed Oct  1 13:22:10 2014
+From: saalfelds at janelia.hhmi.org (Stephan Saalfeld)
+Date: Wed, 1 Oct 2014 14:22:10 -0400
+Subject: [ImageJ-devel] [fiji-devel] imglib2-neon project for runtime
+ bytecode transformation
+In-Reply-To: <77318DB6-74F6-43AB-BD84-931E501CED5A@mpi-cbg.de>
+References: <F8939ED5-C4E5-4B41-89CC-9CB4D567B7A5@mpi-cbg.de>
+	<alpine.DEB.1.00.1409251742180.990@s15462909.onlinehome-server.info>
+	<6E2CCEE4-D9AC-455A-B830-8CBC0D20D49F@mpi-cbg.de>
+	<alpine.DEB.1.00.1409302114240.990@s15462909.onlinehome-server.info>
+	<77318DB6-74F6-43AB-BD84-931E501CED5A@mpi-cbg.de>
+Message-ID: <1412187730.6715.27.camel@saalfelds-ws1.janelia.priv>
+
+
+> > Speaking of Java 8: you might want to consider using its Scala-inspired
+> > features instead. This would limit the use for the general audience, but it
+> > would probably benefit greatly individual developers who can afford to switch
+> > to Java 8.
+> 
+> Could you please elaborate this a bit? I?m not sure which features you mean and how I could utilize them.
+> 
+
+May be he means
+
+http://www.scala-lang.org/api/2.10.4/index.html#scala.specialized
+
+?  But that's not specific to Java 8 and not done at runtime?
+
+
+
+
+From felix.meyenhofer at unifr.ch  Wed Oct 15 08:52:40 2014
+From: felix.meyenhofer at unifr.ch (MEYENHOFER Felix)
+Date: Wed, 15 Oct 2014 13:52:40 +0000
+Subject: [ImageJ-devel] Parameter decorator and supported classes
+Message-ID: <93DD924F-9900-4D09-AB0C-ED7134233056@unifr.ch>
+
+Hi 
+
+during my first attempts of implementing a ij2 plugin I realised that the following point is not clear to me:
+thanks to the widget demo of the imagej-tutorials I managed to define my UI in the ij2-way. Now during my further research to find a way to easily define an image input and getting the dialog with the Parameter decorator I found examples like
+
+	@Parameter(type = ItemIO.INPUT)
+	private ImgPlus<FloatType> img;
+or 
+	@Parameter(type = ItemIO.INPUT)
+	private Dataset ds;
+
+but when running such code I get a warning-dialog saying; ?An ImgPlus is required, but none exists?
+So I open an image and run  the plugin again. The same dialog appears again.
+All the other types work well (String, File, etc.). Is this a bug or am I missing something.
+
+Best regards, 
+
+Felix
+
+From alhaj.safa at yahoo.com  Mon Oct 27 02:17:40 2014
+From: alhaj.safa at yahoo.com (Safaa Al-Haj Saleh)
+Date: Mon, 27 Oct 2014 00:17:40 -0700
+Subject: [ImageJ-devel] Randomization seed option
+Message-ID: <1414394260.10052.YahooMailNeo@web160801.mail.bf1.yahoo.com>
+
+Hello all,
+
+I need more clarification about "Randomization Seed" option in K-means Clustering Plugin please. I know that when using randomization seed, cluster centers are initialized to the same values when running the algorithm many times. 
+
+I just don't understand how to choose the suitable randomization seed value. I have read the related description "The seed is the initial value of the internal state of the pseudrandom number generator"; but I did not get the point.
+
+Any help will be very appreciated. 
+
+
+Regards,
+Safaa
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20141027/aa57ad5c/attachment.html>
+
+From ctrueden at wisc.edu  Tue Oct 28 16:56:58 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Tue, 28 Oct 2014 16:56:58 -0500
+Subject: [ImageJ-devel] ImgLib2 release underway -- plus a question
+Message-ID: <CADN69ykYx4em3=i44ciaGbQgLB080Pb4Gr9-79f-3dptdL5nJQ@mail.gmail.com>
+
+Hi everyone,
+
+Earlier this month, LOCI hosted an ImgLib2 hackathon in Madison, with the
+goal of finally getting the ImgLib2 core library out of beta. We have been
+working through the ramifications of that release for the past week and a
+half, but some issues have arisen that complicate matters.
+
+So, this mail is a quick status update on where we are at, and a question
+for the community. An official release announcement for ImgLib2 will come
+soon, as soon as the issues in question have been fully resolved.
+
+Release status:
+- Can always be seen at http://status.imagej.net/
+- See the P.S. below for a complete rundown as of this writing.
+
+On to the question. It is technical and Maven-centric, so if you don't care
+about that, then feel free to stop reading here.
+
+Background: when preparing for the ImgLib2 release, we decided to
+restructure the dependency hierarchy of a couple of components. In
+particular, the imglib2-meta component moved into imagej-common. This is
+elegant:
+
+* ImgLib2 now represents the N-dimensional core
+* ImageJ (specifically: imagej-common) provides metadata-rich extensions to
+that core, built on the SciJava Common plugin framework
+* The SCIFIO library provides I/O capabilities also driven by SciJava
+Common, built on the metadata-rich image structures of ImageJ.
+
+More details at the newly minted page: http://imagej.net/Architecture
+
+This restructuring exacerbated an already-known problem: the hierarchy of
+organizational parent POMs does not, and cannot, match the core library
+dependency hierarchy above. Or to put another way: the imagej, imglib2 and
+scifio organizations (on GitHub) each have projects that utilize components
+from the other two organizations; e.g.:
+
+* https://github.com/imagej/imagej, which provides the top-level ImageJ
+application itself depending on both ImgLib2 and SCIFIO libraries
+* https://github.com/imglib/imglib2-tutorials, which uses SCIFIO for image
+I/O and ImageJ1 for displaying images
+* https://github.com/scifio/scifio, which utilizes data structures from
+ImgLib2 and ImageJ Common.
+
+Hence, these three organizations are fundamentally interdependent.
+
+One function of the pom-scijava parent (
+https://github.com/scijava/pom-scijava) has been to act as a "Bill of
+Materials" defining all the component versions which are intended to be
+used together. Recently, we factored out a separate Bill of Materials for
+each of the three organizations. But then we realized that due to the
+interdependence explained above, each of the three parent POMs (pom-imagej,
+pom-imglib2 and pom-scifio) needed to inherit the BOMs of all three
+organizations.
+
+Like Java, Maven POMs support only single inheritance. But they do support
+a limited form of composition via an "import scope" which allows you to
+import the managed dependency versions from a non-parent POM. We tried to
+do this, creating three new artifacts -- bom-imagej, bom-imagej and
+bom-scifio -- and having each of the three POM parents import all three of
+the bom artifacts. But I am sorry to say that after trying it in anger, it
+has been a failed experiment. The import scope _only_ supports managed
+versions, not properties and not profiles. So we lost access to the version
+properties (which are occasionally extremely useful) as well as the dev
+profiles (which make it easier to couple the latest versions of multiple
+components together for local development). It also locks out the
+possibility of any other shared configuration between the projects of the
+three affected organizations.
+
+Yesterday and today, we (dscho, hinerm and myself) discussed three
+potential solutions to the problem; see the chatlogs [1] for some gory
+details.
+
+The solution we converged upon is to put the shared configuration of
+pom-imagej, pom-imglib2 and pom-scifio into pom-imagej, and have
+pom-imglib2 and pom-scifio now extend pom-imagej instead of pom-scijava
+directly. (pom-imagej would still extend pom-scijava, of course.)
+
+We like it because it isolates the version management of those three "core
+SciJava orgs" into its own place (rather than "polluting" pom-scijava
+directly), but without the need to create yet another potentially confusing
+parent POM ("pom-imagej-imglib2-scifio-shared-configuration-and-bom").
+
+The question for the community -- especially Tobias, Stephan P. & Stephan
+S. -- is: do you agree? Or do you have any better ideas?
+
+If everyone is OK with it, I will push ahead and complete this work.
+Current topic branches are at:
+
+* https://github.com/imagej/pom-imagej/compare/imagej-is-da-bom
+* https://github.com/imglib/pom-imglib2/compare/imagej-is-da-bom
+* https://github.com/scifio/pom-scifio/compare/imagej-is-da-bom
+
+Regards,
+Curtis
+
+[1]
+http://code.imagej.net/chatlogs/imagejdev?times=prefix&start-date=2014-10-28&start-time=0400&end-date=2014-10-28&end-time=1500
+
+P.S. Here is the complete rundown of components:
+
+The following components are released:
+
+* imglib2 2.0.1
+* imglib2-algorithm 0.1.0
+* imglib2-algorithm-fft 0.1.0
+* imglib2-algorithm-gpl 0.1.0
+* imglib2-ij 2.0.0-beta-27
+* imglib2-realtransform 2.0.0-beta-27
+* imagej-common 0.10.0
+* scifio 0.17.0
+
+The following components are not done yet:
+
+* imglib2-script 0.1.0
+* imglib2-tests
+* imglib2-tutorials
+
+(Note that for tests and tutorials, it is just a matter of updating the
+master branch, since we will never cut Maven release of those.)
+
+* imagej-ops 0.6.0
+* imagej-plugins-commands 0.3.0
+* imagej-ui-swing 0.8.0
+* scifio-ome-xml 0.10.0
+
+And probably others that will become obvious as we proceed further along.
+
+Lastly, each of the following components has an "imglib2-release" branch
+which is ostensibly complete but still has build or test failures:
+
+* imglib2-tests
+* imglib2-script
+* imagej-ops
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20141028/efd8ca24/attachment.html>
+
+From pietzsch at mpi-cbg.de  Wed Oct 29 18:34:33 2014
+From: pietzsch at mpi-cbg.de (Tobias Pietzsch)
+Date: Thu, 30 Oct 2014 00:34:33 +0100
+Subject: [ImageJ-devel] What's left to do for ImgLib2
+In-Reply-To: <CCF0FAA8-F1E8-4793-A184-E65B7FF86BA6@mpi-cbg.de>
+References: <CADN69y=y-=F3OMOCk0YJ-7d-vM=_c7c7mTDc2t12FtsW+0JRvw@mail.gmail.com>
+	<0C7FE0E8-625A-421E-9FCF-0199C459C1E8@mpi-cbg.de>
+	<CADN69ymc976pOxJe8ztXPm=8gLHe449Ns2NcRRzqCx0WX3dnHQ@mail.gmail.com>
+	<CADN69ymoXLykX6Q_pdOjh5wk=Kit7=CA7VZJRk6Tej-TxSZJzQ@mail.gmail.com>
+	<CCF0FAA8-F1E8-4793-A184-E65B7FF86BA6@mpi-cbg.de>
+Message-ID: <D169F783-E0C3-4F32-B9A7-E32AB35BAE7C@mpi-cbg.de>
+
+Ok, just looking at the code of ApplyManualThresholdTest, I have a hunch of whats going wrong.
+The test uses
+		final Img<BitType> out = bitmap();
+
+I bet that for the new BitType from the Fractions branch nobody considered the possibility that two cursors might simultaneously write to bits of the same underlying long value.
+
+One solution would be to use locks to synchronize all accesses to the underlying long[] array (this is for BitType, Unsigned12BitType, etc).
+However, I fear that this will slow down things considerably.
+
+Is anyone familiar enough with the Java Memory Model to provide an educated guess as to whether a lock-free approach would be feasible?
+By lock-free I mean setting the value and then checking whether the value is actually what was expected (and if not, retry).
+I?m cc?ing Albert and the imagej-devel and fiji-devel lists to increase the probability that someone might actually know?
+
+best regards,
+Tobias
+
+On 30 Oct 2014, at 00:18, Tobias Pietzsch <pietzsch at mpi-cbg.de> wrote:
+
+> Hi Curtis,
+> 
+> I?m trying to look at it, however I get the following maven error:
+> 
+> pietzsch at tomancak-mac-17:~/workspace/imagej-ops (imglib2-release)$ mvn -U clean install
+> [INFO] Scanning for projects...
+> Downloading: http://maven.imagej.net/content/groups/public/net/imagej/pom-imagej/3.2/pom-imagej-3.2.pom
+> Downloading: http://repo.maven.apache.org/maven2/net/imagej/pom-imagej/3.2/pom-imagej-3.2.pom
+> [ERROR] The build could not read 1 project -> [Help 1]
+> [ERROR]
+> [ERROR]   The project net.imagej:imagej-ops:0.6.0-SNAPSHOT (/Users/pietzsch/workspace/imagej-ops/pom.xml) has 1 error
+> [ERROR]     Non-resolvable parent POM: Could not find artifact net.imagej:pom-imagej:pom:3.2 in imagej.public (http://maven.imagej.net/content/groups/public) and 'parent.relativePath' points at no local POM @ line 5, column 10 -> [Help 2]
+> [ERROR]
+> [ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+> [ERROR] Re-run Maven using the -X switch to enable full debug logging.
+> [ERROR]
+> [ERROR] For more information about the errors and possible solutions, please read the following articles:
+> [ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/ProjectBuildingException
+> [ERROR] [Help 2] http://cwiki.apache.org/confluence/display/MAVEN/UnresolvableModelException
+> 
+> How can I fix this?
+> 
+> best regards,
+> Tobias
+> 
+> On 29 Oct 2014, at 23:37, Curtis Rueden <ctrueden at wisc.edu> wrote:
+> 
+>> Hi Tobi & all,
+>> 
+>> [Added Christian to CC, since this mail is mostly about OPS]
+>> 
+>> Still left to do:
+>> 
+>> 1) Check out the imglib2-release branch of imglib2-tests and fix the compile errors.
+>> 2) Check out the imglib2-release branch of imglib2-script and fix the compile errors.
+>> 3) Check out the imglib2-release branch of imagej-ops and figure out why tests fail now.
+>> 
+>> I spent some hours working on imagej-ops this afternoon. With the latest imglib2 master branch, there is only one remaining test failure. (I guess Tobi's bug-fix fixed the other test failure...)
+>> 
+>> The problem is really deep, though: the ParallelMapI2I uses multiple cursors simultaneously to iterate over ArrayImgs, and it seems there is a race condition that causes the ApplyManualThresholdTest to intermittently fail.
+>> 
+>> I have to head out for the day, but if anyone else wants to take a crack at it, I added a WIP to the topic branch that illustrates the issue. Setting a breakpoint on the "WTF" line will stop the code if/when the problem occurs.
+>> 
+>> https://github.com/imagej/imagej-ops/commit/86f8452f77680dafbff747a86ffca2be4a993b37#diff-da607cd95c8ebd526929f7ea15a1da91R117
+>> 
+>> On my machine, the problem seems to occur ~40% of the time, depending on the location and quantity of print statements.
+>> 
+>> Regards,
+>> Curtis
+>> 
+>> 
+>> On Mon, Oct 27, 2014 at 11:37 AM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+>> Hi Tobi,
+>> 
+>> > I fixed the remaining errors.
+>> 
+>> Thanks!
+>> 
+>> > Curtis, maybe we can do this via Skype tomorrow (i.e. Monday)?
+>> 
+>> I am available every day from ~9:30am - 4:30pm. I am available via GChat (ctrueden at gmail.com), IRC (#imagejdev and #fiji-devel on freenode) and Skype (curtis_rueden).
+>> 
+>> > I?ll continue working on these tomorrow.
+>> 
+>> Thanks again! I'll work on documentation today, then.
+>> 
+>> Regards,
+>> Curtis
+>> 
+>> On Sun, Oct 26, 2014 at 6:51 PM, Tobias Pietzsch <pietzsch at mpi-cbg.de> wrote:
+>> Hi,
+>> 
+>> On 25 Oct 2014, at 01:02, Curtis Rueden <ctrueden at wisc.edu> wrote:
+>> 
+>>> Tobias asked if there is anything others could do to help, so here is a list (in my opinion of priority order):
+>>> 
+>>> 1) Check out the imglib2-release branch of imglib2-tutorials and fix the compile errors.
+>> 
+>> I fixed the remaining errors.
+>> To run these examples I had to do two additional things (not committed because they shouldn?t be required soon)
+>> 
+>> 1.) I had to add an empty class net.imglib2.img.basictypeaccess.array.BitArray to make scifio able to open the images.
+>> This is because at some point scifio does an ?instanceof BitArray? check and BitArray isn?t there anymore. These checks should be removed for next scifio version.
+>> 
+>> 2.) I had to make a SNAPSHOT dependency on imglib2-core because in the current release there is a bug which I fixed in this commit https://github.com/imglib/imglib2/commit/fc0d3ebcd9256e60961180952c0383c47e63d111
+>> So already it is time to release imglib2-core 2.0.2
+>> It would be absolutely fantastic if you could walk me through how to do that. Curtis, maybe we can do this via Skype tomorrow (i.e. Monday)?
+>> 
+>>> 2) Check out the imglib2-release branch of imglib2-tests and fix the compile errors.
+>>> 3) Check out the imglib2-release branch of imglib2-script and fix the compile errors.
+>>> 4) Check out the imglib2-release branch of imagej-ops and figure out why tests fail now.
+>> 
+>> 
+>> I?ll continue working on these tomorrow.
+>> 
+>> all the best,
+>> Tobias
+>> 
+>> On 25 Oct 2014, at 01:02, Curtis Rueden <ctrueden at wisc.edu> wrote:
+>> 
+>>> Hi guys,
+>>> 
+>>> Here is a status update on the ImgLib2 release.
+>>> 
+>>> The following components are released:
+>>> 
+>>> * imglib2 2.0.1
+>>> * imglib2-algorithm 0.1.0
+>>> * imglib2-algorithm-fft 0.1.0
+>>> * imglib2-algorithm-gpl 0.1.0
+>>> * imglib2-ij 2.0.0-beta-27
+>>> * imglib2-realtransform 2.0.0-beta-27
+>>> * imagej-common 0.10.0
+>>> 
+>>> The following components are not done yet:
+>>> 
+>>> * imglib2-script 0.1.0
+>>> * imglib2-tests
+>>> * imglib2-tutorials
+>>> 
+>>> (Note that for tests and tutorials, it is just a matter of updating the master branch, since we will never cut Maven release of those.)
+>>> 
+>>> * imagej-ops 0.6.0
+>>> * imagej-plugins-commands 0.3.0
+>>> * imagej-ui-swing 0.8.0
+>>> * scifio 0.17.0
+>>> * scifio-ome-xml 0.10.0
+>>> 
+>>> And probably others that will become obvious as we proceed further along.
+>>> 
+>>> You can glean much of this same information from the following URL:
+>>>     http://status.imagej.net/
+>>> 
+>>> Tobias asked if there is anything others could do to help, so here is a list (in my opinion of priority order):
+>>> 
+>>> 1) Check out the imglib2-release branch of imglib2-tutorials and fix the compile errors.
+>>> 2) Check out the imglib2-release branch of imglib2-tests and fix the compile errors.
+>>> 3) Check out the imglib2-release branch of imglib2-script and fix the compile errors.
+>>> 4) Check out the imglib2-release branch of imagej-ops and figure out why tests fail now.
+>>> 
+>>> Any help any of you can contribute toward the above goals would be greatly appreciated! I'll be back on the case on Monday. (I would not worry about the Git history, Tobi -- just fix the errors on each branch.)
+>>> 
+>>> Regards,
+>>> Curtis
+>>> 
+>>> P.S. Thorough docs on the component structure, development best practices, and related stuff will be coming soon to a http://imagej.net/Architecture near you.
+>>> 
+>> 
+>> 
+>> 
+> 
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20141030/175cdfa0/attachment-0001.html>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20141030/175cdfa0/attachment-0001.pgp>
+
+From sapristi at gmail.com  Wed Oct 29 19:48:16 2014
+From: sapristi at gmail.com (Albert Cardona)
+Date: Wed, 29 Oct 2014 20:48:16 -0400
+Subject: [ImageJ-devel] [fiji-devel] Re: What's left to do for ImgLib2
+In-Reply-To: <D169F783-E0C3-4F32-B9A7-E32AB35BAE7C@mpi-cbg.de>
+References: <CADN69y=y-=F3OMOCk0YJ-7d-vM=_c7c7mTDc2t12FtsW+0JRvw@mail.gmail.com>
+	<0C7FE0E8-625A-421E-9FCF-0199C459C1E8@mpi-cbg.de>
+	<CADN69ymc976pOxJe8ztXPm=8gLHe449Ns2NcRRzqCx0WX3dnHQ@mail.gmail.com>
+	<CADN69ymoXLykX6Q_pdOjh5wk=Kit7=CA7VZJRk6Tej-TxSZJzQ@mail.gmail.com>
+	<CCF0FAA8-F1E8-4793-A184-E65B7FF86BA6@mpi-cbg.de>
+	<D169F783-E0C3-4F32-B9A7-E32AB35BAE7C@mpi-cbg.de>
+Message-ID: <CAJj13__wORcf+4hW2Ac3Hccvev28SH=v7pC1spCXiOZSkcgPXg@mail.gmail.com>
+
+Hi Tobias and ImgLib2ers,
+
+the bit types are not thread safe. At some point it said so in the
+documentation at the top of the files--I think--but I cannot find that note
+now in the github repository version of the files. Perhaps we removed it:
+as far as I know, no numeric type is thread safe. Perhaps some may be
+incidentally thread safe, but they don't have to be. Coordinating
+multi-threaded access to the same Img requires a special-purpose approach,
+that can be ameliorated with e.g. proxy types that declare each method as
+synchronized. Declaring all type methods as synchronized adds overheads to
+the general case, which is not the best approach.
+
+Regarding the lock-free approach: that reads like software transactional
+memory, and there are implementations out there. I wouldn't want to impose
+that kind of overhead, either, in the Type classes themselves.
+
+As usual with threads, code that accesses a resource must consider the
+consequences and synchronize access where appropriate.
+
+Albert
+
+
+2014-10-29 19:34 GMT-04:00 Tobias Pietzsch <pietzsch at mpi-cbg.de>:
+
+> Ok, just looking at the code of ApplyManualThresholdTest, I have a hunch
+> of whats going wrong.
+> The test uses
+> final Img<BitType> out = bitmap();
+>
+> I bet that for the new BitType from the Fractions branch nobody considered
+> the possibility that two cursors might simultaneously write to bits of the
+> same underlying long value.
+>
+> One solution would be to use locks to synchronize all accesses to the
+> underlying long[] array (this is for BitType, Unsigned12BitType, etc).
+> However, I fear that this will slow down things considerably.
+>
+> Is anyone familiar enough with the Java Memory Model to provide an
+> educated guess as to whether a lock-free approach would be feasible?
+> By lock-free I mean setting the value and then checking whether the value
+> is actually what was expected (and if not, retry).
+> I?m cc?ing Albert and the imagej-devel and fiji-devel lists to increase
+> the probability that someone might actually know?
+>
+> best regards,
+> Tobias
+>
+> On 30 Oct 2014, at 00:18, Tobias Pietzsch <pietzsch at mpi-cbg.de> wrote:
+>
+> Hi Curtis,
+>
+> I?m trying to look at it, however I get the following maven error:
+>
+> pietzsch at tomancak-mac-17:~/workspace/imagej-ops (imglib2-release)$ mvn -U
+> clean install
+> [INFO] Scanning for projects...
+> Downloading:
+> http://maven.imagej.net/content/groups/public/net/imagej/pom-imagej/3.2/pom-imagej-3.2.pom
+> Downloading:
+> http://repo.maven.apache.org/maven2/net/imagej/pom-imagej/3.2/pom-imagej-3.2.pom
+> [ERROR] The build could not read 1 project -> [Help 1]
+> [ERROR]
+> [ERROR]   The project net.imagej:imagej-ops:0.6.0-SNAPSHOT
+> (/Users/pietzsch/workspace/imagej-ops/pom.xml) has 1 error
+> [ERROR]     Non-resolvable parent POM: Could not find artifact
+> net.imagej:pom-imagej:pom:3.2 in imagej.public (
+> http://maven.imagej.net/content/groups/public) and 'parent.relativePath'
+> points at no local POM @ line 5, column 10 -> [Help 2]
+> [ERROR]
+> [ERROR] To see the full stack trace of the errors, re-run Maven with the
+> -e switch.
+> [ERROR] Re-run Maven using the -X switch to enable full debug logging.
+> [ERROR]
+> [ERROR] For more information about the errors and possible solutions,
+> please read the following articles:
+> [ERROR] [Help 1]
+> http://cwiki.apache.org/confluence/display/MAVEN/ProjectBuildingException
+> [ERROR] [Help 2]
+> http://cwiki.apache.org/confluence/display/MAVEN/UnresolvableModelException
+>
+> How can I fix this?
+>
+> best regards,
+> Tobias
+>
+> On 29 Oct 2014, at 23:37, Curtis Rueden <ctrueden at wisc.edu> wrote:
+>
+> Hi Tobi & all,
+>
+> [Added Christian to CC, since this mail is mostly about OPS]
+>
+> Still left to do:
+>
+> 1) Check out the imglib2-release branch of imglib2-tests and fix the
+> compile errors.
+> 2) Check out the imglib2-release branch of imglib2-script and fix the
+> compile errors.
+> 3) Check out the imglib2-release branch of imagej-ops and figure out why
+> tests fail now.
+>
+> I spent some hours working on imagej-ops this afternoon. With the latest
+> imglib2 master branch, there is only one remaining test failure. (I guess
+> Tobi's bug-fix fixed the other test failure...)
+>
+> The problem is really deep, though: the ParallelMapI2I uses multiple
+> cursors simultaneously to iterate over ArrayImgs, and it seems there is a
+> race condition that causes the ApplyManualThresholdTest to intermittently
+> fail.
+>
+> I have to head out for the day, but if anyone else wants to take a crack
+> at it, I added a WIP to the topic branch that illustrates the issue.
+> Setting a breakpoint on the "WTF" line will stop the code if/when the
+> problem occurs.
+>
+>
+> https://github.com/imagej/imagej-ops/commit/86f8452f77680dafbff747a86ffca2be4a993b37#diff-da607cd95c8ebd526929f7ea15a1da91R117
+>
+> On my machine, the problem seems to occur ~40% of the time, depending on
+> the location and quantity of print statements.
+>
+> Regards,
+> Curtis
+>
+>
+> On Mon, Oct 27, 2014 at 11:37 AM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+>
+>> Hi Tobi,
+>>
+>> > I fixed the remaining errors.
+>>
+>> Thanks!
+>>
+>> > Curtis, maybe we can do this via Skype tomorrow (i.e. Monday)?
+>>
+>> I am available every day from ~9:30am - 4:30pm. I am available via GChat (
+>> ctrueden at gmail.com), IRC (#imagejdev and #fiji-devel on freenode) and
+>> Skype (curtis_rueden).
+>>
+>> > I?ll continue working on these tomorrow.
+>>
+>> Thanks again! I'll work on documentation today, then.
+>>
+>> Regards,
+>> Curtis
+>>
+>> On Sun, Oct 26, 2014 at 6:51 PM, Tobias Pietzsch <pietzsch at mpi-cbg.de>
+>> wrote:
+>>
+>>> Hi,
+>>>
+>>> On 25 Oct 2014, at 01:02, Curtis Rueden <ctrueden at wisc.edu> wrote:
+>>>
+>>> Tobias asked if there is anything others could do to help, so here is a
+>>> list (in my opinion of priority order):
+>>>
+>>> 1) Check out the imglib2-release branch of imglib2-tutorials and fix the
+>>> compile errors.
+>>>
+>>>
+>>> I fixed the remaining errors.
+>>> To run these examples I had to do two additional things (not committed
+>>> because they shouldn?t be required soon)
+>>>
+>>> 1.) I had to add an empty class
+>>> net.imglib2.img.basictypeaccess.array.BitArray to make scifio able to open
+>>> the images.
+>>> This is because at some point scifio does an ?instanceof BitArray? check
+>>> and BitArray isn?t there anymore. These checks should be removed for next
+>>> scifio version.
+>>>
+>>> 2.) I had to make a SNAPSHOT dependency on imglib2-core because in the
+>>> current release there is a bug which I fixed in this commit
+>>> https://github.com/imglib/imglib2/commit/fc0d3ebcd9256e60961180952c0383c47e63d111
+>>> So already it is time to release imglib2-core 2.0.2
+>>> It would be absolutely fantastic if you could walk me through how to do
+>>> that. Curtis, maybe we can do this via Skype tomorrow (i.e. Monday)?
+>>>
+>>> 2) Check out the imglib2-release branch of imglib2-tests and fix the
+>>> compile errors.
+>>> 3) Check out the imglib2-release branch of imglib2-script and fix the
+>>> compile errors.
+>>> 4) Check out the imglib2-release branch of imagej-ops and figure out why
+>>> tests fail now.
+>>>
+>>>
+>>> I?ll continue working on these tomorrow.
+>>>
+>>> all the best,
+>>> Tobias
+>>>
+>>> On 25 Oct 2014, at 01:02, Curtis Rueden <ctrueden at wisc.edu> wrote:
+>>>
+>>> Hi guys,
+>>>
+>>> Here is a status update on the ImgLib2 release.
+>>>
+>>> The following components are released:
+>>>
+>>> * imglib2 2.0.1
+>>> * imglib2-algorithm 0.1.0
+>>> * imglib2-algorithm-fft 0.1.0
+>>> * imglib2-algorithm-gpl 0.1.0
+>>> * imglib2-ij 2.0.0-beta-27
+>>> * imglib2-realtransform 2.0.0-beta-27
+>>> * imagej-common 0.10.0
+>>>
+>>> The following components are not done yet:
+>>>
+>>> * imglib2-script 0.1.0
+>>> * imglib2-tests
+>>> * imglib2-tutorials
+>>>
+>>> (Note that for tests and tutorials, it is just a matter of updating the
+>>> master branch, since we will never cut Maven release of those.)
+>>>
+>>> * imagej-ops 0.6.0
+>>> * imagej-plugins-commands 0.3.0
+>>> * imagej-ui-swing 0.8.0
+>>> * scifio 0.17.0
+>>> * scifio-ome-xml 0.10.0
+>>>
+>>> And probably others that will become obvious as we proceed further along.
+>>>
+>>> You can glean much of this same information from the following URL:
+>>>     http://status.imagej.net/
+>>>
+>>> Tobias asked if there is anything others could do to help, so here is a
+>>> list (in my opinion of priority order):
+>>>
+>>> 1) Check out the imglib2-release branch of imglib2-tutorials and fix the
+>>> compile errors.
+>>> 2) Check out the imglib2-release branch of imglib2-tests and fix the
+>>> compile errors.
+>>> 3) Check out the imglib2-release branch of imglib2-script and fix the
+>>> compile errors.
+>>> 4) Check out the imglib2-release branch of imagej-ops and figure out why
+>>> tests fail now.
+>>>
+>>> Any help any of you can contribute toward the above goals would be
+>>> greatly appreciated! I'll be back on the case on Monday. (I would not worry
+>>> about the Git history, Tobi -- just fix the errors on each branch.)
+>>>
+>>> Regards,
+>>> Curtis
+>>>
+>>> P.S. Thorough docs on the component structure, development best
+>>> practices, and related stuff will be coming soon to a
+>>> http://imagej.net/Architecture near you.
+>>>
+>>>
+>>>
+>>
+>
+>
+>
+
+
+-- 
+http://albert.rierol.net
+http://www.janelia.org/lab/cardona-lab
+http://www.ini.uzh.ch/~acardona/
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20141029/607d8fdf/attachment-0001.html>
+
+From schindelin at wisc.edu  Thu Oct 30 05:49:43 2014
+From: schindelin at wisc.edu (Johannes Schindelin)
+Date: Thu, 30 Oct 2014 11:49:43 +0100 (CET)
+Subject: [ImageJ-devel] Lock-free bit fields,
+ was Re:  What's left to do for ImgLib2
+In-Reply-To: <D169F783-E0C3-4F32-B9A7-E32AB35BAE7C@mpi-cbg.de>
+References: <CADN69y=y-=F3OMOCk0YJ-7d-vM=_c7c7mTDc2t12FtsW+0JRvw@mail.gmail.com>
+	<0C7FE0E8-625A-421E-9FCF-0199C459C1E8@mpi-cbg.de>
+	<CADN69ymc976pOxJe8ztXPm=8gLHe449Ns2NcRRzqCx0WX3dnHQ@mail.gmail.com>
+	<CADN69ymoXLykX6Q_pdOjh5wk=Kit7=CA7VZJRk6Tej-TxSZJzQ@mail.gmail.com>
+	<CCF0FAA8-F1E8-4793-A184-E65B7FF86BA6@mpi-cbg.de>
+	<D169F783-E0C3-4F32-B9A7-E32AB35BAE7C@mpi-cbg.de>
+Message-ID: <alpine.DEB.1.00.1410301043520.990@s15462909.onlinehome-server.info>
+
+Hi Tobias,
+
+first of all: I am really happy that this discussion is now open, enabling
+us to benefit from the entire expertise available in the ImageJ universe.
+
+I would like to use the opportunity to provide a bit of background for
+those readers who did not benefit from the extensive in-person discussions
+at the hackathon, in particular because there is no public summary
+available yet:
+
+At the hackathon [*1*] the main goal was to get ImgLib2 out of beta (and
+there was a *lot* of progress in that regard), and in the process a couple
+of last-minute changes were introduced, amongst others a memory
+optimization of the bit type containers. In particular, it changed from:
+
+https://github.com/imglib/imglib2/blob/ffeee80%5E/core/src/main/java/net/imglib2/type/logic/BitType.java
+
+to
+
+https://github.com/imglib/imglib2/blob/fc0d3ebcd/src/main/java/net/imglib2/type/logic/BitType.java
+
+That is, the BitAccess was replaced by a LongAccess. The BitAccess was
+implemented by
+
+https://github.com/imglib/imglib2/blob/ffeee80%5E/core/src/main/java/net/imglib2/img/basictypeaccess/array/BitArray.java
+
+Unfortunately, after upgrading imagej-ops to the ImgLib2 release, the
+regression tests started failing, and Tobias offered an explanation:
+
+On Thu, 30 Oct 2014, Tobias Pietzsch wrote:
+
+> The test uses
+> 		final Img<BitType> out = bitmap();
+> 
+> I bet that for the new BitType from the Fractions branch nobody
+> considered the possibility that two cursors might simultaneously write
+> to bits of the same underlying long value.
+
+As the problem is intermittent and changes between test runs even on the
+same computer, this is quite likely, especially given that the original
+BitArray used locking explicitly:
+
+https://github.com/imglib/imglib2/blob/ffeee80%5E/core/src/main/java/net/imglib2/img/basictypeaccess/array/BitArray.java#L85-L91
+
+That the BitType is now thread-unsafe is therefore a regression introduced
+just recently.
+
+> One solution would be to use locks to synchronize all accesses to the
+> underlying long[] array (this is for BitType, Unsigned12BitType, etc).
+> However, I fear that this will slow down things considerably.
+
+I agree that this would slow down operations as compared to the current
+code (at the price of correctness *grins*), but it would not slow down
+operations as compared to the BitArray which was used previously.
+
+> Is anyone familiar enough with the Java Memory Model to provide an
+> educated guess as to whether a lock-free approach would be feasible?
+
+The best online resource on this issue I am aware of is
+http://www.vogella.com/tutorials/JavaConcurrency/article.html#nonblocking
+(while the best offline resource is "Java Concurrency In Practice").
+
+It talks about the most common lock-free primitive, available in Java
+since version 5.0: compare-and-swap (CAS). Unfortunately, this technique
+would require us to switch to a different data type, as the operation is
+not available on primitive types, let alone primitive type arrays.
+
+Theoretically, we could paper over this issue by using the Unsafe class.
+However, this class is marked as internal API for a good reason, and it
+would not be advisable to make use of it to work around a fundamental
+design issue.
+
+> By lock-free I mean setting the value and then checking whether the
+> value is actually what was expected (and if not, retry).
+
+A na?ve implementation of this technique could easily result in a very
+nasty ping-pong effect: if one thread tries to clear a bit and the next
+thread tries to set it, it is very to run into a trap when not leaving a
+way for one thread to win.
+
+The safest way to resolve this issue is to reinstate the lock-on-write
+method that was in place earlier, i.e. surround the lines
+
+https://github.com/imglib/imglib2/blob/fc0d3ebcd9256e60961180952c0383c47e63d111/src/main/java/net/imglib2/type/logic/BitType.java#L133-L137
+
+with a `synchronized (dataAccess) { ... }` guard.
+
+An alternative might be to give up lock-freedom in favor of wait-freedom
+[*2*]. In this regard, a more performant version might be to change
+
+	// Clear the bits first, then or the masked value
+	if ( value )
+		dataAccess.setValue(i1, (dataAccess.getValue(i1) | (1l << shift) ) );
+	else
+		dataAccess.setValue(i1, (dataAccess.getValue(i1) & ~(1l << shift)) );
+
+to use Optimistic Concurrency Control [*3*]:
+
+	final long original = dataAccess.getValue(i1);
+	if ( value ) {
+		final long newValue = original | (1l << shift);
+		dataAccess.setValue(i1, newValue);
+		if ( newValue != dataAccess.getValue( i1 ) ) {
+			synchronized (dataAccess) {
+				dataAccess.setValue( i1, dataAccess.getValue(i1) | (1l << shift) );
+			}
+		}
+	} else {
+		final long newValue = original & ~(1l << shift);
+		dataAccess.setValue(i1, newValue);
+		if ( newValue != dataAccess.getValue( i1 ) ) {
+			synchronized (dataAccess) {
+				dataAccess.setValue( i1, dataAccess.getValue(i1) & ~(1l << shift) );
+			}
+		}
+	}
+
+However, apart from being ugly, it is a little bit too complicated to be
+verified as correct easily even by myself.
+
+As ImgLib2 has yet to attract any concurrency expert, I would be *really*
+reluctant to destabilize ImgLib2 at this criticial time, and would rather
+leave this for a future improvement at a time when we have concurrency
+experts in our ranks.
+
+Correctness trumps speed.
+
+Ciao,
+Johannes
+
+Footnote *1*: The best public information so far is:
+http://imagej.net/pipermail/imagej-devel/2014-October/002280.html
+
+Footnote *2*:
+https://en.wikipedia.org/wiki/Lock-free_and_wait-free_algorithms
+
+Footnote *3*: https://en.wikipedia.org/wiki/Optimistic_concurrency_control
+
+
+From pietzsch at mpi-cbg.de  Thu Oct 30 07:20:42 2014
+From: pietzsch at mpi-cbg.de (Tobias Pietzsch)
+Date: Thu, 30 Oct 2014 13:20:42 +0100
+Subject: [ImageJ-devel] Lock-free bit fields,
+	was Re:  What's left to do for ImgLib2
+In-Reply-To: <alpine.DEB.1.00.1410301043520.990@s15462909.onlinehome-server.info>
+References: <CADN69y=y-=F3OMOCk0YJ-7d-vM=_c7c7mTDc2t12FtsW+0JRvw@mail.gmail.com>
+	<0C7FE0E8-625A-421E-9FCF-0199C459C1E8@mpi-cbg.de>
+	<CADN69ymc976pOxJe8ztXPm=8gLHe449Ns2NcRRzqCx0WX3dnHQ@mail.gmail.com>
+	<CADN69ymoXLykX6Q_pdOjh5wk=Kit7=CA7VZJRk6Tej-TxSZJzQ@mail.gmail.com>
+	<CCF0FAA8-F1E8-4793-A184-E65B7FF86BA6@mpi-cbg.de>
+	<D169F783-E0C3-4F32-B9A7-E32AB35BAE7C@mpi-cbg.de>
+	<alpine.DEB.1.00.1410301043520.990@s15462909.onlinehome-server.info>
+Message-ID: <68F40EFC-62F8-40F4-94C1-83F55E6E5952@mpi-cbg.de>
+
+Hi Johannes and Albert,
+
+Albert, you really scared me for a moment. I thought all multi-threaded code we ever did for ImgLib2 is potentially broken now?
+Fortunately it is not as bad as it seemed to me at first. NativeTypes are not thread-safe, yes, but only to the extend that results are undefined if two threads access the same index. Meaning the index of the Type, not of the underlying storage.
+As Johannes points out, for the old BitType that statement was true, because write access was synchronized. Phew...
+
+Johannes, thanks a lot for the detailed analysis!
+I agree that the easiest and best way for now is to simply synchronize(dataAccess).
+This will fix issues for now. We can (and should) work out a better way later.
+
+I like the "Optimistic Concurrency Control? solution, but I also would not vouch for correctness.
+We'll have to see what the overhead of the ?read-value-again-to-check? operation is.
+
+In general I think the wastefulness in the synchronize(dataAccess) is not so much the locking, but that it locks the whole dataAccess.
+This basically locks the whole image. No two threads can write bits of the same image, even if those bits are not in the same long[] array element.
+We cannot reasonably have a separate lock object for each array index because that would have way too much (memory) overhead.
+We could have a few lock objects and then use some hashcode of the index to choose one of them.
+Several indices would share the same lock object but maybe a hash function can be chosen that avoids collisions for common access patterns?
+In the end, the ?Optimistic Concurrency Control? is probably more feasible. It can also be combined it with the index-hashcode approach.
+
+best regards,
+Tobias
+
+On 30 Oct 2014, at 11:49, Johannes Schindelin <schindelin at wisc.edu> wrote:
+
+> Hi Tobias,
+> 
+> first of all: I am really happy that this discussion is now open, enabling
+> us to benefit from the entire expertise available in the ImageJ universe.
+> 
+> I would like to use the opportunity to provide a bit of background for
+> those readers who did not benefit from the extensive in-person discussions
+> at the hackathon, in particular because there is no public summary
+> available yet:
+> 
+> At the hackathon [*1*] the main goal was to get ImgLib2 out of beta (and
+> there was a *lot* of progress in that regard), and in the process a couple
+> of last-minute changes were introduced, amongst others a memory
+> optimization of the bit type containers. In particular, it changed from:
+> 
+> https://github.com/imglib/imglib2/blob/ffeee80%5E/core/src/main/java/net/imglib2/type/logic/BitType.java
+> 
+> to
+> 
+> https://github.com/imglib/imglib2/blob/fc0d3ebcd/src/main/java/net/imglib2/type/logic/BitType.java
+> 
+> That is, the BitAccess was replaced by a LongAccess. The BitAccess was
+> implemented by
+> 
+> https://github.com/imglib/imglib2/blob/ffeee80%5E/core/src/main/java/net/imglib2/img/basictypeaccess/array/BitArray.java
+> 
+> Unfortunately, after upgrading imagej-ops to the ImgLib2 release, the
+> regression tests started failing, and Tobias offered an explanation:
+> 
+> On Thu, 30 Oct 2014, Tobias Pietzsch wrote:
+> 
+>> The test uses
+>> 		final Img<BitType> out = bitmap();
+>> 
+>> I bet that for the new BitType from the Fractions branch nobody
+>> considered the possibility that two cursors might simultaneously write
+>> to bits of the same underlying long value.
+> 
+> As the problem is intermittent and changes between test runs even on the
+> same computer, this is quite likely, especially given that the original
+> BitArray used locking explicitly:
+> 
+> https://github.com/imglib/imglib2/blob/ffeee80%5E/core/src/main/java/net/imglib2/img/basictypeaccess/array/BitArray.java#L85-L91
+> 
+> That the BitType is now thread-unsafe is therefore a regression introduced
+> just recently.
+> 
+>> One solution would be to use locks to synchronize all accesses to the
+>> underlying long[] array (this is for BitType, Unsigned12BitType, etc).
+>> However, I fear that this will slow down things considerably.
+> 
+> I agree that this would slow down operations as compared to the current
+> code (at the price of correctness *grins*), but it would not slow down
+> operations as compared to the BitArray which was used previously.
+> 
+>> Is anyone familiar enough with the Java Memory Model to provide an
+>> educated guess as to whether a lock-free approach would be feasible?
+> 
+> The best online resource on this issue I am aware of is
+> http://www.vogella.com/tutorials/JavaConcurrency/article.html#nonblocking
+> (while the best offline resource is "Java Concurrency In Practice").
+> 
+> It talks about the most common lock-free primitive, available in Java
+> since version 5.0: compare-and-swap (CAS). Unfortunately, this technique
+> would require us to switch to a different data type, as the operation is
+> not available on primitive types, let alone primitive type arrays.
+> 
+> Theoretically, we could paper over this issue by using the Unsafe class.
+> However, this class is marked as internal API for a good reason, and it
+> would not be advisable to make use of it to work around a fundamental
+> design issue.
+> 
+>> By lock-free I mean setting the value and then checking whether the
+>> value is actually what was expected (and if not, retry).
+> 
+> A na?ve implementation of this technique could easily result in a very
+> nasty ping-pong effect: if one thread tries to clear a bit and the next
+> thread tries to set it, it is very to run into a trap when not leaving a
+> way for one thread to win.
+> 
+> The safest way to resolve this issue is to reinstate the lock-on-write
+> method that was in place earlier, i.e. surround the lines
+> 
+> https://github.com/imglib/imglib2/blob/fc0d3ebcd9256e60961180952c0383c47e63d111/src/main/java/net/imglib2/type/logic/BitType.java#L133-L137
+> 
+> with a `synchronized (dataAccess) { ... }` guard.
+> 
+> An alternative might be to give up lock-freedom in favor of wait-freedom
+> [*2*]. In this regard, a more performant version might be to change
+> 
+> 	// Clear the bits first, then or the masked value
+> 	if ( value )
+> 		dataAccess.setValue(i1, (dataAccess.getValue(i1) | (1l << shift) ) );
+> 	else
+> 		dataAccess.setValue(i1, (dataAccess.getValue(i1) & ~(1l << shift)) );
+> 
+> to use Optimistic Concurrency Control [*3*]:
+> 
+> 	final long original = dataAccess.getValue(i1);
+> 	if ( value ) {
+> 		final long newValue = original | (1l << shift);
+> 		dataAccess.setValue(i1, newValue);
+> 		if ( newValue != dataAccess.getValue( i1 ) ) {
+> 			synchronized (dataAccess) {
+> 				dataAccess.setValue( i1, dataAccess.getValue(i1) | (1l << shift) );
+> 			}
+> 		}
+> 	} else {
+> 		final long newValue = original & ~(1l << shift);
+> 		dataAccess.setValue(i1, newValue);
+> 		if ( newValue != dataAccess.getValue( i1 ) ) {
+> 			synchronized (dataAccess) {
+> 				dataAccess.setValue( i1, dataAccess.getValue(i1) & ~(1l << shift) );
+> 			}
+> 		}
+> 	}
+> 
+> However, apart from being ugly, it is a little bit too complicated to be
+> verified as correct easily even by myself.
+> 
+> As ImgLib2 has yet to attract any concurrency expert, I would be *really*
+> reluctant to destabilize ImgLib2 at this criticial time, and would rather
+> leave this for a future improvement at a time when we have concurrency
+> experts in our ranks.
+> 
+> Correctness trumps speed.
+> 
+> Ciao,
+> Johannes
+> 
+> Footnote *1*: The best public information so far is:
+> http://imagej.net/pipermail/imagej-devel/2014-October/002280.html
+> 
+> Footnote *2*:
+> https://en.wikipedia.org/wiki/Lock-free_and_wait-free_algorithms
+> 
+> Footnote *3*: https://en.wikipedia.org/wiki/Optimistic_concurrency_control
+> 
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20141030/4a86b83a/attachment.pgp>
+
+From schindelin at wisc.edu  Thu Oct 30 07:57:30 2014
+From: schindelin at wisc.edu (Johannes Schindelin)
+Date: Thu, 30 Oct 2014 13:57:30 +0100 (CET)
+Subject: [ImageJ-devel] Lock-free bit fields,
+ was Re:  What's left to do for ImgLib2
+In-Reply-To: <68F40EFC-62F8-40F4-94C1-83F55E6E5952@mpi-cbg.de>
+References: <CADN69y=y-=F3OMOCk0YJ-7d-vM=_c7c7mTDc2t12FtsW+0JRvw@mail.gmail.com>
+	<0C7FE0E8-625A-421E-9FCF-0199C459C1E8@mpi-cbg.de>
+	<CADN69ymc976pOxJe8ztXPm=8gLHe449Ns2NcRRzqCx0WX3dnHQ@mail.gmail.com>
+	<CADN69ymoXLykX6Q_pdOjh5wk=Kit7=CA7VZJRk6Tej-TxSZJzQ@mail.gmail.com>
+	<CCF0FAA8-F1E8-4793-A184-E65B7FF86BA6@mpi-cbg.de>
+	<D169F783-E0C3-4F32-B9A7-E32AB35BAE7C@mpi-cbg.de>
+	<alpine.DEB.1.00.1410301043520.990@s15462909.onlinehome-server.info>
+	<68F40EFC-62F8-40F4-94C1-83F55E6E5952@mpi-cbg.de>
+Message-ID: <alpine.DEB.1.00.1410301353180.990@s15462909.onlinehome-server.info>
+
+Hi Tobias,
+
+On Thu, 30 Oct 2014, Tobias Pietzsch wrote:
+
+> We'll have to see what the overhead of the ?read-value-again-to-check?
+> operation is.
+
+For the record: synchronization is *always* more expensive than a simple
+read-value-again check. I am sure that it is relatively easy to use the
+junit-benchmarks [*1*] to prove that.
+
+Ciao,
+Johannes
+
+Footnote *1*: Please note that we forked junit-benchmarks because it
+requires a relatively ugly fix to work with @Before/@After methods, a fix
+so ugly that upstream preferred to keep the bug rather than accepting
+something as Gollum-like. The artifact was already deployed as
+org.scijava:junit-benchmarks:0.7.3-scijava and it requires an upgrade to
+JUnit >= 4.11.
+
+
+From adrian.daerr at univ-paris-diderot.fr  Thu Oct 30 08:51:25 2014
+From: adrian.daerr at univ-paris-diderot.fr (Adrian Daerr)
+Date: Thu, 30 Oct 2014 14:51:25 +0100
+Subject: [ImageJ-devel] [fiji-devel] Lock-free bit fields,
+ was Re:  What's left to do for ImgLib2
+In-Reply-To: <alpine.DEB.1.00.1410301043520.990@s15462909.onlinehome-server.info>
+References: <CADN69y=y-=F3OMOCk0YJ-7d-vM=_c7c7mTDc2t12FtsW+0JRvw@mail.gmail.com>
+	<0C7FE0E8-625A-421E-9FCF-0199C459C1E8@mpi-cbg.de>
+	<CADN69ymc976pOxJe8ztXPm=8gLHe449Ns2NcRRzqCx0WX3dnHQ@mail.gmail.com>
+	<CADN69ymoXLykX6Q_pdOjh5wk=Kit7=CA7VZJRk6Tej-TxSZJzQ@mail.gmail.com>
+	<CCF0FAA8-F1E8-4793-A184-E65B7FF86BA6@mpi-cbg.de>
+	<D169F783-E0C3-4F32-B9A7-E32AB35BAE7C@mpi-cbg.de>
+	<alpine.DEB.1.00.1410301043520.990@s15462909.onlinehome-server.info>
+Message-ID: <5452425D.9060609@univ-paris-diderot.fr>
+
+Hi,
+
+>> By lock-free I mean setting the value and then checking whether the
+>> value is actually what was expected (and if not, retry).
+>
+> A na?ve implementation of this technique could easily result in a very
+> nasty ping-pong effect: if one thread tries to clear a bit and the next
+> thread tries to set it, it is very to run into a trap when not leaving a
+> way for one thread to win.
+>
+> The safest way to resolve this issue is to reinstate the lock-on-write
+> method that was in place earlier
+[..]
+>
+> An alternative might be to give up lock-freedom in favor of wait-freedom
+> [*2*]. In this regard, a more performant version might be
+[..]
+> to use Optimistic Concurrency Control [*3*]:
+
+> 	final long original = dataAccess.getValue(i1);
+> 	if ( value ) {
+> 		final long newValue = original | (1l << shift);
+> 		dataAccess.setValue(i1, newValue);
+> 		if ( newValue != dataAccess.getValue( i1 ) ) {
+> 			synchronized (dataAccess) {
+> 				dataAccess.setValue( i1, dataAccess.getValue(i1) | (1l << shift) );
+> 			}
+> 		}
+> 	}
+[snip]
+
+Hum, I do not if this is really a comparable situation, but it looks a 
+lot like the double-checked locking (DCL) idiom, which is broken [1].
+
+FWIW,
+cheers and good luck,
+Adrian
+
+
+[1]
+TL;DR : You cannot have as-if-serial semantics across threads unless you 
+use synchronized.
+
+"Double-checked locking: Clever, but broken
+Do you know what synchronized really means?" By Brian Goetz
+http://www.javaworld.com/article/2074979/java-concurrency/double-checked-locking--clever--but-broken.html
+
+and its follow-up article
+
+"Can double-checked locking be fixed?
+No matter how you rig it, double-checked locking still fails" (also by 
+Brian Goetz)
+http://www.javaworld.com/article/2075306/java-concurrency/can-double-checked-locking-be-fixed-.html
+
+
+From saalfelds at janelia.hhmi.org  Thu Oct 30 10:18:11 2014
+From: saalfelds at janelia.hhmi.org (Stephan Saalfeld)
+Date: Thu, 30 Oct 2014 11:18:11 -0400
+Subject: [ImageJ-devel] [fiji-devel] Lock-free bit fields,
+ was Re:  What's left to do for ImgLib2
+In-Reply-To: <5452425D.9060609@univ-paris-diderot.fr>
+References: <CADN69y=y-=F3OMOCk0YJ-7d-vM=_c7c7mTDc2t12FtsW+0JRvw@mail.gmail.com>
+	<0C7FE0E8-625A-421E-9FCF-0199C459C1E8@mpi-cbg.de>
+	<CADN69ymc976pOxJe8ztXPm=8gLHe449Ns2NcRRzqCx0WX3dnHQ@mail.gmail.com>
+	<CADN69ymoXLykX6Q_pdOjh5wk=Kit7=CA7VZJRk6Tej-TxSZJzQ@mail.gmail.com>
+	<CCF0FAA8-F1E8-4793-A184-E65B7FF86BA6@mpi-cbg.de>
+	<D169F783-E0C3-4F32-B9A7-E32AB35BAE7C@mpi-cbg.de>
+	<alpine.DEB.1.00.1410301043520.990@s15462909.onlinehome-server.info>
+	<5452425D.9060609@univ-paris-diderot.fr>
+Message-ID: <1414682291.14882.136.camel@saalfelds-ws1.janelia.priv>
+
+Thanks for the articles!
+
+I have more comments on the matter.  In fact, all types have the same
+problem.  Even for a non-native ComplexType read and write would not be
+atomic and thus not thread-safe.  The problem is that, for non-native
+types, it is sufficient for multi-threaded code to synchronize on the
+type instance itself.  For native types (e.g. ComplexDoubleType) and for
+other proxy mechanisms such as Composites or ReadWriteConverters, this
+doesn't work.  How about a getLock() (or getMonitor()) method as part of
+Type whose purpose is to return a lock that enables synchronization on
+that particular's type content.  Should that lock be constant for a
+type's lifetime?  Proxy types for which access is atomic could return
+themselves, just as Types that actually contain their content.
+
+I like Tobias' proposal with a Hash of locks for NativeTypes, something
+similar is necessary for other writable proxies.
+
+Best,
+Stephan
+
+
+
+On Thu, 2014-10-30 at 14:51 +0100, Adrian Daerr wrote:
+> Hi,
+> 
+> >> By lock-free I mean setting the value and then checking whether the
+> >> value is actually what was expected (and if not, retry).
+> >
+> > A na?ve implementation of this technique could easily result in a very
+> > nasty ping-pong effect: if one thread tries to clear a bit and the next
+> > thread tries to set it, it is very to run into a trap when not leaving a
+> > way for one thread to win.
+> >
+> > The safest way to resolve this issue is to reinstate the lock-on-write
+> > method that was in place earlier
+> [..]
+> >
+> > An alternative might be to give up lock-freedom in favor of wait-freedom
+> > [*2*]. In this regard, a more performant version might be
+> [..]
+> > to use Optimistic Concurrency Control [*3*]:
+> 
+> > 	final long original = dataAccess.getValue(i1);
+> > 	if ( value ) {
+> > 		final long newValue = original | (1l << shift);
+> > 		dataAccess.setValue(i1, newValue);
+> > 		if ( newValue != dataAccess.getValue( i1 ) ) {
+> > 			synchronized (dataAccess) {
+> > 				dataAccess.setValue( i1, dataAccess.getValue(i1) | (1l << shift) );
+> > 			}
+> > 		}
+> > 	}
+> [snip]
+> 
+> Hum, I do not if this is really a comparable situation, but it looks a 
+> lot like the double-checked locking (DCL) idiom, which is broken [1].
+> 
+> FWIW,
+> cheers and good luck,
+> Adrian
+> 
+> 
+> [1]
+> TL;DR : You cannot have as-if-serial semantics across threads unless you 
+> use synchronized.
+> 
+> "Double-checked locking: Clever, but broken
+> Do you know what synchronized really means?" By Brian Goetz
+> http://www.javaworld.com/article/2074979/java-concurrency/double-checked-locking--clever--but-broken.html
+> 
+> and its follow-up article
+> 
+> "Can double-checked locking be fixed?
+> No matter how you rig it, double-checked locking still fails" (also by 
+> Brian Goetz)
+> http://www.javaworld.com/article/2075306/java-concurrency/can-double-checked-locking-be-fixed-.html
+
+
+
+From schindelin at wisc.edu  Thu Oct 30 10:32:13 2014
+From: schindelin at wisc.edu (Johannes Schindelin)
+Date: Thu, 30 Oct 2014 16:32:13 +0100 (CET)
+Subject: [ImageJ-devel] [fiji-devel] Lock-free bit fields,
+ was Re:  What's left to do for ImgLib2
+In-Reply-To: <5452425D.9060609@univ-paris-diderot.fr>
+References: <CADN69y=y-=F3OMOCk0YJ-7d-vM=_c7c7mTDc2t12FtsW+0JRvw@mail.gmail.com>
+	<0C7FE0E8-625A-421E-9FCF-0199C459C1E8@mpi-cbg.de>
+	<CADN69ymc976pOxJe8ztXPm=8gLHe449Ns2NcRRzqCx0WX3dnHQ@mail.gmail.com>
+	<CADN69ymoXLykX6Q_pdOjh5wk=Kit7=CA7VZJRk6Tej-TxSZJzQ@mail.gmail.com>
+	<CCF0FAA8-F1E8-4793-A184-E65B7FF86BA6@mpi-cbg.de>
+	<D169F783-E0C3-4F32-B9A7-E32AB35BAE7C@mpi-cbg.de>
+	<alpine.DEB.1.00.1410301043520.990@s15462909.onlinehome-server.info>
+	<5452425D.9060609@univ-paris-diderot.fr>
+Message-ID: <alpine.DEB.1.00.1410301559400.990@s15462909.onlinehome-server.info>
+
+Dear Adrian,
+
+On Thu, 30 Oct 2014, Adrian Daerr wrote:
+
+> > An alternative might be to give up lock-freedom in favor of wait-freedom
+> > [*2*]. In this regard, a more performant version might be
+> [..]
+> > to use Optimistic Concurrency Control [*3*]:
+> 
+> Hum, I do not if this is really a comparable situation, but it looks a
+> lot like the double-checked locking (DCL) idiom, which is broken [1].
+
+Thank you for your concerns. Let me take the time for a proper discussion
+rather than just linking to two articles of a highly respected developer.
+
+Let's recapitulate the Double-Checked Locking problem for a moment: any
+non-synchronized access in Java is *not* guaranteed to have the same
+ordered memory-access as *any* other thread. In other words, a set of
+synchronized threads might read, modify and write a certain field
+correctly, all the while *another* thread might *still* receive the
+unmodified value *afterwards*.
+
+Example:
+
+	newValue = array[i] | 1;
+	array[i] = newValue;
+	if (array[i] != newValue) {
+		synchronized (array) {
+			newValue = array[i] | 1;
+			array[i] = newValue;
+		}
+	}
+
+Let's assume that thread Albert is in the synchronized block, having just
+read the very same array element as thread Bene, but Bene is just
+modifying the value as per the second line. The Java Memory Model states
+that Bene's modification is not necessarily seen, nor blocked by Albert's
+synchronized write access because Bene is unsynchronized. And Albert's
+modification will not necessarily be seen by Bene in the if() statement,
+either ? because Bene is unsynchronized.
+
+So yes, the Double-Checked Locking problem applies here as well.
+
+Ciao,
+Johannes
+
+
+From pietzsch at mpi-cbg.de  Thu Oct 30 12:29:32 2014
+From: pietzsch at mpi-cbg.de (Tobias Pietzsch)
+Date: Thu, 30 Oct 2014 18:29:32 +0100
+Subject: [ImageJ-devel] [fiji-devel] Lock-free bit fields,
+	was Re:  What's left to do for ImgLib2
+In-Reply-To: <1414682291.14882.136.camel@saalfelds-ws1.janelia.priv>
+References: <CADN69y=y-=F3OMOCk0YJ-7d-vM=_c7c7mTDc2t12FtsW+0JRvw@mail.gmail.com>
+	<0C7FE0E8-625A-421E-9FCF-0199C459C1E8@mpi-cbg.de>
+	<CADN69ymc976pOxJe8ztXPm=8gLHe449Ns2NcRRzqCx0WX3dnHQ@mail.gmail.com>
+	<CADN69ymoXLykX6Q_pdOjh5wk=Kit7=CA7VZJRk6Tej-TxSZJzQ@mail.gmail.com>
+	<CCF0FAA8-F1E8-4793-A184-E65B7FF86BA6@mpi-cbg.de>
+	<D169F783-E0C3-4F32-B9A7-E32AB35BAE7C@mpi-cbg.de>
+	<alpine.DEB.1.00.1410301043520.990@s15462909.onlinehome-server.info>
+	<5452425D.9060609@univ-paris-diderot.fr>
+	<1414682291.14882.136.camel@saalfelds-ws1.janelia.priv>
+Message-ID: <64305BD8-28C0-4122-9BD5-F46022B01B76@mpi-cbg.de>
+
+Hi Stephan,
+
+I think it would be nice to have getLock() but I also think it will be rarely needed in practice.
+
+We must be careful not to conflate two problems here:
+
+The first one is that writes to e.g. ComplexType are not atomic and therefore strange things may happen if two ComplexTypes are used that actually refer to the same ComplexType pixel value in the image.
+As Albert suggested, algorithms that need this feature need to take special care to synchronize access.
+However, for many parallelizable algorithms this is not actually a problem. In most image-to-image operations (e.g. FFT, convolution, etc?) every output pixel is written only once by only one thread. Threads maybe read the same input pixels, but reading is fine.
+The getLock() method would be a welcome addition for those algorithms that do not follow this pattern and need to synchronize.
+
+The second problem is different. For BitType, writes to BitType pixels at different locations in the image may influence each other. And this should be avoided by default in my opinion.
+
+I think: ?You are safe as long as multiple threads write to different pixels? is a good contract to have.
+Diverging from that with BitType, Unsigned12BitType, etc would add overhead for many algorithms that is in most cases not required (e.g. for FloatType, ComplexDoubleType, etc. the synchronization overhead would be wasted).
+
+best regards,
+Tobias
+
+
+
+On 30 Oct 2014, at 16:18, Stephan Saalfeld <saalfelds at janelia.hhmi.org> wrote:
+
+> Thanks for the articles!
+> 
+> I have more comments on the matter.  In fact, all types have the same
+> problem.  Even for a non-native ComplexType read and write would not be
+> atomic and thus not thread-safe.  The problem is that, for non-native
+> types, it is sufficient for multi-threaded code to synchronize on the
+> type instance itself.  For native types (e.g. ComplexDoubleType) and for
+> other proxy mechanisms such as Composites or ReadWriteConverters, this
+> doesn't work.  How about a getLock() (or getMonitor()) method as part of
+> Type whose purpose is to return a lock that enables synchronization on
+> that particular's type content.  Should that lock be constant for a
+> type's lifetime?  Proxy types for which access is atomic could return
+> themselves, just as Types that actually contain their content.
+> 
+> I like Tobias' proposal with a Hash of locks for NativeTypes, something
+> similar is necessary for other writable proxies.
+> 
+> Best,
+> Stephan
+> 
+> 
+> 
+> On Thu, 2014-10-30 at 14:51 +0100, Adrian Daerr wrote:
+>> Hi,
+>> 
+>>>> By lock-free I mean setting the value and then checking whether the
+>>>> value is actually what was expected (and if not, retry).
+>>> 
+>>> A na?ve implementation of this technique could easily result in a very
+>>> nasty ping-pong effect: if one thread tries to clear a bit and the next
+>>> thread tries to set it, it is very to run into a trap when not leaving a
+>>> way for one thread to win.
+>>> 
+>>> The safest way to resolve this issue is to reinstate the lock-on-write
+>>> method that was in place earlier
+>> [..]
+>>> 
+>>> An alternative might be to give up lock-freedom in favor of wait-freedom
+>>> [*2*]. In this regard, a more performant version might be
+>> [..]
+>>> to use Optimistic Concurrency Control [*3*]:
+>> 
+>>> 	final long original = dataAccess.getValue(i1);
+>>> 	if ( value ) {
+>>> 		final long newValue = original | (1l << shift);
+>>> 		dataAccess.setValue(i1, newValue);
+>>> 		if ( newValue != dataAccess.getValue( i1 ) ) {
+>>> 			synchronized (dataAccess) {
+>>> 				dataAccess.setValue( i1, dataAccess.getValue(i1) | (1l << shift) );
+>>> 			}
+>>> 		}
+>>> 	}
+>> [snip]
+>> 
+>> Hum, I do not if this is really a comparable situation, but it looks a 
+>> lot like the double-checked locking (DCL) idiom, which is broken [1].
+>> 
+>> FWIW,
+>> cheers and good luck,
+>> Adrian
+>> 
+>> 
+>> [1]
+>> TL;DR : You cannot have as-if-serial semantics across threads unless you 
+>> use synchronized.
+>> 
+>> "Double-checked locking: Clever, but broken
+>> Do you know what synchronized really means?" By Brian Goetz
+>> http://www.javaworld.com/article/2074979/java-concurrency/double-checked-locking--clever--but-broken.html
+>> 
+>> and its follow-up article
+>> 
+>> "Can double-checked locking be fixed?
+>> No matter how you rig it, double-checked locking still fails" (also by 
+>> Brian Goetz)
+>> http://www.javaworld.com/article/2075306/java-concurrency/can-double-checked-locking-be-fixed-.html
+> 
+
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20141030/b7ad1a21/attachment.pgp>
+
+From ctrueden at wisc.edu  Thu Oct 30 12:51:23 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Thu, 30 Oct 2014 12:51:23 -0500
+Subject: [ImageJ-devel] Parameter decorator and supported classes
+In-Reply-To: <93DD924F-9900-4D09-AB0C-ED7134233056@unifr.ch>
+References: <93DD924F-9900-4D09-AB0C-ED7134233056@unifr.ch>
+Message-ID: <CADN69ynzFnzjJRVvm+UYtqQTOwndPvo8Mx0sVcLWBrkyMsBG6w@mail.gmail.com>
+
+Hi Felix,
+
+Apologies for the delay in reply. Due to work surrounding the ImgLib2
+release, this is an exceptionally busy time.
+
+> An ImgPlus is required, but none exists
+
+The issue is that ImageJ2 uses the ImgPlus and Dataset classes for images,
+but ImageJ1 uses ij.ImagePlus. And the automatic conversion between these
+types is currently incomplete. The "Enable ImageJ2 data structures" option
+of Edit > Options > ImageJ2 is intended to toggle this auto-conversion, but
+it currently has performance problems, so is off by default.
+
+We have a plan to address these issues, but it will be some time before the
+work can be completed.
+
+Some related issues in the issue tracker:
+* https://github.com/imagej/imagej-legacy/issues/95
+* https://github.com/imagej/imagej-legacy/issues/86
+* https://github.com/imagej/imagej-legacy/issues/31
+* https://github.com/imagej/imagej-legacy/issues/22
+
+In the meantime, it may be easier to use ImageJ 1.x's image data structure:
+
+   @Parameter
+   ImagePlus imp;
+
+Instead of the IJ2/ImgLib2 ones.
+
+Regards,
+Curtis
+
+On Wed, Oct 15, 2014 at 8:52 AM, MEYENHOFER Felix <felix.meyenhofer at unifr.ch
+> wrote:
+
+> Hi
+>
+> during my first attempts of implementing a ij2 plugin I realised that the
+> following point is not clear to me:
+> thanks to the widget demo of the imagej-tutorials I managed to define my
+> UI in the ij2-way. Now during my further research to find a way to easily
+> define an image input and getting the dialog with the Parameter decorator I
+> found examples like
+>
+>         @Parameter(type = ItemIO.INPUT)
+>         private ImgPlus<FloatType> img;
+> or
+>         @Parameter(type = ItemIO.INPUT)
+>         private Dataset ds;
+>
+> but when running such code I get a warning-dialog saying; ?An ImgPlus is
+> required, but none exists?
+> So I open an image and run  the plugin again. The same dialog appears
+> again.
+> All the other types work well (String, File, etc.). Is this a bug or am I
+> missing something.
+>
+> Best regards,
+>
+> Felix
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20141030/57bfec2a/attachment.html>
+
+From saalfelds at janelia.hhmi.org  Thu Oct 30 12:57:16 2014
+From: saalfelds at janelia.hhmi.org (Stephan Saalfeld)
+Date: Thu, 30 Oct 2014 13:57:16 -0400
+Subject: [ImageJ-devel] [fiji-devel] Lock-free bit fields,
+ was Re:  What's left to do for ImgLib2
+In-Reply-To: <64305BD8-28C0-4122-9BD5-F46022B01B76@mpi-cbg.de>
+References: <CADN69y=y-=F3OMOCk0YJ-7d-vM=_c7c7mTDc2t12FtsW+0JRvw@mail.gmail.com>
+	<0C7FE0E8-625A-421E-9FCF-0199C459C1E8@mpi-cbg.de>
+	<CADN69ymc976pOxJe8ztXPm=8gLHe449Ns2NcRRzqCx0WX3dnHQ@mail.gmail.com>
+	<CADN69ymoXLykX6Q_pdOjh5wk=Kit7=CA7VZJRk6Tej-TxSZJzQ@mail.gmail.com>
+	<CCF0FAA8-F1E8-4793-A184-E65B7FF86BA6@mpi-cbg.de>
+	<D169F783-E0C3-4F32-B9A7-E32AB35BAE7C@mpi-cbg.de>
+	<alpine.DEB.1.00.1410301043520.990@s15462909.onlinehome-server.info>
+	<5452425D.9060609@univ-paris-diderot.fr>
+	<1414682291.14882.136.camel@saalfelds-ws1.janelia.priv>
+	<64305BD8-28C0-4122-9BD5-F46022B01B76@mpi-cbg.de>
+Message-ID: <1414691836.5163.23.camel@saalfeld-helix>
+
+Hi Tobias,
+
+I agree that the constraint is easier if the fraction reduces to an
+integer.  However, it's not exactly the same for fraction=1 or
+fraction>1 either.  It would be great if we could identify a common
+scheme that covers all cases without much interference.
+
+Is may be a disk-based, memory cached CellImg the same thing as a
+fractioned NativeImg?  Writing into different pixels in the same cell
+may lead to confusing results when written to disk.
+
+What about a method in RandomAccess that returns an `unsafe' interval
+for its location?  Generally, that would be (1^n), in case of fraction
+types, it would be the box surrounding all pixels served by the same
+primitive type (which is horrible at the end of a row or cell-row where
+pixels in the next row are affected), and in case of cached cells it
+could be the cell.
+
+With a method of this flavor, we can make educated decisions on
+construction time of the multi-threaded code that, internally, would not
+synchronize, i.e. be fast.
+
+Best,
+Stephan
+
+
+
+
+On Thu, 2014-10-30 at 18:29 +0100, Tobias Pietzsch wrote:
+> Hi Stephan,
+> 
+> I think it would be nice to have getLock() but I also think it will be rarely needed in practice.
+> 
+> We must be careful not to conflate two problems here:
+> 
+> The first one is that writes to e.g. ComplexType are not atomic and therefore strange things may happen if two ComplexTypes are used that actually refer to the same ComplexType pixel value in the image.
+> As Albert suggested, algorithms that need this feature need to take special care to synchronize access.
+> However, for many parallelizable algorithms this is not actually a problem. In most image-to-image operations (e.g. FFT, convolution, etc?) every output pixel is written only once by only one thread. Threads maybe read the same input pixels, but reading is fine.
+> The getLock() method would be a welcome addition for those algorithms that do not follow this pattern and need to synchronize.
+> 
+> The second problem is different. For BitType, writes to BitType pixels at different locations in the image may influence each other. And this should be avoided by default in my opinion.
+> 
+> I think: ?You are safe as long as multiple threads write to different pixels? is a good contract to have.
+> Diverging from that with BitType, Unsigned12BitType, etc would add overhead for many algorithms that is in most cases not required (e.g. for FloatType, ComplexDoubleType, etc. the synchronization overhead would be wasted).
+> 
+> best regards,
+> Tobias
+> 
+> 
+> 
+> On 30 Oct 2014, at 16:18, Stephan Saalfeld <saalfelds at janelia.hhmi.org> wrote:
+> 
+> > Thanks for the articles!
+> > 
+> > I have more comments on the matter.  In fact, all types have the same
+> > problem.  Even for a non-native ComplexType read and write would not be
+> > atomic and thus not thread-safe.  The problem is that, for non-native
+> > types, it is sufficient for multi-threaded code to synchronize on the
+> > type instance itself.  For native types (e.g. ComplexDoubleType) and for
+> > other proxy mechanisms such as Composites or ReadWriteConverters, this
+> > doesn't work.  How about a getLock() (or getMonitor()) method as part of
+> > Type whose purpose is to return a lock that enables synchronization on
+> > that particular's type content.  Should that lock be constant for a
+> > type's lifetime?  Proxy types for which access is atomic could return
+> > themselves, just as Types that actually contain their content.
+> > 
+> > I like Tobias' proposal with a Hash of locks for NativeTypes, something
+> > similar is necessary for other writable proxies.
+> > 
+> > Best,
+> > Stephan
+> > 
+> > 
+> > 
+> > On Thu, 2014-10-30 at 14:51 +0100, Adrian Daerr wrote:
+> >> Hi,
+> >> 
+> >>>> By lock-free I mean setting the value and then checking whether the
+> >>>> value is actually what was expected (and if not, retry).
+> >>> 
+> >>> A na?ve implementation of this technique could easily result in a very
+> >>> nasty ping-pong effect: if one thread tries to clear a bit and the next
+> >>> thread tries to set it, it is very to run into a trap when not leaving a
+> >>> way for one thread to win.
+> >>> 
+> >>> The safest way to resolve this issue is to reinstate the lock-on-write
+> >>> method that was in place earlier
+> >> [..]
+> >>> 
+> >>> An alternative might be to give up lock-freedom in favor of wait-freedom
+> >>> [*2*]. In this regard, a more performant version might be
+> >> [..]
+> >>> to use Optimistic Concurrency Control [*3*]:
+> >> 
+> >>> 	final long original = dataAccess.getValue(i1);
+> >>> 	if ( value ) {
+> >>> 		final long newValue = original | (1l << shift);
+> >>> 		dataAccess.setValue(i1, newValue);
+> >>> 		if ( newValue != dataAccess.getValue( i1 ) ) {
+> >>> 			synchronized (dataAccess) {
+> >>> 				dataAccess.setValue( i1, dataAccess.getValue(i1) | (1l << shift) );
+> >>> 			}
+> >>> 		}
+> >>> 	}
+> >> [snip]
+> >> 
+> >> Hum, I do not if this is really a comparable situation, but it looks a 
+> >> lot like the double-checked locking (DCL) idiom, which is broken [1].
+> >> 
+> >> FWIW,
+> >> cheers and good luck,
+> >> Adrian
+> >> 
+> >> 
+> >> [1]
+> >> TL;DR : You cannot have as-if-serial semantics across threads unless you 
+> >> use synchronized.
+> >> 
+> >> "Double-checked locking: Clever, but broken
+> >> Do you know what synchronized really means?" By Brian Goetz
+> >> http://www.javaworld.com/article/2074979/java-concurrency/double-checked-locking--clever--but-broken.html
+> >> 
+> >> and its follow-up article
+> >> 
+> >> "Can double-checked locking be fixed?
+> >> No matter how you rig it, double-checked locking still fails" (also by 
+> >> Brian Goetz)
+> >> http://www.javaworld.com/article/2075306/java-concurrency/can-double-checked-locking-be-fixed-.html
+> > 
+> 
+
+
+
+From adrian.daerr at univ-paris-diderot.fr  Thu Oct 30 13:11:39 2014
+From: adrian.daerr at univ-paris-diderot.fr (Adrian Daerr)
+Date: Thu, 30 Oct 2014 19:11:39 +0100
+Subject: [ImageJ-devel] [fiji-devel] Lock-free bit fields,
+ was Re:  What's left to do for ImgLib2
+In-Reply-To: <alpine.DEB.1.00.1410301559400.990@s15462909.onlinehome-server.info>
+References: <CADN69y=y-=F3OMOCk0YJ-7d-vM=_c7c7mTDc2t12FtsW+0JRvw@mail.gmail.com>
+	<0C7FE0E8-625A-421E-9FCF-0199C459C1E8@mpi-cbg.de>
+	<CADN69ymc976pOxJe8ztXPm=8gLHe449Ns2NcRRzqCx0WX3dnHQ@mail.gmail.com>
+	<CADN69ymoXLykX6Q_pdOjh5wk=Kit7=CA7VZJRk6Tej-TxSZJzQ@mail.gmail.com>
+	<CCF0FAA8-F1E8-4793-A184-E65B7FF86BA6@mpi-cbg.de>
+	<D169F783-E0C3-4F32-B9A7-E32AB35BAE7C@mpi-cbg.de>
+	<alpine.DEB.1.00.1410301043520.990@s15462909.onlinehome-server.info>
+	<5452425D.9060609@univ-paris-diderot.fr>
+	<alpine.DEB.1.00.1410301559400.990@s15462909.onlinehome-server.info>
+Message-ID: <54527F5B.4020900@univ-paris-diderot.fr>
+
+Hi Johannes,
+
+> Thank you for your concerns. Let me take the time for a proper discussion
+> rather than just linking to two articles of a highly respected developer.
+
+Sorry my mail was really minimalistic. I had a lot of other stuff to do 
+and no time to go into details, but thought even just throwing in these 
+pointers might be usefull rather sooner than later.
+
+> Let's recapitulate the Double-Checked Locking problem for a moment: any
+> non-synchronized access in Java is *not* guaranteed to have the same
+> ordered memory-access as *any* other thread.
+
+The article I point to does seem to make exceptions, which is why I 
+hesitated in claiming that the DCL problem applies here as well. On the 
+second page of the first article for example, Brian Goetz says
+
+| DCL also works with 32-bit primitive values. If the resource field in
+| SomeClass were an integer (but not a long or a double), then
+| SomeClass would behave as expected. However, you cannot use this
+| behavior to fix the problems with DCL when you want to lazily
+| initialize an object reference or more than one primitive value.
+
+I doubt using DCL on array elements are within those lucky cases 
+however, even if they were a 32-bit primitive values. I have already 
+extended way beyond my competences though, so I'll stop here.
+
+best regards,
+Adrian
+
+
+From pietzsch at mpi-cbg.de  Thu Oct 30 13:39:49 2014
+From: pietzsch at mpi-cbg.de (Tobias Pietzsch)
+Date: Thu, 30 Oct 2014 19:39:49 +0100
+Subject: [ImageJ-devel] [fiji-devel] Lock-free bit fields,
+	was Re:  What's left to do for ImgLib2
+In-Reply-To: <1414691836.5163.23.camel@saalfeld-helix>
+References: <CADN69y=y-=F3OMOCk0YJ-7d-vM=_c7c7mTDc2t12FtsW+0JRvw@mail.gmail.com>
+	<0C7FE0E8-625A-421E-9FCF-0199C459C1E8@mpi-cbg.de>
+	<CADN69ymc976pOxJe8ztXPm=8gLHe449Ns2NcRRzqCx0WX3dnHQ@mail.gmail.com>
+	<CADN69ymoXLykX6Q_pdOjh5wk=Kit7=CA7VZJRk6Tej-TxSZJzQ@mail.gmail.com>
+	<CCF0FAA8-F1E8-4793-A184-E65B7FF86BA6@mpi-cbg.de>
+	<D169F783-E0C3-4F32-B9A7-E32AB35BAE7C@mpi-cbg.de>
+	<alpine.DEB.1.00.1410301043520.990@s15462909.onlinehome-server.info>
+	<5452425D.9060609@univ-paris-diderot.fr>
+	<1414682291.14882.136.camel@saalfelds-ws1.janelia.priv>
+	<64305BD8-28C0-4122-9BD5-F46022B01B76@mpi-cbg.de>
+	<1414691836.5163.23.camel@saalfeld-helix>
+Message-ID: <9CFA8663-B0D3-4223-8839-E5D40C73B79C@mpi-cbg.de>
+
+Hi Stephan,
+
+Getting the ?unsafe? interval for a specific location is certainly possible. But how would that be effectively used in an algorithm if the interval changes from location to location?
+Alternatively, RandomAccessibles and IterableIntervals could offer methods to chop them up into ?safe? parts for multithreading. However there are many different ?safe' subdivision and it depends on the algorithm which one is preferrable. Also these subdivisions (as well as the ?unsafe? interval) would need to be propagated correctly through Views and RealViews which might get rather involved.
+I?m happy to discuss ideas in this direction, but I don?t think it is a viable short-term solution.
+
+For practical reasons, I would stick with ?You are safe as long as multiple threads write to different pixels?.
+This is the contract that we have been implicitly following all along. A lot of code relies on it. Even if we come up with a nice alternative, we do not have the man-power to fix all code that relies on the old contract and that we would break along the way. Therefore my preferred short-term solution is to synchronize( dataAccess ){?} the fractioned-type writes, as Johannes suggested.
+
+best regards,
+Tobias
+
+On 30 Oct 2014, at 18:57, Stephan Saalfeld <saalfelds at janelia.hhmi.org> wrote:
+
+> Hi Tobias,
+> 
+> I agree that the constraint is easier if the fraction reduces to an
+> integer.  However, it's not exactly the same for fraction=1 or
+> fraction>1 either.  It would be great if we could identify a common
+> scheme that covers all cases without much interference.
+> 
+> Is may be a disk-based, memory cached CellImg the same thing as a
+> fractioned NativeImg?  Writing into different pixels in the same cell
+> may lead to confusing results when written to disk.
+> 
+> What about a method in RandomAccess that returns an `unsafe' interval
+> for its location?  Generally, that would be (1^n), in case of fraction
+> types, it would be the box surrounding all pixels served by the same
+> primitive type (which is horrible at the end of a row or cell-row where
+> pixels in the next row are affected), and in case of cached cells it
+> could be the cell.
+> 
+> With a method of this flavor, we can make educated decisions on
+> construction time of the multi-threaded code that, internally, would not
+> synchronize, i.e. be fast.
+> 
+> Best,
+> Stephan
+> 
+> 
+> 
+> 
+> On Thu, 2014-10-30 at 18:29 +0100, Tobias Pietzsch wrote:
+>> Hi Stephan,
+>> 
+>> I think it would be nice to have getLock() but I also think it will be rarely needed in practice.
+>> 
+>> We must be careful not to conflate two problems here:
+>> 
+>> The first one is that writes to e.g. ComplexType are not atomic and therefore strange things may happen if two ComplexTypes are used that actually refer to the same ComplexType pixel value in the image.
+>> As Albert suggested, algorithms that need this feature need to take special care to synchronize access.
+>> However, for many parallelizable algorithms this is not actually a problem. In most image-to-image operations (e.g. FFT, convolution, etc?) every output pixel is written only once by only one thread. Threads maybe read the same input pixels, but reading is fine.
+>> The getLock() method would be a welcome addition for those algorithms that do not follow this pattern and need to synchronize.
+>> 
+>> The second problem is different. For BitType, writes to BitType pixels at different locations in the image may influence each other. And this should be avoided by default in my opinion.
+>> 
+>> I think: ?You are safe as long as multiple threads write to different pixels? is a good contract to have.
+>> Diverging from that with BitType, Unsigned12BitType, etc would add overhead for many algorithms that is in most cases not required (e.g. for FloatType, ComplexDoubleType, etc. the synchronization overhead would be wasted).
+>> 
+>> best regards,
+>> Tobias
+>> 
+>> 
+>> 
+>> On 30 Oct 2014, at 16:18, Stephan Saalfeld <saalfelds at janelia.hhmi.org> wrote:
+>> 
+>>> Thanks for the articles!
+>>> 
+>>> I have more comments on the matter.  In fact, all types have the same
+>>> problem.  Even for a non-native ComplexType read and write would not be
+>>> atomic and thus not thread-safe.  The problem is that, for non-native
+>>> types, it is sufficient for multi-threaded code to synchronize on the
+>>> type instance itself.  For native types (e.g. ComplexDoubleType) and for
+>>> other proxy mechanisms such as Composites or ReadWriteConverters, this
+>>> doesn't work.  How about a getLock() (or getMonitor()) method as part of
+>>> Type whose purpose is to return a lock that enables synchronization on
+>>> that particular's type content.  Should that lock be constant for a
+>>> type's lifetime?  Proxy types for which access is atomic could return
+>>> themselves, just as Types that actually contain their content.
+>>> 
+>>> I like Tobias' proposal with a Hash of locks for NativeTypes, something
+>>> similar is necessary for other writable proxies.
+>>> 
+>>> Best,
+>>> Stephan
+>>> 
+>>> 
+>>> 
+>>> On Thu, 2014-10-30 at 14:51 +0100, Adrian Daerr wrote:
+>>>> Hi,
+>>>> 
+>>>>>> By lock-free I mean setting the value and then checking whether the
+>>>>>> value is actually what was expected (and if not, retry).
+>>>>> 
+>>>>> A na?ve implementation of this technique could easily result in a very
+>>>>> nasty ping-pong effect: if one thread tries to clear a bit and the next
+>>>>> thread tries to set it, it is very to run into a trap when not leaving a
+>>>>> way for one thread to win.
+>>>>> 
+>>>>> The safest way to resolve this issue is to reinstate the lock-on-write
+>>>>> method that was in place earlier
+>>>> [..]
+>>>>> 
+>>>>> An alternative might be to give up lock-freedom in favor of wait-freedom
+>>>>> [*2*]. In this regard, a more performant version might be
+>>>> [..]
+>>>>> to use Optimistic Concurrency Control [*3*]:
+>>>> 
+>>>>> 	final long original = dataAccess.getValue(i1);
+>>>>> 	if ( value ) {
+>>>>> 		final long newValue = original | (1l << shift);
+>>>>> 		dataAccess.setValue(i1, newValue);
+>>>>> 		if ( newValue != dataAccess.getValue( i1 ) ) {
+>>>>> 			synchronized (dataAccess) {
+>>>>> 				dataAccess.setValue( i1, dataAccess.getValue(i1) | (1l << shift) );
+>>>>> 			}
+>>>>> 		}
+>>>>> 	}
+>>>> [snip]
+>>>> 
+>>>> Hum, I do not if this is really a comparable situation, but it looks a 
+>>>> lot like the double-checked locking (DCL) idiom, which is broken [1].
+>>>> 
+>>>> FWIW,
+>>>> cheers and good luck,
+>>>> Adrian
+>>>> 
+>>>> 
+>>>> [1]
+>>>> TL;DR : You cannot have as-if-serial semantics across threads unless you 
+>>>> use synchronized.
+>>>> 
+>>>> "Double-checked locking: Clever, but broken
+>>>> Do you know what synchronized really means?" By Brian Goetz
+>>>> http://www.javaworld.com/article/2074979/java-concurrency/double-checked-locking--clever--but-broken.html
+>>>> 
+>>>> and its follow-up article
+>>>> 
+>>>> "Can double-checked locking be fixed?
+>>>> No matter how you rig it, double-checked locking still fails" (also by 
+>>>> Brian Goetz)
+>>>> http://www.javaworld.com/article/2075306/java-concurrency/can-double-checked-locking-be-fixed-.html
+>>> 
+>> 
+> 
+
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20141030/8b00bd71/attachment-0001.pgp>
+
+From ctrueden at wisc.edu  Thu Oct 30 14:48:42 2014
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Thu, 30 Oct 2014 14:48:42 -0500
+Subject: [ImageJ-devel] [fiji-devel] Lock-free bit fields,
+ was Re:  What's left to do for ImgLib2
+In-Reply-To: <545286F6.8060608@janelia.hhmi.org>
+References: <CADN69y=y-=F3OMOCk0YJ-7d-vM=_c7c7mTDc2t12FtsW+0JRvw@mail.gmail.com>
+	<0C7FE0E8-625A-421E-9FCF-0199C459C1E8@mpi-cbg.de>
+	<CADN69ymc976pOxJe8ztXPm=8gLHe449Ns2NcRRzqCx0WX3dnHQ@mail.gmail.com>
+	<CADN69ymoXLykX6Q_pdOjh5wk=Kit7=CA7VZJRk6Tej-TxSZJzQ@mail.gmail.com>
+	<CCF0FAA8-F1E8-4793-A184-E65B7FF86BA6@mpi-cbg.de>
+	<D169F783-E0C3-4F32-B9A7-E32AB35BAE7C@mpi-cbg.de>
+	<alpine.DEB.1.00.1410301043520.990@s15462909.onlinehome-server.info>
+	<5452425D.9060609@univ-paris-diderot.fr>
+	<1414682291.14882.136.camel@saalfelds-ws1.janelia.priv>
+	<64305BD8-28C0-4122-9BD5-F46022B01B76@mpi-cbg.de>
+	<1414691836.5163.23.camel@saalfeld-helix>
+	<9CFA8663-B0D3-4223-8839-E5D40C73B79C@mpi-cbg.de>
+	<545286F6.8060608@janelia.hhmi.org>
+Message-ID: <CADN69y=k=Bs5o4Ki+QPEsnUmtacNm4c-3dZC=W2mpUbixDVPYA@mail.gmail.com>
+
+Hi everyone,
+
+Thanks very much for the robust discussion!
+
+I don't have a strong opinion on the BitType concurrency issue, but just
+wanted to let you know how I am temporarily resolving this in the ImageJ
+OPS project:
+
+https://github.com/imagej/imagej-ops/commit/25c68c62a69a0fa82fc41908c537615b6b964215
+
+This hardcodes the ApplyConstantThreshold op to use the single-threaded
+implementation rather than the faster multi-threaded one, until such time
+as the multithreading of BitType access is resolved.
+
+I think that will get us unstuck for now, so we can keep moving forward
+with component releases.
+
+Cheers,
+Curtis
+
+
+On Thu, Oct 30, 2014 at 1:44 PM, Albert Cardona <cardonaa at janelia.hhmi.org>
+wrote:
+
+> Hi Tobias,
+>
+> woudn't the easiest be to rename the current BitType instances as
+> Unsynchronized+name, and then the actual class extend the corresponding
+> unsynchronized class, with one method overriden to synchronize access to
+> the pixels?
+>
+> This way one gets both: the default is safe (synchronized), and if one
+> knows what one is doing, one can get the Unsynchronized* version to avoid
+> the cost.
+>
+> Albert
+>
+>
+>
+>
+> On 10/30/2014 02:39 PM, Tobias Pietzsch wrote:
+>
+>> Hi Stephan,
+>>
+>> Getting the ?unsafe? interval for a specific location is certainly
+>> possible. But how would that be effectively used in an algorithm if the
+>> interval changes from location to location?
+>> Alternatively, RandomAccessibles and IterableIntervals could offer
+>> methods to chop them up into ?safe? parts for multithreading. However there
+>> are many different ?safe' subdivision and it depends on the algorithm which
+>> one is preferrable. Also these subdivisions (as well as the ?unsafe?
+>> interval) would need to be propagated correctly through Views and RealViews
+>> which might get rather involved.
+>> I?m happy to discuss ideas in this direction, but I don?t think it is a
+>> viable short-term solution.
+>>
+>> For practical reasons, I would stick with ?You are safe as long as
+>> multiple threads write to different pixels?.
+>> This is the contract that we have been implicitly following all along. A
+>> lot of code relies on it. Even if we come up with a nice alternative, we do
+>> not have the man-power to fix all code that relies on the old contract and
+>> that we would break along the way. Therefore my preferred short-term
+>> solution is to synchronize( dataAccess ){?} the fractioned-type writes, as
+>> Johannes suggested.
+>>
+>> best regards,
+>> Tobias
+>>
+>> On 30 Oct 2014, at 18:57, Stephan Saalfeld <saalfelds at janelia.hhmi.org>
+>> wrote:
+>>
+>>  Hi Tobias,
+>>>
+>>> I agree that the constraint is easier if the fraction reduces to an
+>>> integer.  However, it's not exactly the same for fraction=1 or
+>>> fraction>1 either.  It would be great if we could identify a common
+>>> scheme that covers all cases without much interference.
+>>>
+>>> Is may be a disk-based, memory cached CellImg the same thing as a
+>>> fractioned NativeImg?  Writing into different pixels in the same cell
+>>> may lead to confusing results when written to disk.
+>>>
+>>> What about a method in RandomAccess that returns an `unsafe' interval
+>>> for its location?  Generally, that would be (1^n), in case of fraction
+>>> types, it would be the box surrounding all pixels served by the same
+>>> primitive type (which is horrible at the end of a row or cell-row where
+>>> pixels in the next row are affected), and in case of cached cells it
+>>> could be the cell.
+>>>
+>>> With a method of this flavor, we can make educated decisions on
+>>> construction time of the multi-threaded code that, internally, would not
+>>> synchronize, i.e. be fast.
+>>>
+>>> Best,
+>>> Stephan
+>>>
+>>>
+>>>
+>>>
+>>> On Thu, 2014-10-30 at 18:29 +0100, Tobias Pietzsch wrote:
+>>>
+>>>> Hi Stephan,
+>>>>
+>>>> I think it would be nice to have getLock() but I also think it will be
+>>>> rarely needed in practice.
+>>>>
+>>>> We must be careful not to conflate two problems here:
+>>>>
+>>>> The first one is that writes to e.g. ComplexType are not atomic and
+>>>> therefore strange things may happen if two ComplexTypes are used that
+>>>> actually refer to the same ComplexType pixel value in the image.
+>>>> As Albert suggested, algorithms that need this feature need to take
+>>>> special care to synchronize access.
+>>>> However, for many parallelizable algorithms this is not actually a
+>>>> problem. In most image-to-image operations (e.g. FFT, convolution, etc?)
+>>>> every output pixel is written only once by only one thread. Threads maybe
+>>>> read the same input pixels, but reading is fine.
+>>>> The getLock() method would be a welcome addition for those algorithms
+>>>> that do not follow this pattern and need to synchronize.
+>>>>
+>>>> The second problem is different. For BitType, writes to BitType pixels
+>>>> at different locations in the image may influence each other. And this
+>>>> should be avoided by default in my opinion.
+>>>>
+>>>> I think: ?You are safe as long as multiple threads write to different
+>>>> pixels? is a good contract to have.
+>>>> Diverging from that with BitType, Unsigned12BitType, etc would add
+>>>> overhead for many algorithms that is in most cases not required (e.g. for
+>>>> FloatType, ComplexDoubleType, etc. the synchronization overhead would be
+>>>> wasted).
+>>>>
+>>>> best regards,
+>>>> Tobias
+>>>>
+>>>>
+>>>>
+>>>> On 30 Oct 2014, at 16:18, Stephan Saalfeld <saalfelds at janelia.hhmi.org>
+>>>> wrote:
+>>>>
+>>>>  Thanks for the articles!
+>>>>>
+>>>>> I have more comments on the matter.  In fact, all types have the same
+>>>>> problem.  Even for a non-native ComplexType read and write would not be
+>>>>> atomic and thus not thread-safe.  The problem is that, for non-native
+>>>>> types, it is sufficient for multi-threaded code to synchronize on the
+>>>>> type instance itself.  For native types (e.g. ComplexDoubleType) and
+>>>>> for
+>>>>> other proxy mechanisms such as Composites or ReadWriteConverters, this
+>>>>> doesn't work.  How about a getLock() (or getMonitor()) method as part
+>>>>> of
+>>>>> Type whose purpose is to return a lock that enables synchronization on
+>>>>> that particular's type content.  Should that lock be constant for a
+>>>>> type's lifetime?  Proxy types for which access is atomic could return
+>>>>> themselves, just as Types that actually contain their content.
+>>>>>
+>>>>> I like Tobias' proposal with a Hash of locks for NativeTypes, something
+>>>>> similar is necessary for other writable proxies.
+>>>>>
+>>>>> Best,
+>>>>> Stephan
+>>>>>
+>>>>>
+>>>>>
+>>>>> On Thu, 2014-10-30 at 14:51 +0100, Adrian Daerr wrote:
+>>>>>
+>>>>>> Hi,
+>>>>>>
+>>>>>>  By lock-free I mean setting the value and then checking whether the
+>>>>>>>> value is actually what was expected (and if not, retry).
+>>>>>>>>
+>>>>>>>
+>>>>>>> A na?ve implementation of this technique could easily result in a
+>>>>>>> very
+>>>>>>> nasty ping-pong effect: if one thread tries to clear a bit and the
+>>>>>>> next
+>>>>>>> thread tries to set it, it is very to run into a trap when not
+>>>>>>> leaving a
+>>>>>>> way for one thread to win.
+>>>>>>>
+>>>>>>> The safest way to resolve this issue is to reinstate the
+>>>>>>> lock-on-write
+>>>>>>> method that was in place earlier
+>>>>>>>
+>>>>>> [..]
+>>>>>>
+>>>>>>>
+>>>>>>> An alternative might be to give up lock-freedom in favor of
+>>>>>>> wait-freedom
+>>>>>>> [*2*]. In this regard, a more performant version might be
+>>>>>>>
+>>>>>> [..]
+>>>>>>
+>>>>>>> to use Optimistic Concurrency Control [*3*]:
+>>>>>>>
+>>>>>>
+>>>>>>          final long original = dataAccess.getValue(i1);
+>>>>>>>         if ( value ) {
+>>>>>>>                 final long newValue = original | (1l << shift);
+>>>>>>>                 dataAccess.setValue(i1, newValue);
+>>>>>>>                 if ( newValue != dataAccess.getValue( i1 ) ) {
+>>>>>>>                         synchronized (dataAccess) {
+>>>>>>>                                 dataAccess.setValue( i1,
+>>>>>>> dataAccess.getValue(i1) | (1l << shift) );
+>>>>>>>                         }
+>>>>>>>                 }
+>>>>>>>         }
+>>>>>>>
+>>>>>> [snip]
+>>>>>>
+>>>>>> Hum, I do not if this is really a comparable situation, but it looks a
+>>>>>> lot like the double-checked locking (DCL) idiom, which is broken [1].
+>>>>>>
+>>>>>> FWIW,
+>>>>>> cheers and good luck,
+>>>>>> Adrian
+>>>>>>
+>>>>>>
+>>>>>> [1]
+>>>>>> TL;DR : You cannot have as-if-serial semantics across threads unless
+>>>>>> you
+>>>>>> use synchronized.
+>>>>>>
+>>>>>> "Double-checked locking: Clever, but broken
+>>>>>> Do you know what synchronized really means?" By Brian Goetz
+>>>>>> http://www.javaworld.com/article/2074979/java-
+>>>>>> concurrency/double-checked-locking--clever--but-broken.html
+>>>>>>
+>>>>>> and its follow-up article
+>>>>>>
+>>>>>> "Can double-checked locking be fixed?
+>>>>>> No matter how you rig it, double-checked locking still fails" (also by
+>>>>>> Brian Goetz)
+>>>>>> http://www.javaworld.com/article/2075306/java-concurrency/can-double-
+>>>>>> checked-locking-be-fixed-.html
+>>>>>>
+>>>>>
+>>>>>
+>>>>
+>>>
+>>
+> --
+> --
+> Please avoid top-posting, and please make sure to reply-to-all!
+>
+> Mailing list web interface: http://groups.google.com/group/fiji-devel
+>
+> --- You received this message because you are subscribed to the Google
+> Groups "Fiji-devel" group.
+> To unsubscribe from this group and stop receiving emails from it, send an
+> email to fiji-devel+unsubscribe at googlegroups.com.
+> For more options, visit https://groups.google.com/d/optout.
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20141030/f0076d87/attachment.html>
+
+From cardonaa at janelia.hhmi.org  Thu Oct 30 13:44:06 2014
+From: cardonaa at janelia.hhmi.org (Albert Cardona)
+Date: Thu, 30 Oct 2014 14:44:06 -0400
+Subject: [ImageJ-devel] [fiji-devel] Lock-free bit fields,
+ was Re:  What's left to do for ImgLib2
+In-Reply-To: <9CFA8663-B0D3-4223-8839-E5D40C73B79C@mpi-cbg.de>
+References: <CADN69y=y-=F3OMOCk0YJ-7d-vM=_c7c7mTDc2t12FtsW+0JRvw@mail.gmail.com>
+	<0C7FE0E8-625A-421E-9FCF-0199C459C1E8@mpi-cbg.de>
+	<CADN69ymc976pOxJe8ztXPm=8gLHe449Ns2NcRRzqCx0WX3dnHQ@mail.gmail.com>
+	<CADN69ymoXLykX6Q_pdOjh5wk=Kit7=CA7VZJRk6Tej-TxSZJzQ@mail.gmail.com>
+	<CCF0FAA8-F1E8-4793-A184-E65B7FF86BA6@mpi-cbg.de>
+	<D169F783-E0C3-4F32-B9A7-E32AB35BAE7C@mpi-cbg.de>
+	<alpine.DEB.1.00.1410301043520.990@s15462909.onlinehome-server.info>
+	<5452425D.9060609@univ-paris-diderot.fr>
+	<1414682291.14882.136.camel@saalfelds-ws1.janelia.priv>
+	<64305BD8-28C0-4122-9BD5-F46022B01B76@mpi-cbg.de>
+	<1414691836.5163.23.camel@saalfeld-helix>
+	<9CFA8663-B0D3-4223-8839-E5D40C73B79C@mpi-cbg.de>
+Message-ID: <545286F6.8060608@janelia.hhmi.org>
+
+Hi Tobias,
+
+woudn't the easiest be to rename the current BitType instances as 
+Unsynchronized+name, and then the actual class extend the corresponding 
+unsynchronized class, with one method overriden to synchronize access to 
+the pixels?
+
+This way one gets both: the default is safe (synchronized), and if one 
+knows what one is doing, one can get the Unsynchronized* version to 
+avoid the cost.
+
+Albert
+
+
+
+On 10/30/2014 02:39 PM, Tobias Pietzsch wrote:
+> Hi Stephan,
+>
+> Getting the ?unsafe? interval for a specific location is certainly possible. But how would that be effectively used in an algorithm if the interval changes from location to location?
+> Alternatively, RandomAccessibles and IterableIntervals could offer methods to chop them up into ?safe? parts for multithreading. However there are many different ?safe' subdivision and it depends on the algorithm which one is preferrable. Also these subdivisions (as well as the ?unsafe? interval) would need to be propagated correctly through Views and RealViews which might get rather involved.
+> I?m happy to discuss ideas in this direction, but I don?t think it is a viable short-term solution.
+>
+> For practical reasons, I would stick with ?You are safe as long as multiple threads write to different pixels?.
+> This is the contract that we have been implicitly following all along. A lot of code relies on it. Even if we come up with a nice alternative, we do not have the man-power to fix all code that relies on the old contract and that we would break along the way. Therefore my preferred short-term solution is to synchronize( dataAccess ){?} the fractioned-type writes, as Johannes suggested.
+>
+> best regards,
+> Tobias
+>
+> On 30 Oct 2014, at 18:57, Stephan Saalfeld <saalfelds at janelia.hhmi.org> wrote:
+>
+>> Hi Tobias,
+>>
+>> I agree that the constraint is easier if the fraction reduces to an
+>> integer.  However, it's not exactly the same for fraction=1 or
+>> fraction>1 either.  It would be great if we could identify a common
+>> scheme that covers all cases without much interference.
+>>
+>> Is may be a disk-based, memory cached CellImg the same thing as a
+>> fractioned NativeImg?  Writing into different pixels in the same cell
+>> may lead to confusing results when written to disk.
+>>
+>> What about a method in RandomAccess that returns an `unsafe' interval
+>> for its location?  Generally, that would be (1^n), in case of fraction
+>> types, it would be the box surrounding all pixels served by the same
+>> primitive type (which is horrible at the end of a row or cell-row where
+>> pixels in the next row are affected), and in case of cached cells it
+>> could be the cell.
+>>
+>> With a method of this flavor, we can make educated decisions on
+>> construction time of the multi-threaded code that, internally, would not
+>> synchronize, i.e. be fast.
+>>
+>> Best,
+>> Stephan
+>>
+>>
+>>
+>>
+>> On Thu, 2014-10-30 at 18:29 +0100, Tobias Pietzsch wrote:
+>>> Hi Stephan,
+>>>
+>>> I think it would be nice to have getLock() but I also think it will be rarely needed in practice.
+>>>
+>>> We must be careful not to conflate two problems here:
+>>>
+>>> The first one is that writes to e.g. ComplexType are not atomic and therefore strange things may happen if two ComplexTypes are used that actually refer to the same ComplexType pixel value in the image.
+>>> As Albert suggested, algorithms that need this feature need to take special care to synchronize access.
+>>> However, for many parallelizable algorithms this is not actually a problem. In most image-to-image operations (e.g. FFT, convolution, etc?) every output pixel is written only once by only one thread. Threads maybe read the same input pixels, but reading is fine.
+>>> The getLock() method would be a welcome addition for those algorithms that do not follow this pattern and need to synchronize.
+>>>
+>>> The second problem is different. For BitType, writes to BitType pixels at different locations in the image may influence each other. And this should be avoided by default in my opinion.
+>>>
+>>> I think: ?You are safe as long as multiple threads write to different pixels? is a good contract to have.
+>>> Diverging from that with BitType, Unsigned12BitType, etc would add overhead for many algorithms that is in most cases not required (e.g. for FloatType, ComplexDoubleType, etc. the synchronization overhead would be wasted).
+>>>
+>>> best regards,
+>>> Tobias
+>>>
+>>>
+>>>
+>>> On 30 Oct 2014, at 16:18, Stephan Saalfeld <saalfelds at janelia.hhmi.org> wrote:
+>>>
+>>>> Thanks for the articles!
+>>>>
+>>>> I have more comments on the matter.  In fact, all types have the same
+>>>> problem.  Even for a non-native ComplexType read and write would not be
+>>>> atomic and thus not thread-safe.  The problem is that, for non-native
+>>>> types, it is sufficient for multi-threaded code to synchronize on the
+>>>> type instance itself.  For native types (e.g. ComplexDoubleType) and for
+>>>> other proxy mechanisms such as Composites or ReadWriteConverters, this
+>>>> doesn't work.  How about a getLock() (or getMonitor()) method as part of
+>>>> Type whose purpose is to return a lock that enables synchronization on
+>>>> that particular's type content.  Should that lock be constant for a
+>>>> type's lifetime?  Proxy types for which access is atomic could return
+>>>> themselves, just as Types that actually contain their content.
+>>>>
+>>>> I like Tobias' proposal with a Hash of locks for NativeTypes, something
+>>>> similar is necessary for other writable proxies.
+>>>>
+>>>> Best,
+>>>> Stephan
+>>>>
+>>>>
+>>>>
+>>>> On Thu, 2014-10-30 at 14:51 +0100, Adrian Daerr wrote:
+>>>>> Hi,
+>>>>>
+>>>>>>> By lock-free I mean setting the value and then checking whether the
+>>>>>>> value is actually what was expected (and if not, retry).
+>>>>>>
+>>>>>> A na?ve implementation of this technique could easily result in a very
+>>>>>> nasty ping-pong effect: if one thread tries to clear a bit and the next
+>>>>>> thread tries to set it, it is very to run into a trap when not leaving a
+>>>>>> way for one thread to win.
+>>>>>>
+>>>>>> The safest way to resolve this issue is to reinstate the lock-on-write
+>>>>>> method that was in place earlier
+>>>>> [..]
+>>>>>>
+>>>>>> An alternative might be to give up lock-freedom in favor of wait-freedom
+>>>>>> [*2*]. In this regard, a more performant version might be
+>>>>> [..]
+>>>>>> to use Optimistic Concurrency Control [*3*]:
+>>>>>
+>>>>>> 	final long original = dataAccess.getValue(i1);
+>>>>>> 	if ( value ) {
+>>>>>> 		final long newValue = original | (1l << shift);
+>>>>>> 		dataAccess.setValue(i1, newValue);
+>>>>>> 		if ( newValue != dataAccess.getValue( i1 ) ) {
+>>>>>> 			synchronized (dataAccess) {
+>>>>>> 				dataAccess.setValue( i1, dataAccess.getValue(i1) | (1l << shift) );
+>>>>>> 			}
+>>>>>> 		}
+>>>>>> 	}
+>>>>> [snip]
+>>>>>
+>>>>> Hum, I do not if this is really a comparable situation, but it looks a
+>>>>> lot like the double-checked locking (DCL) idiom, which is broken [1].
+>>>>>
+>>>>> FWIW,
+>>>>> cheers and good luck,
+>>>>> Adrian
+>>>>>
+>>>>>
+>>>>> [1]
+>>>>> TL;DR : You cannot have as-if-serial semantics across threads unless you
+>>>>> use synchronized.
+>>>>>
+>>>>> "Double-checked locking: Clever, but broken
+>>>>> Do you know what synchronized really means?" By Brian Goetz
+>>>>> http://www.javaworld.com/article/2074979/java-concurrency/double-checked-locking--clever--but-broken.html
+>>>>>
+>>>>> and its follow-up article
+>>>>>
+>>>>> "Can double-checked locking be fixed?
+>>>>> No matter how you rig it, double-checked locking still fails" (also by
+>>>>> Brian Goetz)
+>>>>> http://www.javaworld.com/article/2075306/java-concurrency/can-double-checked-locking-be-fixed-.html
+>>>>
+>>>
+>>
+>
+
+
+
+From pietzsch at mpi-cbg.de  Fri Oct 31 12:20:52 2014
+From: pietzsch at mpi-cbg.de (Tobias Pietzsch)
+Date: Fri, 31 Oct 2014 18:20:52 +0100
+Subject: [ImageJ-devel] [fiji-devel] Lock-free bit fields,
+	was Re:  What's left to do for ImgLib2
+In-Reply-To: <545286F6.8060608@janelia.hhmi.org>
+References: <CADN69y=y-=F3OMOCk0YJ-7d-vM=_c7c7mTDc2t12FtsW+0JRvw@mail.gmail.com>
+	<0C7FE0E8-625A-421E-9FCF-0199C459C1E8@mpi-cbg.de>
+	<CADN69ymc976pOxJe8ztXPm=8gLHe449Ns2NcRRzqCx0WX3dnHQ@mail.gmail.com>
+	<CADN69ymoXLykX6Q_pdOjh5wk=Kit7=CA7VZJRk6Tej-TxSZJzQ@mail.gmail.com>
+	<CCF0FAA8-F1E8-4793-A184-E65B7FF86BA6@mpi-cbg.de>
+	<D169F783-E0C3-4F32-B9A7-E32AB35BAE7C@mpi-cbg.de>
+	<alpine.DEB.1.00.1410301043520.990@s15462909.onlinehome-server.info>
+	<5452425D.9060609@univ-paris-diderot.fr>
+	<1414682291.14882.136.camel@saalfelds-ws1.janelia.priv>
+	<64305BD8-28C0-4122-9BD5-F46022B01B76@mpi-cbg.de>
+	<1414691836.5163.23.camel@saalfeld-helix>
+	<9CFA8663-B0D3-4223-8839-E5D40C73B79C@mpi-cbg.de>
+	<545286F6.8060608@janelia.hhmi.org>
+Message-ID: <64D882A4-F3A5-4FF3-92D4-85158085AE73@mpi-cbg.de>
+
+Hi Albert,
+
+I like that idea.
+I?m not 100% sure, but I think it should be possible to have Views.synchronized(), Views.unsynchronized() methods that would change the Type between sychronized and unsynchronized versions (if available).
+To properly define the signatures of these methods would probably require to make BitType an interface that is extended by the unsynchronized and synchronized implementations such that Views.(un)synchronize(RandomAccessible<T>) can return RandomAccessible<T>. This might incur additional cost for polymorphism if both BitType implementations are used at runtime but this might be alleviated using None, for example.
+
+best regards,
+Tobias
+
+
+On 30 Oct 2014, at 19:44, Albert Cardona <cardonaa at janelia.hhmi.org> wrote:
+
+> Hi Tobias,
+> 
+> woudn't the easiest be to rename the current BitType instances as Unsynchronized+name, and then the actual class extend the corresponding unsynchronized class, with one method overriden to synchronize access to the pixels?
+> 
+> This way one gets both: the default is safe (synchronized), and if one knows what one is doing, one can get the Unsynchronized* version to avoid the cost.
+> 
+> Albert
+> 
+> 
+> 
+> On 10/30/2014 02:39 PM, Tobias Pietzsch wrote:
+>> Hi Stephan,
+>> 
+>> Getting the ?unsafe? interval for a specific location is certainly possible. But how would that be effectively used in an algorithm if the interval changes from location to location?
+>> Alternatively, RandomAccessibles and IterableIntervals could offer methods to chop them up into ?safe? parts for multithreading. However there are many different ?safe' subdivision and it depends on the algorithm which one is preferrable. Also these subdivisions (as well as the ?unsafe? interval) would need to be propagated correctly through Views and RealViews which might get rather involved.
+>> I?m happy to discuss ideas in this direction, but I don?t think it is a viable short-term solution.
+>> 
+>> For practical reasons, I would stick with ?You are safe as long as multiple threads write to different pixels?.
+>> This is the contract that we have been implicitly following all along. A lot of code relies on it. Even if we come up with a nice alternative, we do not have the man-power to fix all code that relies on the old contract and that we would break along the way. Therefore my preferred short-term solution is to synchronize( dataAccess ){?} the fractioned-type writes, as Johannes suggested.
+>> 
+>> best regards,
+>> Tobias
+>> 
+>> On 30 Oct 2014, at 18:57, Stephan Saalfeld <saalfelds at janelia.hhmi.org> wrote:
+>> 
+>>> Hi Tobias,
+>>> 
+>>> I agree that the constraint is easier if the fraction reduces to an
+>>> integer.  However, it's not exactly the same for fraction=1 or
+>>> fraction>1 either.  It would be great if we could identify a common
+>>> scheme that covers all cases without much interference.
+>>> 
+>>> Is may be a disk-based, memory cached CellImg the same thing as a
+>>> fractioned NativeImg?  Writing into different pixels in the same cell
+>>> may lead to confusing results when written to disk.
+>>> 
+>>> What about a method in RandomAccess that returns an `unsafe' interval
+>>> for its location?  Generally, that would be (1^n), in case of fraction
+>>> types, it would be the box surrounding all pixels served by the same
+>>> primitive type (which is horrible at the end of a row or cell-row where
+>>> pixels in the next row are affected), and in case of cached cells it
+>>> could be the cell.
+>>> 
+>>> With a method of this flavor, we can make educated decisions on
+>>> construction time of the multi-threaded code that, internally, would not
+>>> synchronize, i.e. be fast.
+>>> 
+>>> Best,
+>>> Stephan
+>>> 
+>>> 
+>>> 
+>>> 
+>>> On Thu, 2014-10-30 at 18:29 +0100, Tobias Pietzsch wrote:
+>>>> Hi Stephan,
+>>>> 
+>>>> I think it would be nice to have getLock() but I also think it will be rarely needed in practice.
+>>>> 
+>>>> We must be careful not to conflate two problems here:
+>>>> 
+>>>> The first one is that writes to e.g. ComplexType are not atomic and therefore strange things may happen if two ComplexTypes are used that actually refer to the same ComplexType pixel value in the image.
+>>>> As Albert suggested, algorithms that need this feature need to take special care to synchronize access.
+>>>> However, for many parallelizable algorithms this is not actually a problem. In most image-to-image operations (e.g. FFT, convolution, etc?) every output pixel is written only once by only one thread. Threads maybe read the same input pixels, but reading is fine.
+>>>> The getLock() method would be a welcome addition for those algorithms that do not follow this pattern and need to synchronize.
+>>>> 
+>>>> The second problem is different. For BitType, writes to BitType pixels at different locations in the image may influence each other. And this should be avoided by default in my opinion.
+>>>> 
+>>>> I think: ?You are safe as long as multiple threads write to different pixels? is a good contract to have.
+>>>> Diverging from that with BitType, Unsigned12BitType, etc would add overhead for many algorithms that is in most cases not required (e.g. for FloatType, ComplexDoubleType, etc. the synchronization overhead would be wasted).
+>>>> 
+>>>> best regards,
+>>>> Tobias
+>>>> 
+>>>> 
+>>>> 
+>>>> On 30 Oct 2014, at 16:18, Stephan Saalfeld <saalfelds at janelia.hhmi.org> wrote:
+>>>> 
+>>>>> Thanks for the articles!
+>>>>> 
+>>>>> I have more comments on the matter.  In fact, all types have the same
+>>>>> problem.  Even for a non-native ComplexType read and write would not be
+>>>>> atomic and thus not thread-safe.  The problem is that, for non-native
+>>>>> types, it is sufficient for multi-threaded code to synchronize on the
+>>>>> type instance itself.  For native types (e.g. ComplexDoubleType) and for
+>>>>> other proxy mechanisms such as Composites or ReadWriteConverters, this
+>>>>> doesn't work.  How about a getLock() (or getMonitor()) method as part of
+>>>>> Type whose purpose is to return a lock that enables synchronization on
+>>>>> that particular's type content.  Should that lock be constant for a
+>>>>> type's lifetime?  Proxy types for which access is atomic could return
+>>>>> themselves, just as Types that actually contain their content.
+>>>>> 
+>>>>> I like Tobias' proposal with a Hash of locks for NativeTypes, something
+>>>>> similar is necessary for other writable proxies.
+>>>>> 
+>>>>> Best,
+>>>>> Stephan
+>>>>> 
+>>>>> 
+>>>>> 
+>>>>> On Thu, 2014-10-30 at 14:51 +0100, Adrian Daerr wrote:
+>>>>>> Hi,
+>>>>>> 
+>>>>>>>> By lock-free I mean setting the value and then checking whether the
+>>>>>>>> value is actually what was expected (and if not, retry).
+>>>>>>> 
+>>>>>>> A na?ve implementation of this technique could easily result in a very
+>>>>>>> nasty ping-pong effect: if one thread tries to clear a bit and the next
+>>>>>>> thread tries to set it, it is very to run into a trap when not leaving a
+>>>>>>> way for one thread to win.
+>>>>>>> 
+>>>>>>> The safest way to resolve this issue is to reinstate the lock-on-write
+>>>>>>> method that was in place earlier
+>>>>>> [..]
+>>>>>>> 
+>>>>>>> An alternative might be to give up lock-freedom in favor of wait-freedom
+>>>>>>> [*2*]. In this regard, a more performant version might be
+>>>>>> [..]
+>>>>>>> to use Optimistic Concurrency Control [*3*]:
+>>>>>> 
+>>>>>>> 	final long original = dataAccess.getValue(i1);
+>>>>>>> 	if ( value ) {
+>>>>>>> 		final long newValue = original | (1l << shift);
+>>>>>>> 		dataAccess.setValue(i1, newValue);
+>>>>>>> 		if ( newValue != dataAccess.getValue( i1 ) ) {
+>>>>>>> 			synchronized (dataAccess) {
+>>>>>>> 				dataAccess.setValue( i1, dataAccess.getValue(i1) | (1l << shift) );
+>>>>>>> 			}
+>>>>>>> 		}
+>>>>>>> 	}
+>>>>>> [snip]
+>>>>>> 
+>>>>>> Hum, I do not if this is really a comparable situation, but it looks a
+>>>>>> lot like the double-checked locking (DCL) idiom, which is broken [1].
+>>>>>> 
+>>>>>> FWIW,
+>>>>>> cheers and good luck,
+>>>>>> Adrian
+>>>>>> 
+>>>>>> 
+>>>>>> [1]
+>>>>>> TL;DR : You cannot have as-if-serial semantics across threads unless you
+>>>>>> use synchronized.
+>>>>>> 
+>>>>>> "Double-checked locking: Clever, but broken
+>>>>>> Do you know what synchronized really means?" By Brian Goetz
+>>>>>> http://www.javaworld.com/article/2074979/java-concurrency/double-checked-locking--clever--but-broken.html
+>>>>>> 
+>>>>>> and its follow-up article
+>>>>>> 
+>>>>>> "Can double-checked locking be fixed?
+>>>>>> No matter how you rig it, double-checked locking still fails" (also by
+>>>>>> Brian Goetz)
+>>>>>> http://www.javaworld.com/article/2075306/java-concurrency/can-double-checked-locking-be-fixed-.html
+>>>>> 
+>>>> 
+>>> 
+>> 
+> 
+
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20141031/7e6e2543/attachment.pgp>
+

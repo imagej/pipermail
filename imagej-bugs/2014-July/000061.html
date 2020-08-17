@@ -1,0 +1,130 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-bugs] [Bug 835] Fiji hangs when installing macro tool
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%20835%5D%20Fiji%20hangs%20when%20installing%20macro%20tool&In-Reply-To=%3Cbug-835-19-hIi031cqri%40http.fiji.sc/bugzilla/%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000060.html">
+   <LINK REL="Next"  HREF="000064.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-bugs] [Bug 835] Fiji hangs when installing macro tool</H1>
+    <B>bugzilla at fiji.sc</B> 
+    <A HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%20835%5D%20Fiji%20hangs%20when%20installing%20macro%20tool&In-Reply-To=%3Cbug-835-19-hIi031cqri%40http.fiji.sc/bugzilla/%3E"
+       TITLE="[ImageJ-bugs] [Bug 835] Fiji hangs when installing macro tool">bugzilla at fiji.sc
+       </A><BR>
+    <I>Wed Jul 23 02:45:24 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000060.html">[ImageJ-bugs] [Bug 803] &quot;Refresh Menus&quot; grayed out in Fiji
+</A></li>
+        <LI>Next message: <A HREF="000064.html">[ImageJ-bugs] [Bug 586] Lasso/Blow
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#61">[ date ]</a>
+              <a href="thread.html#61">[ thread ]</a>
+              <a href="subject.html#61">[ subject ]</a>
+              <a href="author.html#61">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE><A HREF="http://fiji.sc/bugzilla/show_bug.cgi?id=835">http://fiji.sc/bugzilla/show_bug.cgi?id=835</A>
+
+--- Comment #6 from Ilan Tal &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">ilan.tal at gmail.com</A>&gt; ---
+Hi Wayne,
+I would like to make an additional request for my external jar file plugin. You
+have these really great hints for most of your built in buttons, but they are
+hard coded. I would really like to have a hint for my external button tool as
+well.
+
+For example I have in my code, which I have just changed for experimental
+purposes:
+
+    public String getToolName() {
+        return &quot;Window Level Tool (right click for Reset, Auto)&quot;;
+    }
+
+The problem is that the hint will kill the possibility to save the tool to the
+registry because it won't fit the command. What I would like is to save to the
+registry the original name, without the hint. That way I get the hint on the
+status bar and the registry value fits the command.
+
+I added a &quot;second chance&quot; to the setPrefs and hope you agree to the change:
+
+    private void setPrefs(int id) {
+        if (doNotSavePrefs)
+            return;
+        boolean ok = isBuiltInTool(names[id]);
+        String registryValue = instance.names[id];
+        if (!ok) {
+            Hashtable commands = Menus.getCommands();
+            String name = names[id];
+            if (name.endsWith(&quot;Menu Tool&quot;))
+                name = name.substring(0, name.length()-5);
+            ok = commands!=null &amp;&amp; commands.get(name)!=null;
+            // give a second chance for hints, i.e. (hint 123)
+            if( !ok) {
+                int i = name.indexOf(&quot; (&quot;);
+                if( i &gt; 0) {
+                    name = name.substring(0, i);
+                    ok = commands!=null &amp;&amp; commands.get(name)!=null;
+                    if(ok) registryValue = name;
+                }
+            }
+        }
+        if (!ok)
+            return;
+        int index = id - CUSTOM1;
+        String key = TOOL_KEY + (index/10)%10 + index%10;
+        Prefs.set(key, registryValue);
+    }
+
+Please let me know.
+Thanks,
+Ilan
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-bugs/attachments/20140723/74272cb9/attachment.html">http://imagej.net/pipermail/imagej-bugs/attachments/20140723/74272cb9/attachment.html</A>&gt;
+</PRE>
+
+
+
+
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000060.html">[ImageJ-bugs] [Bug 803] &quot;Refresh Menus&quot; grayed out in Fiji
+</A></li>
+	<LI>Next message: <A HREF="000064.html">[ImageJ-bugs] [Bug 586] Lasso/Blow
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#61">[ date ]</a>
+              <a href="thread.html#61">[ thread ]</a>
+              <a href="subject.html#61">[ subject ]</a>
+              <a href="author.html#61">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-bugs">More information about the Imagej-bugs
+mailing list</a><br>
+</body></html>

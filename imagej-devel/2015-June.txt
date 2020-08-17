@@ -1,0 +1,2447 @@
+From hiner at wisc.edu  Wed Jun  3 06:46:54 2015
+From: hiner at wisc.edu (Mark Hiner)
+Date: Wed, 3 Jun 2015 06:46:54 -0500
+Subject: [ImageJ-devel] cutting imglib2 release
+In-Reply-To: <74698A2B-1BC8-4418-B9BD-A156CA2EF464@gmail.com>
+References: <74698A2B-1BC8-4418-B9BD-A156CA2EF464@gmail.com>
+Message-ID: <CA+B=mGoRZr=SGvLdWoCP3rywdw-2PXTg2KN2u4xaR=148YQfYQ@mail.gmail.com>
+
+Hi Tobias,
+
+> Please let me know if you would rather have me do it myself!
+
+I updated the component versions and cut a pom-imagej 8.1.0 but left the
+imglib2 side for you. If it feels like the release process is prohibitive
+in any way, let's chat about how we can make it easier!
+
+Thanks,
+Mark
+
+On Mon, Jun 1, 2015 at 10:10 AM, Tobias Pietzsch <tobias.pietzsch at gmail.com>
+wrote:
+
+> Hi Mark,
+>
+> when you are cutting releases the next time, would you do me a favour and
+> release some imglib2 stuff while you?re at it?
+>
+> Specifically, I would like to release:
+>         the current master of imglib2 as version 2.3.0
+>         the current master of imglib2-algorithm as version 0.3.0
+> This would entail updating the versions in pom-imagej and then
+>         updating pom-imglib2 and releasing version 5.2.2 of that
+>
+> Please let me know if you would rather have me do it myself!
+>
+> all the best,
+> Tobias
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150603/3fd22f9f/attachment.html>
+
+From jay.w.warrick at gmail.com  Thu Jun 11 10:37:15 2015
+From: jay.w.warrick at gmail.com (Jay Warrick)
+Date: Thu, 11 Jun 2015 10:37:15 -0500
+Subject: [ImageJ-devel] RegionOfInterest vs Region
+Message-ID: <0AE9F55B-E34D-4BE2-83F4-5B475816E5B2@gmail.com>
+
+Hi All,
+
+Question about deprecated RegionOfInterest-related classes in ImgLib2-roi. What should I use instead?
+
+I think I can figure out how to do what I want to do with Labelings and LabelRegion etc but for some things it seems a simple RegionOfInterest sort of methodology might be a more straight forward solution.
+
+All suggestions welcome. 
+
+Thanks!
+
+Jay
+
+
+
+From jay.w.warrick at gmail.com  Sat Jun 13 03:29:39 2015
+From: jay.w.warrick at gmail.com (Jay Warrick)
+Date: Sat, 13 Jun 2015 03:29:39 -0500
+Subject: [ImageJ-devel] imagej-ops : outputop-service branch
+Message-ID: <D6107033-0756-4FBE-8CBE-BD6004F79E01@gmail.com>
+
+Hi All,
+
+I chatted with Curtis Rueden a bit today about trying this developmental feature extraction stuff out. He said I should note any successes or challenges as it might help your progress. He suggested potentially to post on the pull request but it seemed a bit long for there.
+
+First of all, fantastic stuff. You are bringing so much quantitative power to the fingertips of a lot of individuals like myself. Thank you! Secondly, sorry if I'm using anything inappropriately in the rundown below but this is my best shot at trying to give you some feedback on my attempt to use your code. Also, I totally realize things are still in flux so I didn't necessarily have expectations that all this stuff would work immediately for me.
+
+As of what was synced to the imagej-ops : outputop-service branch tonight, I was able to successfully get measures from a `FirstOrderStatFeatureSet` for a set of `LabelRegion`s that I got from a `Img<UnsignedByteType>` using `ConnectedComponents` (from latest ImgLib2-algorithm SNAPSHOT but just temporarily copied to its own class local for this test) and apply them to an `Img<UnsignedShortType>` using `Regions.sample(myLabelRegion, myImg)`. I think I did most of these tests using connected components detected using a 4-connected structuring element (if that matters at all).
+
+I ran into an issue with the `GeometricFeatureSet` where I got a 
+`````
+java.lang.ArrayIndexOutOfBoundsException: -1
+	java.util.ArrayList.elementData(ArrayList.java:400)
+	java.util.ArrayList.remove(ArrayList.java:477)
+	net.imagej.ops.geometric.polygon.DefaultConvexHullOp.run(DefaultConvexHullOp.java:127)
+`````
+All my regions are quite sizeable (all between 1000 and 6000 pixels, see end of email) so I'm not sure why this would happen. I'm basically doing the following for this test using the same regions as I used with the `FirstOrderStatFeatureSet`
+
+`````
+GeometricFeatureSet opGeometric = ij.op().op(GeometricFeatureSet.class, LabelRegion.class);
+List<Pair<String, DoubleType>> results = opGeometric.getFeatureList(Regions.iterable(myLabelRegion));
+`````
+
+I'm also having a problem with `Haralick2DFeatureSet` using those same `LabelRegion`s.
+`````
+java.lang.ArrayIndexOutOfBoundsException: -1
+	net.imglib2.roi.labeling.LabelRegion.dimension(LabelRegion.java:459)
+	net.imglib2.AbstractWrappedInterval.dimension(AbstractWrappedInterval.java:59)
+	net.imagej.ops.features.haralick.helper.CooccurrenceMatrix2D.run(CooccurrenceMatrix2D.java:119)
+`````
+I'm testing the `Haralick2DFeatureSet` as follows...
+````
+Haralick2DFeatureSet<UnsignedShortType> opHaralick2DHor = ij.op(Haralick2DFeatureSet.class, (IterableInterval<UnsignedShortType>) image, 8d, 1d, "HORIZONTAL");
+List<Pair<String, DoubleType>> results = opHaralick2DHor.getFeatureList(Regions.sample(myLabelRegion, image));
+`````
+
+The `HistogramFeatureSet` appears to work. I think I don't have my image adjusted right to see appropriate values in the histogram output though as I seem to get all 0's. I assumed the "number of bins" parameter would autoscale the data according to the image type (e.g., UnsignedShortType image scaled to fit in 256 levels/bins) but I can see why that was likely a bad assumption.
+
+The `ImageMomentsFeatureSet` seems to work fine.
+
+I got the following error trying to use the `Zernike` feature set...
+`````
+java.lang.NumberFormatException
+	java.math.BigDecimal.<init>(BigDecimal.java:470)
+	java.math.BigDecimal.<init>(BigDecimal.java:739)
+	java.math.BigDecimal.valueOf(BigDecimal.java:1069)
+	net.imagej.types.BigComplex.setReal(BigComplex.java:225)
+	net.imagej.ops.features.zernike.ZernikeComputer.normalize(ZernikeComputer.java:193)
+	net.imagej.ops.features.zernike.ZernikeComputer.fastZernikeComputation(ZernikeComputer.java:151)
+`````
+I'm using it as follows on the 8-bit mask image
+`````
+ZernikeFeatureSet<UnsignedByteType> opZernike = ij.op().op(ZernikeFeatureSet.class, (IterableInterval<UnsignedByteType>) mask, true, true, 1, 3);
+List<Pair<String, DoubleType>> results = opZernike.getFeatureList(Regions.sample(myLabelRegion, mask));
+`````
+
+I figured, in case I'm doing a bunch of things wrong, it would be easier for you to just have the data I'm using to see if you get the same issues using your own code. The images that I'm using are here...
+
+ https://drive.google.com/folderview?id=0BzopfqjGpdu8flBNTHdjXzN2eUJhR1NCNmNTbHJ5T3RNVDJRbmdwVnJiYnI0Nk43ZXp3QzA&usp=sharing <https://drive.google.com/folderview?id=0BzopfqjGpdu8flBNTHdjXzN2eUJhR1NCNmNTbHJ5T3RNVDJRbmdwVnJiYnI0Nk43ZXp3QzA&usp=sharing>
+
+The folder includes a small txt output of only the label regions that I'm analyzing (their pixel areas and centers of mass), given I am not using all labeled objects that come from the connected components analysis. Lastly, my label indices start at 0 if you are looking to match up output from ConnectedComponents with this.
+
+If you have any feedback on where I might be doing things wrong, please let me know.
+
+Thanks!
+
+Jay
+
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150613/9a100d49/attachment.html>
+
+From jeanyves.tinevez at gmail.com  Sat Jun 13 12:04:14 2015
+From: jeanyves.tinevez at gmail.com (Jean-Yves Tinevez)
+Date: Sat, 13 Jun 2015 19:04:14 +0200
+Subject: [ImageJ-devel] Exporting trackmate data using ImageJ/Jython
+	script
+In-Reply-To: <DUB119-W11F7F7F7110F74D42BD622B7BA0@phx.gbl>
+References: <DUB119-W11A7B3C7DC3C845803C2A6B7BA0@phx.gbl>
+	<CAAgB9O6pmfNJ4nbRjN0UBECX+RyHXU=ZbzbUt9zm42RXqKRCtQ@mail.gmail.com>
+	<DUB119-W11F7F7F7110F74D42BD622B7BA0@phx.gbl>
+Message-ID: <CAAgB9O6U5pE=9Gv9jydxATQpDSmRvjZyrQj9M0pMMvkQ1=_8XA@mail.gmail.com>
+
+Hi Roy,
+
+Ok I found the problem.
+
+The tables return their item sorted by time (spot, edges at least). So you
+need to make sure that you compute the time feature for edges if you don't
+want to to fail.This means in your script add:
+
+
+# Edge analyzer
+settings.addEdgeAnalyzer(EdgeTargetAnalyzer())
+settings.addEdgeAnalyzer(EdgeTimeLocationAnalyzer())
+
+(without Target, you cannot save the TrackMate file btw)
+
+and then
+
+ExportStatsToIJAction().execute(trackmate)
+
+will work.
+
+best
+jy
+
+
+
+
+
+On Sat, Jun 13, 2015 at 5:16 PM, Roy Francis <roy.m.francis at outlook.com>
+wrote:
+
+> Hi Jean,
+> Thank you for your quick reply. ExportStatsToIJAction().execute(trackmate)
+> doesn't seem to work. It doesn't matter what approach is used. Is there any
+> way to save the three output data to a text file during batch process using
+> script? If there is no way to do that, how can I have the result tables be
+> opened in new windows during batch process so that I can manually save them
+> at the end?
+> Thanks,
+> Roy
+>
+>
+> ------------------------------
+> Date: Sat, 13 Jun 2015 16:31:10 +0200
+> Subject: Re: Exporting trackmate data using ImageJ/Jython script
+> From: jeanyves.tinevez at gmail.com
+> To: roy.m.francis at outlook.com
+>
+>
+>
+>
+> On Sat, Jun 13, 2015 at 4:17 PM, Roy Francis <roy.m.francis at outlook.com>
+> wrote:
+>
+>
+> Hi,
+> I am using trackmate to track some cells in image files. They seem to work
+> fine using the GUI. But, I have a folder full of files and wish to run
+> trackmate non-interactively as a batch.
+>
+> I am using ImageJ macros to load images, convert avi to tiff sequence,
+> convert to hyper stacks (for z-stack to time-stack) and then feed to the
+> trackmate function which I created as a plugin based on instructions this
+> page
+>
+> http://fiji.sc/Scripting_TrackMate
+>
+> Painfully, I have got it all to work except for the final part. The data
+> exporting. Using the GUI, there is a button that opens three data tables
+> for spot results, connections and track results. And once this is open it
+> can be saved using IMJ macros.
+>
+> How can I open these data and/or save them to a text file either using IMJ
+> or Jython? I have the feeling the answer is ExportStatsToIJAction(). But,
+> I have no idea how to use it. The help page
+>
+> http://javadoc.imagej.net/Fiji/fiji/plugin/trackmate/action/ExportStatsToIJAction.html
+> is utterly unreadable and doesn't explain anything.
+>
+> Any help is greatly appreciated. Full script below if required.
+>
+>
+>
+> Hi Roy
+>
+> I am afraid the action you mention cannot be used in an headless mode. It
+> just generates the tables on ImageJ then you have to save them manually
+>
+> If it is still what you want to to, try something in the lione of:
+>
+> ExportStatsToIJAction().execute(trackmate)
+>
+> best
+> jy
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150613/7b2e37b0/attachment.html>
+
+From jeanyves.tinevez at gmail.com  Sat Jun 13 13:49:02 2015
+From: jeanyves.tinevez at gmail.com (Jean-Yves Tinevez)
+Date: Sat, 13 Jun 2015 20:49:02 +0200
+Subject: [ImageJ-devel] Exporting trackmate data using ImageJ/Jython
+	script
+In-Reply-To: <DUB119-W51673731006E518409B509B7BA0@phx.gbl>
+References: <DUB119-W11A7B3C7DC3C845803C2A6B7BA0@phx.gbl>
+	<CAAgB9O6pmfNJ4nbRjN0UBECX+RyHXU=ZbzbUt9zm42RXqKRCtQ@mail.gmail.com>
+	<DUB119-W11F7F7F7110F74D42BD622B7BA0@phx.gbl>
+	<CAAgB9O6U5pE=9Gv9jydxATQpDSmRvjZyrQj9M0pMMvkQ1=_8XA@mail.gmail.com>
+	<DUB119-W51673731006E518409B509B7BA0@phx.gbl>
+Message-ID: <CAAgB9O6JvfkLZNEH4Gfn97ah+zo_GdqRz-fp2kzh2tcfjk+fJQ@mail.gmail.com>
+
+On Sat, Jun 13, 2015 at 7:49 PM, Roy Francis <roy.m.francis at outlook.com>
+wrote:
+
+> Hi Jean,
+> Yes. That seems to work. Adding the EdgeAnalyzers opens up the results
+> windows. This is better than nothing.
+>
+> But ideally, I would like for the results table to be automatically
+> written to a text file such as tsv or csv etc.
+>
+>
+You would have to do it yourself, either creating a new action in Java
+derived from the one we discussed, either by writing the Python code to
+generate this file. Indeed, as of now there is nothing automatic for the
+scripting approach.
+
+Best
+jy
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150613/7380906b/attachment.html>
+
+From christian.dietz at uni-konstanz.de  Sat Jun 13 13:52:40 2015
+From: christian.dietz at uni-konstanz.de (Christian Dietz)
+Date: Sat, 13 Jun 2015 20:52:40 +0200
+Subject: [ImageJ-devel] imagej-ops : outputop-service branch
+In-Reply-To: <D6107033-0756-4FBE-8CBE-BD6004F79E01@gmail.com>
+References: <D6107033-0756-4FBE-8CBE-BD6004F79E01@gmail.com>
+Message-ID: <1434221560.1643.10.camel@uni-konstanz.de>
+
+Hi Jay,
+
+this is great feedback. Thank you. As you already mentioned in your
+E-Mail, the API of the OpResolver, FeatureService etc is highly unstable
+at the moment as the development still is on a topic-branch of
+ImageJ-Ops (which is also in 0.x at the moment). However, I'm really
+trying to get this stuff merged to master soon. Therefore, I will start
+(and actually already started) a series of more atomar Pull-Requests on
+ImageJ-Ops to get all the stuff merged. It would be amazing if you can
+also have a look at the PRs and give some comments and feedback on the
+individual functionality.
+
+Please find more answers in-line. Again, thank you for your feedback!
+Great that the stuff is used out there already ;-)
+
+Christian
+
+
+
+On Sa, 2015-06-13 at 03:29 -0500, Jay Warrick wrote: 
+> Hi All,
+> 
+> 
+> I chatted with Curtis Rueden a bit today about trying this
+> developmental feature extraction stuff out. He said I should note any
+> successes or challenges as it might help your progress. He suggested
+> potentially to post on the pull request but it seemed a bit long for
+> there.
+> 
+> 
+> First of all, fantastic stuff. You are bringing so much quantitative
+> power to the fingertips of a lot of individuals like myself. Thank
+> you! Secondly, sorry if I'm using anything inappropriately in the
+> rundown below but this is my best shot at trying to give you some
+> feedback on my attempt to use your code. Also, I totally realize
+> things are still in flux so I didn't necessarily have expectations
+> that all this stuff would work immediately for me.
+> 
+> 
+> As of what was synced to the imagej-ops : outputop-service branch
+> tonight, I was able to successfully get measures from a
+> `FirstOrderStatFeatureSet` for a set of `LabelRegion`s that I got from
+> a `Img<UnsignedByteType>` using `ConnectedComponents` (from latest
+> ImgLib2-algorithm SNAPSHOT but just temporarily copied to its own
+> class local for this test) and apply them to an
+> `Img<UnsignedShortType>` using `Regions.sample(myLabelRegion, myImg)`.
+
+This is 100% correct. The new CCA should soon be part of the stable
+imglib2-algorithms. We will also make it available in Ops as soon as it
+was released with imglib2-algorithms. Thanks for tpietzsch for the
+implementation!
+
+Anyway, I'm working on several Ops will make your live easier when
+trying to extract and loop over LabelRegions. 
+
+> I think I did most of these tests using connected components detected
+> using a 4-connected structuring element (if that matters at all).
+> 
+> 
+> I ran into an issue with the `GeometricFeatureSet` where I got a 
+> `````
+> java.lang.ArrayIndexOutOfBoundsException: -1
+> java.util.ArrayList.elementData(ArrayList.java:400)
+> java.util.ArrayList.remove(ArrayList.java:477)
+> net.imagej.ops.geometric.polygon.DefaultConvexHullOp.run(DefaultConvexHullOp.java:127)
+> `````
+> All my regions are quite sizeable (all between 1000 and 6000 pixels,
+> see end of email) so I'm not sure why this would happen. I'm basically
+> doing the following for this test using the same regions as I used
+> with the `FirstOrderStatFeatureSet`
+> 
+> 
+> `````
+> GeometricFeatureSet opGeometric =
+> ij.op().op(GeometricFeatureSet.class, LabelRegion.class);
+> List<Pair<String, DoubleType>> results =
+> opGeometric.getFeatureList(Regions.iterable(myLabelRegion));
+> `````
+
+The GeometricFeatureSet is really something we have to work on. Thanks
+for the report. I also found some serious problems with the design of
+several methods and I hope that I can fix it next week.
+
+> 
+> 
+> I'm also having a problem with `Haralick2DFeatureSet` using those same
+> `LabelRegion`s.
+> `````
+> java.lang.ArrayIndexOutOfBoundsException: -1
+> net.imglib2.roi.labeling.LabelRegion.dimension(LabelRegion.java:459)
+> net.imglib2.AbstractWrappedInterval.dimension(AbstractWrappedInterval.java:59)
+> net.imagej.ops.features.haralick.helper.CooccurrenceMatrix2D.run(CooccurrenceMatrix2D.java:119)
+> `````
+> I'm testing the `Haralick2DFeatureSet` as follows...
+> ````
+> Haralick2DFeatureSet<UnsignedShortType> opHaralick2DHor =
+> ij.op(Haralick2DFeatureSet.class,
+> (IterableInterval<UnsignedShortType>) image, 8d, 1d, "HORIZONTAL");
+> List<Pair<String, DoubleType>> results =
+> opHaralick2DHor.getFeatureList(Regions.sample(myLabelRegion, image));
+> `````
+
+This is something we have to look into as soon as we file the Haralick
+PR. I will turn your code into a test and make sure that it works.
+
+> 
+> The `HistogramFeatureSet` appears to work. I think I don't have my
+> image adjusted right to see appropriate values in the histogram output
+> though as I seem to get all 0's. I assumed the "number of bins"
+> parameter would autoscale the data according to the image type (e.g.,
+> UnsignedShortType image scaled to fit in 256 levels/bins) but I can
+> see why that was likely a bad assumption.
+
+This should actually happen. I will double-check. Again, as soon as we
+file the "HistogramFeature" PR, it would be great if you could test
+again. 
+> 
+> 
+> The `ImageMomentsFeatureSet` seems to work fine.
+> 
+> 
+> I got the following error trying to use the `Zernike` feature set...
+> `````
+> java.lang.NumberFormatException
+> java.math.BigDecimal.<init>(BigDecimal.java:470)
+> java.math.BigDecimal.<init>(BigDecimal.java:739)
+> java.math.BigDecimal.valueOf(BigDecimal.java:1069)
+> net.imagej.types.BigComplex.setReal(BigComplex.java:225)
+> net.imagej.ops.features.zernike.ZernikeComputer.normalize(ZernikeComputer.java:193)
+> net.imagej.ops.features.zernike.ZernikeComputer.fastZernikeComputation(ZernikeComputer.java:151)
+> `````
+> I'm using it as follows on the 8-bit mask image
+> `````
+> ZernikeFeatureSet<UnsignedByteType> opZernike =
+> ij.op().op(ZernikeFeatureSet.class,
+> (IterableInterval<UnsignedByteType>) mask, true, true, 1, 3);
+> List<Pair<String, DoubleType>> results =
+> opZernike.getFeatureList(Regions.sample(myLabelRegion, mask));
+> `````
+
+I will forward it to the implementor of Zernike. Seems that there are
+some tests missing.
+
+> 
+> I figured, in case I'm doing a bunch of things wrong, it would be
+> easier for you to just have the data I'm using to see if you get the
+> same issues using your own code. The images that I'm using are here...
+> 
+> 
+>  https://drive.google.com/folderview?id=0BzopfqjGpdu8flBNTHdjXzN2eUJhR1NCNmNTbHJ5T3RNVDJRbmdwVnJiYnI0Nk43ZXp3QzA&usp=sharing
+> 
+> 
+> The folder includes a small txt output of only the label regions that
+> I'm analyzing (their pixel areas and centers of mass), given I am not
+> using all labeled objects that come from the connected components
+> analysis. Lastly, my label indices start at 0 if you are looking to
+> match up output from ConnectedComponents with this.
+> 
+> 
+> If you have any feedback on where I might be doing things wrong,
+> please let me know.
+> 
+
+Thanks for the data. We will also soon have a Image Segment Feature Node
+within KNIME and also use the KNIME testing system to find the last(...)
+bugs. Maybe this node can also help you extracting features for your
+data!
+
+> 
+> Thanks!
+> 
+> 
+> Jay
+> 
+> 
+> 
+> 
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+
+
+
+
+From jay.w.warrick at gmail.com  Sat Jun 13 21:18:11 2015
+From: jay.w.warrick at gmail.com (Jay Warrick)
+Date: Sat, 13 Jun 2015 21:18:11 -0500
+Subject: [ImageJ-devel] imagej-ops : outputop-service branch
+In-Reply-To: <1434221560.1643.10.camel@uni-konstanz.de>
+References: <D6107033-0756-4FBE-8CBE-BD6004F79E01@gmail.com>
+	<1434221560.1643.10.camel@uni-konstanz.de>
+Message-ID: <5818B939-3DE2-4143-BF7C-67B73A15BAB7@gmail.com>
+
+Thanks, Christian. Good to know I'm not necessarily doing anything too far off base. I'll keep an eye out for the PRs and try my code out again at those times. I'll also see if I can't separate my code out into something that resembles a test class and pass along when I can. 
+
+Thanks for the reply. I'm excited and look forward to helping as I can. Keep up the good work.
+
+Cheers,
+
+Jay
+
+
+
+> On Jun 13, 2015, at 1:52 PM, Christian Dietz <Christian.Dietz at uni-konstanz.de> wrote:
+> 
+> Hi Jay,
+> 
+> this is great feedback. Thank you. As you already mentioned in your
+> E-Mail, the API of the OpResolver, FeatureService etc is highly unstable
+> at the moment as the development still is on a topic-branch of
+> ImageJ-Ops (which is also in 0.x at the moment). However, I'm really
+> trying to get this stuff merged to master soon. Therefore, I will start
+> (and actually already started) a series of more atomar Pull-Requests on
+> ImageJ-Ops to get all the stuff merged. It would be amazing if you can
+> also have a look at the PRs and give some comments and feedback on the
+> individual functionality.
+> 
+> Please find more answers in-line. Again, thank you for your feedback!
+> Great that the stuff is used out there already ;-)
+> 
+> Christian
+> 
+> 
+> 
+> On Sa, 2015-06-13 at 03:29 -0500, Jay Warrick wrote: 
+>> Hi All,
+>> 
+>> 
+>> I chatted with Curtis Rueden a bit today about trying this
+>> developmental feature extraction stuff out. He said I should note any
+>> successes or challenges as it might help your progress. He suggested
+>> potentially to post on the pull request but it seemed a bit long for
+>> there.
+>> 
+>> 
+>> First of all, fantastic stuff. You are bringing so much quantitative
+>> power to the fingertips of a lot of individuals like myself. Thank
+>> you! Secondly, sorry if I'm using anything inappropriately in the
+>> rundown below but this is my best shot at trying to give you some
+>> feedback on my attempt to use your code. Also, I totally realize
+>> things are still in flux so I didn't necessarily have expectations
+>> that all this stuff would work immediately for me.
+>> 
+>> 
+>> As of what was synced to the imagej-ops : outputop-service branch
+>> tonight, I was able to successfully get measures from a
+>> `FirstOrderStatFeatureSet` for a set of `LabelRegion`s that I got from
+>> a `Img<UnsignedByteType>` using `ConnectedComponents` (from latest
+>> ImgLib2-algorithm SNAPSHOT but just temporarily copied to its own
+>> class local for this test) and apply them to an
+>> `Img<UnsignedShortType>` using `Regions.sample(myLabelRegion, myImg)`.
+> 
+> This is 100% correct. The new CCA should soon be part of the stable
+> imglib2-algorithms. We will also make it available in Ops as soon as it
+> was released with imglib2-algorithms. Thanks for tpietzsch for the
+> implementation!
+> 
+> Anyway, I'm working on several Ops will make your live easier when
+> trying to extract and loop over LabelRegions. 
+> 
+>> I think I did most of these tests using connected components detected
+>> using a 4-connected structuring element (if that matters at all).
+>> 
+>> 
+>> I ran into an issue with the `GeometricFeatureSet` where I got a 
+>> `````
+>> java.lang.ArrayIndexOutOfBoundsException: -1
+>> java.util.ArrayList.elementData(ArrayList.java:400)
+>> java.util.ArrayList.remove(ArrayList.java:477)
+>> net.imagej.ops.geometric.polygon.DefaultConvexHullOp.run(DefaultConvexHullOp.java:127)
+>> `````
+>> All my regions are quite sizeable (all between 1000 and 6000 pixels,
+>> see end of email) so I'm not sure why this would happen. I'm basically
+>> doing the following for this test using the same regions as I used
+>> with the `FirstOrderStatFeatureSet`
+>> 
+>> 
+>> `````
+>> GeometricFeatureSet opGeometric =
+>> ij.op().op(GeometricFeatureSet.class, LabelRegion.class);
+>> List<Pair<String, DoubleType>> results =
+>> opGeometric.getFeatureList(Regions.iterable(myLabelRegion));
+>> `````
+> 
+> The GeometricFeatureSet is really something we have to work on. Thanks
+> for the report. I also found some serious problems with the design of
+> several methods and I hope that I can fix it next week.
+> 
+>> 
+>> 
+>> I'm also having a problem with `Haralick2DFeatureSet` using those same
+>> `LabelRegion`s.
+>> `````
+>> java.lang.ArrayIndexOutOfBoundsException: -1
+>> net.imglib2.roi.labeling.LabelRegion.dimension(LabelRegion.java:459)
+>> net.imglib2.AbstractWrappedInterval.dimension(AbstractWrappedInterval.java:59)
+>> net.imagej.ops.features.haralick.helper.CooccurrenceMatrix2D.run(CooccurrenceMatrix2D.java:119)
+>> `````
+>> I'm testing the `Haralick2DFeatureSet` as follows...
+>> ````
+>> Haralick2DFeatureSet<UnsignedShortType> opHaralick2DHor =
+>> ij.op(Haralick2DFeatureSet.class,
+>> (IterableInterval<UnsignedShortType>) image, 8d, 1d, "HORIZONTAL");
+>> List<Pair<String, DoubleType>> results =
+>> opHaralick2DHor.getFeatureList(Regions.sample(myLabelRegion, image));
+>> `````
+> 
+> This is something we have to look into as soon as we file the Haralick
+> PR. I will turn your code into a test and make sure that it works.
+> 
+>> 
+>> The `HistogramFeatureSet` appears to work. I think I don't have my
+>> image adjusted right to see appropriate values in the histogram output
+>> though as I seem to get all 0's. I assumed the "number of bins"
+>> parameter would autoscale the data according to the image type (e.g.,
+>> UnsignedShortType image scaled to fit in 256 levels/bins) but I can
+>> see why that was likely a bad assumption.
+> 
+> This should actually happen. I will double-check. Again, as soon as we
+> file the "HistogramFeature" PR, it would be great if you could test
+> again. 
+>> 
+>> 
+>> The `ImageMomentsFeatureSet` seems to work fine.
+>> 
+>> 
+>> I got the following error trying to use the `Zernike` feature set...
+>> `````
+>> java.lang.NumberFormatException
+>> java.math.BigDecimal.<init>(BigDecimal.java:470)
+>> java.math.BigDecimal.<init>(BigDecimal.java:739)
+>> java.math.BigDecimal.valueOf(BigDecimal.java:1069)
+>> net.imagej.types.BigComplex.setReal(BigComplex.java:225)
+>> net.imagej.ops.features.zernike.ZernikeComputer.normalize(ZernikeComputer.java:193)
+>> net.imagej.ops.features.zernike.ZernikeComputer.fastZernikeComputation(ZernikeComputer.java:151)
+>> `````
+>> I'm using it as follows on the 8-bit mask image
+>> `````
+>> ZernikeFeatureSet<UnsignedByteType> opZernike =
+>> ij.op().op(ZernikeFeatureSet.class,
+>> (IterableInterval<UnsignedByteType>) mask, true, true, 1, 3);
+>> List<Pair<String, DoubleType>> results =
+>> opZernike.getFeatureList(Regions.sample(myLabelRegion, mask));
+>> `````
+> 
+> I will forward it to the implementor of Zernike. Seems that there are
+> some tests missing.
+> 
+>> 
+>> I figured, in case I'm doing a bunch of things wrong, it would be
+>> easier for you to just have the data I'm using to see if you get the
+>> same issues using your own code. The images that I'm using are here...
+>> 
+>> 
+>> https://drive.google.com/folderview?id=0BzopfqjGpdu8flBNTHdjXzN2eUJhR1NCNmNTbHJ5T3RNVDJRbmdwVnJiYnI0Nk43ZXp3QzA&usp=sharing
+>> 
+>> 
+>> The folder includes a small txt output of only the label regions that
+>> I'm analyzing (their pixel areas and centers of mass), given I am not
+>> using all labeled objects that come from the connected components
+>> analysis. Lastly, my label indices start at 0 if you are looking to
+>> match up output from ConnectedComponents with this.
+>> 
+>> 
+>> If you have any feedback on where I might be doing things wrong,
+>> please let me know.
+>> 
+> 
+> Thanks for the data. We will also soon have a Image Segment Feature Node
+> within KNIME and also use the KNIME testing system to find the last(...)
+> bugs. Maybe this node can also help you extracting features for your
+> data!
+> 
+>> 
+>> Thanks!
+>> 
+>> 
+>> Jay
+>> 
+>> 
+>> 
+>> 
+>> _______________________________________________
+>> ImageJ-devel mailing list
+>> ImageJ-devel at imagej.net
+>> http://imagej.net/mailman/listinfo/imagej-devel
+> 
+> 
+> 
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+
+
+
+From tobias.pietzsch at gmail.com  Mon Jun 15 06:32:19 2015
+From: tobias.pietzsch at gmail.com (Tobias Pietzsch)
+Date: Mon, 15 Jun 2015 13:32:19 +0200
+Subject: [ImageJ-devel] cutting imglib2 release
+In-Reply-To: <CA+B=mGoRZr=SGvLdWoCP3rywdw-2PXTg2KN2u4xaR=148YQfYQ@mail.gmail.com>
+References: <74698A2B-1BC8-4418-B9BD-A156CA2EF464@gmail.com>
+	<CA+B=mGoRZr=SGvLdWoCP3rywdw-2PXTg2KN2u4xaR=148YQfYQ@mail.gmail.com>
+Message-ID: <BD6CD162-6E7A-4211-A84F-D3DD6B25CAF4@gmail.com>
+
+Hi Mark,
+
+On 03 Jun 2015, at 13:46, Mark Hiner <hiner at wisc.edu> wrote:
+
+> Hi Tobias,
+> 
+> > Please let me know if you would rather have me do it myself!
+> 
+> I updated the component versions and cut a pom-imagej 8.1.0 but left the imglib2 side for you. If it feels like the release process is prohibitive in any way, let's chat about how we can make it easier!
+
+thanks!
+I made the imglib2 releases.
+To make the new versions trickle down to bigdataviewer, I need an updated pom-fiji that I can use as parent.
+Is it safe for me to update pom-fiji to the parent pom-imagej 8.1.0 and release a pom-fiji 11.0.1?
+best regards,
+Tobias
+
+
+> 
+> Thanks,
+> Mark
+> 
+> On Mon, Jun 1, 2015 at 10:10 AM, Tobias Pietzsch <tobias.pietzsch at gmail.com> wrote:
+> Hi Mark,
+> 
+> when you are cutting releases the next time, would you do me a favour and release some imglib2 stuff while you?re at it?
+> 
+> Specifically, I would like to release:
+>         the current master of imglib2 as version 2.3.0
+>         the current master of imglib2-algorithm as version 0.3.0
+> This would entail updating the versions in pom-imagej and then
+>         updating pom-imglib2 and releasing version 5.2.2 of that
+> 
+> Please let me know if you would rather have me do it myself!
+> 
+> all the best,
+> Tobias
+> 
+> 
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150615/5e6e8a8b/attachment.html>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150615/5e6e8a8b/attachment.pgp>
+
+From hiner at wisc.edu  Mon Jun 15 12:43:25 2015
+From: hiner at wisc.edu (Mark Hiner)
+Date: Mon, 15 Jun 2015 12:43:25 -0500
+Subject: [ImageJ-devel] cutting imglib2 release
+In-Reply-To: <BD6CD162-6E7A-4211-A84F-D3DD6B25CAF4@gmail.com>
+References: <74698A2B-1BC8-4418-B9BD-A156CA2EF464@gmail.com>
+	<CA+B=mGoRZr=SGvLdWoCP3rywdw-2PXTg2KN2u4xaR=148YQfYQ@mail.gmail.com>
+	<BD6CD162-6E7A-4211-A84F-D3DD6B25CAF4@gmail.com>
+Message-ID: <CA+B=mGpGX76+JLayOggUos=1iiVU3OTJEvX8NJT_-Z0emRVYBA@mail.gmail.com>
+
+Hi Tobias,
+
+>Is it safe for me to update pom-fiji to the parent pom-imagej 8.1.0 and
+release a pom-fiji 11.0.1?
+
+Sounds good to me!
+
+Best,
+Mark
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150615/0fd45596/attachment.html>
+
+From ctrueden at wisc.edu  Mon Jun 15 14:48:18 2015
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Mon, 15 Jun 2015 14:48:18 -0500
+Subject: [ImageJ-devel] ImageJ plans for the summer
+Message-ID: <CADN69ym+UkWBf59_K4DHiyEMnW9nDDDZHj=zVrgO+wOzWGkFYQ@mail.gmail.com>
+
+Hi everyone,
+
+Today, I posted a News item describing the LOCI team's plans for ImageJ2
+and Fiji over the summer.
+
+We will be focusing on bringing ImageJ2 and Fiji up to the latest Java
+packaging and deployment standards, with the following ultimate goals:
+
+* Ship ImageJ with Java 8 (and probably raise the minimum version)
+* Retire the ImageJ Launcher in favor of standard Java packaging &
+deployment
+* Fix the 3D Viewer's issues with Java 3D
+* Update the Report a Bug plugin to use GitHub Issues instead of BugZilla
+* Offer standalone stable downloads for ImageJ2 (without Fiji plugins)
+
+For further details and rationale, see:
+http://imagej.net/2015-06-15_-_Major_updates_in_the_works
+
+Regards,
+Curtis Rueden
+LOCI software architect
+ImageJ2 project lead
+Fiji lead maintainer
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150615/5496f3e9/attachment.html>
+
+From ctrueden at wisc.edu  Tue Jun 16 11:46:15 2015
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Tue, 16 Jun 2015 11:46:15 -0500
+Subject: [ImageJ-devel] 3D viewer website is down
+In-Reply-To: <1ABD23A9-186E-4A83-A569-75BCC2F77DA2@nih.gov>
+References: <557EA7F1.5080104@doube.net>
+	<1ABD23A9-186E-4A83-A569-75BCC2F77DA2@nih.gov>
+Message-ID: <CADN69yk48KkC9-z56A6nqU-Xfhx2joqmNG1nUg+WZ=dDOJ7G5g@mail.gmail.com>
+
+Hi Wayne,
+
+[Switching to imagej-devel, since the thread becomes more technical.]
+
+> The ImageJ 1.49 distribution, due in a few weeks, will include the
+> version of 3D Viewer at
+>
+>    http://bonej.org/download/ImageJ_3D_Viewer.jar
+
+Is there some reason not to use an official release of the 3D Viewer?
+
+They are available from the ImageJ Maven repository [1].
+
+Regarding dependencies, you can use Git and Maven to easily download them:
+
+$ git clone git://github.com/fiji/3D_Viewer
+$ cd 3D_Viewer
+$ mvn dependency:copy-dependencies
+$ ls target/dependency
+
+Note also that the 3D Viewer will undergo some changes in coming weeks: we
+will change the Java 3D dependency to use the new JOGL-based Java 3D 1.6
+prerelease. This will eliminate the need to install Java 3D as a Java
+platform extension, in favor of it being a simple dependency like
+everything else.
+
+Regards,
+Curtis
+
+[1] http://maven.imagej.net/index.html#nexus-search;gav~sc.fiji~3D_Viewer
+
+On Tue, Jun 16, 2015 at 11:28 AM, Rasband, Wayne (NIH/NIMH) [E] <
+rasbandw at mail.nih.gov> wrote:
+
+> > On Jun 15, 2015, at 6:24 AM, Michael Doube <michael at doube.net> wrote:
+> >
+> > Dear all,
+> >
+> > A BoneJ user notified me that the 3D Viewer website is down:
+> >
+> > http://3dviewer.neurofly.de/
+> >
+> > Additionally, the version published on the ImageJ site is pretty old by
+> > now, and ImageJ1 no longer bundles the viewer in its installer:
+> >
+> > http://rsbweb.nih.gov/ij/plugins/3d-viewer/index.html
+> >
+> > What is the intended route to acquire the 3D Viewer for those of us who
+> > for whatever reason are using ImageJ1, and not Fiji? I have a couple of
+> > versions on my machines, from January and September 2012 - should I just
+> > share those JARs around?
+>
+> The ImageJ 1.49 distribution, due in a few weeks, will include the version
+> of 3D Viewer at
+>
+>    http://bonej.org/download/ImageJ_3D_Viewer.jar
+>
+> -wayne
+>
+> --
+> ImageJ mailing list: http://imagej.nih.gov/ij/list.html
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150616/989d8346/attachment.html>
+
+From ctrueden at wisc.edu  Tue Jun 16 17:09:34 2015
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Tue, 16 Jun 2015 17:09:34 -0500
+Subject: [ImageJ-devel] JavaFX packaging update
+Message-ID: <CADN69ykfAcm+dg000rs+yTUUZ-Lbpk90AkGsg+FvTxmk9LGgJA@mail.gmail.com>
+
+Hi everyone,
+
+For those curious about the new JavaFX packaging for ImageJ, the relevant
+bits are now merged to master. So you can play with it if you like:
+
+  git clone git://github.com/imagej/imagej
+  mvn -Pdist
+
+And you should get some platform-specific application bundles in
+target/jfx/app and target/jfx/native directories.
+
+Of course, the ImageJ Updater is still ignorant of the new directory
+structure (with core ImageJ stuff in the lib/ folder instead of jars/). And
+since the native launcher is no longer the ImageJ Launcher, many CLI flags
+do not work at the moment. But we will keep working on it!
+
+Regards,
+Curtis
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150616/b09fdc47/attachment.html>
+
+From rasbandw at mail.nih.gov  Wed Jun 17 09:59:39 2015
+From: rasbandw at mail.nih.gov (Rasband, Wayne (NIH/NIMH) [E])
+Date: Wed, 17 Jun 2015 14:59:39 +0000
+Subject: [ImageJ-devel] JavaFX packaging update
+In-Reply-To: <CADN69ykfAcm+dg000rs+yTUUZ-Lbpk90AkGsg+FvTxmk9LGgJA@mail.gmail.com>
+References: <CADN69ykfAcm+dg000rs+yTUUZ-Lbpk90AkGsg+FvTxmk9LGgJA@mail.gmail.com>
+Message-ID: <537BE791-5096-4463-97D6-5CCBBB63722E@nih.gov>
+
+
+> On Jun 16, 2015, at 6:09 PM, Curtis Rueden <ctrueden at WISC.EDU> wrote:
+> 
+> Hi everyone,
+> 
+> For those curious about the new JavaFX packaging for ImageJ, the relevant bits are now merged to master. So you can play with it if you like:
+> 
+>   git clone git://github.com/imagej/imagej
+>   mvn -Pdist
+> 
+> And you should get some platform-specific application bundles in target/jfx/app and target/jfx/native directories.
+> 
+> Of course, the ImageJ Updater is still ignorant of the new directory structure (with core ImageJ stuff in the lib/ folder instead of jars/). And since the native launcher is no longer the ImageJ Launcher, many CLI flags do not work at the moment. But we will keep working on it!
+
+Hi Curtis,
+
+Is there an OS X application bundle that includes Java 8 available for download? I have not had any luck getting the the ?mvn' command to work.
+
+-wayne
+
+
+
+
+
+
+From hiner at wisc.edu  Wed Jun 17 10:17:15 2015
+From: hiner at wisc.edu (Mark Hiner)
+Date: Wed, 17 Jun 2015 10:17:15 -0500
+Subject: [ImageJ-devel] JavaFX packaging update
+In-Reply-To: <537BE791-5096-4463-97D6-5CCBBB63722E@nih.gov>
+References: <CADN69ykfAcm+dg000rs+yTUUZ-Lbpk90AkGsg+FvTxmk9LGgJA@mail.gmail.com>
+	<537BE791-5096-4463-97D6-5CCBBB63722E@nih.gov>
+Message-ID: <CA+B=mGoST_S0q5EFdMoEjQ9TJQLE+rOHmHX3eaFS_b2aJ3V2wg@mail.gmail.com>
+
+Hi Wayne,
+
+> I have not had any luck getting the the ?mvn' command to work.
+
+What does "mvn -v" report for you?
+
+Would you mind pasting any errors you're seeing? It would be good for us to
+identify any additional problems with JavaFX.
+
+Thanks for trying it out!
+
+Best,
+Mark
+
+On Wed, Jun 17, 2015 at 9:59 AM, Rasband, Wayne (NIH/NIMH) [E] <
+rasbandw at mail.nih.gov> wrote:
+
+>
+> > On Jun 16, 2015, at 6:09 PM, Curtis Rueden <ctrueden at WISC.EDU> wrote:
+> >
+> > Hi everyone,
+> >
+> > For those curious about the new JavaFX packaging for ImageJ, the
+> relevant bits are now merged to master. So you can play with it if you like:
+> >
+> >   git clone git://github.com/imagej/imagej
+> >   mvn -Pdist
+> >
+> > And you should get some platform-specific application bundles in
+> target/jfx/app and target/jfx/native directories.
+> >
+> > Of course, the ImageJ Updater is still ignorant of the new directory
+> structure (with core ImageJ stuff in the lib/ folder instead of jars/). And
+> since the native launcher is no longer the ImageJ Launcher, many CLI flags
+> do not work at the moment. But we will keep working on it!
+>
+> Hi Curtis,
+>
+> Is there an OS X application bundle that includes Java 8 available for
+> download? I have not had any luck getting the the ?mvn' command to work.
+>
+> -wayne
+>
+>
+>
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150617/d1b29e3d/attachment.html>
+
+From ctrueden at wisc.edu  Wed Jun 17 11:09:07 2015
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Wed, 17 Jun 2015 11:09:07 -0500
+Subject: [ImageJ-devel] JavaFX packaging update
+In-Reply-To: <537BE791-5096-4463-97D6-5CCBBB63722E@nih.gov>
+References: <CADN69ykfAcm+dg000rs+yTUUZ-Lbpk90AkGsg+FvTxmk9LGgJA@mail.gmail.com>
+	<537BE791-5096-4463-97D6-5CCBBB63722E@nih.gov>
+Message-ID: <CADN69y=F9nn-CRCr01db=6bbA1P2WCrC5hOP+VAYJx-m+Tuzgw@mail.gmail.com>
+
+Hi Wayne,
+
+I just pushed some commits to the ImageJA repository [1] so that it can
+also build the same platform-specific application bundles -- but for
+vanilla ImageJ1 alone.
+
+To install Maven on your OS X machine, I recommend using Homebrew [2]. Then
+you can simply do:
+
+    brew install maven
+
+And you'll have a working mvn command.
+
+Note that the application bundling feature requires Java 8, since it is
+JavaFX-related functionality.
+
+So the commands you need to build platform bundles for ImageJ 1.x are:
+
+    git clone git://github.com/imagej/ImageJA
+    cd ImageJA
+    mvn -Pdist
+
+And it should create them in the target/jfx/native folder. There should be
+.dmg and a .pkg installers, which including a Java 8 runtime embedded (in
+the ImageJ.app/Contents/PlugIns/Java.runtime folder internally). There
+should also be an ImageJ.app in there. There is also a double-clickable
+ImageJ.jar in the target/jfx/app folder (with empty lib/ folder since
+ImageJ 1.x has no dependencies), as well another set of installers that do
+_not_ include the JRE in the target/jfx/native-nojre folder.
+
+Happy to help troubleshoot if you continue to have problems getting this
+working.
+
+Regards,
+Curtis
+
+P.S. You may notice one exception when building the ImageJA bundles,
+relating to the version string not conforming to "x.y.z" pattern, but it
+does not halt the build.
+
+[1] https://github.com/imagej/ImageJA
+[2] http://brew.sh
+
+On Wed, Jun 17, 2015 at 9:59 AM, Rasband, Wayne (NIH/NIMH) [E] <
+rasbandw at mail.nih.gov> wrote:
+
+>
+> > On Jun 16, 2015, at 6:09 PM, Curtis Rueden <ctrueden at WISC.EDU> wrote:
+> >
+> > Hi everyone,
+> >
+> > For those curious about the new JavaFX packaging for ImageJ, the
+> relevant bits are now merged to master. So you can play with it if you like:
+> >
+> >   git clone git://github.com/imagej/imagej
+> >   mvn -Pdist
+> >
+> > And you should get some platform-specific application bundles in
+> target/jfx/app and target/jfx/native directories.
+> >
+> > Of course, the ImageJ Updater is still ignorant of the new directory
+> structure (with core ImageJ stuff in the lib/ folder instead of jars/). And
+> since the native launcher is no longer the ImageJ Launcher, many CLI flags
+> do not work at the moment. But we will keep working on it!
+>
+> Hi Curtis,
+>
+> Is there an OS X application bundle that includes Java 8 available for
+> download? I have not had any luck getting the the ?mvn' command to work.
+>
+> -wayne
+>
+>
+>
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150617/716360db/attachment.html>
+
+From cyril.mongis at googlemail.com  Thu Jun 18 10:27:39 2015
+From: cyril.mongis at googlemail.com (Mongis Cyril)
+Date: Thu, 18 Jun 2015 17:27:39 +0200
+Subject: [ImageJ-devel] JavaFX, ImageJ, Maven and Java 8
+Message-ID: <CAJf7PReFX3dE8i9KC_iwF7AeKnEJ=fCJ6GkNAhrkus=+F1M-9Q@mail.gmail.com>
+
+Dear all,
+
+I'm facing a little problem. When developing our JavaFx interface for
+ImageJ, I tried to use Maven as base to load the dependencies but it failed
+miserably for two reasons. The first was that it was really hard to find a
+pom configuration that would allow a flawless support of Bioformat and
+Bioformat Compatibility Plugin, and because Maven would refuse to compile
+when using Java 8 (some toolkit 1.6 if I remember correctly. This forced me
+to use a classic JavaFX Netbeans environment (stealing all the jars from
+the last Fiji release XD).
+
+But now I'm facing a little problem : loading plugins. While the basic
+plugins are loaded(the ones located in the imagej-plugins and
+scijava-plugins jars), all the plugins located in the plugin directory
+remain unloaded. I searched in the code how the plugin loading mechanism
+works but I wasn't able to find an entry point for, for instance, an
+absolute path of a plugin folder. I changed the imagej.dir property,
+without success. I did some researches on how the class loading works but
+I'm still searching for an entry point, a way to specify a plugin directory
+so I can test the interface with more plugins.
+
+Home could I load the plugin from a specific directory ? Is it why ImageJ
+uses this ImageJ Launcher ?
+
+
+Cheers,
+
+Cyril
+http://www.cyrilmongis.net
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150618/2d8afb57/attachment.html>
+
+From ctrueden at wisc.edu  Thu Jun 18 10:33:41 2015
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Thu, 18 Jun 2015 10:33:41 -0500
+Subject: [ImageJ-devel] JavaFX, ImageJ, Maven and Java 8
+In-Reply-To: <CAJf7PReFX3dE8i9KC_iwF7AeKnEJ=fCJ6GkNAhrkus=+F1M-9Q@mail.gmail.com>
+References: <CAJf7PReFX3dE8i9KC_iwF7AeKnEJ=fCJ6GkNAhrkus=+F1M-9Q@mail.gmail.com>
+Message-ID: <CADN69ykiEHVQLuifkzF2yxDq1T3mfPOLjj6uYvfOrJ8v1mRTzQ@mail.gmail.com>
+
+Hi Cyril,
+
+> Home could I load the plugin from a specific directory ?
+
+See if setting the plugins.dir system property helps.
+
+If you need further help, please share your project.
+
+> Is it why ImageJ uses this ImageJ Launcher ?
+
+Not for much longer:
+http://imagej.net/2015-06-15_-_Major_updates_in_the_works
+
+Regards,
+Curtis
+
+On Thu, Jun 18, 2015 at 10:27 AM, Mongis Cyril <cyril.mongis at googlemail.com>
+wrote:
+
+> Dear all,
+>
+> I'm facing a little problem. When developing our JavaFx interface for
+> ImageJ, I tried to use Maven as base to load the dependencies but it failed
+> miserably for two reasons. The first was that it was really hard to find a
+> pom configuration that would allow a flawless support of Bioformat and
+> Bioformat Compatibility Plugin, and because Maven would refuse to compile
+> when using Java 8 (some toolkit 1.6 if I remember correctly. This forced me
+> to use a classic JavaFX Netbeans environment (stealing all the jars from
+> the last Fiji release XD).
+>
+> But now I'm facing a little problem : loading plugins. While the basic
+> plugins are loaded(the ones located in the imagej-plugins and
+> scijava-plugins jars), all the plugins located in the plugin directory
+> remain unloaded. I searched in the code how the plugin loading mechanism
+> works but I wasn't able to find an entry point for, for instance, an
+> absolute path of a plugin folder. I changed the imagej.dir property,
+> without success. I did some researches on how the class loading works but
+> I'm still searching for an entry point, a way to specify a plugin directory
+> so I can test the interface with more plugins.
+>
+> Home could I load the plugin from a specific directory ? Is it why ImageJ
+> uses this ImageJ Launcher ?
+>
+>
+> Cheers,
+>
+> Cyril
+> http://www.cyrilmongis.net
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150618/6a67bc3e/attachment.html>
+
+From ctrueden at wisc.edu  Thu Jun 18 11:17:14 2015
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Thu, 18 Jun 2015 11:17:14 -0500
+Subject: [ImageJ-devel] JavaFX packaging update
+In-Reply-To: <C6239FBD-974D-48C0-8E68-4FA3B3359582@nih.gov>
+References: <CADN69ykfAcm+dg000rs+yTUUZ-Lbpk90AkGsg+FvTxmk9LGgJA@mail.gmail.com>
+	<537BE791-5096-4463-97D6-5CCBBB63722E@nih.gov>
+	<CADN69y=F9nn-CRCr01db=6bbA1P2WCrC5hOP+VAYJx-m+Tuzgw@mail.gmail.com>
+	<4D674B7F-DAA1-4CC7-81AB-A64080B0C6B6@nih.gov>
+	<CADN69ym8+FxJZjLo=BESPqfXvOa4CGBeKMq=ef5ifZ=FX8LCCA@mail.gmail.com>
+	<BA1496DC-8E83-40BA-8BE8-F874FC6FE154@nih.gov>
+	<CADN69ykTFoBjCRbaZG+44M8vKd-oCqsQ6kd+1TjyJ1ig5C=tCw@mail.gmail.com>
+	<C6239FBD-974D-48C0-8E68-4FA3B3359582@nih.gov>
+Message-ID: <CADN69ykqsxbgZPaswGZShQaAsEO4iztJwiRWHRDrbhweh6OAVg@mail.gmail.com>
+
+Hi Wayne,
+
+> Running mvn a couple of times resolved the issue.
+
+Great.
+
+> The next two issues are how to tell ImageJ where the plugins folder is
+> and how to set the memory limit. Is there a way to define in
+> Info.plist a "plugins.dir? property with the value ?$APPDIR", which I
+> assume is the directory containing ImageJ.app?
+
+The way the JavaFX launcher works is that it picks up any JVM settings from
+the Java Preferences API at launch time. And all arguments passed on the
+CLI go straight to the main method args. So we will be updating ImageJ2
+over the summer to process args on the Java side that were previously
+handled by the launcher, including -Dfoo style system property settings
+(since in most cases it is fine to set them early in the application
+startup). Of course, not all args will be possible to support this way?e.g.
+max heap size (but see below).
+
+Unfortunately, the current JavaFX launcher does not yet have a means to
+dynamically pass JVM args to Java itself. I have an SO issue posted about
+it [1] as well as a bug report in to Oracle (still under review; no public
+URL yet). Maybe the JavaFX team will add a way, since this packaging
+mechanism is being actively maintained and developed. But really it is not
+that urgent, since you can run "java -Dplugins.dir=... -jar ImageJ.jar" or
+whatever from the CLI as a developer. I.e.: the native launchers maybe do
+not need those features. Regardless, we will also add shell scripts to make
+common workflows (e.g., remote debugging) as simple as possible.
+
+>From a user standpoint, for things like max heap size, there is a nice
+UserJvmOptionsService API [2] that we will use to expose common JVM
+settings in an options dialog box. It lets you set arbitrary arguments to
+pass to java (stored via the Java Preferences API) which take effect the
+next time the application is launched.
+
+See also imagej/imagej-launcher#33 on GitHub [3].
+
+Regards,
+Curtis
+
+[1] http://stackoverflow.com/q/30809330/1207769
+[2]
+http://docs.oracle.com/javase/8/docs/technotes/guides/deploy/jvm_options_api.html
+[3] https://github.com/imagej/imagej-launcher/issues/33
+
+On Thu, Jun 18, 2015 at 10:30 AM, Rasband, Wayne (NIH/NIMH) [E] <
+rasbandw at mail.nih.gov> wrote:
+
+> Hi Curtis,
+>
+> Running mvn a couple of times resolved the issue. The next two issues are
+> how to tell ImageJ where the plugins folder is and how to set the memory
+> limit. Is there a way to define in Info.plist a "plugins.dir? property with
+> the value ?$APPDIR", which I assume is the directory containing ImageJ.app?
+>
+> Best regards,
+>
+> -wayne
+>
+>
+> > On Jun 17, 2015, at 10:34 PM, Curtis Rueden <ctrueden at WISC.EDU> wrote:
+> >
+> > Hi Wayne,
+> >
+> > It looks like the Maven command failed to build the project. The
+> directory listing is only the source code from Git.
+> >
+> > The error indicates something went wrong downloading artifacts for the
+> Maven build system. The first time you run Maven it downloads many things,
+> but they all get cached into ~/.m2/repository, so subsequent builds are
+> much more reasonable. It looks like you had a connectivity-related error,
+> which can probably be resolved simply by running "mvn" again, or perhaps
+> "mvn -U" to force an update.
+> >
+> > If running "mvn" and/or 'mvn -U" a couple more times does not resolve
+> the issue, let me know.
+> >
+> > Regards,
+> > Curtis
+> >
+> > On Wed, Jun 17, 2015 at 7:18 PM, Rasband, Wayne (NIH/NIMH) [E] <
+> rasbandw at mail.nih.gov> wrote:
+> > Hi Curtis,
+> >
+> > I was able to install maven after doing "brew update?. I followed your
+> instructions for building platform bundles for ImageJ 1.x, and it appeared
+> to work except for this error:
+> >
+> > [ERROR] Failed to execute goal
+> org.apache.maven.plugins:maven-enforcer-plugin:1.3.1:enforce
+> (enforce-rules) on project ij: Execution enforce-rules of goal
+> org.apache.maven.plugins:maven-enforcer-plugin:1.3.1:enforce failed: Plugin
+> org.apache.maven.plugins:maven-enforcer-plugin:1.3.1 or one of its
+> dependencies could not be resolved: Could not transfer artifact
+> org.eclipse.aether:aether-util:jar:0.9.0.M2 from/to central (
+> https://repo.maven.apache.org/maven2): Connect to
+> repo.maven.apache.org:443 [repo.maven.apache.org/199.27.76.215] failed:
+> Operation timed out -> [Help 1]
+> >
+> > It generated an ImageJA folder but there is no target folder in it. This
+> is what the ImageJA directory looks like:
+> >
+> > ImageJA
+> >    applet.html
+> >    aREADME.txt
+> >    build.xml
+> >    pom.xml
+> >    release-notes.html
+> >    src/
+> >       main/
+> >          deploy/
+> >             package/
+> >                macosx/
+> >                   ImageJ-volume.icns
+> >                   ImageJ.icns
+> >                windows/
+> >                   ImageJ.ico
+> >          java/
+> >             ij/
+> >                CommandListener.java
+> >                CompositeImage.java
+> >                ?
+> >
+> > Thanks for your help,
+> >
+> > -wayne
+> >
+> >
+> >
+> >
+> > > On Jun 17, 2015, at 3:33 PM, Curtis Rueden <ctrueden at WISC.EDU> wrote:
+> > >
+> > > Hi Wayne,
+> > >
+> > > It may be that the Maven download is choosing a mirror with wrong
+> SHA1. Or it may be that your download is truly incomplete.
+> > >
+> > > Did you try to rm the file out of /Library/Caches/Homebrew and do it
+> again?
+> > >
+> > > Did you try "brew update" first?
+> > >
+> > > http://stackoverflow.com/q/12757694/1207769
+> > > http://apple.stackexchange.com/q/57172
+> > >
+> > > Regards,
+> > > Curtis
+> > >
+> > > On Wed, Jun 17, 2015 at 1:51 PM, Rasband, Wayne (NIH/NIMH) [E] <
+> rasbandw at mail.nih.gov> wrote:
+> > > Hi Curtis,
+> > >
+> > > I am still not having much luck. This is what I get when I try to use
+> "brew install maven? to install maven:
+> > >
+> > > bash-3.2$ brew install maven
+> > > ==> Downloading
+> http://www.apache.org/dyn/closer.cgi?path=maven/maven-3/3.2.3/binaries/apache-maven-3.2.3-bin.tar.gz
+> > > ==> Best Mirror
+> http://apache.mesi.com.ar/maven/maven-3/3.2.3/binaries/apache-maven-3.2.3-bin.tar.gz
+> > >
+> ########################################################################
+> 100.0%
+> > > Error: SHA1 mismatch
+> > > Expected: 1ce6641f7dcb4fd5785bedcdca2979da83f6d23f
+> > > Actual: 2e7c28f3ebc08b95934336680365cfaac2697155
+> > > Archive: /Library/Caches/Homebrew/maven-3.2.3.tar.gz
+> > > To retry an incomplete download, remove the file above.
+> > >
+> > > Best regards,
+> > >
+> > > -wayne
+> > >
+> > > > On Jun 17, 2015, at 12:09 PM, Curtis Rueden <ctrueden at WISC.EDU>
+> wrote:
+> > > >
+> > > > Hi Wayne,
+> > > >
+> > > > I just pushed some commits to the ImageJA repository [1] so that it
+> can also build the same platform-specific application bundles -- but for
+> vanilla ImageJ1 alone.
+> > > >
+> > > > To install Maven on your OS X machine, I recommend using Homebrew
+> [2]. Then you can simply do:
+> > > >
+> > > >     brew install maven
+> > > >
+> > > > And you'll have a working mvn command.
+> > > >
+> > > > Note that the application bundling feature requires Java 8, since it
+> is JavaFX-related functionality.
+> > > >
+> > > > So the commands you need to build platform bundles for ImageJ 1.x
+> are:
+> > > >
+> > > >     git clone git://github.com/imagej/ImageJA
+> > > >     cd ImageJA
+> > > >     mvn -Pdist
+> > > >
+> > > > And it should create them in the target/jfx/native folder. There
+> should be .dmg and a .pkg installers, which including a Java 8 runtime
+> embedded (in the ImageJ.app/Contents/PlugIns/Java.runtime folder
+> internally). There should also be an ImageJ.app in there. There is also a
+> double-clickable ImageJ.jar in the target/jfx/app folder (with empty lib/
+> folder since ImageJ 1.x has no dependencies), as well another set of
+> installers that do _not_ include the JRE in the target/jfx/native-nojre
+> folder.
+> > > >
+> > > > Happy to help troubleshoot if you continue to have problems getting
+> this working.
+> > > >
+> > > > Regards,
+> > > > Curtis
+> > > >
+> > > > P.S. You may notice one exception when building the ImageJA bundles,
+> relating to the version string not conforming to "x.y.z" pattern, but it
+> does not halt the build.
+> > > >
+> > > > [1] https://github.com/imagej/ImageJA
+> > > > [2] http://brew.sh
+> > > >
+> > > > On Wed, Jun 17, 2015 at 9:59 AM, Rasband, Wayne (NIH/NIMH) [E] <
+> rasbandw at mail.nih.gov> wrote:
+> > > >
+> > > > > On Jun 16, 2015, at 6:09 PM, Curtis Rueden <ctrueden at WISC.EDU>
+> wrote:
+> > > > >
+> > > > > Hi everyone,
+> > > > >
+> > > > > For those curious about the new JavaFX packaging for ImageJ, the
+> relevant bits are now merged to master. So you can play with it if you like:
+> > > > >
+> > > > >   git clone git://github.com/imagej/imagej
+> > > > >   mvn -Pdist
+> > > > >
+> > > > > And you should get some platform-specific application bundles in
+> target/jfx/app and target/jfx/native directories.
+> > > > >
+> > > > > Of course, the ImageJ Updater is still ignorant of the new
+> directory structure (with core ImageJ stuff in the lib/ folder instead of
+> jars/). And since the native launcher is no longer the ImageJ Launcher,
+> many CLI flags do not work at the moment. But we will keep working on it!
+> > > >
+> > > > Hi Curtis,
+> > > >
+> > > > Is there an OS X application bundle that includes Java 8 available
+> for download? I have not had any luck getting the the ?mvn' command to work.
+> > > >
+> > > > -wayne
+> > > >
+> > > >
+> > > >
+> > > >
+> > > >
+> > > > _______________________________________________
+> > > > ImageJ-devel mailing list
+> > > > ImageJ-devel at imagej.net
+> > > > http://imagej.net/mailman/listinfo/imagej-devel
+> > > >
+> > >
+> > >
+> >
+> >
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150618/058cebb4/attachment-0001.html>
+
+From rasbandw at mail.nih.gov  Mon Jun 22 12:51:40 2015
+From: rasbandw at mail.nih.gov (Rasband, Wayne (NIH/NIMH) [E])
+Date: Mon, 22 Jun 2015 17:51:40 +0000
+Subject: [ImageJ-devel] JavaFX packaging update
+In-Reply-To: <CADN69ykqsxbgZPaswGZShQaAsEO4iztJwiRWHRDrbhweh6OAVg@mail.gmail.com>
+References: <CADN69ykfAcm+dg000rs+yTUUZ-Lbpk90AkGsg+FvTxmk9LGgJA@mail.gmail.com>
+	<537BE791-5096-4463-97D6-5CCBBB63722E@nih.gov>
+	<CADN69y=F9nn-CRCr01db=6bbA1P2WCrC5hOP+VAYJx-m+Tuzgw@mail.gmail.com>
+	<4D674B7F-DAA1-4CC7-81AB-A64080B0C6B6@nih.gov>
+	<CADN69ym8+FxJZjLo=BESPqfXvOa4CGBeKMq=ef5ifZ=FX8LCCA@mail.gmail.com>
+	<BA1496DC-8E83-40BA-8BE8-F874FC6FE154@nih.gov>
+	<CADN69ykTFoBjCRbaZG+44M8vKd-oCqsQ6kd+1TjyJ1ig5C=tCw@mail.gmail.com>
+	<C6239FBD-974D-48C0-8E68-4FA3B3359582@nih.gov>
+	<CADN69ykqsxbgZPaswGZShQaAsEO4iztJwiRWHRDrbhweh6OAVg@mail.gmail.com>
+Message-ID: <45D59077-B9A5-4189-B196-005702BCBAA3@nih.gov>
+
+Hi Curtis, 
+
+The shell script launcher at
+
+    https://github.com/tofi86/universalJavaApplicationStub
+
+appears to work well. I was able to modify it to use a bundled JRE, pass JVM args and set the working directory so that ImageJ finds the plugins folder. There is an ImageJ distribution at
+
+    http://wsr.imagej.net/download/ImageJ-osx-java8.zip
+
+that uses it.
+
+-wayne
+
+
+> On Jun 18, 2015, at 12:17 PM, Curtis Rueden <ctrueden at WISC.EDU> wrote:
+> 
+> Hi Wayne,
+> 
+> > Running mvn a couple of times resolved the issue.
+> 
+> Great.
+> 
+> > The next two issues are how to tell ImageJ where the plugins folder is
+> > and how to set the memory limit. Is there a way to define in
+> > Info.plist a "plugins.dir? property with the value ?$APPDIR", which I
+> > assume is the directory containing ImageJ.app?
+> 
+> The way the JavaFX launcher works is that it picks up any JVM settings from the Java Preferences API at launch time. And all arguments passed on the CLI go straight to the main method args. So we will be updating ImageJ2 over the summer to process args on the Java side that were previously handled by the launcher, including -Dfoo style system property settings (since in most cases it is fine to set them early in the application startup). Of course, not all args will be possible to support this way?e.g. max heap size (but see below).
+> 
+> Unfortunately, the current JavaFX launcher does not yet have a means to dynamically pass JVM args to Java itself. I have an SO issue posted about it [1] as well as a bug report in to Oracle (still under review; no public URL yet). Maybe the JavaFX team will add a way, since this packaging mechanism is being actively maintained and developed. But really it is not that urgent, since you can run "java -Dplugins.dir=... -jar ImageJ.jar" or whatever from the CLI as a developer. I.e.: the native launchers maybe do not need those features. Regardless, we will also add shell scripts to make common workflows (e.g., remote debugging) as simple as possible.
+> 
+> From a user standpoint, for things like max heap size, there is a nice UserJvmOptionsService API [2] that we will use to expose common JVM settings in an options dialog box. It lets you set arbitrary arguments to pass to java (stored via the Java Preferences API) which take effect the next time the application is launched.
+> 
+> See also imagej/imagej-launcher#33 on GitHub [3].
+> 
+> Regards,
+> Curtis
+> 
+> [1] http://stackoverflow.com/q/30809330/1207769
+> [2] http://docs.oracle.com/javase/8/docs/technotes/guides/deploy/jvm_options_api.html
+> [3] https://github.com/imagej/imagej-launcher/issues/33
+> 
+> On Thu, Jun 18, 2015 at 10:30 AM, Rasband, Wayne (NIH/NIMH) [E] <rasbandw at mail.nih.gov> wrote:
+> Hi Curtis,
+> 
+> Running mvn a couple of times resolved the issue. The next two issues are how to tell ImageJ where the plugins folder is and how to set the memory limit. Is there a way to define in Info.plist a "plugins.dir? property with the value ?$APPDIR", which I assume is the directory containing ImageJ.app?
+> 
+> Best regards,
+> 
+> -wayne
+> 
+> 
+> > On Jun 17, 2015, at 10:34 PM, Curtis Rueden <ctrueden at WISC.EDU> wrote:
+> >
+> > Hi Wayne,
+> >
+> > It looks like the Maven command failed to build the project. The directory listing is only the source code from Git.
+> >
+> > The error indicates something went wrong downloading artifacts for the Maven build system. The first time you run Maven it downloads many things, but they all get cached into ~/.m2/repository, so subsequent builds are much more reasonable. It looks like you had a connectivity-related error, which can probably be resolved simply by running "mvn" again, or perhaps "mvn -U" to force an update.
+> >
+> > If running "mvn" and/or 'mvn -U" a couple more times does not resolve the issue, let me know.
+> >
+> > Regards,
+> > Curtis
+> >
+> > On Wed, Jun 17, 2015 at 7:18 PM, Rasband, Wayne (NIH/NIMH) [E] <rasbandw at mail.nih.gov> wrote:
+> > Hi Curtis,
+> >
+> > I was able to install maven after doing "brew update?. I followed your instructions for building platform bundles for ImageJ 1.x, and it appeared to work except for this error:
+> >
+> > [ERROR] Failed to execute goal org.apache.maven.plugins:maven-enforcer-plugin:1.3.1:enforce (enforce-rules) on project ij: Execution enforce-rules of goal org.apache.maven.plugins:maven-enforcer-plugin:1.3.1:enforce failed: Plugin org.apache.maven.plugins:maven-enforcer-plugin:1.3.1 or one of its dependencies could not be resolved: Could not transfer artifact org.eclipse.aether:aether-util:jar:0.9.0.M2 from/to central (https://repo.maven.apache.org/maven2): Connect to repo.maven.apache.org:443 [repo.maven.apache.org/199.27.76.215] failed: Operation timed out -> [Help 1]
+> >
+> > It generated an ImageJA folder but there is no target folder in it. This is what the ImageJA directory looks like:
+> >
+> > ImageJA
+> >    applet.html
+> >    aREADME.txt
+> >    build.xml
+> >    pom.xml
+> >    release-notes.html
+> >    src/
+> >       main/
+> >          deploy/
+> >             package/
+> >                macosx/
+> >                   ImageJ-volume.icns
+> >                   ImageJ.icns
+> >                windows/
+> >                   ImageJ.ico
+> >          java/
+> >             ij/
+> >                CommandListener.java
+> >                CompositeImage.java
+> >                ?
+> >
+> > Thanks for your help,
+> >
+> > -wayne
+> >
+> >
+> >
+> >
+> > > On Jun 17, 2015, at 3:33 PM, Curtis Rueden <ctrueden at WISC.EDU> wrote:
+> > >
+> > > Hi Wayne,
+> > >
+> > > It may be that the Maven download is choosing a mirror with wrong SHA1. Or it may be that your download is truly incomplete.
+> > >
+> > > Did you try to rm the file out of /Library/Caches/Homebrew and do it again?
+> > >
+> > > Did you try "brew update" first?
+> > >
+> > > http://stackoverflow.com/q/12757694/1207769
+> > > http://apple.stackexchange.com/q/57172
+> > >
+> > > Regards,
+> > > Curtis
+> > >
+> > > On Wed, Jun 17, 2015 at 1:51 PM, Rasband, Wayne (NIH/NIMH) [E] <rasbandw at mail.nih.gov> wrote:
+> > > Hi Curtis,
+> > >
+> > > I am still not having much luck. This is what I get when I try to use "brew install maven? to install maven:
+> > >
+> > > bash-3.2$ brew install maven
+> > > ==> Downloading http://www.apache.org/dyn/closer.cgi?path=maven/maven-3/3.2.3/binaries/apache-maven-3.2.3-bin.tar.gz
+> > > ==> Best Mirror http://apache.mesi.com.ar/maven/maven-3/3.2.3/binaries/apache-maven-3.2.3-bin.tar.gz
+> > > ######################################################################## 100.0%
+> > > Error: SHA1 mismatch
+> > > Expected: 1ce6641f7dcb4fd5785bedcdca2979da83f6d23f
+> > > Actual: 2e7c28f3ebc08b95934336680365cfaac2697155
+> > > Archive: /Library/Caches/Homebrew/maven-3.2.3.tar.gz
+> > > To retry an incomplete download, remove the file above.
+> > >
+> > > Best regards,
+> > >
+> > > -wayne
+> > >
+> > > > On Jun 17, 2015, at 12:09 PM, Curtis Rueden <ctrueden at WISC.EDU> wrote:
+> > > >
+> > > > Hi Wayne,
+> > > >
+> > > > I just pushed some commits to the ImageJA repository [1] so that it can also build the same platform-specific application bundles -- but for vanilla ImageJ1 alone.
+> > > >
+> > > > To install Maven on your OS X machine, I recommend using Homebrew [2]. Then you can simply do:
+> > > >
+> > > >     brew install maven
+> > > >
+> > > > And you'll have a working mvn command.
+> > > >
+> > > > Note that the application bundling feature requires Java 8, since it is JavaFX-related functionality.
+> > > >
+> > > > So the commands you need to build platform bundles for ImageJ 1.x are:
+> > > >
+> > > >     git clone git://github.com/imagej/ImageJA
+> > > >     cd ImageJA
+> > > >     mvn -Pdist
+> > > >
+> > > > And it should create them in the target/jfx/native folder. There should be .dmg and a .pkg installers, which including a Java 8 runtime embedded (in the ImageJ.app/Contents/PlugIns/Java.runtime folder internally). There should also be an ImageJ.app in there. There is also a double-clickable ImageJ.jar in the target/jfx/app folder (with empty lib/ folder since ImageJ 1.x has no dependencies), as well another set of installers that do _not_ include the JRE in the target/jfx/native-nojre folder.
+> > > >
+> > > > Happy to help troubleshoot if you continue to have problems getting this working.
+> > > >
+> > > > Regards,
+> > > > Curtis
+> > > >
+> > > > P.S. You may notice one exception when building the ImageJA bundles, relating to the version string not conforming to "x.y.z" pattern, but it does not halt the build.
+> > > >
+> > > > [1] https://github.com/imagej/ImageJA
+> > > > [2] http://brew.sh
+> > > >
+> > > > On Wed, Jun 17, 2015 at 9:59 AM, Rasband, Wayne (NIH/NIMH) [E] <rasbandw at mail.nih.gov> wrote:
+> > > >
+> > > > > On Jun 16, 2015, at 6:09 PM, Curtis Rueden <ctrueden at WISC.EDU> wrote:
+> > > > >
+> > > > > Hi everyone,
+> > > > >
+> > > > > For those curious about the new JavaFX packaging for ImageJ, the relevant bits are now merged to master. So you can play with it if you like:
+> > > > >
+> > > > >   git clone git://github.com/imagej/imagej
+> > > > >   mvn -Pdist
+> > > > >
+> > > > > And you should get some platform-specific application bundles in target/jfx/app and target/jfx/native directories.
+> > > > >
+> > > > > Of course, the ImageJ Updater is still ignorant of the new directory structure (with core ImageJ stuff in the lib/ folder instead of jars/). And since the native launcher is no longer the ImageJ Launcher, many CLI flags do not work at the moment. But we will keep working on it!
+> > > >
+> > > > Hi Curtis,
+> > > >
+> > > > Is there an OS X application bundle that includes Java 8 available for download? I have not had any luck getting the the ?mvn' command to work.
+> > > >
+> > > > -wayne
+> > > >
+> > > >
+> > > >
+> > > >
+> > > >
+> > > > _______________________________________________
+> > > > ImageJ-devel mailing list
+> > > > ImageJ-devel at imagej.net
+> > > > http://imagej.net/mailman/listinfo/imagej-devel
+> > > >
+> > >
+> > >
+> >
+> >
+> 
+> 
+
+
+From jay.w.warrick at gmail.com  Thu Jun 25 02:11:42 2015
+From: jay.w.warrick at gmail.com (Jay Warrick)
+Date: Thu, 25 Jun 2015 02:11:42 -0500
+Subject: [ImageJ-devel] imagej-ops : outputop-service branch
+In-Reply-To: <5818B939-3DE2-4143-BF7C-67B73A15BAB7@gmail.com>
+References: <D6107033-0756-4FBE-8CBE-BD6004F79E01@gmail.com>
+	<1434221560.1643.10.camel@uni-konstanz.de>
+	<5818B939-3DE2-4143-BF7C-67B73A15BAB7@gmail.com>
+Message-ID: <4572CE6F-AEAF-489A-ACDF-C30FC29A80F7@gmail.com>
+
+Hi Christian,
+
+Turns out most of my problems were fixed with the latest updates to the imglib2-roi (0153fc8d2a566f74c65bc5f22d85fa8669f6f60b, 0.3.2-SNAPSHOT) which corrected a bounding box miscalculation. This error resulted in "polygons" with no points given the min and max bounds were the same. There also might be an opportunity to return NaN for such polygons instead of returning an error (i.e., when polygon.size()==1, which is actually 0 since the size() method returns the size of the internal point array + 1)... depends on what you think is best.
+
+So the updated bounding box calcs fixed GeometricFeatureSet and Haralick2DFeatureSet errors.
+
+I also created a pull request (https://github.com/imagej/imagej-ops/pull/150) for what I think might be a fix for the ZernikeComputer. When using Regions.sample(region, src) with the ZernikeFeatureSet instead of an Img<UnsignedByteType> as the test class does, the width and height of the region seem to be miscalculated. Let me know if the proposed fix seems reasonable.
+
+Basically the only thing left then is the histogram features which still seems a bit funky.
+
+Cheers!
+
+Jay
+
+> On Jun 13, 2015, at 9:18 PM, Jay Warrick <jay.w.warrick at gmail.com> wrote:
+> 
+> Thanks, Christian. Good to know I'm not necessarily doing anything too far off base. I'll keep an eye out for the PRs and try my code out again at those times. I'll also see if I can't separate my code out into something that resembles a test class and pass along when I can. 
+> 
+> Thanks for the reply. I'm excited and look forward to helping as I can. Keep up the good work.
+> 
+> Cheers,
+> 
+> Jay
+> 
+> 
+> 
+>> On Jun 13, 2015, at 1:52 PM, Christian Dietz <Christian.Dietz at uni-konstanz.de> wrote:
+>> 
+>> Hi Jay,
+>> 
+>> this is great feedback. Thank you. As you already mentioned in your
+>> E-Mail, the API of the OpResolver, FeatureService etc is highly unstable
+>> at the moment as the development still is on a topic-branch of
+>> ImageJ-Ops (which is also in 0.x at the moment). However, I'm really
+>> trying to get this stuff merged to master soon. Therefore, I will start
+>> (and actually already started) a series of more atomar Pull-Requests on
+>> ImageJ-Ops to get all the stuff merged. It would be amazing if you can
+>> also have a look at the PRs and give some comments and feedback on the
+>> individual functionality.
+>> 
+>> Please find more answers in-line. Again, thank you for your feedback!
+>> Great that the stuff is used out there already ;-)
+>> 
+>> Christian
+>> 
+>> 
+>> 
+>> On Sa, 2015-06-13 at 03:29 -0500, Jay Warrick wrote: 
+>>> Hi All,
+>>> 
+>>> 
+>>> I chatted with Curtis Rueden a bit today about trying this
+>>> developmental feature extraction stuff out. He said I should note any
+>>> successes or challenges as it might help your progress. He suggested
+>>> potentially to post on the pull request but it seemed a bit long for
+>>> there.
+>>> 
+>>> 
+>>> First of all, fantastic stuff. You are bringing so much quantitative
+>>> power to the fingertips of a lot of individuals like myself. Thank
+>>> you! Secondly, sorry if I'm using anything inappropriately in the
+>>> rundown below but this is my best shot at trying to give you some
+>>> feedback on my attempt to use your code. Also, I totally realize
+>>> things are still in flux so I didn't necessarily have expectations
+>>> that all this stuff would work immediately for me.
+>>> 
+>>> 
+>>> As of what was synced to the imagej-ops : outputop-service branch
+>>> tonight, I was able to successfully get measures from a
+>>> `FirstOrderStatFeatureSet` for a set of `LabelRegion`s that I got from
+>>> a `Img<UnsignedByteType>` using `ConnectedComponents` (from latest
+>>> ImgLib2-algorithm SNAPSHOT but just temporarily copied to its own
+>>> class local for this test) and apply them to an
+>>> `Img<UnsignedShortType>` using `Regions.sample(myLabelRegion, myImg)`.
+>> 
+>> This is 100% correct. The new CCA should soon be part of the stable
+>> imglib2-algorithms. We will also make it available in Ops as soon as it
+>> was released with imglib2-algorithms. Thanks for tpietzsch for the
+>> implementation!
+>> 
+>> Anyway, I'm working on several Ops will make your live easier when
+>> trying to extract and loop over LabelRegions. 
+>> 
+>>> I think I did most of these tests using connected components detected
+>>> using a 4-connected structuring element (if that matters at all).
+>>> 
+>>> 
+>>> I ran into an issue with the `GeometricFeatureSet` where I got a 
+>>> `````
+>>> java.lang.ArrayIndexOutOfBoundsException: -1
+>>> java.util.ArrayList.elementData(ArrayList.java:400)
+>>> java.util.ArrayList.remove(ArrayList.java:477)
+>>> net.imagej.ops.geometric.polygon.DefaultConvexHullOp.run(DefaultConvexHullOp.java:127)
+>>> `````
+>>> All my regions are quite sizeable (all between 1000 and 6000 pixels,
+>>> see end of email) so I'm not sure why this would happen. I'm basically
+>>> doing the following for this test using the same regions as I used
+>>> with the `FirstOrderStatFeatureSet`
+>>> 
+>>> 
+>>> `````
+>>> GeometricFeatureSet opGeometric =
+>>> ij.op().op(GeometricFeatureSet.class, LabelRegion.class);
+>>> List<Pair<String, DoubleType>> results =
+>>> opGeometric.getFeatureList(Regions.iterable(myLabelRegion));
+>>> `````
+>> 
+>> The GeometricFeatureSet is really something we have to work on. Thanks
+>> for the report. I also found some serious problems with the design of
+>> several methods and I hope that I can fix it next week.
+>> 
+>>> 
+>>> 
+>>> I'm also having a problem with `Haralick2DFeatureSet` using those same
+>>> `LabelRegion`s.
+>>> `````
+>>> java.lang.ArrayIndexOutOfBoundsException: -1
+>>> net.imglib2.roi.labeling.LabelRegion.dimension(LabelRegion.java:459)
+>>> net.imglib2.AbstractWrappedInterval.dimension(AbstractWrappedInterval.java:59)
+>>> net.imagej.ops.features.haralick.helper.CooccurrenceMatrix2D.run(CooccurrenceMatrix2D.java:119)
+>>> `````
+>>> I'm testing the `Haralick2DFeatureSet` as follows...
+>>> ````
+>>> Haralick2DFeatureSet<UnsignedShortType> opHaralick2DHor =
+>>> ij.op(Haralick2DFeatureSet.class,
+>>> (IterableInterval<UnsignedShortType>) image, 8d, 1d, "HORIZONTAL");
+>>> List<Pair<String, DoubleType>> results =
+>>> opHaralick2DHor.getFeatureList(Regions.sample(myLabelRegion, image));
+>>> `````
+>> 
+>> This is something we have to look into as soon as we file the Haralick
+>> PR. I will turn your code into a test and make sure that it works.
+>> 
+>>> 
+>>> The `HistogramFeatureSet` appears to work. I think I don't have my
+>>> image adjusted right to see appropriate values in the histogram output
+>>> though as I seem to get all 0's. I assumed the "number of bins"
+>>> parameter would autoscale the data according to the image type (e.g.,
+>>> UnsignedShortType image scaled to fit in 256 levels/bins) but I can
+>>> see why that was likely a bad assumption.
+>> 
+>> This should actually happen. I will double-check. Again, as soon as we
+>> file the "HistogramFeature" PR, it would be great if you could test
+>> again. 
+>>> 
+>>> 
+>>> The `ImageMomentsFeatureSet` seems to work fine.
+>>> 
+>>> 
+>>> I got the following error trying to use the `Zernike` feature set...
+>>> `````
+>>> java.lang.NumberFormatException
+>>> java.math.BigDecimal.<init>(BigDecimal.java:470)
+>>> java.math.BigDecimal.<init>(BigDecimal.java:739)
+>>> java.math.BigDecimal.valueOf(BigDecimal.java:1069)
+>>> net.imagej.types.BigComplex.setReal(BigComplex.java:225)
+>>> net.imagej.ops.features.zernike.ZernikeComputer.normalize(ZernikeComputer.java:193)
+>>> net.imagej.ops.features.zernike.ZernikeComputer.fastZernikeComputation(ZernikeComputer.java:151)
+>>> `````
+>>> I'm using it as follows on the 8-bit mask image
+>>> `````
+>>> ZernikeFeatureSet<UnsignedByteType> opZernike =
+>>> ij.op().op(ZernikeFeatureSet.class,
+>>> (IterableInterval<UnsignedByteType>) mask, true, true, 1, 3);
+>>> List<Pair<String, DoubleType>> results =
+>>> opZernike.getFeatureList(Regions.sample(myLabelRegion, mask));
+>>> `````
+>> 
+>> I will forward it to the implementor of Zernike. Seems that there are
+>> some tests missing.
+>> 
+>>> 
+>>> I figured, in case I'm doing a bunch of things wrong, it would be
+>>> easier for you to just have the data I'm using to see if you get the
+>>> same issues using your own code. The images that I'm using are here...
+>>> 
+>>> 
+>>> https://drive.google.com/folderview?id=0BzopfqjGpdu8flBNTHdjXzN2eUJhR1NCNmNTbHJ5T3RNVDJRbmdwVnJiYnI0Nk43ZXp3QzA&usp=sharing
+>>> 
+>>> 
+>>> The folder includes a small txt output of only the label regions that
+>>> I'm analyzing (their pixel areas and centers of mass), given I am not
+>>> using all labeled objects that come from the connected components
+>>> analysis. Lastly, my label indices start at 0 if you are looking to
+>>> match up output from ConnectedComponents with this.
+>>> 
+>>> 
+>>> If you have any feedback on where I might be doing things wrong,
+>>> please let me know.
+>>> 
+>> 
+>> Thanks for the data. We will also soon have a Image Segment Feature Node
+>> within KNIME and also use the KNIME testing system to find the last(...)
+>> bugs. Maybe this node can also help you extracting features for your
+>> data!
+>> 
+>>> 
+>>> Thanks!
+>>> 
+>>> 
+>>> Jay
+>>> 
+>>> 
+>>> 
+>>> 
+>>> _______________________________________________
+>>> ImageJ-devel mailing list
+>>> ImageJ-devel at imagej.net
+>>> http://imagej.net/mailman/listinfo/imagej-devel
+>> 
+>> 
+>> 
+>> _______________________________________________
+>> ImageJ-devel mailing list
+>> ImageJ-devel at imagej.net
+>> http://imagej.net/mailman/listinfo/imagej-devel
+> 
+> 
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+
+
+
+From dan at chalkie.org.uk  Thu Jun 25 07:32:32 2015
+From: dan at chalkie.org.uk (Daniel White)
+Date: Thu, 25 Jun 2015 14:32:32 +0200
+Subject: [ImageJ-devel] plugin dev in elcipse
+Message-ID: <CAGskW5NKaKumB8uCx1cZHcy11o8H5VOiQFkYFqWqSCW-DQ9LTw@mail.gmail.com>
+
+Hi All,
+
+I'm setting up my plugin dev environment (win7 x64), by reading the docs on
+the fiji.sc pages.
+I got eclipse installed, new JDK installed and seen by eclipse,
+Colocalization_Analysis plugin cloned from github using github for windows
+I imported the plugin as described with the import maven project gadget in
+eclipse,
+and it got the dependencies as jars apparently.
+
+So i can run imageJ from there by highlighting the ij jar and doing run as
+java application,
+but the coloc_2 plugin doesnt appear in the Analyze menu??????
+
+The Fiji.sc docs describe how to do a plugin in the script editor,
+or how to develop imageJ itself in eclipse,
+but not how to get one of the external Fiji plugins, like coloc analysis,
+and then run Fiji with my hacked plugin code running from eclipse????
+
+Can I help fix the docs so noobs like me can get started easier,
+and in the process get myself up and running with a little help from on of
+you folks please?
+
+cheers
+
+Dan White
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150625/1f1e9f3c/attachment.html>
+
+From hiner at wisc.edu  Thu Jun 25 12:39:18 2015
+From: hiner at wisc.edu (Mark Hiner)
+Date: Thu, 25 Jun 2015 12:39:18 -0500
+Subject: [ImageJ-devel] plugin dev in elcipse
+In-Reply-To: <CAGskW5NKaKumB8uCx1cZHcy11o8H5VOiQFkYFqWqSCW-DQ9LTw@mail.gmail.com>
+References: <CAGskW5NKaKumB8uCx1cZHcy11o8H5VOiQFkYFqWqSCW-DQ9LTw@mail.gmail.com>
+Message-ID: <CA+B=mGp6ZPc1bodo2oSPafSKj4CUtXLfCd9ts_ireOSXKQ6WFg@mail.gmail.com>
+
+Hi Daniel,
+
+>The Fiji.sc docs describe how to do a plugin in the script editor,
+>or how to develop imageJ itself in eclipse,
+>but not how to get one of the external Fiji plugins, like coloc analysis,
+>and then run Fiji with my hacked plugin code running from eclipse????
+
+This process is described in the Developing Fiji in Eclipse tutorial[1] -
+which I just updated with a bit more information.
+
+>i can run imageJ from there by highlighting the ij jar and doing run as
+java application
+
+If you are running ij.jar from the Maven dependencies of
+Colocalisation_Analysis, then Eclipse is likely just literally executing
+the jar without anything else on the classpath. Using Debug.run will give
+you an ImageJ with your plugin loaded properly.
+
+Also, if you don't want to make a temporary main method, you can always
+build the .jar for your plugin and put it into an existing Fiji
+installation.
+
+Hope that helps.
+
+Best,
+Mark
+
+[1] http://imagej.net/Developing_Fiji_in_Eclipse#Running_and_Debugging
+
+
+On Thu, Jun 25, 2015 at 7:32 AM, Daniel White <dan at chalkie.org.uk> wrote:
+
+> Hi All,
+>
+> I'm setting up my plugin dev environment (win7 x64), by reading the docs
+> on the fiji.sc pages.
+> I got eclipse installed, new JDK installed and seen by eclipse,
+> Colocalization_Analysis plugin cloned from github using github for windows
+> I imported the plugin as described with the import maven project gadget in
+> eclipse,
+> and it got the dependencies as jars apparently.
+>
+> So i can run imageJ from there by highlighting the ij jar and doing run as
+> java application,
+> but the coloc_2 plugin doesnt appear in the Analyze menu??????
+>
+> The Fiji.sc docs describe how to do a plugin in the script editor,
+> or how to develop imageJ itself in eclipse,
+> but not how to get one of the external Fiji plugins, like coloc analysis,
+> and then run Fiji with my hacked plugin code running from eclipse????
+>
+> Can I help fix the docs so noobs like me can get started easier,
+> and in the process get myself up and running with a little help from on of
+> you folks please?
+>
+> cheers
+>
+> Dan White
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150625/6af9a493/attachment.html>
+
+From warrick at wisc.edu  Fri Jun 26 17:04:07 2015
+From: warrick at wisc.edu (Jay Warrick)
+Date: Fri, 26 Jun 2015 17:04:07 -0500
+Subject: [ImageJ-devel] Blitter-like operations
+Message-ID: <8E30BFF3-4CA2-4BCC-9115-CC05A4A7ADB2@wisc.edu>
+
+Hi All,
+
+For some reason, I'm having trouble finding the intended workflow with imglib2 for performing blitter-like operations using Img<whatever> images.
+
+Suggestions? It looks like the ImageCalculator class is deprecated. It works but it is a command and always seems to want to pop up and image window after calculation which I don't want to have happen during my function. Also, conversion of the Img<DoubleType> to Img<something else> seems to be escaping me as well. I'm just copying the "copyDataInto" method of the ImageCalculator class for now.
+
+Thanks,
+
+Jay
+
+
+
+From bnorthan at gmail.com  Mon Jun 29 09:21:50 2015
+From: bnorthan at gmail.com (Brian Northan)
+Date: Mon, 29 Jun 2015 10:21:50 -0400
+Subject: [ImageJ-devel] built ins
+Message-ID: <CAMWa8i1XfV+-qMtgmVLHxvouj=4n0rXThD+j9bGQBM7zU4gJKw@mail.gmail.com>
+
+Hi everyone
+
+Just noticed that built-ins were added recently.
+
+https://github.com/imagej/imagej-ops/pull/145
+
+Is there documentation anywhere on how to update the built-ins after
+updating the signature of an op??
+
+Mainly I'm wondering if there is any scripts or automated code generation
+steps to perform??
+
+If it is just a matter of updating the signatures manually I can figure out
+how to do that.  Just want to make I don't miss an automated step I should
+be running.
+
+Thanks
+
+Brian
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150629/f4510f4c/attachment.html>
+
+From ctrueden at wisc.edu  Mon Jun 29 13:49:06 2015
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Mon, 29 Jun 2015 13:49:06 -0500
+Subject: [ImageJ-devel] built ins
+In-Reply-To: <CAMWa8i1XfV+-qMtgmVLHxvouj=4n0rXThD+j9bGQBM7zU4gJKw@mail.gmail.com>
+References: <CAMWa8i1XfV+-qMtgmVLHxvouj=4n0rXThD+j9bGQBM7zU4gJKw@mail.gmail.com>
+Message-ID: <CADN69y=z7D0f2L5EL=1YuqJ=6cqQiQw1MQq3oZg6KWfH9F2duA@mail.gmail.com>
+
+Hi Brian,
+
+> Is there documentation anywhere on how to update the built-ins after
+> updating the signature of an op??
+
+Not yet. We can make a wiki page. The other thing missing is a top-level
+"built-ins completeness test" to make sure that all built-ins are actually
+present and being tested for. (Right now, each unit tests covers a specific
+op name, but there is no test that verifies all op names are being tested.)
+
+Due to limitations in generic type matching (as described at
+https://github.com/imagej/imagej-ops/issues/19), we were not able to fully
+automate generation of the built-in methods. So unfortunately they must be
+added manually. But there is a significant unit testing infrastructure that
+tries hard to verify everything matches.
+
+Here's a quick rundown:
+
+1A) If you add a new concrete op implementation for an existing op name,
+then the existing built-in test method will pick it up.
+
+1B) Or if the implementation corresponds to a new name foo, you can add the
+completeness test by adding a new testFoo() method to the appropriate
+namespace test class (e.g., MathNamespaceTest for math, LogicNamespaceTest
+for logic, or GlobalNamespaceTest for methods in the OpService itself).
+
+2) The unit test will notice that your new op does not have corresponding
+built-in method signature(s), and spit out a detailed error message
+suggesting the method bodies to be added. The method bodies are pretty
+close to correct except for they are missing generic parameters. So you
+must tweak the argument types by hand to make the generics match the fields
+of the concrete op implementation.
+
+3) Then just paste the method body into the appropriate namespace class
+(e.g., MathNamespace for math, LogicNamespace for logic, or OpService and
+DefaultOpService for global. Then the relevant completeness test should
+pass again.
+
+4) If multiple ops have clashing signatures, you can make a single built-in
+method with an @OpMethod annotation the specifies multiple concrete op
+classes in its "ops" attribute. Method parameters and return type must then
+use the most common compatible superclass of all involved ops.
+
+Let me know if any of that needs clarification; happy to elaborate further,
+and point out specific examples as needed.
+
+Regards,
+Curtis
+
+On Mon, Jun 29, 2015 at 9:21 AM, Brian Northan <bnorthan at gmail.com> wrote:
+
+> Hi everyone
+>
+> Just noticed that built-ins were added recently.
+>
+> https://github.com/imagej/imagej-ops/pull/145
+>
+> Is there documentation anywhere on how to update the built-ins after
+> updating the signature of an op??
+>
+> Mainly I'm wondering if there is any scripts or automated code generation
+> steps to perform??
+>
+> If it is just a matter of updating the signatures manually I can figure
+> out how to do that.  Just want to make I don't miss an automated step I
+> should be running.
+>
+> Thanks
+>
+> Brian
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150629/fa09cd15/attachment.html>
+
+From warrick at wisc.edu  Tue Jun 30 01:01:26 2015
+From: warrick at wisc.edu (Jay Warrick)
+Date: Tue, 30 Jun 2015 01:01:26 -0500
+Subject: [ImageJ-devel] Bug? using ConnectedComponents and LabelRegion(s)
+ with ImageJFunctions.wrapByte(ImagePlus imp)
+Message-ID: <31538A22-2395-48FA-B6F9-2A7871D419CF@wisc.edu>
+
+Hi All,
+
+I am getting different behavior using the new ConnectedComponents class of imglib2-algorithm depending on whether I get and Img<UnsignedByteType> from a SCIFIO ImageOpener vs. when I get the same image as an Img<UnsignedByteType> by wrapping an ImagePlus. In the SCIFIO case, ConnectedComponents finds the expected single circle while with a wrapped ImagePlus, it doesn't find any regions.
+
+Any thoughts/fixes? Might there be something occurring during the wrapping process to cause an issue? Here is a tiny commented maven project with the example scenario.
+
+https://github.com/jaywarrick/ConnectedComponentsTest
+
+The tiny .tif I'm using is included in the project but is loaded by a string path. Thus, you need to retype the path to the image to match your computer, but that should be it. Sorry... wasn't sure how to avoid that easily.
+
+Thanks for your help,
+
+Jay
+
+
+
+From bnorthan at gmail.com  Tue Jun 30 09:04:27 2015
+From: bnorthan at gmail.com (Brian Northan)
+Date: Tue, 30 Jun 2015 10:04:27 -0400
+Subject: [ImageJ-devel] built ins
+In-Reply-To: <CADN69y=z7D0f2L5EL=1YuqJ=6cqQiQw1MQq3oZg6KWfH9F2duA@mail.gmail.com>
+References: <CAMWa8i1XfV+-qMtgmVLHxvouj=4n0rXThD+j9bGQBM7zU4gJKw@mail.gmail.com>
+	<CADN69y=z7D0f2L5EL=1YuqJ=6cqQiQw1MQq3oZg6KWfH9F2duA@mail.gmail.com>
+Message-ID: <CAMWa8i3==GvRy0LCpOQXN3wB6cE9KBHHOvxSOu7wDL35piwfFw@mail.gmail.com>
+
+Thanks Curtis
+
+I was able to get it working.  The error message from the unit test were
+very helpful.  I'll let you know if any issues come up.
+
+Brian
+
+On Mon, Jun 29, 2015 at 2:49 PM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+
+> Hi Brian,
+>
+> > Is there documentation anywhere on how to update the built-ins after
+> > updating the signature of an op??
+>
+> Not yet. We can make a wiki page. The other thing missing is a top-level
+> "built-ins completeness test" to make sure that all built-ins are actually
+> present and being tested for. (Right now, each unit tests covers a specific
+> op name, but there is no test that verifies all op names are being tested.)
+>
+> Due to limitations in generic type matching (as described at
+> https://github.com/imagej/imagej-ops/issues/19), we were not able to
+> fully automate generation of the built-in methods. So unfortunately they
+> must be added manually. But there is a significant unit testing
+> infrastructure that tries hard to verify everything matches.
+>
+> Here's a quick rundown:
+>
+> 1A) If you add a new concrete op implementation for an existing op name,
+> then the existing built-in test method will pick it up.
+>
+> 1B) Or if the implementation corresponds to a new name foo, you can add
+> the completeness test by adding a new testFoo() method to the appropriate
+> namespace test class (e.g., MathNamespaceTest for math, LogicNamespaceTest
+> for logic, or GlobalNamespaceTest for methods in the OpService itself).
+>
+> 2) The unit test will notice that your new op does not have corresponding
+> built-in method signature(s), and spit out a detailed error message
+> suggesting the method bodies to be added. The method bodies are pretty
+> close to correct except for they are missing generic parameters. So you
+> must tweak the argument types by hand to make the generics match the fields
+> of the concrete op implementation.
+>
+> 3) Then just paste the method body into the appropriate namespace class
+> (e.g., MathNamespace for math, LogicNamespace for logic, or OpService and
+> DefaultOpService for global. Then the relevant completeness test should
+> pass again.
+>
+> 4) If multiple ops have clashing signatures, you can make a single
+> built-in method with an @OpMethod annotation the specifies multiple
+> concrete op classes in its "ops" attribute. Method parameters and return
+> type must then use the most common compatible superclass of all involved
+> ops.
+>
+> Let me know if any of that needs clarification; happy to elaborate
+> further, and point out specific examples as needed.
+>
+> Regards,
+> Curtis
+>
+> On Mon, Jun 29, 2015 at 9:21 AM, Brian Northan <bnorthan at gmail.com> wrote:
+>
+>> Hi everyone
+>>
+>> Just noticed that built-ins were added recently.
+>>
+>> https://github.com/imagej/imagej-ops/pull/145
+>>
+>> Is there documentation anywhere on how to update the built-ins after
+>> updating the signature of an op??
+>>
+>> Mainly I'm wondering if there is any scripts or automated code generation
+>> steps to perform??
+>>
+>> If it is just a matter of updating the signatures manually I can figure
+>> out how to do that.  Just want to make I don't miss an automated step I
+>> should be running.
+>>
+>> Thanks
+>>
+>> Brian
+>>
+>> _______________________________________________
+>> ImageJ-devel mailing list
+>> ImageJ-devel at imagej.net
+>> http://imagej.net/mailman/listinfo/imagej-devel
+>>
+>>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150630/4ec9432e/attachment.html>
+
+From ctrueden at wisc.edu  Tue Jun 30 12:34:22 2015
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Tue, 30 Jun 2015 12:34:22 -0500
+Subject: [ImageJ-devel] Bug? using ConnectedComponents and
+ LabelRegion(s) with ImageJFunctions.wrapByte(ImagePlus imp)
+In-Reply-To: <31538A22-2395-48FA-B6F9-2A7871D419CF@wisc.edu>
+References: <31538A22-2395-48FA-B6F9-2A7871D419CF@wisc.edu>
+Message-ID: <CADN69ykwXVJePB2_RSrmgDQz_gJj17cURBkeTRi21iN2FyMnZg@mail.gmail.com>
+
+Hi Jay,
+
+Interesting bug. I did some digging. The two Img<UnsignedByteType>
+instances are identical in terms of dimensionality and pixel values, so
+that isn't the culprit.
+
+I also tried disabling the labeling computation for SCIFIO to see if it was
+an issue of tainted state, but the order of computation doesn't seem to
+make a difference either.
+
+I also stepped a bit with the debugger and certainly the issue is inside of
+ConnectedComponents.labelAllConnectedComponents. On line 115, the value of
+numLabels comes back as 2 for the SCIFIO image and 1 for the IJ1 image.
+Digging deeper becomes tricky due to the multithreadedness of the
+algorithm, but I fear that's what you'll have to do in order to isolate the
+difference in behavior.
+
+Regards,
+Curtis
+
+On Tue, Jun 30, 2015 at 1:01 AM, Jay Warrick <warrick at wisc.edu> wrote:
+
+> Hi All,
+>
+> I am getting different behavior using the new ConnectedComponents class of
+> imglib2-algorithm depending on whether I get and Img<UnsignedByteType> from
+> a SCIFIO ImageOpener vs. when I get the same image as an
+> Img<UnsignedByteType> by wrapping an ImagePlus. In the SCIFIO case,
+> ConnectedComponents finds the expected single circle while with a wrapped
+> ImagePlus, it doesn't find any regions.
+>
+> Any thoughts/fixes? Might there be something occurring during the wrapping
+> process to cause an issue? Here is a tiny commented maven project with the
+> example scenario.
+>
+> https://github.com/jaywarrick/ConnectedComponentsTest
+>
+> The tiny .tif I'm using is included in the project but is loaded by a
+> string path. Thus, you need to retype the path to the image to match your
+> computer, but that should be it. Sorry... wasn't sure how to avoid that
+> easily.
+>
+> Thanks for your help,
+>
+> Jay
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150630/93eebdeb/attachment.html>
+
+From warrick at wisc.edu  Tue Jun 30 15:05:26 2015
+From: warrick at wisc.edu (Jay Warrick)
+Date: Tue, 30 Jun 2015 15:05:26 -0500
+Subject: [ImageJ-devel] Bug? using ConnectedComponents and
+ LabelRegion(s) with ImageJFunctions.wrapByte(ImagePlus imp)
+In-Reply-To: <CADN69ykwXVJePB2_RSrmgDQz_gJj17cURBkeTRi21iN2FyMnZg@mail.gmail.com>
+References: <31538A22-2395-48FA-B6F9-2A7871D419CF@wisc.edu>
+	<CADN69ykwXVJePB2_RSrmgDQz_gJj17cURBkeTRi21iN2FyMnZg@mail.gmail.com>
+Message-ID: <B740DEF4-B38F-4C27-9FF0-92CFB9F64FC0@wisc.edu>
+
+Curtis - Thanks so much for digging. This focuses my efforts greatly. 
+
+Tobias - If you see this email... I noticed that you are listed as author of the ConnectedComponents class. Any thoughts as I dig in?
+
+Thanks,
+
+Jay
+
+> On Jun 30, 2015, at 12:34 PM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+> 
+> Hi Jay,
+> 
+> Interesting bug. I did some digging. The two Img<UnsignedByteType> instances are identical in terms of dimensionality and pixel values, so that isn't the culprit.
+> 
+> I also tried disabling the labeling computation for SCIFIO to see if it was an issue of tainted state, but the order of computation doesn't seem to make a difference either.
+> 
+> I also stepped a bit with the debugger and certainly the issue is inside of ConnectedComponents.labelAllConnectedComponents. On line 115, the value of numLabels comes back as 2 for the SCIFIO image and 1 for the IJ1 image. Digging deeper becomes tricky due to the multithreadedness of the algorithm, but I fear that's what you'll have to do in order to isolate the difference in behavior.
+> 
+> Regards,
+> Curtis
+> 
+> On Tue, Jun 30, 2015 at 1:01 AM, Jay Warrick <warrick at wisc.edu <mailto:warrick at wisc.edu>> wrote:
+> Hi All,
+> 
+> I am getting different behavior using the new ConnectedComponents class of imglib2-algorithm depending on whether I get and Img<UnsignedByteType> from a SCIFIO ImageOpener vs. when I get the same image as an Img<UnsignedByteType> by wrapping an ImagePlus. In the SCIFIO case, ConnectedComponents finds the expected single circle while with a wrapped ImagePlus, it doesn't find any regions.
+> 
+> Any thoughts/fixes? Might there be something occurring during the wrapping process to cause an issue? Here is a tiny commented maven project with the example scenario.
+> 
+> https://github.com/jaywarrick/ConnectedComponentsTest <https://github.com/jaywarrick/ConnectedComponentsTest>
+> 
+> The tiny .tif I'm using is included in the project but is loaded by a string path. Thus, you need to retype the path to the image to match your computer, but that should be it. Sorry... wasn't sure how to avoid that easily.
+> 
+> Thanks for your help,
+> 
+> Jay
+> 
+> 
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net <mailto:ImageJ-devel at imagej.net>
+> http://imagej.net/mailman/listinfo/imagej-devel <http://imagej.net/mailman/listinfo/imagej-devel>
+> 
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20150630/9a3ab628/attachment.html>
+

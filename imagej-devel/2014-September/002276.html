@@ -1,0 +1,158 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [fiji-devel] imglib2-neon project for runtime	bytecode transformation
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20imglib2-neon%20project%20for%20runtime%0A%09bytecode%20transformation&In-Reply-To=%3CB416CAAC-AEF9-434E-B989-E85C86DF6CD4%40gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002252.html">
+   <LINK REL="Next"  HREF="002251.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [fiji-devel] imglib2-neon project for runtime	bytecode transformation</H1>
+    <B>Albert Cardona</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20imglib2-neon%20project%20for%20runtime%0A%09bytecode%20transformation&In-Reply-To=%3CB416CAAC-AEF9-434E-B989-E85C86DF6CD4%40gmail.com%3E"
+       TITLE="[ImageJ-devel] [fiji-devel] imglib2-neon project for runtime	bytecode transformation">sapristi at gmail.com
+       </A><BR>
+    <I>Tue Sep 23 21:41:16 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002252.html">[ImageJ-devel] [fiji-devel] imglib2-neon project for runtime	bytecode transformation
+</A></li>
+        <LI>Next message: <A HREF="002251.html">[ImageJ-devel] imglib2-neon project for runtime bytecode	transformation
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2276">[ date ]</a>
+              <a href="thread.html#2276">[ thread ]</a>
+              <a href="subject.html#2276">[ subject ]</a>
+              <a href="author.html#2276">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Tobias,
+
+Just to add to the cheer. It is not everyday that one sees 97% improvements on performance. I understand this is preliminary. Looking forward to seeing it applied in real world code.
+
+Albert
+
+
+&gt;<i> On Sep 23, 2014, at 7:02 PM, Tobias Pietzsch &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pietzsch at mpi-cbg.de</A>&gt; wrote:
+</I>&gt;<i> 
+</I>&gt;<i> Hi guys,
+</I>&gt;<i> 
+</I>&gt;<i> As a weekend project I have started to look into bytecode modification using the wonderful ASM library (<A HREF="http://asm.ow2.org">http://asm.ow2.org</A>).
+</I>&gt;<i> I have cleaned up what I have played with and put it on github <A HREF="https://github.com/tpietzsch/neon.">https://github.com/tpietzsch/neon.</A>
+</I>&gt;<i> 
+</I>&gt;<i> It tackles a long-standing imglib obstacle, namely megamorphic call-sites in certain methods, where the JIT fails to recognise that the runtime target of the polymorphic changes between calls to a method but doesn&#8217;t change in the hot inner loop of the method during a single call. I have been talking about ideas to address this for quite some time, most recently here <A HREF="https://github.com/imglib/imglib/issues/71#issuecomment-51227237.">https://github.com/imglib/imglib/issues/71#issuecomment-51227237.</A> Now I went ahead and actually tried to do something about it.
+</I>&gt;<i> 
+</I>&gt;<i> I have applied it to an example in imglib, which is described below. But for anyone not familiar with this particular issue (which is everyone except Christian probably) there
+</I>&gt;<i> is an illustrative example with explanations in the README on github <A HREF="https://github.com/tpietzsch/neon/blob/master/README.md.">https://github.com/tpietzsch/neon/blob/master/README.md.</A>
+</I>&gt;<i> This does not involve imglib at all and is a clear illustration of the problem (and my solution).
+</I>&gt;<i> 
+</I>&gt;<i> I&#8217;m quite happy with how it turned out so far. It certainly has to be applied with care, but I think this can be potentially huge for imglib2. It might open up new possibilities that we have shied away from because of performance reasons, such as internal iteration for IterableIntervals.
+</I>&gt;<i> 
+</I>&gt;<i> Curtis, Johannes and Christian, I would also be interested what you think of this as a potential tool for imagej-ops.
+</I>&gt;<i> I think it is orthogonal to what you do with compile-time code generation currently and therefore might complement it nicely.
+</I>&gt;<i> 
+</I>&gt;<i> I hope you have a look and tell me what you think.
+</I>&gt;<i> I would be especially interested in whether you can think of optimization idioms besides the @Instantiate @ByTypeOf that is implemented right now.
+</I>&gt;<i> It would be cool if we discuss this in the upcoming imglib hackathon.
+</I>&gt;<i> 
+</I>&gt;<i> Okay, everybody except Christian might as well stop reading now.
+</I>&gt;<i> 
+</I>&gt;<i> all the best,
+</I>&gt;<i> Tobias
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> PS: the imglib stuff...
+</I>&gt;<i> 
+</I>&gt;<i> For the imglib issue <A HREF="https://github.com/imglib/imglib/issues/71,">https://github.com/imglib/imglib/issues/71,</A> we played with ways of iterating pixels which can be optimized for certain subintervals of larger images.
+</I>&gt;<i> The optimizations work out nicely when done on their own, but everything really breaks down when a single method is used with differnent Cursor incarnations.
+</I>&gt;<i> This is actually already a potential problem in standard imglib, when Cursors from different Img types are uses in a single method. But adding the new optimized versions
+</I>&gt;<i> only made it more probable that the problem actually occurs.
+</I>&gt;<i> 
+</I>&gt;<i> Here is numbers from a recent test, at a stage where 4 different kinds of cursors are in play:
+</I>&gt;<i> 
+</I>&gt;<i> normal cursor | array img
+</I>&gt;<i> walk through a subinterval
+</I>&gt;<i>    | Unoptimized    | Optimized    | Speedup Time    | Speedup %    |
+</I>&gt;<i> Best    |    566    |    371    | 195ms       | 34.4%       |
+</I>&gt;<i> 
+</I>&gt;<i> localizing cursor | array img
+</I>&gt;<i> walk through a subinterval
+</I>&gt;<i>    | Unoptimized    | Optimized    | Speedup Time    | Speedup %    |
+</I>&gt;<i> Best    |    907    |    584    | 323ms       | 35.6%       |
+</I>&gt;<i> 
+</I>&gt;<i> normal cursor | planar img
+</I>&gt;<i> walk through a subinterval
+</I>&gt;<i>    | Unoptimized    | Optimized    | Speedup Time    | Speedup %    |
+</I>&gt;<i> Best    |    562    |    373    | 189ms       | 33.6%       |
+</I>&gt;<i> 
+</I>&gt;<i> localizing cursor | planar img
+</I>&gt;<i> walk through a subinterval
+</I>&gt;<i>    | Unoptimized    | Optimized    | Speedup Time    | Speedup %    |
+</I>&gt;<i> Best    |    928    |    611    | 317ms       | 34.1%       |
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> With the neon java agent this improves to:
+</I>&gt;<i> 
+</I>&gt;<i> normal cursor | array img
+</I>&gt;<i> walk through a subinterval
+</I>&gt;<i>    | Unoptimized    | Optimized    | Speedup Time    | Speedup %    |
+</I>&gt;<i> Best    |    153    |    8    | 145ms       | 94.7%       |
+</I>&gt;<i> 
+</I>&gt;<i> localizing cursor | array img
+</I>&gt;<i> walk through a subinterval
+</I>&gt;<i>    | Unoptimized    | Optimized    | Speedup Time    | Speedup %    |
+</I>&gt;<i> Best    |    235    |    200    | 35ms       | 14.8%       |
+</I>&gt;<i> 
+</I>&gt;<i> normal cursor | planar img
+</I>&gt;<i> walk through a subinterval
+</I>&gt;<i>    | Unoptimized    | Optimized    | Speedup Time    | Speedup %    |
+</I>&gt;<i> Best    |    128    |    8    | 120ms       | 93.7%       |
+</I>&gt;<i> 
+</I>&gt;<i> localizing cursor | planar img
+</I>&gt;<i> walk through a subinterval
+</I>&gt;<i>    | Unoptimized    | Optimized    | Speedup Time    | Speedup %    |
+</I>&gt;<i> Best    |    217    |    208    | 9ms       | 4.1%       |
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> A speedup of factor ~4 to ~40 can be observed.
+</I>&gt;<i> These two runs were made with exactly the same code, but for the second one, the program was run with the option
+</I>&gt;<i>   java -javaagent:/path/to/neon-1.0.0-SNAPSHOT.jar &#8230;
+</I>&gt;<i> 
+</I>&gt;<i> I just pushed the example to <A HREF="https://github.com/imglib/imglib/commit/a9b70d923e9a84c4055acae96f71d05ca4a26344">https://github.com/imglib/imglib/commit/a9b70d923e9a84c4055acae96f71d05ca4a26344</A>
+</I>&gt;<i> 
+</I>
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002252.html">[ImageJ-devel] [fiji-devel] imglib2-neon project for runtime	bytecode transformation
+</A></li>
+	<LI>Next message: <A HREF="002251.html">[ImageJ-devel] imglib2-neon project for runtime bytecode	transformation
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2276">[ date ]</a>
+              <a href="thread.html#2276">[ thread ]</a>
+              <a href="subject.html#2276">[ subject ]</a>
+              <a href="author.html#2276">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

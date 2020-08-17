@@ -1,0 +1,293 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Plugin Philosophy?
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Plugin%20Philosophy%3F&In-Reply-To=%3CCADN69ykXsuT5BAVt1eXJdpj_4Q2Ddj_8pzCXiTnqPu7yzKEDMQ%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001932.html">
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Plugin Philosophy?</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Plugin%20Philosophy%3F&In-Reply-To=%3CCADN69ykXsuT5BAVt1eXJdpj_4Q2Ddj_8pzCXiTnqPu7yzKEDMQ%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Plugin Philosophy?">ctrueden at wisc.edu
+       </A><BR>
+    <I>Fri Jan 31 16:50:41 CST 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001932.html">[ImageJ-devel] Problem with Exporting Runnable Jar
+</A></li>
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1933">[ date ]</a>
+              <a href="thread.html#1933">[ thread ]</a>
+              <a href="subject.html#1933">[ subject ]</a>
+              <a href="author.html#1933">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Jay,
+
+&gt;<i> I have the bridge between JEX and IJ2 pretty well roughed together.
+</I>
+That is great!
+
+&gt;<i> When the plugins have a service as a parameter, it often leaves vague
+</I>&gt;<i> what that service will specifically provide for the function. For
+</I>&gt;<i> example, the &quot;Fill&quot; plugin (i.e., the FillDataValues class) takes an
+</I>&gt;<i> OptionsService as a parameter. But, when using the CommandService and
+</I>&gt;<i> discovering this input, it is not obvious at all that the plugin is
+</I>&gt;<i> really looking for a color with which to fill the specified region.
+</I>
+That is an excellent point. Really, any object type can be annotated as an
+@Parameter input. In the example you gave, the Fill command should really
+annotate a ColorRGB as the input. And then to fill with the foreground
+color we should have a separate &quot;FillWithForeground&quot; command that takes the
+correct Options plugin as input (not just the OptionsService) and extracts
+the foreground from that and invokes the Fill command via its API.
+
+This sort of refactoring is straightforward but requires someone to observe
+specifically where the API is weak and file issues so that we can
+prioritize and track that effort.
+
+&gt;<i> This concept extrapolates somewhat as well to the use of an
+</I>&gt;<i> ImageDisplay as an input, it appears that often an ImageDisplay object
+</I>&gt;<i> is used to help specify both a Dataset and an image plane index.
+</I>
+Absolutely, totally agreed. Again, making the commands more fine-grained
+and modular is certainly a goal.
+
+&gt;<i> Further, if I don't have an ImageJ2 ImageDisplay viewed, I can't
+</I>&gt;<i> change the particular plane that is being operated on without creating
+</I>&gt;<i> a one-off wrapper for this plugin to specify that information.
+</I>&gt;<i> Likewise, if I create a widget to display every time an ImageDisplay
+</I>&gt;<i> is asked for to ask for an image plane index, there are myriad other
+</I>&gt;<i> properties that I would also need to provide widgets for if I want to
+</I>&gt;<i> give the user flexibility for all the types of things that can be
+</I>&gt;<i> learned from an ImageDisplay.
+</I>
+Right, I don't think that's the way to go at all. The commands shipped with
+ImageJ2 need to be more low-level and fine-grained, with more
+&quot;default-centric&quot; commands that delegate to them using the current state of
+the ImageJ system (e.g., the currently active ImageDisplay).
+
+&gt;<i> The purpose of the &quot;DataTransformPlugins&quot; would be to do the actual
+</I>&gt;<i> editing / grunt work while the &quot;MenuPlugins&quot; use the services and IJ2
+</I>&gt;<i> ui elements to provide the &quot;DataTransformPlugins&quot; (and other plugins)
+</I>&gt;<i> good guesses or standard choices for inputs to the algorithms and
+</I>&gt;<i> could keep the behavior of IJ2 in sync with IJ1 as needed (e.g., the
+</I>&gt;<i> Edit -&gt; Fill menu option would fill with the IJ2 foreground color).
+</I>
+Yep, that's essentially what I'm proposing above. We don't necessarily need
+separate interfaces, although there could be one or more marker interfaces
+for certain things (would need to cogitate further).
+
+&gt;<i> The DataTransformPlugins would then be much more straight forward for
+</I>&gt;<i> groups such as myself, CellProfiler, Icy, and Knime to more
+</I>&gt;<i> transparently present the algorithms of IJ2 to users in other ui's
+</I>&gt;<i> (i.e., displaying widgets and borrowing or implementing services for
+</I>&gt;<i> providing good initial guesses through our own &quot;menus&quot;).
+</I>
+Yes, although that is what the &quot;headless&quot; flag is for. Any module that
+declares itself usable headless should be able to be exposed in an external
+framework such as any of those you mentioned above. Of course, you can also
+filter based on the types of inputs the module requires. If it needs a
+FooBarFizzBob and you don't know what that is, then just exclude the module
+from your list.
+
+&gt;<i> In JEX, an object or data manager panel helps to keep the user aware
+</I>&gt;<i> of all the objects they have at their disposal and provides a means by
+</I>&gt;<i> which to select items for inputs to functions other than just active
+</I>&gt;<i> windows etc.
+</I>
+That is exactly the purpose of the SciJava ObjectService. It forms one of
+the central pillars of ImageJ2. All Datasets, DatasetViews, ImageDisplays,
+and many other kinds of objects floating around all get registered with the
+ObjectService (specifically, with its ObjectIndex). In fact, that is how
+ImageJ2's ObjectWidget (the final fall-back widget when no more appropriate
+widget can be found) knows what to populate into its drop-down list of
+choices. So I think we are most of the way there.
+
+&gt;<i> in the ROIManager, when you draw an ROI on an image you have to
+</I>&gt;<i> specifically add it to the ROIManager instead of it showing
+</I>&gt;<i> automatically.
+</I>
+That is true in ImageJ1, but not ImageJ2. Try running ImageJ2's Overlay
+Manager and you'll see that *all* overlays you draw on every dataset are
+shown there.
+
+&gt;<i> This would provide a super easy way to keep track of items and supply
+</I>&gt;<i> them to functions via selection and multi-selection (it could even be
+</I>&gt;<i> its own widget... in fact this is much like the drop down in Knime
+</I>&gt;<i> showing all the table columns on which to operate).
+</I>
+Sure. I don't really have a good vision of how that UI would function, but
+I think it would be doable in the current ImageJ2 paradigm.
+
+&gt;<i> I feel like the context dependent nature of ImageJ is one reason why
+</I>&gt;<i> the first version got so disorganized under the hood and why many of
+</I>&gt;<i> the plugin implementations were so buggy or not obvious in how to be
+</I>&gt;<i> used. I would love to see this reduced and maybe such a manager would
+</I>&gt;<i> be a step in the right direction.
+</I>
+Well, I think (though I'm certainly biased ;-) that ImageJ2 does a pretty
+good job in tracking the objects that exist thanks to the ObjectService.
+And it is designed to keep each application context separately
+encapsulated, in case multiple such contexts become necessary in the same
+JVM for any reason.
+
+Thanks very much for the detailed comments! I think your ideas are great,
+and I hope we can find time to refactor commands in those directions.
+
+We are currently using Trac (<A HREF="http://trac.imagej.net/">http://trac.imagej.net/</A>) to track the ImageJ2
+issues, but I increasingly want to migrate everything to GitHub Issues
+(would be at <A HREF="https://github.com/imagej/imagej/issues">https://github.com/imagej/imagej/issues</A>). If I turn on the
+ImageJ GitHub Issues tracker, would you be comfortable filing some of these
+specific examples of commands being &quot;not typed enough&quot; as issues in there?
+
+Regards,
+Curtis
+
+
+On Fri, Jan 17, 2014 at 11:55 AM, Jay Warrick &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">jay.w.warrick at gmail.com</A>&gt;wrote:
+
+&gt;<i> Hi Guys,
+</I>&gt;<i>
+</I>&gt;<i> I have the bridge between JEX and IJ2 pretty well roughed together. Now
+</I>&gt;<i> exploring for nuances and building up bridge in the area of ROIs. I had
+</I>&gt;<i> some thoughts I wanted to share given my recent experience as a Guinea pig
+</I>&gt;<i> in case they might help the ImageJ2 project as a whole. Sorry for the
+</I>&gt;<i> length and feel free to copy whomever you wish. Let me know if any of these
+</I>&gt;<i> avenues has potential that you would like to discuss further (I have some
+</I>&gt;<i> more thoughts on ROIs :-). I know you all have a billion things that are of
+</I>&gt;<i> higher priority so my hopes aren't high for seeing any of these things come
+</I>&gt;<i> to be but I really do just hope to increase the impact of this software.
+</I>&gt;<i> Any help I can provide as far as implementing related changes is also
+</I>&gt;<i> available to you.
+</I>&gt;<i>
+</I>&gt;<i> When the plugins have a service as a parameter, it often leaves vague what
+</I>&gt;<i> that service will specifically provide for the function. For example, the
+</I>&gt;<i> &quot;Fill&quot; plugin (i.e., the FillDataValues class) takes an OptionsService as a
+</I>&gt;<i> parameter. But, when using the CommandService and discovering this input,
+</I>&gt;<i> it is not obvious at all that the plugin is really looking for a color with
+</I>&gt;<i> which to fill the specified region. Likewise, but maybe to a lesser degree,
+</I>&gt;<i> there are many potential properties/values/objects that could be supplied
+</I>&gt;<i> by each service used as input parameters. In the case of the &quot;Fill&quot; plugin,
+</I>&gt;<i> the user must change the foreground option of IJ2, which is also a plugin
+</I>&gt;<i> (but not a command plugin), in order to change the fill color. Instead,
+</I>&gt;<i> wouldn't it seem more appropriate to have a color input (e.g., a color
+</I>&gt;<i> chooser widget) that is defaulted to the IJ2 foreground color. If I were to
+</I>&gt;<i> implement my own OptionsService for using as an input to the function, I
+</I>&gt;<i> would not know the small piece of information that my OptionsService would
+</I>&gt;<i> actually need to provide to run successfully.
+</I>&gt;<i>
+</I>&gt;<i> This concept extrapolates somewhat as well to the use of an ImageDisplay
+</I>&gt;<i> as an input, it appears that often an ImageDisplay object is used to help
+</I>&gt;<i> specify both a Dataset and an image plane index. Couldn't the plugin take a
+</I>&gt;<i> Dataset and a plane choice (i.e., 0,1,2,3,All) as inputs? The service could
+</I>&gt;<i> provide a good guess (i.e., the current plane) but leaving the chosen plane
+</I>&gt;<i> as an option for the user. This way, the required information for the
+</I>&gt;<i> plugin to run is more transparent while still using the ui information.
+</I>&gt;<i> Further, if I don't have an ImageJ2 ImageDisplay viewed, I can't change the
+</I>&gt;<i> particular plane that is being operated on without creating a one-off
+</I>&gt;<i> wrapper for this plugin to specify that information. Likewise, if I create
+</I>&gt;<i> a widget to display every time an ImageDisplay is asked for to ask for an
+</I>&gt;<i> image plane index, there are myriad other properties that I would also need
+</I>&gt;<i> to provide widgets for if I want to give the user flexibility for all the
+</I>&gt;<i> types of things that can be learned from an ImageDisplay. In general, most
+</I>&gt;<i> of this information is ignored, which would again lead to an ambiguous
+</I>&gt;<i> interface for plugins that need an ImageDisplay.
+</I>&gt;<i>
+</I>&gt;<i> I realize these examples don't cover the extent of cases that exist and,
+</I>&gt;<i> in many cases, the plugins are meant to act on the ui itself and don't
+</I>&gt;<i> really transform any data (e.g. contrast)... but what if the plugins shown
+</I>&gt;<i> in the menu are (I'm trying to make up a new class so any overlap with
+</I>&gt;<i> actual class names is inadvertent) &quot;MenuPlugins&quot; and the raw data
+</I>&gt;<i> transforming operations or grunt work are implemented as
+</I>&gt;<i> &quot;DataTransformPlugins&quot;. The purpose of the &quot;DataTransformPlugins&quot; would be
+</I>&gt;<i> to do the actual editing / grunt work while the &quot;MenuPlugins&quot; use the
+</I>&gt;<i> services and IJ2 ui elements to provide the &quot;DataTransformPlugins&quot; (and
+</I>&gt;<i> other plugins) good guesses or standard choices for inputs to the
+</I>&gt;<i> algorithms and could keep the behavior of IJ2 in sync with IJ1 as needed
+</I>&gt;<i> (e.g., the Edit -&gt; Fill menu option would fill with the IJ2 foreground
+</I>&gt;<i> color). The DataTransformPlugins would then be much more straight forward
+</I>&gt;<i> for groups such as myself, CellProfiler, Icy, and Knime to more
+</I>&gt;<i> transparently present the algorithms of IJ2 to users in other ui's (i.e.,
+</I>&gt;<i> displaying widgets and borrowing or implementing services for providing
+</I>&gt;<i> good initial guesses through our own &quot;menus&quot;). This could be done in a way
+</I>&gt;<i> that people (e.g. Knime) that are using the current plugins, which I think
+</I>&gt;<i> of more as &quot;MenuPlugins&quot;, wouldn't be affected by the addition of the
+</I>&gt;<i> intermediate implementation layer. In the case of the &quot;Fill&quot; plugin,
+</I>&gt;<i> current use cases may even be enhanced by providing the same service
+</I>&gt;<i> defaults as before but it might now show the color chooser widget,
+</I>&gt;<i> providing more flexibility. I'd be happy to help if this seems feasible or
+</I>&gt;<i> desired (which it may very well not be :-) as it is a small addition of a
+</I>&gt;<i> middle man to what is already implemented for many things.
+</I>&gt;<i>
+</I>&gt;<i> This also brings up a personal desire I have for ImageJ2, which also means
+</I>&gt;<i> next to nothing, but I have found it useful for JEX and thought I would
+</I>&gt;<i> bring it up in case you wished to discuss it more. In JEX, an object or
+</I>&gt;<i> data manager panel helps to keep the user aware of all the objects they
+</I>&gt;<i> have at their disposal and provides a means by which to select items for
+</I>&gt;<i> inputs to functions other than just active windows etc...  This should
+</I>&gt;<i> include ROIs and Tables which I feel are currently second class citizens in
+</I>&gt;<i> imagej. The result is that *too much of the current context needs to
+</I>&gt;<i> discovered for functions to run rather than via outright specification*(e.g., creating color images from multiple open grayscale images, which
+</I>&gt;<i> will be which R, G, and B? I've seen one implementation that uses the order
+</I>&gt;<i> of the image windows to decide, good luck guessing right or remembering).
+</I>&gt;<i> The ROIManager is something of a beginning for ROIs. However in the
+</I>&gt;<i> ROIManager, when you draw an ROI on an image you have to specifically add
+</I>&gt;<i> it to the ROIManager instead of it showing automatically. Thus, although it
+</I>&gt;<i> is not part of the ROIManager it is still a potential input to a function.
+</I>&gt;<i> Why not show all objects somewhere (e.g., a simple list organized by type).
+</I>&gt;<i> This would provide a super easy way to keep track of items and supply them
+</I>&gt;<i> to functions via selection and multi-selection (it could even be its own
+</I>&gt;<i> widget... in fact this is much like the drop down in Knime showing all the
+</I>&gt;<i> table columns on which to operate). I feel like the context dependent
+</I>&gt;<i> nature of ImageJ is one reason why the first version got so disorganized
+</I>&gt;<i> under the hood and why many of the plugin implementations were so buggy or
+</I>&gt;<i> not obvious in how to be used. I would love to see this reduced and maybe
+</I>&gt;<i> such a manager would be a step in the right direction.
+</I>&gt;<i>
+</I>&gt;<i> As always, thanks for taking the time to read and reply. I really
+</I>&gt;<i> appreciate the work of the ImageJ2 team and these conversations. Look
+</I>&gt;<i> forward to hearing from you.
+</I>&gt;<i>
+</I>&gt;<i> Regards,
+</I>&gt;<i>
+</I>&gt;<i> Jay
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140131/4ca2c0c4/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20140131/4ca2c0c4/attachment-0001.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001932.html">[ImageJ-devel] Problem with Exporting Runnable Jar
+</A></li>
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1933">[ date ]</a>
+              <a href="thread.html#1933">[ thread ]</a>
+              <a href="subject.html#1933">[ subject ]</a>
+              <a href="author.html#1933">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

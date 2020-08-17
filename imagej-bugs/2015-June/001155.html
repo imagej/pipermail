@@ -1,0 +1,200 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-bugs] [Bug 1092] New: Incorrect units for y and z; subsequent Bio-Formats bug
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%201092%5D%20New%3A%20Incorrect%20units%20for%20y%20and%20z%3B%0A%20subsequent%20Bio-Formats%20bug&In-Reply-To=%3Cbug-1092-19%40http.fiji.sc/bugzilla/%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001174.html">
+   <LINK REL="Next"  HREF="001159.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-bugs] [Bug 1092] New: Incorrect units for y and z; subsequent Bio-Formats bug</H1>
+    <B>bugzilla at fiji.sc</B> 
+    <A HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%201092%5D%20New%3A%20Incorrect%20units%20for%20y%20and%20z%3B%0A%20subsequent%20Bio-Formats%20bug&In-Reply-To=%3Cbug-1092-19%40http.fiji.sc/bugzilla/%3E"
+       TITLE="[ImageJ-bugs] [Bug 1092] New: Incorrect units for y and z; subsequent Bio-Formats bug">bugzilla at fiji.sc
+       </A><BR>
+    <I>Thu Jun 18 07:23:22 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001174.html">[ImageJ-bugs] [Bug 1091] Invalid macro recording when file names contain spaces and brackets
+</A></li>
+        <LI>Next message: <A HREF="001159.html">[ImageJ-bugs] [Bug 1092] Incorrect units for y and z;	subsequent Bio-Formats bug
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1155">[ date ]</a>
+              <a href="thread.html#1155">[ thread ]</a>
+              <a href="subject.html#1155">[ subject ]</a>
+              <a href="author.html#1155">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE><A HREF="http://fiji.sc/bugzilla/show_bug.cgi?id=1092">http://fiji.sc/bugzilla/show_bug.cgi?id=1092</A>
+
+            Bug ID: 1092
+           Summary: Incorrect units for y and z; subsequent Bio-Formats
+                    bug
+           Product: Fiji
+           Version: unspecified
+          Hardware: PC
+                OS: Windows
+            Status: NEW
+          Severity: normal
+          Priority: P4
+         Component: Plugins
+          Assignee: <A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">imagej-bugs at imagej.net</A>
+          Reporter: <A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">jan.eglinger at gmail.com</A>
+                CC: <A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">jan.eglinger at gmail.com</A>
+
+This might actually be _two_ bugs.
+
+1) Running 'Image &gt; Properties...' or 'Analyze &gt; Set Scale...' to change the
+units and scale will change only the units for x, *not* the units for y and z
+directions.
+The same problem apparently occurs when saving a virtual stack (with micron
+calibration) to a tiff stack: the resulting file will have microns in x and
+pixels in y and z.
+
+2) As a consequence, when you save such a &quot;mis-scaled&quot; image and read it with
+Bio-Formats Importer, the stack trace pasted below is thrown. Unfortunately,
+this breaks any use of the Grid/Collection Stitching plugin because it
+exclusively uses Bio-Formats to open even &quot;Standard ImageJ&quot; tiff files.
+I suggest that the Bio-Formats Importer should be a bit more forgiving and
+issue a warning only, instead of throwing an exception here.
+
+This macro code illustrates both issues:
+
+// ******************************************************
+  tmp = getDirectory(&quot;temp&quot;);
+  file_name = &quot;calibration_bug.tif&quot;
+
+  newImage(&quot;Calibration_test&quot;, &quot;8-bit black&quot;, 100, 100, 20);
+  run(&quot;Properties...&quot;, &quot;channels=1 slices=20 frames=1 unit=um pixel_width=0.8
+pixel_height=0.8 voxel_depth=0.8&quot;);
+  Stack.getUnits(x, y, z, t, val);
+  print(&quot;Units: x=&quot; + x + &quot; y=&quot; + y + &quot; z=&quot; + z + &quot; time=&quot; + t + &quot; value=&quot; +
+val);
+
+  saveAs(&quot;Tiff&quot;, tmp + file_name);
+  run(&quot;Bio-Formats Importer&quot;, &quot;open=&quot; + tmp + file_name +&quot; color_mode=Default
+view=Hyperstack stack_order=XYCZT&quot;);
+// ******************************************************
+
+
+Here's the stack trace:
+(Fiji Is Just) ImageJ 2.0.0-rc-30/1.49u; Java 1.6.0_24 [64-bit]; Windows 7 6.1;
+46MB of 98221MB (&lt;1%)
+
+java.lang.NullPointerException
+    at loci.plugins.in.Calibrator.applyCalibration(Calibrator.java:71)
+    at loci.plugins.in.ImagePlusReader.readImage(ImagePlusReader.java:307)
+    at loci.plugins.in.ImagePlusReader.readImages(ImagePlusReader.java:238)
+    at loci.plugins.in.ImagePlusReader.readImages(ImagePlusReader.java:216)
+    at loci.plugins.in.ImagePlusReader.openImagePlus(ImagePlusReader.java:111)
+    at loci.plugins.in.Importer.readPixels(Importer.java:146)
+    at loci.plugins.in.Importer.run(Importer.java:85)
+    at loci.plugins.LociImporter.run(LociImporter.java:78)
+    at ij.IJ.runUserPlugIn(IJ.java:199)
+    at ij.IJ.runPlugIn(IJ.java:163)
+    at ij.Executer.runCommand(Executer.java:132)
+    at ij.Executer.run(Executer.java:62)
+    at ij.IJ.run(IJ.java:279)
+    at ij.macro.Functions.doRun(Functions.java:597)
+    at ij.macro.Functions.doFunction(Functions.java:95)
+    at ij.macro.Interpreter.doStatement(Interpreter.java:227)
+    at ij.macro.Interpreter.doStatements(Interpreter.java:215)
+    at ij.macro.Interpreter.run(Interpreter.java:112)
+    at ij.macro.Interpreter.run(Interpreter.java:82)
+    at ij.macro.Interpreter.run(Interpreter.java:93)
+    at ij.plugin.Macro_Runner.runMacro(Macro_Runner.java:153)
+    at ij.IJ.runMacro(IJ.java:116)
+    at ij.IJ.runMacro(IJ.java:105)
+    at net.imagej.legacy.IJ1Helper.runMacro(IJ1Helper.java:857)
+    at net.imagej.legacy.plugin.IJ1MacroEngine.eval(IJ1MacroEngine.java:116)
+    at net.imagej.legacy.plugin.IJ1MacroEngine.eval(IJ1MacroEngine.java:163)
+    at org.scijava.script.ScriptModule.run(ScriptModule.java:175)
+    at org.scijava.module.ModuleRunner.run(ModuleRunner.java:167)
+    at org.scijava.module.ModuleRunner.call(ModuleRunner.java:126)
+    at org.scijava.module.ModuleRunner.call(ModuleRunner.java:65)
+    at
+org.scijava.thread.DefaultThreadService$2.call(DefaultThreadService.java:181)
+    at java.util.concurrent.FutureTask$Sync.innerRun(FutureTask.java:303)
+    at java.util.concurrent.FutureTask.run(FutureTask.java:138)
+    at
+java.util.concurrent.ThreadPoolExecutor$Worker.runTask(ThreadPoolExecutor.java:886)
+    at
+java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:908)
+    at java.lang.Thread.run(Thread.java:662)
+
+Information about your version of Java:
+
+  os.arch =&gt; amd64
+  os.name =&gt; Windows 7
+  os.version =&gt; 6.1
+  java.version =&gt; 1.6.0_24
+  java.vendor =&gt; Sun Microsystems Inc.
+  java.runtime.name =&gt; Java(TM) SE Runtime Environment
+  java.runtime.version =&gt; 1.6.0_24-b07
+  java.vm.name =&gt; Java HotSpot(TM) 64-Bit Server VM
+  java.vm.version =&gt; 19.1-b02
+  java.vm.vendor =&gt; Sun Microsystems Inc.
+  java.vm.info =&gt; mixed mode
+  java.awt.graphicsenv =&gt; sun.awt.Win32GraphicsEnvironment
+  java.specification.name =&gt; Java Platform API Specification
+  java.specification.version =&gt; 1.6
+  sun.cpu.endian =&gt; little
+  sun.desktop =&gt; windows
+  file.separator =&gt; \
+
+The up-to-date check says: REMIND_LATER
+
+Information relevant to JAVA_HOME related problems:
+
+  JAVA_HOME is set to: C:\UTILIT~1\FIJI-D~1.APP/java/win64/jdk1.6.0_24//jre
+  imagej.dir =&gt; C:\UTILIT~1\FIJI-D~1.APP
+
+Information about the version of each plugin:
+
+Activated update sites:
+ImageJ: <A HREF="http://update.imagej.net/">http://update.imagej.net/</A> (last check:20150618000647)
+Fiji: <A HREF="http://fiji.sc/update/">http://fiji.sc/update/</A> (last check:20150617220654)
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-bugs/attachments/20150618/f88b4f18/attachment.html">http://imagej.net/pipermail/imagej-bugs/attachments/20150618/f88b4f18/attachment.html</A>&gt;
+</PRE>
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001174.html">[ImageJ-bugs] [Bug 1091] Invalid macro recording when file names contain spaces and brackets
+</A></li>
+	<LI>Next message: <A HREF="001159.html">[ImageJ-bugs] [Bug 1092] Incorrect units for y and z;	subsequent Bio-Formats bug
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1155">[ date ]</a>
+              <a href="thread.html#1155">[ thread ]</a>
+              <a href="subject.html#1155">[ subject ]</a>
+              <a href="author.html#1155">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-bugs">More information about the Imagej-bugs
+mailing list</a><br>
+</body></html>

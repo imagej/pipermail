@@ -1,0 +1,166 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] proposed changes in the ImgLib2 abstract class	hierarchy
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20proposed%20changes%20in%20the%20ImgLib2%20abstract%20class%0A%09hierarchy&In-Reply-To=%3C1DAD5826-3A7E-434B-B348-3BE1295C591E%40mpi-cbg.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000665.html">
+   <LINK REL="Next"  HREF="000661.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] proposed changes in the ImgLib2 abstract class	hierarchy</H1>
+    <B>Stephan Preibisch</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20proposed%20changes%20in%20the%20ImgLib2%20abstract%20class%0A%09hierarchy&In-Reply-To=%3C1DAD5826-3A7E-434B-B348-3BE1295C591E%40mpi-cbg.de%3E"
+       TITLE="[ImageJ-devel] proposed changes in the ImgLib2 abstract class	hierarchy">preibisch at mpi-cbg.de
+       </A><BR>
+    <I>Fri Mar 16 09:33:31 CDT 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000665.html">[ImageJ-devel] proposed changes in the ImgLib2 abstract class	hierarchy
+</A></li>
+        <LI>Next message: <A HREF="000661.html">[ImageJ-devel] proposed changes in the ImgLib2 abstract class hierarchy
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#659">[ date ]</a>
+              <a href="thread.html#659">[ thread ]</a>
+              <a href="subject.html#659">[ subject ]</a>
+              <a href="author.html#659">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Tobias,
+
+very nice! I had a look at it and it works fine for me, also the CellImg seems to work as it did before.
+
+I have one question about a protected constructor in RealPoint though:
+
+	/**
+	 * Protected constructor that re-uses the passed position array.
+	 *
+	 * @param position
+	 *            array used to store the position.
+	 * @param x
+	 *            unused parameter that changes the method signature
+	 */
+	protected RealPoint( final double[] position, final Object x )
+	{
+		super( position );
+	}
+
+Why is there the Object x in there?
+
+Also I have a small question about the CellImg. The ListImgCells which holds all cells is typed to DefaultCell, and also always instantiates DefaultCells. Shouldn't that be the part where we are able to exchange them for other types of cells? So shouldn't it be typed to something like C extends AbstractCell&lt;A&gt; or so? Or is there another level where you want to introduce that?
+
+Ciao ciao,
+Steffi
+
+On Mar 15, 2012, at 16:57 , Tobias Pietzsch wrote:
+
+&gt;<i> Hi,
+</I>&gt;<i> 
+</I>&gt;<i> I've implemented more changes to the ImgLib2 abstract class hierarchy.
+</I>&gt;<i> This time, I restructured the integer Positionables, Localizables, and
+</I>&gt;<i> RandomAccesses.
+</I>&gt;<i> 
+</I>&gt;<i> While I was at it, I merged a new version of CellImg (this is in preparation for CellImgs that swap Cells to disk) because I didn't
+</I>&gt;<i> want to need to fix that for the new abstract hierarchy later.
+</I>&gt;<i> ListImg has also been changed a bit. And I made some cosmetic changes
+</I>&gt;<i> here and there...
+</I>&gt;<i> 
+</I>&gt;<i> I think I broke nothing and I would merge this into master soon.
+</I>&gt;<i> 
+</I>&gt;<i> It would be totally awesome, if you could try your ImgLib2 stuff with
+</I>&gt;<i> the branch &quot;modified-abstract-hierarchy&quot; and see if everything works okay.  If you have time to comment on the changes I made - even better.
+</I>&gt;<i> 
+</I>&gt;<i> best regards,
+</I>&gt;<i> Tobias
+</I>&gt;<i> 
+</I>&gt;<i> BTW: did you see the cool fractal example on
+</I>&gt;<i> <A HREF="http://fiji.sc/wiki/index.php/ImgLib2_Documentation#A_RealRandomAccess_to_Render_Mandelbrot_Fractals">http://fiji.sc/wiki/index.php/ImgLib2_Documentation#A_RealRandomAccess_to_Render_Mandelbrot_Fractals</A>
+</I>&gt;<i> ?
+</I>&gt;<i> :-)
+</I>&gt;<i> 
+</I>&gt;<i> On 03/13/2012 09:01 PM, Tobias Pietzsch wrote:
+</I>&gt;&gt;<i> Hi guys,
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> while I was writing ImgLib docs, I noticed that the current
+</I>&gt;&gt;<i> abstract class hierarchy which leads to AbstractRandomAccess&lt;T&gt;
+</I>&gt;&gt;<i> is a little bit stupid (see attached imglib2-abstract-current.png)
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> There is no need for the abstract class hierarchy to pull the
+</I>&gt;&gt;<i> Sampler&lt;T&gt; interface all the way through. The Sampler&lt;T&gt; is only
+</I>&gt;&gt;<i> implemented in the concrete classes. There is really no need to have
+</I>&gt;&gt;<i> the dependency on T in the abstract hierarchy. This prevents for
+</I>&gt;&gt;<i> instance RealPoint to make use of the RealPositionable and
+</I>&gt;&gt;<i> RealLocalizable implementations in AbstractRealRandomAccess&lt;T&gt;.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> Therefore I propose to change the hierarchy as shown in the
+</I>&gt;&gt;<i> second attached diagram, imglib2-abstract-proposed.png.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> I implemented those changes for the &quot;real&quot; path, see branch
+</I>&gt;&gt;<i> &quot;modified-abstract-hierarchy&quot;. Note how nicely RealPoint fits
+</I>&gt;&gt;<i> into the picture now :-)
+</I>&gt;&gt;<i> Before I go ahead and do the same for the integer accessors, I wanted
+</I>&gt;&gt;<i> to ask whether you agree that this is a good thing to do...
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> There is one more thing: The AbstractRealRandomAccess implemented
+</I>&gt;&gt;<i> the complete RealPositionable interface, while AbstractRandomAccess
+</I>&gt;&gt;<i> only implements part of Positionable - with the implemented part
+</I>&gt;&gt;<i> based on the unimplemented methods. The idea was that if a derived
+</I>&gt;&gt;<i> concrete accessor compiles you know you implemented what was necessary.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> However, I found the approach of AbstractRealRandomAccess to implement
+</I>&gt;&gt;<i> anything quite nice when using it. I would suggest doing the same for
+</I>&gt;&gt;<i> integer. Then either
+</I>&gt;&gt;<i> * you know what you are doing when overriding (parts of) the
+</I>&gt;&gt;<i> Positionable implementation
+</I>&gt;&gt;<i> * you leave it as is (e.g. Point)
+</I>&gt;&gt;<i> * you derive from AbstractLocalizable and implement Positionable
+</I>&gt;&gt;<i> completely on your own.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> Thoughts?
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> best regards,
+</I>&gt;&gt;<i> Tobias
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i> 
+</I>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20120316/9d33edfc/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20120316/9d33edfc/attachment-0001.html</A>&gt;
+</PRE>
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000665.html">[ImageJ-devel] proposed changes in the ImgLib2 abstract class	hierarchy
+</A></li>
+	<LI>Next message: <A HREF="000661.html">[ImageJ-devel] proposed changes in the ImgLib2 abstract class hierarchy
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#659">[ date ]</a>
+              <a href="thread.html#659">[ thread ]</a>
+              <a href="subject.html#659">[ subject ]</a>
+              <a href="author.html#659">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

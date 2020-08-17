@@ -1,0 +1,182 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] ImageJ2 scripting
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImageJ2%20scripting&In-Reply-To=%3CCA%2BB%3DmGrtvuBveowm%3DOckmNR%2BgiR-jQ1fPoFCpOAbQL_x%3D-gLFA%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002551.html">
+   <LINK REL="Next"  HREF="002553.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] ImageJ2 scripting</H1>
+    <B>Mark Hiner</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImageJ2%20scripting&In-Reply-To=%3CCA%2BB%3DmGrtvuBveowm%3DOckmNR%2BgiR-jQ1fPoFCpOAbQL_x%3D-gLFA%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] ImageJ2 scripting">hiner at wisc.edu
+       </A><BR>
+    <I>Mon Apr 27 13:23:51 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002551.html">[ImageJ-devel] ImageJ2 scripting
+</A></li>
+        <LI>Next message: <A HREF="002553.html">[ImageJ-devel] ImageJ2 scripting
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2552">[ date ]</a>
+              <a href="thread.html#2552">[ thread ]</a>
+              <a href="subject.html#2552">[ subject ]</a>
+              <a href="author.html#2552">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Jan,
+
+&gt;<i>an error message is displayed: &quot;A Dataset is required but none exist.&quot;
+</I>
+This was due to limitations with the input preprocessor presenting the list
+of datasets. Since ImagePluses aren't explicitly tracked by the IJ2
+framework, having an ImagePlus recognized as a Dataset requires some extra
+layers. We had covered the single input case (which is why your first
+script worked) but not the general multi-input case. There is an issue
+tracking the multi-input
+&lt;<A HREF="https://github.com/imagej/imagej-legacy/issues/106">https://github.com/imagej/imagej-legacy/issues/106</A>&gt; case, which I resolved
+today. So this should work as intended in our next release - and thank you
+for the motivation to wrap this up!
+
+You can also manually enable ImagePlus &lt;&gt; Dataset synchronization to ensure
+ImagePluses always have a corresponding Dataset:
+<A HREF="http://imagej.net/Compatibility#Translation_of_data_structures">http://imagej.net/Compatibility#Translation_of_data_structures</A>
+
+&gt;<i>(where can this title be set, by the way?)
+</I>
+For the multiple choice input selection, the labels are based on the name
+of the input type. Since the input type is Dataset, the Dataset name is
+used (which delegates to the wrapped ImgPlus). In your code you are
+applying labels to the Display, but not the underlying dataset - if you
+name the ImgPlus, or explicitly create a Dataset and set its name, that
+name will propagate up to the input chooser (and the Display). As a side
+note, you should use the net.imagej.ImgPlus instead of the net.imglib2.meta.
+
+An updated script would be:
+
+
+   # @DisplayService display
+   # @OpService ops
+   # @net.imagej.Dataset inputData1
+   # @net.imagej.Dataset inputData2
+
+   from net.imagej import ImgPlus
+
+   display.createDisplay(ImgPlus(inputData1, &quot;my1&quot;))
+   display.createDisplay(ImgPlus(inputData2, &quot;my2&quot;))
+
+Hope that helps. Let me know if you have any other questions.
+
+Best,
+Mark
+
+On Mon, Apr 27, 2015 at 8:58 AM, Jan Eglinger &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">jan.eglinger at gmail.com</A>&gt;
+wrote:
+
+&gt;<i> Dear all,
+</I>&gt;<i>
+</I>&gt;<i> *** TL;DR:
+</I>&gt;<i> How do I proceed to get multiple input Datasets as ImageJ2 parameters from
+</I>&gt;<i> open images in Fiji?
+</I>&gt;<i> ***
+</I>&gt;<i>
+</I>&gt;<i> I was recently exploring ImageJ2 scripting in Fiji and found the
+</I>&gt;<i> OpsThresholdIJ1Analyze template [1] in the script editor very helpful.
+</I>&gt;<i>
+</I>&gt;<i> When trying to get more than one @net.imagej.Dataset input parameter
+</I>&gt;<i> however, I noticed some inconsistencies.
+</I>&gt;<i> Let me try to illustrate with the two following scripts:
+</I>&gt;<i>
+</I>&gt;<i>     # @DisplayService display
+</I>&gt;<i>     # @OpService ops
+</I>&gt;<i>     # @net.imagej.Dataset inputData1
+</I>&gt;<i>
+</I>&gt;<i>     from net.imglib2.meta import ImgPlus
+</I>&gt;<i>
+</I>&gt;<i>     display.createDisplay(&quot;my1&quot;, ImgPlus(inputData1))
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> The above script re-displays the current image as expected (I tried with
+</I>&gt;<i> the Blobs sample image open, which will be re-displayed with a non-inverted
+</I>&gt;<i> LUT.)
+</I>&gt;<i>
+</I>&gt;<i> When I ask for two input datasets (right after a fresh start of Fiji with
+</I>&gt;<i> only the Blobs sample image open):
+</I>&gt;<i>
+</I>&gt;<i>     # @DisplayService display
+</I>&gt;<i>     # @OpService ops
+</I>&gt;<i>     # @net.imagej.Dataset inputData1
+</I>&gt;<i>     # @net.imagej.Dataset inputData2
+</I>&gt;<i>
+</I>&gt;<i>     from net.imglib2.meta import ImgPlus
+</I>&gt;<i>
+</I>&gt;<i>     display.createDisplay(&quot;my1&quot;, ImgPlus(inputData1))
+</I>&gt;<i>     display.createDisplay(&quot;my2&quot;, ImgPlus(inputData2))
+</I>&gt;<i>
+</I>&gt;<i> an error message is displayed: &quot;A Dataset is required but none exist.&quot;
+</I>&gt;<i> The same error message is displayed when I open a second image in Fiji
+</I>&gt;<i> before running the script.
+</I>&gt;<i>
+</I>&gt;<i> Now, when I run script #2 after script #1 was run at least once, I get a
+</I>&gt;<i> dialog with two choices &quot;InputData1&quot; and &quot;InputData2&quot;, both choice fields
+</I>&gt;<i> containing &quot;blobs.gif&quot; and a number of &quot;Untitled&quot; entries (where can this
+</I>&gt;<i> title be set, by the way?).
+</I>&gt;<i>
+</I>&gt;<i> I guess that a choice is only displayed if there are ImageJ2 datasets
+</I>&gt;<i> (i.e. wrapped ImagePlus) already available. The single input case seems to
+</I>&gt;<i> be special-cased as it auto-wraps the currently open image.
+</I>&gt;<i>
+</I>&gt;<i> So how do I proceed to get more than one input in ImageJ2 scripting from
+</I>&gt;<i> open (ImageJ1-)images?
+</I>&gt;<i>
+</I>&gt;<i> Thanks for your advice,
+</I>&gt;<i> Regards,
+</I>&gt;<i> Jan
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> [1]:
+</I>&gt;<i> <A HREF="https://github.com/imagej/imagej-legacy/blob/master/src/main/resources/script_templates/Python/OpsThresholdIJ1Analyze.py">https://github.com/imagej/imagej-legacy/blob/master/src/main/resources/script_templates/Python/OpsThresholdIJ1Analyze.py</A>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20150427/670d5e03/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20150427/670d5e03/attachment.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002551.html">[ImageJ-devel] ImageJ2 scripting
+</A></li>
+	<LI>Next message: <A HREF="002553.html">[ImageJ-devel] ImageJ2 scripting
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2552">[ date ]</a>
+              <a href="thread.html#2552">[ thread ]</a>
+              <a href="subject.html#2552">[ subject ]</a>
+              <a href="author.html#2552">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

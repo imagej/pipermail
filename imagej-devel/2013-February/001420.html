@@ -1,0 +1,148 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Fwd: Hist thresh toolbox license question
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Fwd%3A%20Hist%20thresh%20toolbox%20license%20question&In-Reply-To=%3CCAKcvfuTu5SdbyPcLVnGk3_-mwP3ez0fqLo-KDjpQHDtimsx%3DjA%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001419.html">
+   <LINK REL="Next"  HREF="001421.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Fwd: Hist thresh toolbox license question</H1>
+    <B>Barry DeZonia</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Fwd%3A%20Hist%20thresh%20toolbox%20license%20question&In-Reply-To=%3CCAKcvfuTu5SdbyPcLVnGk3_-mwP3ez0fqLo-KDjpQHDtimsx%3DjA%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Fwd: Hist thresh toolbox license question">bdezonia at gmail.com
+       </A><BR>
+    <I>Mon Feb 18 15:13:42 CST 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001419.html">[ImageJ-devel] Fwd: Hist thresh toolbox license question
+</A></li>
+        <LI>Next message: <A HREF="001421.html">[ImageJ-devel] Fwd: Hist thresh toolbox license question
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1420">[ date ]</a>
+              <a href="thread.html#1420">[ thread ]</a>
+              <a href="subject.html#1420">[ subject ]</a>
+              <a href="author.html#1420">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Thanks Antti. I've already begun porting it into ImageJ2. I noticed that
+the release includes a tweak to the th_minimum.m code. I was going to
+incorporate it into our stuff but came across three versions (one our own)
+and wanted to make sure that if our code differs it is a mistake and not a
+bug we found.
+
+At the end of th_minimum.m the code looks like this in 1.02:
+
+% The threshold is the minimum between the two peaks.
+for k = 2:n
+  if y(k-1) &gt; y(k) &amp; y(k+1) &gt; y(k)
+    T = k-1;
+  end
+end
+
+Our version (I believe ported from 1.02) is very similar except the test
+line looks like:
+
+  if y(k-1) &gt; y(k) &amp; y(k+1) &gt;= y(k)   // NOTICE THE SINGLE &gt;= INSTEAD OF &gt;
+
+Finally your much changed version looks like this in 1.03:
+
+% The threshold is the minimum between the two peaks.
+peakfound = false;
+for k = 2:n
+  if y(k-1) &lt; y(k) &amp; y(k+1) &lt; y(k)
+    peakfound = true;
+  end
+  if peakfound  &amp; y(k-1) &gt;= y(k) &amp; y(k+1) &gt;= y(k)
+    T = k-1;
+    return
+  end
+end
+
+I think Gabriel can shed light maybe on our change and if it was by design
+or not. (Gabriel its been present since 1.0). And I see your new version is
+&gt;<i>='s on both ends. So maybe this email is overkill. Any clarification on
+</I>your thinking re: the 1.03 change would be appreciated.
+
+
+On Wed, Feb 13, 2013 at 8:15 AM, Antti Niemist&#246; &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">antti.niemisto at tut.fi</A>&gt;wrote:
+
+&gt;<i> Hi Johannes,
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On Tue, 12 Feb 2013, Johannes Schindelin wrote:
+</I>&gt;<i>
+</I>&gt;<i>  Hi Gabriel and Antti,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> On Mon, 11 Feb 2013, Gabriel Landini wrote:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>  On Monday 11 Feb 2013 23:23:11 Antti Niemist&#246; wrote:
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> Then that's what we'll do. I actually found a little bug in one of the
+</I>&gt;&gt;&gt;&gt;<i> methods (th_maxlik) some time ago, so I was thinking I'll put out a
+</I>&gt;&gt;&gt;&gt;<i> new version of the toolbox with that fixed. I'm not exactly a software
+</I>&gt;&gt;&gt;&gt;<i> guy and do not routinely deal with licensing, so can you give me a
+</I>&gt;&gt;&gt;&gt;<i> walkthrough as to how to go about making this new release with a dual
+</I>&gt;&gt;&gt;&gt;<i> BSD/GPL license? Or point me to one? I'll then update the toolbox page
+</I>&gt;&gt;&gt;&gt;<i> at <A HREF="http://www.cs.tut.fi/~ant/**histthresh/&lt;http://www.cs.tut.fi/~ant/histthresh/">http://www.cs.tut.fi/~ant/**histthresh/&lt;http://www.cs.tut.fi/~ant/histthresh/</A>&gt;The bug fix is ready so I'll
+</I>&gt;&gt;&gt;&gt;<i> get this up as soon as the licensing is sorted.
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> The maximum likelihood estimator method was never implemented in the
+</I>&gt;&gt;&gt;<i> ImageJ plugin because I could never make it replicate the results of the
+</I>&gt;&gt;&gt;<i> Matlab code.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I look forward to trying that maximum likelihood method!
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> The updated version of the maximum likelihood method is now available with
+</I>&gt;<i> the brand new release 1.03 of HistThresh Toolbox for MATLAB at
+</I>&gt;<i> <A HREF="http://www.cs.tut.fi/~ant/**histthresh/&lt;http://www.cs.tut.fi/~ant/histthresh/">http://www.cs.tut.fi/~ant/**histthresh/&lt;http://www.cs.tut.fi/~ant/histthresh/</A>&gt;
+</I>&gt;<i>
+</I>&gt;<i> I hope that it is useful to you.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> --
+</I>&gt;<i> Antti Niemist&#246; DSc(Tech)              office: TE410
+</I>&gt;<i> Research Fellow                       phone:  +358-40-849-0587 (GSM)
+</I>&gt;<i> Department of Signal Processing               +358-3-3115-4989 (fax)
+</I>&gt;<i> Tampere University of Technology      URI:    <A HREF="http://www.cs.tut.fi/~ant/">http://www.cs.tut.fi/~ant/</A>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20130218/36f321a0/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20130218/36f321a0/attachment.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001419.html">[ImageJ-devel] Fwd: Hist thresh toolbox license question
+</A></li>
+	<LI>Next message: <A HREF="001421.html">[ImageJ-devel] Fwd: Hist thresh toolbox license question
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1420">[ date ]</a>
+              <a href="thread.html#1420">[ thread ]</a>
+              <a href="subject.html#1420">[ subject ]</a>
+              <a href="author.html#1420">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

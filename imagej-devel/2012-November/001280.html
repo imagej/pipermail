@@ -1,0 +1,112 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] How does the JVM/JIT work?
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20How%20does%20the%20JVM/JIT%20work%3F&In-Reply-To=%3Calpine.DEB.1.00.1211262131560.7256%40s15462909.onlinehome-server.info%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001278.html">
+   <LINK REL="Next"  HREF="001281.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] How does the JVM/JIT work?</H1>
+    <B>Johannes Schindelin</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20How%20does%20the%20JVM/JIT%20work%3F&In-Reply-To=%3Calpine.DEB.1.00.1211262131560.7256%40s15462909.onlinehome-server.info%3E"
+       TITLE="[ImageJ-devel] How does the JVM/JIT work?">Johannes.Schindelin at gmx.de
+       </A><BR>
+    <I>Mon Nov 26 14:56:01 CST 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001278.html">[ImageJ-devel] Eclipse / Maven: Download Sources
+</A></li>
+        <LI>Next message: <A HREF="001281.html">[ImageJ-devel] [ome-devel] strategy and 6D data
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1280">[ date ]</a>
+              <a href="thread.html#1280">[ thread ]</a>
+              <a href="subject.html#1280">[ subject ]</a>
+              <a href="author.html#1280">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+in a recent discussion revolving around the performance of ImgLib2, the
+question came up where to find a good documentation about the Just In Time
+(&quot;JIT&quot;) compiler of Oracle/Sun's Java Virtual Machine (&quot;JVM&quot;). As it
+happens, I just stumbled over this:
+
+<A HREF="http://www.cubrid.org/blog/dev-platform/understanding-jvm-internals">http://www.cubrid.org/blog/dev-platform/understanding-jvm-internals</A>
+
+It explains more than the JIT, and is a bit short on the details about the
+Just In Time compiler, so let me add a bit more information from the top
+of my head:
+
+Sun's own implementation of a Just-In-Time compiler (called &quot;Hotspot&quot;) was
+introduced after the Kaffe project showed how much more performant Java
+can be when methods are compiled to native code.
+
+A major boost in Hotspot technology came with Java 5. This came most
+likely in response to IBM's Jikes RVM, an experimental Java Virtual
+Machine invented to do research on virtual machines.
+
+Again a major improvement in Hotspot technology came with Java 6.
+
+The principle is easy: very simple statistics are recorded whenever the
+virtual machine interprets the bytecode. Whenever a certain threshold is
+reached (in Oracle/Sun's Java 6, you can configure this with the
+-XX:CompileThreshold command-line option), the method is compiled to
+native code before being executed.
+
+Since the statistics are crucial in determining how much to inline code
+(which was so far the major benefit of Java over C++: it can inline code
+after the fact, something C++ learnt with the advent of the Clang module
+to LLVM: <A HREF="http://clang.llvm.org/cxx_status.html">http://clang.llvm.org/cxx_status.html</A>), that seems to be where
+the improvements in Java 6 came from.
+
+Of course, you do not want to acquire too many statistics, otherwise the
+statistics themselves will provide an undesired performance bottleneck.
+
+The major improvement in Java 7 is that the statistics continue to be
+acquired after compiling methods into native code so that subsequent
+further optimization is possible.
+
+It is a major shame that we cannot require Java 7 in Fiji due to the Apple
+issue: only the latest and greatest MacOSX versions (which do not even
+support the PowerPC computers sold by Apple a scant 6 years ago!) can run
+Java 7, and reports state that it is not as stable as Java 6 used to be
+(except for that AWT issue <A HREF="http://fiji.sc/bugzilla/show_bug.cgi?id=197">http://fiji.sc/bugzilla/show_bug.cgi?id=197</A>).
+
+Ciao,
+Dscho
+
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001278.html">[ImageJ-devel] Eclipse / Maven: Download Sources
+</A></li>
+	<LI>Next message: <A HREF="001281.html">[ImageJ-devel] [ome-devel] strategy and 6D data
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1280">[ date ]</a>
+              <a href="thread.html#1280">[ thread ]</a>
+              <a href="subject.html#1280">[ subject ]</a>
+              <a href="author.html#1280">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,412 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] ImageJ - KNIME Integration: open questions
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImageJ%20-%20KNIME%20Integration%3A%20open%20questions&In-Reply-To=%3CCADN69ykSz9rDS2Pp8Xnm9%3DyHNDakwEM%2B_m9Q8F6jebDfC_fjZg%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001628.html">
+   <LINK REL="Next"  HREF="001631.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] ImageJ - KNIME Integration: open questions</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImageJ%20-%20KNIME%20Integration%3A%20open%20questions&In-Reply-To=%3CCADN69ykSz9rDS2Pp8Xnm9%3DyHNDakwEM%2B_m9Q8F6jebDfC_fjZg%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] ImageJ - KNIME Integration: open questions">ctrueden at wisc.edu
+       </A><BR>
+    <I>Fri Jun 28 15:04:51 CDT 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001628.html">[ImageJ-devel] SciJava Jenkins &amp; Maven repository?
+</A></li>
+        <LI>Next message: <A HREF="001631.html">[ImageJ-devel] imagej.data.display.DefaultImageDisplay: Recent	Commit.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1629">[ date ]</a>
+              <a href="thread.html#1629">[ thread ]</a>
+              <a href="subject.html#1629">[ subject ]</a>
+              <a href="author.html#1629">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Michael &amp; Lee,
+
+Sorry for the delay in reply; it's a long thread. :-/
+
+Michael wrote:
+&gt;<i> Would it be possible to add a flag that surpresses previews checkboxes
+</I>&gt;<i> during dialog building?
+</I>
+It's tricky because right now, each preview checkbox is an input parameter
+to the command itself. But personally I don't like that approach. It is not
+a &quot;real&quot; input to the command, but rather intended to be toggled during
+input harvesting only. One option might be to label the visibility of those
+parameters as ItemVisibility.INVISIBLE. Then we could add a flag somewhere
+to hide INVISIBLE parameters, maybe.
+
+But really, I am leaning toward a simpler solution: just remove the preview
+checkboxes, in favor of ImageJ2 *always* doing a preview (and of course,
+KNIP doesn't have to). And if the previews are too slow, we can optimize
+the preview() method to address it, rather than having this hacky checkbox
+like ImageJ1 does.
+
+Lee wrote:
+&gt;<i> I hadn't looked at the interactive commands with regard to
+</I>&gt;<i> CellProfiler. It looks like &quot;buttons&quot; could be interpreted as possible
+</I>&gt;<i> headless actions that could be performed... at least in some cases.
+</I>
+Yes, each button generally performs some action, which we should really
+make sure are always exposed as standalone commands (see next paragraph).
+We are going to add logic to make multiple sequential Button widgets render
+as a single button bar in our UI layout. Won't affect you though, Lee,
+since you do your own UI in Python.
+
+Michael wrote:
+&gt;<i> Why is the threshold  plugin an interactive command?
+</I>
+Let me explain the motivation here. Anything that extends
+InteractiveCommand is not *intended* to be run in headless mode. Rather, it
+is intended as a sort of &quot;meta-command&quot; that allows you to launch other
+commands. It will be filled with callback methods when various inputs
+change, which should, in a properly designed InteractiveCommand, trigger
+real command executions that are more well-behaved from a headless
+standpoint.
+
+Anything that extends InteractiveCommand should *not* be flagged with
+&quot;headless = true&quot; since it is not intended for that purpose.
+
+So in the case of threshold, we need a &quot;real&quot; threshold command that has
+sensible inputs and outputs. Then the command exposed in the ImageJ UI as
+&quot;threshold&quot; is actually &quot;Interactive Threshold&quot; which fires off Threshold
+executions.
+
+This is not all fully in place, but it is the direction we are going. Sound
+reasonable?
+
+Lee wrote:
+&gt;<i> For Threshold, I can see reasons for executing the callbacks for
+</I>&gt;<i> &quot;auto&quot;, &quot;apply&quot; and &quot;delete&quot; in a headless context
+</I>
+The above would also address your comments here, Lee. The interactive
+threshold command would not need to be exposed within CP because those
+buttons would each have a corresponding standalone headless-friendly
+command which *would* be exposed.
+
+Michael wrote:
+&gt;<i> is there a way to determine if a command is dynamic?
+</I>
+Other than the hacky instanceof test you are doing, nope. I agree we should
+add API for it to ModuleInfo. Especially because it is possible for modules
+to be dynamic without extending the DynamicCommand class...
+
+Could you please file a ticket for it on the ImageJ Trac? I just made
+ImageJ Trac accounts for you, Christian &amp; Martin; you should have an
+automated email about it. I know Trac is not ideal (GitHub Issues is nice)
+but we have all our ImageJ tickets in Trac now, migrating everything would
+be very involved, and I don't really want to start splitting between two
+issue trackers. Someday we might move...
+
+&gt;<i> Are you planing to re-organize the plugins, e.g. such that plugins,
+</I>&gt;<i> which are interesting for any application reside in their own
+</I>&gt;<i> jar-file?
+</I>
+This is probably a good idea. However, I agree with Lee that in some cases
+it may not be totally clear-cut [1]. You think splitting ij-commands into
+two JAR files is sufficient? If so, care to send a list of plugins you feel
+are *not* generally useful, and I can split them out?
+
+&gt;<i> Will the package path of the plugins be stable after ImageJ2 1.0.0 was
+</I>&gt;<i> released?
+</I>
+Yes, when ImageJ 2.0.0 final is released. From then on, we will always
+deprecate any necessary moves, to keep old code working. And of course will
+also try not to do it at all unless deemed really important.
+
+That said, I don't really like the current package prefix of
+&quot;imagej.core.*&quot; for various &quot;core plugins.&quot; It is confusing that we have
+&quot;ij-core&quot; which is the core *library* and that code does *not* have prefix
+&quot;imagej.core&quot;, whereas we have &quot;core plugins&quot; which *do* have package
+prefix &quot;imagej.core&quot;. I would welcome a better idea!
+
+&gt;<i> Are there  plans how the &quot;dimension selection&quot; will be integrated into
+</I>&gt;<i> ImageJ2, i.e. how algorithms can be run on arbitrary dimensions?
+</I>
+Yes. The img-metadata branch [2] is relevant here as far as axis names go.
+
+I was thinking for starters, we could simply create new (headless-friendly)
+commands that narrow the view of a given dataset using the ImgLib2 Views
+class. Then from an end user perspective, if you want to limit the
+execution of the algorithm, you just run that command first. This fits in
+well with KNIME's node concept, where the answer to any given problem is
+usually to just insert another node for preprocessing or whatever.
+
+Do you think more than that is needed?
+
+Lee wrote:
+&gt;<i> There isn't any mechanism to handle AxesNames algebra ... annotation
+</I>&gt;<i> improvements here would be nice.
+</I>
+I agree, but do not have time to work on it. Proposals and PRs very
+welcome. It would probably make the most sense to base any work on the Axis
+metadata design from the img-metadata branch of ImgLib.
+
+Michael wrote:
+&gt;<i> ROIs: Are there plans to support Labelings in ImageJ2?
+</I>
+Lee wrote:
+&gt;<i> We're also looking forward to labelings being first-class entities
+</I>
+This is something we should pursue further for beta9, which is intended to
+focus on ROIs.
+
+Michael wrote:
+&gt;<i> Is &quot;new ImageJ(services...)&quot; replaced by  &quot;new Context(...services)&quot;?
+</I>
+Yes. Strictly speaking, that is correct.
+
+However, there is a new ImageJ &quot;gateway&quot; class in ij-app so that you can
+still say &quot;new ImageJ(...)&quot;. And actually from that object you will get
+lots more functionality: you can query any built-in service with a
+compile-safe method. See the ImageJ tutorials for details [3].
+
+Michael wrote:
+&gt;<i> How can we query the ImageJ version?
+</I>
+I apologize that it is somewhat convoluted now. First, the code:
+
+    ImageJ ij = new ImageJ();
+    App ijApp = ij.app().getApp(ImageJApp.NAME);
+    String ijApp.getVersion();
+
+This uses the AppService feature of SciJava Common. The rationale is that
+you may have a single SciJava Context with multiple associated applications
+such as ImageJ, SCIFIO and SciJava Common itself. And obviously they don't
+all have the same version. So you first have to ask the AppService for your
+application of interest, then query its version.
+
+We actually spit out this sort of stuff for *all* available applications in
+the SystemInformation command:
+<A HREF="https://github.com/imagej/imagej/blob/imagej-2.0.0-beta-7/plugins/commands/src/main/java/imagej/core/commands/debug/SystemInformation.java#L84">https://github.com/imagej/imagej/blob/imagej-2.0.0-beta-7/plugins/commands/src/main/java/imagej/core/commands/debug/SystemInformation.java#L84</A>
+
+There are all sorts of goodies you can query, many of which are extracted
+from either associated Maven POMs or JAR manifests. :-)
+
+Michael wrote:
+&gt;<i> the log level system property &quot;System.setProperty(&quot;ij.log.level&quot;,
+</I>&gt;<i> &quot;error&quot;);&quot; doesn't seem to  work any more
+</I>
+With the migration to SciJava Common, the property changed to
+&quot;scijava.log.level&quot; but it works the same way.
+
+Michael wrote:
+&gt;<i> we had to move ModuleService behind  MenuService in the constructor
+</I>&gt;<i> call to avoid a null pointer during initialization
+</I>&gt;<i> (onEvent(ModulesAddedEvent) was called before initialize).
+</I>
+That is a bug, thanks for reporting. However, moving the module service
+after the menu service will not work because MenuService needs
+CommandService which needs ModuleService.
+
+What's weird to me is, I am not sure why we don't see this bug when running
+the end-user ImageJ application...
+
+I have some service initialization changes pending on ImageJ's
+startup-speed branch, which may affect this. So we should debug further
+once that branch is merged. Please feel free to file a Trac ticket for it
+and assign to me.
+
+Michael wrote:
+&gt;<i> Is there a defined service order?
+</I>
+The order is defined by two things:
+1) If a service has an @Parameter dependency on another service, the
+dependency gets initialized first.
+2) Otherwise, the &quot;priority&quot; property of the @Plugin annotation is used to
+order service initialization.
+
+&gt;<i> ((So far, we have tons of ideas where we could do more things
+</I>&gt;<i> together. Thank you in advance for answering all these questions ;) ))
+</I>
+No problem, and again, sorry if the long delay reduces your momentum and/or
+enthusiasm. If you have any more questions, please fire away!
+
+Regards,
+Curtis
+
+[1] You know what that easter egg does, right? Don't you *want* to generate
+ASCII images using KNIME??? I know I do!
+[2] <A HREF="https://github.com/imagej/imglib/compare/master...img-metadata">https://github.com/imagej/imglib/compare/master...img-metadata</A>
+[3] E.g.:
+<A HREF="https://github.com/imagej/imagej-tutorials/blob/885892b6b225fba2e1b32c4ca14ab330e39f384a/load-and-display-dataset/src/main/java/LoadAndDisplayDataset.java">https://github.com/imagej/imagej-tutorials/blob/885892b6b225fba2e1b32c4ca14ab330e39f384a/load-and-display-dataset/src/main/java/LoadAndDisplayDataset.java</A>
+
+
+On Wed, May 15, 2013 at 9:35 AM, Lee Kamentsky &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">leek at broadinstitute.org</A>&gt;wrote:
+
+&gt;<i> On Wed, May 15, 2013 at 9:08 AM, Michael Zinsmaier &lt;
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">michael.zinsmaier at gmx.de</A>&gt; wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i>  Hi all,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>  after you guys have made so much progress during the hackathon, we felt
+</I>&gt;&gt;<i> motivated to review our KNIME-ImageJ2 integration and try to further
+</I>&gt;&gt;<i> improve it, as we want to have everything set-up when you release ImageJ2
+</I>&gt;&gt;<i> ;-)
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Anyway, we discussed several things and a lot of questions came up
+</I>&gt;&gt;<i> concerning ImageJ2:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Thx guys, lots of stuff below also applies to CellProfiler running
+</I>&gt;<i> ImageJ2.0 plugins.
+</I>&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;&gt;<i>  * Why is the threshold  plugin an interactive command? This for
+</I>&gt;&gt;<i> instance prevents the plugin from  beeing executing in headless mode (and
+</I>&gt;&gt;<i> hence from appearing as a KNIME node), which might be desirable in some
+</I>&gt;&gt;<i> use  cases.
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> I hadn't looked at the interactive commands with regard to CellProfiler.
+</I>&gt;<i> It looks like &quot;buttons&quot; could be interpreted as possible headless actions
+</I>&gt;<i> that could be performed... at least in some cases. I have CellProfiler
+</I>&gt;<i> analogs for most of the parameter types, but that one is new. I'm thinking
+</I>&gt;<i> that I might detect whether a plugin is interactive and, if so, display
+</I>&gt;<i> each button as a radio button, so that the button's callback could be
+</I>&gt;<i> executed in the context of a CellProfiler headless pipeline execution. For
+</I>&gt;<i> Threshold, I can see reasons for executing the callbacks for &quot;auto&quot;,
+</I>&gt;<i> &quot;apply&quot; and &quot;delete&quot; in a headless context - unfortunately, CellProfiler
+</I>&gt;<i> would convert the ThresholdOverlay to a binary mask, so &quot;delete&quot; doesn't
+</I>&gt;<i> make much sense for us.
+</I>&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> * In KNIME we are currently loading all available plugins in the
+</I>&gt;&gt;<i> classpath which are headless executable. But therewith plugins like &quot;Help&quot;,
+</I>&gt;&gt;<i> &quot;Easteregg&quot;, &quot;LoadDataSet&quot; will appear as KNIME nodes as well. However they
+</I>&gt;&gt;<i> can't do anything useful in the KNIME context (as they are  ImageJ2
+</I>&gt;&gt;<i> specific). Are you planing to re-organize the plugins, e.g. such that
+</I>&gt;&gt;<i> plugins, which are interesting for any application reside in their own
+</I>&gt;&gt;<i> jar-file?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> We're using the plugin menu system to display the available plugins
+</I>&gt;<i> hierarchically in CellProfiler. I guess that some plugins are less useful
+</I>&gt;<i> or arguably useless but who am I to judge (I'm still waiting for someone to
+</I>&gt;<i> publish a paper citing use of CellProfiler's &quot;game of life&quot; morphology
+</I>&gt;<i> operation). Hopefully, the hierarchy leads the users to the most useful
+</I>&gt;<i> plugins. I could see some other sort of annotation, e.g. &quot;tags&quot;, but I
+</I>&gt;<i> don't want to be the one who manages the tag ongology ;-).
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;<i>  * Are there  plans how the &quot;dimension selection&quot; will be integrated into
+</I>&gt;&gt;<i> ImageJ2,  i.e. how algorithms can be run on arbitrary dimensions? (Mapping
+</I>&gt;&gt;<i> from  AxesNames to indicies of dimensions in images). Can we help here? (see
+</I>&gt;&gt;<i> Doc hackathon!?)
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> CellProfiler does use the AxesNames to transform the N-dimensional arrays
+</I>&gt;<i> to our representation. I think that there's enough functionality in the
+</I>&gt;<i> restructuring commands to let power users pull out individual hyperplanes
+</I>&gt;<i> for processing in lower dimensions. Perhaps a &quot;ExtractData&quot; and
+</I>&gt;<i> &quot;ReplaceData&quot; plugin need to be added in order to create and reinsert
+</I>&gt;<i> lower-dimension datasets?
+</I>&gt;<i>
+</I>&gt;<i> There isn't any mechanism to handle AxesNames algebra - you don't know
+</I>&gt;<i> whether a plugin will reduce or augment a dataset's dimensionality or
+</I>&gt;<i> whether a plugin is only suitable for two dimensions. CellProfiler and, I'm
+</I>&gt;<i> guessing, Knime do a lot of matching inputs to outputs which is a contrast
+</I>&gt;<i> to ImageJ. I think our users can handle this ambiguity (they'd use only 2-D
+</I>&gt;<i> or N-D plugins adaptable to 2-D), but annotation improvements here would be
+</I>&gt;<i> nice.
+</I>&gt;<i>
+</I>&gt;<i>  * ROIs: Are there plans to support Labelings in ImageJ2? Or will
+</I>&gt;&gt;<i> Labelings somehow be replaced in the future?
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> We're also looking forward to labelings being first-class entities in
+</I>&gt;<i> ImageJ, partially my fault personally that this is not better developed.
+</I>&gt;<i> I'm mostly interested in us having some agreement for the datatype for a
+</I>&gt;<i> labeling parameter - I think that once we have that sort of
+</I>&gt;<i> interoperability, we'll see lots of progress in both segmentation methods
+</I>&gt;<i> and use of segmentations in downstream analysis.
+</I>&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> * In the current snapshot (compared to beta6) some functionality was
+</I>&gt;&gt;<i> moved from  ImageJ to sifio / scijava (e.g. the Services).  Regarding
+</I>&gt;&gt;<i> this some questions:
+</I>&gt;&gt;<i>   - The services seem to have some  ordering requirements now, we had to
+</I>&gt;&gt;<i> move
+</I>&gt;&gt;<i>     ModuleService behind  MenuService in the constructor call to avoid a
+</I>&gt;&gt;<i> null pointer during
+</I>&gt;&gt;<i>     initialization (onEvent(ModulesAddedEvent) was called before
+</I>&gt;&gt;<i> initialize). Is there a defined
+</I>&gt;&gt;<i>     service order?
+</I>&gt;&gt;<i>
+</I>&gt;<i> It would be nice to have a headless service profile, something a little
+</I>&gt;<i> easier than leaving out the AWT dependent jars and crossing fingers.
+</I>&gt;<i> CellProfiler might instantiate both GUI and headless contexts in the same
+</I>&gt;<i> JVM - we'd appreciate being able to choose the UI configuration in a simple
+</I>&gt;<i> way.
+</I>&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;&gt;<i> ((So far, we have tons of ideas where we could do more things together.
+</I>&gt;&gt;<i> Thank you in advance for answering all these questions ;) ))
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Likewise, thank you, thank you - don't misconstrue any of the above as
+</I>&gt;<i> demands. We all appreciate how all of this is being done and the time it
+</I>&gt;<i> all takes.
+</I>&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>  Cheers,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>  Martin, Christian and Michael Z.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20130628/87ede65c/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20130628/87ede65c/attachment-0001.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001628.html">[ImageJ-devel] SciJava Jenkins &amp; Maven repository?
+</A></li>
+	<LI>Next message: <A HREF="001631.html">[ImageJ-devel] imagej.data.display.DefaultImageDisplay: Recent	Commit.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1629">[ date ]</a>
+              <a href="thread.html#1629">[ thread ]</a>
+              <a href="subject.html#1629">[ subject ]</a>
+              <a href="author.html#1629">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

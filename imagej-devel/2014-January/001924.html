@@ -1,0 +1,159 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Speeding up Maven downloads using the ImageJ	public mirror
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Speeding%20up%20Maven%20downloads%20using%20the%20ImageJ%0A%09public%20mirror&In-Reply-To=%3CCADN69yn479AedGkq%3DemDtOr4QVYCXPD9ySmi95Hanm70ozwk5g%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001915.html">
+   <LINK REL="Next"  HREF="001926.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Speeding up Maven downloads using the ImageJ	public mirror</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Speeding%20up%20Maven%20downloads%20using%20the%20ImageJ%0A%09public%20mirror&In-Reply-To=%3CCADN69yn479AedGkq%3DemDtOr4QVYCXPD9ySmi95Hanm70ozwk5g%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Speeding up Maven downloads using the ImageJ	public mirror">ctrueden at wisc.edu
+       </A><BR>
+    <I>Fri Jan 17 11:23:04 CST 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001915.html">[ImageJ-devel] Speeding up Maven downloads using the ImageJ public	mirror
+</A></li>
+        <LI>Next message: <A HREF="001926.html">[ImageJ-devel] Speeding up Maven downloads using the ImageJ public mirror
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1924">[ date ]</a>
+              <a href="thread.html#1924">[ thread ]</a>
+              <a href="subject.html#1924">[ subject ]</a>
+              <a href="author.html#1924">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Dscho and everyone,
+
+&gt;<i> It is a pity that we cannot configure the mirror from the pom-scijava
+</I>&gt;<i> parent (which would have relieved every developer from having to
+</I>&gt;<i> configure the *exact* *same* thing on their computers), but at least
+</I>&gt;<i> it is easy enough.
+</I>
+For what it's worth, what we *can* do is switch pom-scijava to use the
+ImageJ &quot;public&quot; group (<A HREF="http://maven.imagej.net/content/groups/public">http://maven.imagej.net/content/groups/public</A>) as
+the sole repository. This means by default, everyone's Maven builds check
+only two repositories: Central and ImageJ public. Further, if/when we need
+to introduce access to additional repositories and/or remove obsolete ones,
+we don't have to hack the POM anymore; we can just update our Nexus
+configuration. That way everyone automatically benefits from such changes
+with no action required.
+
+Until recently, our Nexus was also misconfigured to not do proper
+bookkeeping: it was not updating its indices or emptying its trash. Now
+that I have things set up correctly, everything is kept up to date, and the
+mirror feature Johannes mentioned works for developers who care to
+configure it in their ~/.m2/settings.xml.
+
+Regards,
+Curtis
+
+
+On Wed, Jan 15, 2014 at 11:35 AM, Johannes Schindelin
+&lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">schindelin at wisc.edu</A>&gt;wrote:
+
+&gt;<i> Hi Curtis,
+</I>&gt;<i>
+</I>&gt;<i> I got curious about the &quot;remote proxy&quot; feature of Nexus (which is used to
+</I>&gt;<i> serve ImageJ's Maven repository). For the benefit of other developers, let
+</I>&gt;<i> me write it up here:
+</I>&gt;<i>
+</I>&gt;<i> When clicking on the &quot;Repositories&quot; link on the left hand side menu of
+</I>&gt;<i> <A HREF="http://maven.imagej.net/">http://maven.imagej.net/</A> you see a lot of repositories with basically
+</I>&gt;<i> four types: &quot;group&quot;, &quot;hosted&quot;, &quot;virtual&quot; and &quot;proxy&quot;:
+</I>&gt;<i>
+</I>&gt;<i>         <A HREF="http://maven.imagej.net/index.html#view-repositories">http://maven.imagej.net/index.html#view-repositories</A>
+</I>&gt;<i>
+</I>&gt;<i> The &quot;hosted&quot; ones are our repositories, to which we deploy: snapshots,
+</I>&gt;<i> releases and thirdparty (for dependencies we rely on that were not
+</I>&gt;<i> deployed anywhere yet).
+</I>&gt;<i>
+</I>&gt;<i> The &quot;virtual&quot; repositories are there only for compatibility and we could
+</I>&gt;<i> even switch them off because we do not support Maven 1 at all.
+</I>&gt;<i>
+</I>&gt;<i> The proxy repositories are interesting: when accessing them via Maven,
+</I>&gt;<i> they try to retrieve the desired artifacts from remote repositories and
+</I>&gt;<i> keep cached copies (eternally for release versions, 24 minutes for
+</I>&gt;<i> snapshots) so that they serve the artifacts from the cache until expired.
+</I>&gt;<i>
+</I>&gt;<i> The groups are just aggregating others, and the most important group is
+</I>&gt;<i> the &quot;public&quot; one: it offers a single, public-facing repository that serves
+</I>&gt;<i> *all* of the public repositories, including the proxy ones.
+</I>&gt;<i>
+</I>&gt;<i> Now, the real cool thing about it is that you can configure your local
+</I>&gt;<i> Maven to use the &quot;public&quot; group repository as a *mirror*, i.e. instead of
+</I>&gt;<i> looking here and there and everywhere for artifacts, it looks only at the
+</I>&gt;<i> &quot;public&quot; repository and lets that one worry about retrieving the
+</I>&gt;<i> artifacts. It also makes things faster because Maven will only have to
+</I>&gt;<i> look at one single repository rather than trying a couple of them.
+</I>&gt;<i>
+</I>&gt;<i> To configure the mirror, I added the &lt;mirrors&gt; section to my
+</I>&gt;<i> $HOME/.m2/settings.xml:
+</I>&gt;<i>
+</I>&gt;<i> -- snip --
+</I>&gt;<i> &lt;settings&gt;
+</I>&gt;<i>         ...
+</I>&gt;<i>         &lt;mirrors&gt;
+</I>&gt;<i>                 &lt;mirror&gt;
+</I>&gt;<i>                         &lt;id&gt;imagej-mirror&lt;/id&gt;
+</I>&gt;<i>                         &lt;name&gt;ImageJ's public mirror repository&lt;/name&gt;
+</I>&gt;<i>                         &lt;url&gt;<A HREF="http://maven.imagej.net/content/groups/public">http://maven.imagej.net/content/groups/public</A>
+</I>&gt;<i> &lt;/url&gt;
+</I>&gt;<i>                         &lt;mirrorOf&gt;*&lt;/mirrorOf&gt;
+</I>&gt;<i>                 &lt;/mirror&gt;
+</I>&gt;<i>         &lt;/mirrors&gt;
+</I>&gt;<i>         ...
+</I>&gt;<i> &lt;/settings&gt;
+</I>&gt;<i> -- snap --
+</I>&gt;<i>
+</I>&gt;<i> It is a pity that we cannot configure the mirror from the pom-scijava
+</I>&gt;<i> parent (which would have relieved every developer from having to configure
+</I>&gt;<i> the *exact* *same* thing on their computers), but at least it is easy
+</I>&gt;<i> enough.
+</I>&gt;<i>
+</I>&gt;<i> Maybe we should teach the imagej-maven-plugin to edit the user's
+</I>&gt;<i> configuration when the user asks for it?
+</I>&gt;<i>
+</I>&gt;<i> Ciao,
+</I>&gt;<i> Dscho
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140117/ce56828f/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20140117/ce56828f/attachment.html</A>&gt;
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001915.html">[ImageJ-devel] Speeding up Maven downloads using the ImageJ public	mirror
+</A></li>
+	<LI>Next message: <A HREF="001926.html">[ImageJ-devel] Speeding up Maven downloads using the ImageJ public mirror
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1924">[ date ]</a>
+              <a href="thread.html#1924">[ thread ]</a>
+              <a href="subject.html#1924">[ subject ]</a>
+              <a href="author.html#1924">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

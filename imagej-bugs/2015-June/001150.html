@@ -1,0 +1,168 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-bugs] [Bug 1090] New: TrakEM2 : segmentation with polygon	ROI not working
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%201090%5D%20New%3A%20TrakEM2%20%3A%20segmentation%20with%20polygon%0A%09ROI%20not%20working&In-Reply-To=%3Cbug-1090-19%40http.fiji.sc/bugzilla/%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001149.html">
+   <LINK REL="Next"  HREF="001151.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-bugs] [Bug 1090] New: TrakEM2 : segmentation with polygon	ROI not working</H1>
+    <B>bugzilla at fiji.sc</B> 
+    <A HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%201090%5D%20New%3A%20TrakEM2%20%3A%20segmentation%20with%20polygon%0A%09ROI%20not%20working&In-Reply-To=%3Cbug-1090-19%40http.fiji.sc/bugzilla/%3E"
+       TITLE="[ImageJ-bugs] [Bug 1090] New: TrakEM2 : segmentation with polygon	ROI not working">bugzilla at fiji.sc
+       </A><BR>
+    <I>Tue Jun 16 09:30:00 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001149.html">[ImageJ-bugs] [Bug 1089] Error in Fiji ImageJ java.lang.IllegalArgumentException: invalid range properties
+</A></li>
+        <LI>Next message: <A HREF="001151.html">[ImageJ-bugs] [Bug 1090] TrakEM2 : segmentation with polygon ROI	not working
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1150">[ date ]</a>
+              <a href="thread.html#1150">[ thread ]</a>
+              <a href="subject.html#1150">[ subject ]</a>
+              <a href="author.html#1150">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE><A HREF="http://fiji.sc/bugzilla/show_bug.cgi?id=1090">http://fiji.sc/bugzilla/show_bug.cgi?id=1090</A>
+
+            Bug ID: 1090
+           Summary: TrakEM2 : segmentation with polygon ROI not working
+           Product: Fiji
+           Version: unspecified
+          Hardware: PC
+                OS: Windows
+            Status: NEW
+          Severity: normal
+          Priority: P4
+         Component: Plugins
+          Assignee: <A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">imagej-bugs at imagej.net</A>
+          Reporter: <A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">Benjamin.Pavie at cme.vib-kuleuven.be</A>
+                CC: <A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">Benjamin.Pavie at cme.vib-kuleuven.be</A>
+
+I watched the following video
+<A HREF="http://www.ini.uzh.ch/~acardona/movies/arealist-create-and-edit.mp4">http://www.ini.uzh.ch/~acardona/movies/arealist-create-and-edit.mp4</A> describing
+how to segment in TrakEM2 and at 43 sec, it demonstrates how to use polygon ROI
+tool to draw a ROI then use the FIT SPLINE option to get a perfect selection.
+Unfortunately, using the last FIJI version available (ImageJ 1.49t), it
+impossible to use the polygon ROI tool which is not working anymore. Using it
+will just draw a tiny yellow square as a first point and refuse to add a new
+one, getting stuck. You can't even unselect the ROI easily. 
+
+According to Wayne Rasband who tested TrakEM2 in ImageJ 1.49s, 1.48, 1.47 and
+1.46 and 1.44, it did not work in any of these earlier versions (I add this
+comment for the forum):
+
+quoted:
+&quot;The problem with the polygon ROI tool in TrakEM2 does not seem to be due to an
+ImageJ API change in the last three years. I tried using the tool in ImageJ
+1.49s, 1.48, 1.47 and 1.46 and it did not work in any of these earlier
+versions..
+(...)
+The Polygon ROI tool in TrakEM2 does not work with ImageJ 1.44, released in
+January 2011. I tried to revert to 1.43 but Fiji would not restart when I
+downgraded to that version.&quot;
+
+After a quick look of ImageJ source code of the ImageCanvas from ImageJ and the
+DisplayCanvas of TrakEM2 plugin, it looks the problem is more coming from the
+mouseMoved() method, which in DisplayCanvas doesn't look to manage the tools
+Toolbar.POLYGON, Toolbar.POLYLINE, Toolbar.ANGLE.
+
+It looks at some point DisplayCanvas  was taking care of them which will
+explain why the video is working with using the Toolbar.POLYGON tool, but now
+none of the above tools are doing anything.
+Actually, it looks it was using something similar to ImageCanvas and that it
+was commented and replaced by a threaded based class (see
+<A HREF="https://github.com/trakem2/TrakEM2/blob/master/TrakEM2_/src/main/java/ini/trakem2/display/DisplayCanvas.java#L1317">https://github.com/trakem2/TrakEM2/blob/master/TrakEM2_/src/main/java/ini/trakem2/display/DisplayCanvas.java#L1317</A>
+and
+<A HREF="https://github.com/trakem2/TrakEM2/blob/master/TrakEM2_/src/main/java/ini/trakem2/display/DisplayCanvas.java#L1373">https://github.com/trakem2/TrakEM2/blob/master/TrakEM2_/src/main/java/ini/trakem2/display/DisplayCanvas.java#L1373</A>)
+which doesn't handle the above tools.
+
+I am not sure how to change that easily, since I do not know why the default
+method has been replaced by the MouseMovedThread class for the mouse moved
+event (you must had a good reason).
+
+Information about your version of Java:
+
+  os.arch =&gt; amd64
+  os.name =&gt; Windows 7
+  os.version =&gt; 6.1
+  java.version =&gt; 1.6.0_24
+  java.vendor =&gt; Sun Microsystems Inc.
+  java.runtime.name =&gt; Java(TM) SE Runtime Environment
+  java.runtime.version =&gt; 1.6.0_24-b07
+  java.vm.name =&gt; Java HotSpot(TM) 64-Bit Server VM
+  java.vm.version =&gt; 19.1-b02
+  java.vm.vendor =&gt; Sun Microsystems Inc.
+  java.vm.info =&gt; mixed mode
+  java.awt.graphicsenv =&gt; sun.awt.Win32GraphicsEnvironment
+  java.specification.name =&gt; Java Platform API Specification
+  java.specification.version =&gt; 1.6
+  sun.cpu.endian =&gt; little
+  sun.desktop =&gt; windows
+  file.separator =&gt; \
+
+The up-to-date check says: UPDATEABLE
+
+Information relevant to JAVA_HOME related problems:
+
+  JAVA_HOME is set to:
+C:\Users\u0094799\bin\Fiji.app/java/win64/jdk1.6.0_24//jre
+  imagej.dir =&gt; C:\Users\u0094799\bin\Fiji.app
+
+Information about the version of each plugin:
+
+Activated update sites:
+ImageJ: <A HREF="http://update.imagej.net/">http://update.imagej.net/</A> (last check:20150614035343)
+Fiji: <A HREF="http://fiji.sc/update/">http://fiji.sc/update/</A> (last check:20150605150752)
+
+Files not up-to-date:
+  03c47575 (LOCAL_ONLY) 20150511162009 plugins/3D_Convex_Hull.jar
+  f79be975 (LOCAL_ONLY) 20150414165535 plugins/Auto_Focus.jar
+  34e56692 (LOCAL_ONLY) 20150611165214 plugins/BoneJ_.jar
+  1f12fc21 (LOCAL_ONLY) 20150610170354 plugins/IntSeg_3D.jar
+  5f60d96e (LOCAL_ONLY) 20150427143733 plugins/Watershed_.jar
+  6cbd979b (LOCAL_ONLY) 20150527103909 plugins/pagita_.jar
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-bugs/attachments/20150616/d3d0b9cb/attachment.html">http://imagej.net/pipermail/imagej-bugs/attachments/20150616/d3d0b9cb/attachment.html</A>&gt;
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001149.html">[ImageJ-bugs] [Bug 1089] Error in Fiji ImageJ java.lang.IllegalArgumentException: invalid range properties
+</A></li>
+	<LI>Next message: <A HREF="001151.html">[ImageJ-bugs] [Bug 1090] TrakEM2 : segmentation with polygon ROI	not working
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1150">[ date ]</a>
+              <a href="thread.html#1150">[ thread ]</a>
+              <a href="subject.html#1150">[ subject ]</a>
+              <a href="author.html#1150">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-bugs">More information about the Imagej-bugs
+mailing list</a><br>
+</body></html>

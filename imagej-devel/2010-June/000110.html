@@ -1,0 +1,130 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Simplifying loops?
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Simplifying%20loops%3F&In-Reply-To=%3C74709cec184c6.4c16357e%40wiscmail.wisc.edu%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000109.html">
+   <LINK REL="Next"  HREF="000112.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Simplifying loops?</H1>
+    <B>Brian Selinsky</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Simplifying%20loops%3F&In-Reply-To=%3C74709cec184c6.4c16357e%40wiscmail.wisc.edu%3E"
+       TITLE="[ImageJ-devel] Simplifying loops?">bselinsky at wisc.edu
+       </A><BR>
+    <I>Mon Jun 14 13:58:22 CDT 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000109.html">[ImageJ-devel] Simplifying loops?
+</A></li>
+        <LI>Next message: <A HREF="000112.html">[ImageJ-devel] Simplifying loops?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#110">[ date ]</a>
+              <a href="thread.html#110">[ thread ]</a>
+              <a href="subject.html#110">[ subject ]</a>
+              <a href="author.html#110">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>What happens if next() is called without checking hasNest() first?
+
+Would returning null or throwing an exception that could be caught and potentially ignored be reasonable?
+
+
+
+On 06/14/10, Stephan Saalfeld  &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">saalfeld at mpi-cbg.de</A>&gt; wrote:
+
+&gt;<i> Hi,
+</I>&gt;<i> 
+</I>&gt;<i> we implement java.lang.Iterator&lt;T extends Type&lt;T&gt;&gt; where next() returns
+</I>&gt;<i> T, so no, next() cannot return boolean, fwd() and back() might do that.
+</I>&gt;<i> In the coming changes, Image&lt;T&gt; implements java.lang.Iterable&lt;T&gt;, such
+</I>&gt;<i> that the Java language shortcut works:
+</I>&gt;<i> 
+</I>&gt;<i> Image&lt; T &gt; image;
+</I>&gt;<i> for ( final T : image ) {
+</I>&gt;<i> &#160;&#160;&#160; // meat of the loop
+</I>&gt;<i> }
+</I>&gt;<i> 
+</I>&gt;<i> How's that?
+</I>&gt;<i> 
+</I>&gt;<i> Currently, Cursor&lt;T&gt; implements Iterable&lt;T&gt; such that you can do:
+</I>&gt;<i> 
+</I>&gt;<i> Cursor&lt;T&gt; cursor;
+</I>&gt;<i> for (final T : cursor ) ...
+</I>&gt;<i> 
+</I>&gt;<i> instead,&#160; but that's less sensible and will not stay.
+</I>&gt;<i> 
+</I>&gt;<i> Best,
+</I>&gt;<i> Stephan
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> On Mon, 2010-06-14 at 18:54 +0200, Johannes Schindelin wrote: 
+</I>&gt;<i> &gt; Hi,
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; On Mon, 14 Jun 2010, Stephan Preibisch wrote:
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; &gt; This is definitely something we could do as far as the linked iterators
+</I>&gt;<i> &gt; &gt; work. Right now we did not do that because it is quite often extra work,
+</I>&gt;<i> &gt; &gt; e.g. if you copy an image you need only one check instead of two:
+</I>&gt;<i> &gt; &gt; 
+</I>&gt;<i> &gt; &gt; cursor1, cursor2;
+</I>&gt;<i> &gt; &gt; 
+</I>&gt;<i> &gt; &gt; while ( cursor1.hasNext() ) 
+</I>&gt;<i> &gt; &gt; {
+</I>&gt;<i> &gt; &gt;&#160;	cursor1.fwd();
+</I>&gt;<i> &gt; &gt;&#160;	cursor2.fwd();
+</I>&gt;<i> &gt; &gt;&#160;	// meat of the loop
+</I>&gt;<i> &gt; &gt; }
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; Ah, I see. Maybe just a shortcut
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt;&#160;	public boolean next() {
+</I>&gt;<i> &gt;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;	if (!hasNext())
+</I>&gt;<i> &gt;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;	return false;
+</I>&gt;<i> &gt;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;	fwd();
+</I>&gt;<i> &gt;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;	return true;
+</I>&gt;<i> &gt;&#160;	}
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; to optimize for the common case?
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; Ciao,
+</I>&gt;<i> &gt; Dscho
+</I>&gt;<i> &gt; 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagejdev.org</A>
+</I>&gt;<i> <A HREF="http://imagejdev.org/mailman/listinfo/imagej-devel">http://imagejdev.org/mailman/listinfo/imagej-devel</A>
+</I>
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000109.html">[ImageJ-devel] Simplifying loops?
+</A></li>
+	<LI>Next message: <A HREF="000112.html">[ImageJ-devel] Simplifying loops?
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#110">[ date ]</a>
+              <a href="thread.html#110">[ thread ]</a>
+              <a href="subject.html#110">[ subject ]</a>
+              <a href="author.html#110">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

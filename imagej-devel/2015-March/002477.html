@@ -1,0 +1,177 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] About memory usage with Fiji/JVM
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20About%20memory%20usage%20with%20Fiji/JVM&In-Reply-To=%3CCAEpSnnb%3DRkMLLicQSabzHhqyNdbS3O7ftDUsSFR%3Dn%2Bn0F6iOkA%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002476.html">
+   <LINK REL="Next"  HREF="002478.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] About memory usage with Fiji/JVM</H1>
+    <B>Hadrien Mary</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20About%20memory%20usage%20with%20Fiji/JVM&In-Reply-To=%3CCAEpSnnb%3DRkMLLicQSabzHhqyNdbS3O7ftDUsSFR%3Dn%2Bn0F6iOkA%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] About memory usage with Fiji/JVM">hadrien.mary at gmail.com
+       </A><BR>
+    <I>Fri Mar 13 13:54:51 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002476.html">[ImageJ-devel] About memory usage with Fiji/JVM
+</A></li>
+        <LI>Next message: <A HREF="002478.html">[ImageJ-devel] About memory usage with Fiji/JVM
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2477">[ date ]</a>
+              <a href="thread.html#2477">[ thread ]</a>
+              <a href="subject.html#2477">[ subject ]</a>
+              <a href="author.html#2477">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Thank you Mark for the answer.
+
+About ImgMode I wonder what is the difference between these three modes :
+
+- ArrayImgFactory
+- CellImgFactory
+- PlanarImgFactory
+
+Sorry if it is something obvious but I often see these modes without
+knowing how they work.
+
+Best,
+
+--
+Hadrien Mary
+
+Ph.D student in Biology
+Tournier-Gachet Team
+CNRS - LBCMCP - UMR 5088
+
+Universit&#233; de Toulouse - B&#226;t. 4R3B1
+118, route de Narbonne - 31062 Toulouse
+
+
+On Fri, Mar 13, 2015 at 7:43 PM, Mark Hiner &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">hiner at wisc.edu</A>&gt; wrote:
+&gt;<i> Hi Hadrien,
+</I>&gt;<i>
+</I>&gt;&gt;<i>My hypothesis is that when loading an image, Fiji/SCIFIO look at free
+</I>&gt;&gt;<i>memory in the system but not in the JVM. Is that possible ?
+</I>&gt;<i>
+</I>&gt;<i> Yes, this is almost certainly what's happening. Unfortunately I am not aware
+</I>&gt;<i> of a way to differentiate between memory that is still in use, and memory
+</I>&gt;<i> that just hasn't been deallocated.
+</I>&gt;<i>
+</I>&gt;<i> By default in these situations SCIFIO will look at the available memory, see
+</I>&gt;<i> that there's not enough to open the dataset and open it virtually. Note that
+</I>&gt;<i> it actually would be possible to open the full dataset - as the memory
+</I>&gt;<i> allocation approached the JVM's limit, it would automatically be released.
+</I>&gt;<i>
+</I>&gt;<i> Right now this can be worked around programmatically by specifying a PLANAR
+</I>&gt;<i> or ARRAY[1] ImgMode in the SCIFIOConfig[2]. The Bio-Formats importer lets
+</I>&gt;<i> you specify whether the image should be opened virtually or not. The only
+</I>&gt;<i> other option is to click the status bar to force garbage collection.
+</I>&gt;<i>
+</I>&gt;<i> We also have plans to improve the SCIFIO importer[3] to expose these
+</I>&gt;<i> settings in the UI. Ultimately the hope is that virtual (cell) images will
+</I>&gt;<i> incur minimal performance penalties though[4], making this issue moot.
+</I>&gt;<i>
+</I>&gt;<i> Thanks!
+</I>&gt;<i> - Mark
+</I>&gt;<i>
+</I>&gt;<i> [1]
+</I>&gt;<i> <A HREF="https://github.com/scifio/scifio/blob/scifio-0.21.1/src/main/java/io/scif/config/SCIFIOConfig.java#L124">https://github.com/scifio/scifio/blob/scifio-0.21.1/src/main/java/io/scif/config/SCIFIOConfig.java#L124</A>
+</I>&gt;<i> [2]
+</I>&gt;<i> <A HREF="https://github.com/scifio/scifio/blob/scifio-0.21.1/src/main/java/io/scif/config/SCIFIOConfig.java#L370-373">https://github.com/scifio/scifio/blob/scifio-0.21.1/src/main/java/io/scif/config/SCIFIOConfig.java#L370-373</A>
+</I>&gt;<i> [3] <A HREF="https://github.com/imagej/imagej-plugins-commands/issues/4">https://github.com/imagej/imagej-plugins-commands/issues/4</A>
+</I>&gt;<i> [4] <A HREF="https://github.com/scifio/scifio/issues/201">https://github.com/scifio/scifio/issues/201</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On Mon, Jan 26, 2015 at 5:57 AM, Hadrien Mary &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">hadrien.mary at gmail.com</A>&gt;
+</I>&gt;<i> wrote:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Hi,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> New SCIFIO I/O system in Fiji/IJ2 automatically detects wether virtual
+</I>&gt;&gt;<i> stack is needed according to system memory available and image size
+</I>&gt;&gt;<i> (if I understood correctly).
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Virtual stack is fine but it always better to work without when you
+</I>&gt;&gt;<i> can. For example working with timelapse stacks, sliding time is much
+</I>&gt;&gt;<i> faster when image is not a virtual stack (and it makes sense since RAM
+</I>&gt;&gt;<i> memory access is much faster than hard drive memory access...).
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Saying that I noticed something: when I close a big image (no virtual
+</I>&gt;&gt;<i> stack because moving time slider is fast), java does not release
+</I>&gt;&gt;<i> memory to system (and it's a normal behaviour according to this
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> <A HREF="http://stackoverflow.com/questions/22912063/automatically-release-unused-memory-in-imagej-fiji">http://stackoverflow.com/questions/22912063/automatically-release-unused-memory-in-imagej-fiji</A>).
+</I>&gt;&gt;<i> Now when I load the same kind of image (same size), the JVM should use
+</I>&gt;&gt;<i> the free memory released by the previously closed image isn't it ? I
+</I>&gt;&gt;<i> have the feeling that it does not because, when I move the time slider
+</I>&gt;&gt;<i> on the second image, it's very slow....
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Some numbers:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> - image size : 4.6GB
+</I>&gt;&gt;<i> - Fiji memory after start : 0.3GB
+</I>&gt;&gt;<i> - Fiji memory after loading first image: 6.9GiB
+</I>&gt;&gt;<i> - Fiji memory after closing first image: 6.9GiB
+</I>&gt;&gt;<i> - Fiji memory after loading second image: 6.9GiB
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> My hypothesis is that when loading an image, Fiji/SCIFIO look at free
+</I>&gt;&gt;<i> memory in the system but not in the JVM. Is that possible ? Did you
+</I>&gt;&gt;<i> already noticed that ?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> PS: I have attached to this mail some properties of my system.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Best,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> --
+</I>&gt;&gt;<i> Hadrien Mary
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Ph.D student in Biology
+</I>&gt;&gt;<i> Tournier-Gachet Team
+</I>&gt;&gt;<i> CNRS - LBCMCP - UMR 5088
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Universit&#233; de Toulouse - B&#226;t. 4R3B1
+</I>&gt;&gt;<i> 118, route de Narbonne - 31062 Toulouse
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002476.html">[ImageJ-devel] About memory usage with Fiji/JVM
+</A></li>
+	<LI>Next message: <A HREF="002478.html">[ImageJ-devel] About memory usage with Fiji/JVM
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2477">[ date ]</a>
+              <a href="thread.html#2477">[ thread ]</a>
+              <a href="subject.html#2477">[ subject ]</a>
+              <a href="author.html#2477">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

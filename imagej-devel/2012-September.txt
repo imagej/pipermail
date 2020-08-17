@@ -1,0 +1,1013 @@
+From tobias.pietzsch at inf.tu-dresden.de  Mon Sep  3 07:46:50 2012
+From: tobias.pietzsch at inf.tu-dresden.de (Tobias Pietzsch)
+Date: Mon, 03 Sep 2012 14:46:50 +0200
+Subject: [ImageJ-devel] [ImgLib2] new Gauss implementation
+Message-ID: <5044A6BA.3060609@inf.tu-dresden.de>
+
+Hi all,
+
+a while ago I did an alternative implementation of Gaussian smoothing
+(started out as trying to see whether the old one could be made faster).
+The basic idea is the same: separate and do 1D line convolutions.
+The details differ quite a bit. Instead of handling special cases at
+the start/end of lines, images that are smaller than the kernel, etc.
+this new implementation simply does a bit of unnecessary extra work,
+which makes the code shorter and apparently better suited to the JIT.
+
+Currently the "Gauss3" can be found in the branch "gauss3". I'd like to
+merge to master soon. Gauss3 can bring quite a bit of speed-up, e.g. on
+my laptop
+
+40ms vs.  70ms  for a 1000 x 1000 FloatType image, or
+78ms vs. 136ms  for a 100 x 100 x 100 FloatType image (sigma=3.0).
+
+I also tried it together with the new neighborhood design in
+the DogDetection algorithm (algorithms-legacy).
+There I had a speed-up on a 953 x 451 x 48 SPIM image of
+3349ms vs. 6036ms so almost twice as fast. (This can be found in
+the "tobias-neighborhood-experiments" branch).
+
+
+Instead of the many static methods of Gauss, the interface of
+Gauss3 is deliberately simple. There is one static method, basically:
+
+Gauss3.gauss( final double[] sigma,
+               final RandomAccessible< S > source,
+               final RandomAccessibleInterval< T > target )
+
+S and T both extend NumericType, but not necessarily the same, so
+your source can be UnsignedByteType and your Result DoubleType for
+example. You need to out-of-bounds extend the source yourself, if
+there is not enough data beyond the borders (of the target interval).
+
+It figures out which temporary type to use for the calculation on
+it's own. If the target type T is DoubleType, all calculations are done
+in double precision. For all other target RealTypes, float precision is
+used. General NumericTypes are computed in their own arithmetic.
+The source type S and target type T must be either both RealTypes or
+both the same type.
+
+See net.imglib2.algorithm.gauss3.Gauss3Example (in imglib2-tests package
+for how to use it).
+
+Doumentation of the internals is still rather sparse. I hope I'll find
+some time to improve that soon. I'll try to merge to master next week,
+maybe I'll need some hand-holding then to make it play nice with the 
+fiji javac...
+
+best regards,
+Tobias
+
+
+From pietzsch at mpi-cbg.de  Mon Sep  3 07:55:53 2012
+From: pietzsch at mpi-cbg.de (Tobias Pietzsch)
+Date: Mon, 03 Sep 2012 14:55:53 +0200
+Subject: [ImageJ-devel] [ImgLib2] new Gauss implementation
+Message-ID: <5044A8D9.7010602@mpi-cbg.de>
+
+Hi all,
+
+a while ago I did an alternative implementation of Gaussian smoothing
+(started out as trying to see whether the old one could be made faster).
+The basic idea is the same: separate and do 1D line convolutions.
+The details differ quite a bit. Instead of handling special cases at
+the start/end of lines, images that are smaller than the kernel, etc.
+this new implementation simply does a bit of unnecessary extra work,
+which makes the code shorter and apparently better suited to the JIT.
+
+Currently the "Gauss3" can be found in the branch "gauss3". I'd like to
+merge to master soon. Gauss3 can bring quite a bit of speed-up, e.g. on
+my laptop
+
+40ms vs.  70ms  for a 1000 x 1000 FloatType image, or
+78ms vs. 136ms  for a 100 x 100 x 100 FloatType image (sigma=3.0).
+
+I also tried it together with the new neighborhood design in
+the DogDetection algorithm (algorithms-legacy).
+There I had a speed-up on a 953 x 451 x 48 SPIM image of
+3349ms vs. 6036ms so almost twice as fast. (This can be found in
+the "tobias-neighborhood-experiments" branch).
+
+
+Instead of the many static methods of Gauss, the interface of
+Gauss3 is deliberately simple. There is one static method, basically:
+
+Gauss3.gauss( final double[] sigma,
+               final RandomAccessible< S > source,
+               final RandomAccessibleInterval< T > target )
+
+S and T both extend NumericType, but not necessarily the same, so
+your source can be UnsignedByteType and your Result DoubleType for
+example. You need to out-of-bounds extend the source yourself, if
+there is not enough data beyond the borders (of the target interval).
+
+It figures out which temporary type to use for the calculation on
+it's own. If the target type T is DoubleType, all calculations are done
+in double precision. For all other target RealTypes, float precision is
+used. General NumericTypes are computed in their own arithmetic.
+The source type S and target type T must be either both RealTypes or
+both the same type.
+
+See net.imglib2.algorithm.gauss3.Gauss3Example (in imglib2-tests package
+for how to use it).
+
+Doumentation of the internals is still rather sparse. I hope I'll find
+some time to improve that soon. I'll try to merge to master next week,
+maybe I'll need some hand-holding then to make it play nice with the 
+fiji javac...
+
+best regards,
+Tobias
+
+
+From ctrueden at wisc.edu  Wed Sep 12 11:52:46 2012
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Wed, 12 Sep 2012 11:52:46 -0500
+Subject: [ImageJ-devel] ImageJ 2.0.0-beta4 released
+Message-ID: <CADN69y=jj_76zF6GVUCx596V+q5nR7OirJc_KwAh+RbSUSA8Og@mail.gmail.com>
+
+Hi everyone,
+
+Today the ImageJDev team is releasing the fourth beta of ImageJ2, version
+2.0.0-beta4.
+
+ImageJ 2.0.0-beta4 is a "beta"-quality release, meaning the code is not
+finished. The design is more stable than before but still subject to change
+until the final 2.0.0 release. It is recommended that people continue to
+use ImageJ v1.x for critical work.
+
+The ImageJ2 user interface is modeled after ImageJ v1.x as much as
+possible. However, under the hood, ImageJ2 is a complete redesign of
+ImageJ. It provides backward compatibility with older versions of ImageJ by
+bundling the latest v1.x code and translating between "legacy" and "modern"
+image structures.
+
+Development of this release of ImageJ focused heavily on the plugin
+architecture and various plugin implementations. There were also numerous
+architecture changes to make ImageJ more flexible, powerful, and backwards
+compatible. To accommodate this, changes were made to the plugin class
+hierarchy, the user interface classes, the legacy layer, the updater, the
+launcher, and in many other areas. There were also some improvements at the
+application level?all in all, over 100 bugfixes and improvements.
+
+For further details on this release, including a discussion of new
+features, please see our blog post:
+  http://developer.imagej.net/2012/09/11/imagej-v200-beta4
+
+You can download the release from:
+  http://developer.imagej.net/downloads
+
+Please note that due to bugs in the Updater (which have since been fixed),
+it is unfortunately not possible to update from a beta3 installation.
+Please download the 2.0.0-beta4 distribution bundle instead.
+
+The Downloads page also has a table of planned future releases and roadmap
+links for the project. The focus of the next release (2.0.0-beta5) is on
+better data visualization and processing.
+
+For more details on the ImageJ developments, see the web site at:
+  http://developer.imagej.net/
+
+Regards,
+Curtis Rueden
+ ImageJDev project lead
+Laboratory for Optical and Computational Instrumentation
+University of Wisconsin-Madison
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20120912/56ede517/attachment.html>
+
+From ctrueden at wisc.edu  Wed Sep 12 15:15:03 2012
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Wed, 12 Sep 2012 15:15:03 -0500
+Subject: [ImageJ-devel] Bug in ImageJ2 ?
+In-Reply-To: <CADN69yna_9Xp56NRhshgELmCsq6denbvD1z5r_o=NVuG8iGfww@mail.gmail.com>
+References: <50362EF1.8020108@gmx.de>
+	<CADN69yna_9Xp56NRhshgELmCsq6denbvD1z5r_o=NVuG8iGfww@mail.gmail.com>
+Message-ID: <CADN69ymHRd5-FwUDD0L_U8wwHKAtphwfd7CiabQ==3eaMWdMGA@mail.gmail.com>
+
+Hi Michael,
+
+
+> There seems to be an issue with the InputHarvester and the SwingPanel if
+> the object types of primitive java types are used as input parameters (e.g.
+> Boolean instead of boolean).
+
+
+Sorry for the delay in my reply. I fixed the bug shortly after sending my
+first mail, but was waiting to reply back until I did some more thorough
+investigation of the widget framework.
+
+In short, the NPE is fixed, and both plugins will work now.
+
+The long story is that despite that, there is one remaining issue of sorts
+with certain types of widgets. The toggle widget (with big B Booleans) is
+one of them, and the choice widget is another. The issue is that in some
+cases, the widget is not totally capable of reflecting the model state.
+
+In the case of Boolean, the widget model may begin with a null value, but
+the toggle widget is only capable of displaying false or true. It will
+display unchecked for null, and if the user presses OK right away, the
+Boolean will be null (the widget changes nothing right now). But if you
+check and then uncheck the box again, the parameter value goes from null to
+true, and then from true to false. There is no way to set it back to null.
+
+In the case of the choice widget, the model may begin with a value that is
+not on the list of allowed choices (again, null in particular is a big
+offender here). The choice widget immediately constrains the dropdown box
+to the first item on the list and overwrites the model. So the widget ends
+up being the reason the parameter doesn't end up with an (invalid) null
+value.
+
+This behavior is inconsistent, and ideally the model itself would enforce
+value constraints, and the widgets would not overwrite them.
+
+However, given the amount of time needed to correct this admittedly rather
+trivial inconsistency/deficiency, we are not going to worry about it for
+the time being.
+
+Please let us know if you have any other questions or problems with ImageJ2!
+
+Regards,
+Curtis
+
+
+On Thu, Aug 23, 2012 at 9:57 AM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+
+> Hi Michael,
+>
+>
+>> There seems to be an issue with the InputHarvester and the SwingPanel if
+>> the object types of primitive java types are used as input parameters (e.g.
+>> Boolean instead of boolean).
+>
+>
+> Thanks for the report. It's definitely a bug due to our recent refactoring
+> of the widget system. Both Boolean and boolean are supposed to work. I'll
+> look into fixing it today.
+>
+> -Curtis
+>
+> P.S. Hopefully I will have time to respond to your ImgLib mail from
+> yesterday, too. I really appreciate you taking the time to look at and
+> improve the Projector logic. We did the minimum necessary at the time to
+> get something working, but currently everything is planar, and there is no
+> built-in (i.e., ImgLib2) zoom capability, which we will eventually need.
+>
+>
+> On Thu, Aug 23, 2012 at 8:24 AM, Michael Zinsmaier <
+> michael.zinsmaier at gmx.de> wrote:
+>
+>>  Hi Curtis,
+>>
+>> I try currently to integrate the new imglib and ImageJ2 version (stuff
+>> from yesterday) into the KNIME ImageJ2 plugin.
+>> There seems to be an issue with the InputHarvester and the SwingPanel if
+>> the object types of primitive java types are
+>> used as input parameters (e.g. Boolean instead of boolean).
+>>
+>> The following plugin works fine:
+>>
+>> @Plugin(menu = {@Menu(label = "works")},
+>>          headless=true)
+>> public class Working<T extends RealType<T>> implements RunnablePlugin {
+>>
+>>     @Parameter(type = ItemIO.INPUT)
+>>     private boolean test;
+>>
+>>     @Parameter(type = ItemIO.OUTPUT)
+>>     private String output;
+>>
+>>     public void run() {
+>>             if (test) {
+>>                     output = "plugins can be defined as fragments of
+>> imagej.core";
+>>             }
+>>     }
+>>
+>> }
+>>
+>>
+>> while this plugin (Boolean instead of boolean) cannot be executed and
+>> results in a null pointer exception.
+>>
+>>
+>> @Plugin(menu = {@Menu(label = "works not")},
+>>          headless=true)
+>> public class NotWorking<T extends RealType<T>> implements RunnablePlugin {
+>>
+>>     @Parameter(type = ItemIO.INPUT)
+>>     private Boolean test;
+>>
+>>     @Parameter(type = ItemIO.OUTPUT)
+>>     private String output;
+>>
+>>     public void run() {
+>>             if (test) {
+>>                     output = "plugins can be defined as fragments of
+>> imagej.core";
+>>             }
+>>     }
+>>
+>> }
+>>
+>> Are only primitive types supported or is it a bug?
+>>
+>> Regards
+>> Michael
+>>
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20120912/17995c24/attachment.html>
+
+From ctrueden at wisc.edu  Mon Sep 17 15:01:29 2012
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Mon, 17 Sep 2012 15:01:29 -0500
+Subject: [ImageJ-devel] IJ2 work/Histogram
+In-Reply-To: <50259591.50209@wisc.edu>
+References: <50218C5C.9090005@wisc.edu>
+	<CADN69ymmcB1DOPRrxywm9UknHbfx9JNe63Xv3bh8xV9jtTbKyQ@mail.gmail.com>
+	<5025870B.7070900@wisc.edu> <50259591.50209@wisc.edu>
+Message-ID: <CADN69yk9eOpE-EDcfTJ2y6_VahtQgOsvZsrF5=QSU_sN-98qUg@mail.gmail.com>
+
+Hi Aivar,
+
+
+> The mapping of values to histogram bins counts values that are less than
+> the min in the first bin and values that are greater than the max in the
+> last bin.  *Is this really desirable behavior?*
+
+*
+*The most flexible way of doing it would be to bin such values to special
+"under" and "over" bins that are not part of the histogram proper, but
+whose counts can be requested via the histogram API. In this way,
+downstream code can decide how to consume it. Sound good?
+
+
+> I haven't actually worked with any histograms of integral valued images
+> but I thought they should work the same way as floating point, that is you
+> could count a range of values in a single histogram bin.  *Is there any
+> reason bins and values should always be 1:1 for integral valued images?*
+
+
+Good point. We should *not* assume 1:1. Using the histogram code to
+resample the lifetime bins would be valuable, I think. This would always be
+limited to a "nearest neighbor" style resampling of course, which I think
+is for the best.
+
+That said, we need to make sure such flexibility does not complexify the
+common 1:1 case. The API should provide shortcuts for that.
+
+
+> If we specify min/max as centers some values slightly below minimum and
+> slightly above maximum will map to the first and last histogram bins
+> respectively.  *Do we need to specify min/max as bin center values?*
+
+
+>From a mathematical standpoint, the two are totally interchangeable?it is
+just a pain to convert between them. So the question comes down to which is
+more intuitive. Personally I agree with you and find the "min as absolute
+min" / "max as absolute max" more intuitive, rather than them being bin
+centers. So let's go with that unless someone else has an objection. (At
+worst, if there is disagreement, we can always add multiple API signatures
+and/or a state flag to toggle the behavior.)
+
+Regards,
+Curtis
+
+
+On Fri, Aug 10, 2012 at 6:13 PM, Aivar Grislis <grislis at wisc.edu> wrote:
+
+>  >The mapping of values to histogram bins counts values that are less
+> than the min in the first bin and values that are greater than the max in
+> the last bin.  *Is this really desirable behavior? * In my usage of
+> histograms I specifically don't want to count under- and over-range
+> values.  Similarly when using a LUT I like under- and over-range values to
+> appear black.  Of course if we need it work both ways we can provide a
+> switch.
+>
+> I totally forgot, actually thats how IJ1 works: it does assign under-range
+> values to the first color and over-range values to the last color.
+>
+> For my purposes, I had to kludge up the first and last colors of the LUT
+> to be black and fiddle with the min/max values to make it all work.
+>
+>
+> On 8/10/12 5:11 PM, Aivar Grislis wrote:
+>
+> Here is a discussion of changes I propose for dealing with histograms in
+> IJ2.  Sorry it's so length, let me know if something is unclear and please
+> comment if you have an interest in histograms; I do have some specific
+> questions for the group (*in bold italics*):
+>
+>
+> 1)  First of all I would create some helper methods like the following
+> (could just be static methods somewhere)...
+>
+> // maps a value to a bin index, given the range min...max and the number
+> of bins
+> int valueToBin(int bins, double min, double max, double value);
+>
+> // returns array of edge values
+> double[] getEdgeValues(int bins, double min, double max);
+>
+> // returns array of center values
+> double[] getCenterValues(int bins, double min, double max);
+>
+> ...and equivalent set for integer values.
+>
+> Note that these methods would be used for both computing histograms and
+> assigning colors from a LUT.  It's nice to use exactly the same code for
+> both.  You can characterize a histogram bin or LUT color by the starting or
+> edge value or by the center value, I've seen it both ways so I included
+> both flavors.
+>
+> Having these common methods would also avoid bugs:
+>
+> i) One bug I saw in several places is to compute (value - min) / (max -
+> min) and get a value from 0.0 to 1.0, but multiply that by 255.  The
+> problem with that is the only way you get bin 255 is if value == min.
+> Ideally each bin should represent a range of values; if the data set is
+> uniformly distributed the size of the range of values per bin would be
+> about the same.
+>
+> ii) Another bug was to compute width = max - min + 1.  That's certainly
+> the way you do it for integer arithmetic but it doesn't work in floating
+> point!
+>
+> I'd rather fix these bugs by refactoring to call the common helper methods.
+>
+>
+> 2)  Regarding the "ImageStatistics" class idea that Curtis mentioned:
+>
+> For example it might include methods:
+>
+> // request certain things ahead of time
+> doMinMax();
+> doHistogram(int bins);
+> doHistogram(int bins, double min, double max);
+> doMean();
+>
+> // do minimal number of passes through the image
+> process();
+>
+> // get accumulated results
+> double[] getMinMax();
+> long[] getHistogram();
+> double getMean;
+>
+> Here if you don't specify a min/max for doHistogram the code has to take
+> an initial pass to get min/max then another to build the histogram using
+> that min/max.
+>
+>
+> 3) Discussion of  net.imglib2.script.analysis.Histogram:
+>
+> Both of these ImgLib2 histogram methods combine a single pass through the
+> image with generating histogram statistics.
+>
+> This code exhibits bug (i).
+>
+> I'm not sure that this handles integral values as well as floating point.
+>
+> The mapping of values to histogram bins counts values that are less than
+> the min in the first bin and values that are greater than the max in the
+> last bin.  *Is this really desirable behavior? * In my usage of
+> histograms I specifically don't want to count under- and over-range
+> values.  Similarly when using a LUT I like under- and over-range values to
+> appear black.  Of course if we need it work both ways we can provide a
+> switch.
+>
+> The output of this code is actually a JFreeChart image, there's no way to
+> get the raw histogram count array.
+>
+> FYI, uses TreeMap<Double, Long> as an internal representation of the
+> histogram count array.  Note that this combines what I am calling the edge
+> values with the histogram counts.
+>
+>
+> 4) Discussion of net.imglib2.algorithm.stats.Histogram:
+>
+> This has a HistogramBinMapper base class with RealBinMapper and
+> IntBinMapper so it's meant to handle real and integral values.  The mapper
+> is passed in as a parameter; I think it could be inferred from the cursor
+> type T.
+>
+> Here the RealBinMapper class exhibits bug (ii) when calculating binWidth
+> in the constructor.
+>
+> IntBinMapper doesn't let you specify a bin count, but assumes numBins =
+> max - min + 1.  In other words, each bin will track a given integer value.
+> I haven't actually worked with any histograms of integral valued images but
+> I thought they should work the same way as floating point, that is you
+> could count a range of values in a single histogram bin.  *Is there any
+> reason bins and values should always be 1:1 for integral valued images?*
+> This is so in IJ1 for 8-bit and RGB images.
+>
+> You pass in the minimum and maximum values when you create a
+> HistogramBinMapper, but these are described as bin center values.  My
+> concept of the minimum and maximum values has been the minimum is the
+> lowest value that maps to the first histogram bin and the maximum is the
+> highest value that maps to the last histogram bin.  If we specify min/max
+> as centers some values slightly below minimum and slightly above maximum
+> will map to the first and last histogram bins respectively.  *Do we need
+> to specify min/max as bin center values?*
+>
+>
+> Thanks!
+> Aivar
+>
+>
+> On 8/10/12 2:44 PM, Curtis Rueden wrote:
+>
+> Hi all,
+>
+>  Aivar & I also discussed histograms, and our plan for those is a bit
+> more nebulous. Aivar is going to investigate improving Larry's histogram
+> API in net.imglib2.algorithms.stats.
+>
+>  The general idea is that computing min/max, computing histograms, and
+> computing other statistics are intrinsically related, and for performance
+> reasons it is nice to minimize the number of passes through the image when
+> computing these. So we would like to create a unified ImageStatistics class
+> (sound familiar? ;-) that can compute one or more of these in an
+> intelligent way, then return the results on demand.
+>
+>  None of this is reconciled with the net.imglib2.script.analysis package
+> (Histogram, ImgMax, ImgMean, etc.), but perhaps in the future the
+> net.imglib2.script stuff can take more direct advantage of it.
+>
+>  Regards,
+> Curtis
+>
+>
+> On Tue, Aug 7, 2012 at 4:45 PM, Aivar Grislis <grislis at wisc.edu> wrote:
+>
+>> I'd also be interested in working on the histogram code.  Mostly the code
+>> that generates histogram data, also their display, perhaps the histogram
+>> tool itself.
+>>
+>> SLIM Plugin uses histograms in a very dynamic way, as they are updated
+>> periodically during the fit process.  You can change the minimum and
+>> maximum values interactively.  So I might be an interested consumer of any
+>> common histogram code.
+>>
+>> (I looked at the histogram code in the AutoContrast plugin,
+>> net.imglib2.algorithm.stats.Histogram, and
+>> net.imglib2.script.analysis.Histogram and found bugs in all of them when
+>> binning up the histogram values.)
+>>
+>> Aivar
+>>
+>>
+>
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing listImageJ-devel at imagej.nethttp://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20120917/f151cf66/attachment.html>
+
+From ctrueden at wisc.edu  Mon Sep 17 15:08:32 2012
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Mon, 17 Sep 2012 15:08:32 -0500
+Subject: [ImageJ-devel] Support for units in ImgLib2
+Message-ID: <CADN69y=y95G8HwnjxyxVYO8Nt1MejOSA7xavNYi7w8qurSANVA@mail.gmail.com>
+
+Hi all,
+
+
+> Note that the support of units in Imglib2 was discussed a bit here:
+> http://imagej.net/pipermail/imagej-devel/2012-March/000732.html
+
+
+There hasn't been any progress on this old topic of units yet, but I wanted
+to mention that for those interested, we have a ticket about it:
+    http://trac.imagej.net/ticket/445
+
+Currently it is slated for the next beta (2.0.0-beta5), but there is a lot
+to do so I cannot promise it will make it in. But we will definitely need
+to resolve the issue before the final 2.0.0 release.
+
+Regards,
+Curtis
+
+
+On Mon, Jul 16, 2012 at 10:55 AM, Barry DeZonia <bdezonia at gmail.com> wrote:
+
+> Curtis may not be able to respond to this topic in the near future. Note
+> that the support of units in Imglib2 was discussed a bit here:
+> http://imagej.net/pipermail/imagej-devel/2012-March/000732.html
+>
+>
+> On Sun, Jul 15, 2012 at 3:16 PM, Jean-Yves Tinevez <tinevez at pasteur.fr>wrote:
+>
+>> On 13-Jul-12 09:39, Stephan Saalfeld wrote:
+>>
+>>> The other way round---no?
+>>>
+>>> ImagePlusImg is a container to use an existing ImagePlus transparently
+>>> through ImgLib2, in other words a `non-copying' wrapper into another
+>>> library's data.  ImgPlus is a construct that mimics ImageJ's ImagePlus
+>>> in a sense that it combines any Img (ImageProcessor/ImageStack in ImageJ
+>>> speak) with rudimentary though useful meta-data such as a name and
+>>> linear calibration factors.  ImgPlus is most useful in the context of
+>>> ImageJ2 where exactly that meta-data is needed.
+>>>
+>>
+>>
+>> Hi all,
+>>
+>> In the same line.
+>>
+>> I modified ImagePlusAdapter so that the correct calibration values and
+>> Axis type are determined from ImagePlus. I saw that there were a nice
+>> AxisType class to identify dimensions. Is there a plan to have them store
+>> also the dimension units (such as um, minutes, etc..)?
+>> What does IJ2 guys need here?
+>>
+>> Cheers
+>>
+>> jy
+>>
+>> --
+>> Please avoid top-posting, and please make sure to reply-to-all!
+>>
+>> Mailing list web interface: http://groups.google.com/**group/fiji-devel<http://groups.google.com/group/fiji-devel>
+>>
+>
+>  --
+> Please avoid top-posting, and please make sure to reply-to-all!
+>
+> Mailing list web interface: http://groups.google.com/group/fiji-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20120917/1d1fcf22/attachment-0001.html>
+
+From sapristi at gmail.com  Tue Sep 18 04:34:42 2012
+From: sapristi at gmail.com (Albert Cardona)
+Date: Tue, 18 Sep 2012 05:34:42 -0400
+Subject: [ImageJ-devel] IJ2 work/Histogram
+In-Reply-To: <5025870B.7070900@wisc.edu>
+References: <50218C5C.9090005@wisc.edu>
+	<CADN69ymmcB1DOPRrxywm9UknHbfx9JNe63Xv3bh8xV9jtTbKyQ@mail.gmail.com>
+	<5025870B.7070900@wisc.edu>
+Message-ID: <CAJj13__AEEiumv3JCt_tvbM7acf7SKzom1S4aF++sqBtXC2+tg@mail.gmail.com>
+
+2012/8/10 Aivar Grislis <grislis at wisc.edu>:
+
+> 3) Discussion of  net.imglib2.script.analysis.Histogram:
+>
+> Both of these ImgLib2 histogram methods combine a single pass through the
+> image with generating histogram statistics.
+>
+> This code exhibits bug (i).
+>
+> I'm not sure that this handles integral values as well as floating point.
+>
+> The mapping of values to histogram bins counts values that are less than the
+> min in the first bin and values that are greater than the max in the last
+> bin.  Is this really desirable behavior?  In my usage of histograms I
+> specifically don't want to count under- and over-range values.  Similarly
+> when using a LUT I like under- and over-range values to appear black.  Of
+> course if we need it work both ways we can provide a switch.
+>
+> The output of this code is actually a JFreeChart image, there's no way to
+> get the raw histogram count array.
+
+
+There is: the class itself is a Map of bin index vs bin counts.
+
+Albert
+
+-- 
+http://albert.rierol.net
+http://www.ini.uzh.ch/~acardona/
+
+
+From ctrueden at wisc.edu  Thu Sep 20 13:43:21 2012
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Thu, 20 Sep 2012 13:43:21 -0500
+Subject: [ImageJ-devel] Bug in ImageJ2 ?
+In-Reply-To: <5056CDFC.4020004@gmx.de>
+References: <50362EF1.8020108@gmx.de>
+	<CADN69yna_9Xp56NRhshgELmCsq6denbvD1z5r_o=NVuG8iGfww@mail.gmail.com>
+	<CADN69ymHRd5-FwUDD0L_U8wwHKAtphwfd7CiabQ==3eaMWdMGA@mail.gmail.com>
+	<5056CDFC.4020004@gmx.de>
+Message-ID: <CADN69ymph_rkk1EPNE-yYNJc-C5+aS=DWnFkY8eCdukTetoC4A@mail.gmail.com>
+
+Hi Michael,
+
+Sorry to hear that the POM version detection is not working for KNIME. If
+the problem is *only* with the deprecated static VERSION, we plan to
+eliminate that soon anyway. But if the ImageJ#getVersion() method always
+returns null, that is a bad thing and we will need to fix it.
+
+To debug this, I would need to set up a KNIP developer environment on my
+machine here so that I can reproduce and debug the issue. Are there
+instructions for doing that online?
+
+Thanks,
+Curtis
+
+P.S. Please CC imagej-devel on replies. Sometimes other developers may
+reply more quickly than I do, so it may save you time.
+
+
+On Mon, Sep 17, 2012 at 2:15 AM, Michael Zinsmaier <michael.zinsmaier at gmx.de
+> wrote:
+
+>  Hi Curtis,
+>
+> thanks for your reply and the explenation. Unfortunately I have already a
+> new issue. We tried to migrate the KNIME Image Extension
+> to the beta 4 version of ImageJ and we have some problems with the
+> introduced integration of the POM file. The getPOM method
+> does not work in the plugin/eclipse environment that is used by KNIME I
+> think this might be related to some OSGI stuff having separate
+> class loaders for each plugin...
+> In any case getPOM does not find the POM file although it is packed into
+> the ImageJ jar file. Especially the static loading of the version number
+> causes therefore some problems for us.
+>
+>     /** @deprecated Use {@link ImageJ#getVersion()} instead. */
+>     @Deprecated
+>     public static final String VERSION = POM.getPOM(ImageJ.class,
+> "net.imagej", "ij-core").getVersion();
+>
+> Do you have an idea how this could be resolved?
+>
+> Best regards,
+> Michael
+>
+>  Hi Michael,
+>
+>
+>> There seems to be an issue with the InputHarvester and the SwingPanel if
+>> the object types of primitive java types are used as input parameters (e.g.
+>> Boolean instead of boolean).
+>
+>
+>  Sorry for the delay in my reply. I fixed the bug shortly after sending
+> my first mail, but was waiting to reply back until I did some more thorough
+> investigation of the widget framework.
+>
+>  In short, the NPE is fixed, and both plugins will work now.
+>
+>  The long story is that despite that, there is one remaining issue of
+> sorts with certain types of widgets. The toggle widget (with big B
+> Booleans) is one of them, and the choice widget is another. The issue is
+> that in some cases, the widget is not totally capable of reflecting the
+> model state.
+>
+>  In the case of Boolean, the widget model may begin with a null value,
+> but the toggle widget is only capable of displaying false or true. It will
+> display unchecked for null, and if the user presses OK right away, the
+> Boolean will be null (the widget changes nothing right now). But if you
+> check and then uncheck the box again, the parameter value goes from null to
+> true, and then from true to false. There is no way to set it back to null.
+>
+>  In the case of the choice widget, the model may begin with a value that
+> is not on the list of allowed choices (again, null in particular is a big
+> offender here). The choice widget immediately constrains the dropdown box
+> to the first item on the list and overwrites the model. So the widget ends
+> up being the reason the parameter doesn't end up with an (invalid) null
+> value.
+>
+>  This behavior is inconsistent, and ideally the model itself would
+> enforce value constraints, and the widgets would not overwrite them.
+>
+>  However, given the amount of time needed to correct this admittedly
+> rather trivial inconsistency/deficiency, we are not going to worry about it
+> for the time being.
+>
+>  Please let us know if you have any other questions or problems with
+> ImageJ2!
+>
+>  Regards,
+> Curtis
+>
+>
+> On Thu, Aug 23, 2012 at 9:57 AM, Curtis Rueden <ctrueden at wisc.edu> wrote:
+>
+>> Hi Michael,
+>>
+>>
+>>> There seems to be an issue with the InputHarvester and the SwingPanel if
+>>> the object types of primitive java types are used as input parameters (e.g.
+>>> Boolean instead of boolean).
+>>
+>>
+>>  Thanks for the report. It's definitely a bug due to our recent
+>> refactoring of the widget system. Both Boolean and boolean are supposed to
+>> work. I'll look into fixing it today.
+>>
+>>  -Curtis
+>>
+>>  P.S. Hopefully I will have time to respond to your ImgLib mail from
+>> yesterday, too. I really appreciate you taking the time to look at and
+>> improve the Projector logic. We did the minimum necessary at the time to
+>> get something working, but currently everything is planar, and there is no
+>> built-in (i.e., ImgLib2) zoom capability, which we will eventually need.
+>>
+>>
+>> On Thu, Aug 23, 2012 at 8:24 AM, Michael Zinsmaier <
+>> michael.zinsmaier at gmx.de> wrote:
+>>
+>>>  Hi Curtis,
+>>>
+>>> I try currently to integrate the new imglib and ImageJ2 version (stuff
+>>> from yesterday) into the KNIME ImageJ2 plugin.
+>>> There seems to be an issue with the InputHarvester and the SwingPanel if
+>>> the object types of primitive java types are
+>>> used as input parameters (e.g. Boolean instead of boolean).
+>>>
+>>> The following plugin works fine:
+>>>
+>>> @Plugin(menu = {@Menu(label = "works")},
+>>>          headless=true)
+>>> public class Working<T extends RealType<T>> implements RunnablePlugin {
+>>>
+>>>     @Parameter(type = ItemIO.INPUT)
+>>>     private boolean test;
+>>>
+>>>     @Parameter(type = ItemIO.OUTPUT)
+>>>     private String output;
+>>>
+>>>     public void run() {
+>>>             if (test) {
+>>>                     output = "plugins can be defined as fragments of
+>>> imagej.core";
+>>>             }
+>>>     }
+>>>
+>>> }
+>>>
+>>>
+>>> while this plugin (Boolean instead of boolean) cannot be executed and
+>>> results in a null pointer exception.
+>>>
+>>>
+>>> @Plugin(menu = {@Menu(label = "works not")},
+>>>          headless=true)
+>>> public class NotWorking<T extends RealType<T>> implements RunnablePlugin
+>>> {
+>>>
+>>>     @Parameter(type = ItemIO.INPUT)
+>>>     private Boolean test;
+>>>
+>>>     @Parameter(type = ItemIO.OUTPUT)
+>>>     private String output;
+>>>
+>>>     public void run() {
+>>>             if (test) {
+>>>                     output = "plugins can be defined as fragments of
+>>> imagej.core";
+>>>             }
+>>>     }
+>>>
+>>> }
+>>>
+>>> Are only primitive types supported or is it a bug?
+>>>
+>>> Regards
+>>> Michael
+>>>
+>>
+>>
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20120920/bc229010/attachment.html>
+
+From ctrueden at wisc.edu  Fri Sep 21 11:43:40 2012
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Fri, 21 Sep 2012 11:43:40 -0500
+Subject: [ImageJ-devel] ImageJ on Android talk
+Message-ID: <CADN69ynkET034q-Dun0nW2cZzqD6w7f-CSg4qtC9m5LLGYh8=Q@mail.gmail.com>
+
+Hi Justin,
+
+I hope things are going well with you. I am writing regarding your talk on
+porting ImageJ to the Android platform for the ImageJ conference next
+month. It is something I regret not having time to investigate more, so I
+am happy that you explored it.
+
+>From your abstract (
+http://imagejconf.tudor.lu/program/doku.php?id=:program:presentations:justin_senseney1804285318),
+it sounds like you encountered quite a few difficulties. Anything you would
+care to discuss prior to the conference? Leaving the door open for mobile
+support has been a major design goal of ImageJ2, so if there are roadblocks
+it would be good to hear about them, to make any corrections in the
+architecture sooner rather than later.
+
+Moreover, in general, we would be very interested to hear details of your
+approach. Did you try to build the code as-is (or minimally modified) for
+use with Dalvik? Or compile from .class to .dex? Did you try the Maven
+Android plugin (https://github.com/jayway/maven-android-plugin)? Did you
+think about creating an HTML5/Javascript frontend to an ImageJ server, for
+cross-platform mobile support?
+
+These are all directions we would love to see explored. You are more than
+welcome to discuss your findings on this mailing list, and/or post
+technical details on the ImageJ2 wiki (http://wiki.imagej.net/ImageJ2).
+
+Regards,
+Curtis
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20120921/735dee81/attachment.html>
+
+From senseneyj at mail.nih.gov  Fri Sep 21 15:28:47 2012
+From: senseneyj at mail.nih.gov (Senseney, Justin (NIH/CIT) [E])
+Date: Fri, 21 Sep 2012 16:28:47 -0400
+Subject: [ImageJ-devel] ImageJ on Android talk
+In-Reply-To: <CADN69ynkET034q-Dun0nW2cZzqD6w7f-CSg4qtC9m5LLGYh8=Q@mail.gmail.com>
+References: <CADN69ynkET034q-Dun0nW2cZzqD6w7f-CSg4qtC9m5LLGYh8=Q@mail.gmail.com>
+Message-ID: <0CADA15E942196438C242C19FA72B4FC04BC0E2EA1@NIHMLBX01.nih.gov>
+
+Hi Curtis,
+
+Great to hear from you, feel free to reply just to the list as I am already subscribed.  I made a page here: http://wiki.imagej.net/Android where I will populate it in the future with some details.  Let me mention your specific good ideas:
+
+>Did you try to build the code as-is
+Yes, I'm down from an original 8000 compilation errors in basic ImageJ to 3000 by writing wrappers to map Java AWT components to basic Android ones.  They are very similar, but some incompatibilities makes totally as-is ImageJ difficult, and ImgLib impossible, so I have:
+
+>(or minimally modified) for use with Dalvik?
+Yes, to a limited extent it is working with ImgLib, making Maven very appealing because the extensive dependency use makes it easy to see what I have working.  So I have also tried:
+
+> Did you try the Maven Android plugin (https://github.com/jayway/maven-android-plugin)?
+Yes, but I actually found that I had to substantially un-mavenize ImgLib to do the actual programming.  This is mostly because I like to use the Eclipse debugger, frequently going across dependencies in figuring out bugs.  Understanding how to get this to work better with Maven is probably a point where I would be interested in showing you what I'm doing and seeing ideas for improvement in workflow on my end.  Maybe we will have this chance at the conference.
+
+> Did you think about creating an HTML5/Javascript frontend to an ImageJ server, for cross-platform mobile support?
+This is something I saw a lot of people doing at a recent medical imaging conference, but not specifically for mobile support (but that is a reasonable next step).  Do you know of any examples of just general-purpose applications that have done this for cross-platform mobile use?
+
+>Or compile from .class to .dex?
+That is the goal, but I don't think there is a way around it without resolving the problems I've mentioned above.  I'm happy to hear any ideas you have (off-list or on).
+
+-Justin
+
+
+From: ctrueden.wisc at gmail.com [mailto:ctrueden.wisc at gmail.com] On Behalf Of Curtis Rueden
+Sent: Friday, September 21, 2012 12:44 PM
+To: Senseney, Justin (NIH/CIT) [E]
+Cc: ImageJ Developers
+Subject: ImageJ on Android talk
+
+Hi Justin,
+
+I hope things are going well with you. I am writing regarding your talk on porting ImageJ to the Android platform for the ImageJ conference next month. It is something I regret not having time to investigate more, so I am happy that you explored it.
+
+>From your abstract (http://imagejconf.tudor.lu/program/doku.php?id=:program:presentations:justin_senseney1804285318), it sounds like you encountered quite a few difficulties. Anything you would care to discuss prior to the conference? Leaving the door open for mobile support has been a major design goal of ImageJ2, so if there are roadblocks it would be good to hear about them, to make any corrections in the architecture sooner rather than later.
+
+Moreover, in general, we would be very interested to hear details of your approach. Did you try to build the code as-is (or minimally modified) for use with Dalvik? Or compile from .class to .dex? Did you try the Maven Android plugin (https://github.com/jayway/maven-android-plugin)? Did you think about creating an HTML5/Javascript frontend to an ImageJ server, for cross-platform mobile support?
+
+These are all directions we would love to see explored. You are more than welcome to discuss your findings on this mailing list, and/or post technical details on the ImageJ2 wiki (http://wiki.imagej.net/ImageJ2).
+
+Regards,
+Curtis
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20120921/64e1947e/attachment.html>
+
+From pietzsch at mpi-cbg.de  Thu Sep 27 11:53:28 2012
+From: pietzsch at mpi-cbg.de (Tobias Pietzsch)
+Date: Thu, 27 Sep 2012 18:53:28 +0200
+Subject: [ImageJ-devel] Interactive ImgLib2 examples
+Message-ID: <50648488.9080709@mpi-cbg.de>
+
+Hi all,
+
+I revised the interactive viewers we had prepared as demos for the
+Bioimage Analysis workshop in Barcelona. I just merged them into master.
+They are in subproject "imglib2-examples" in package "interactive".
+
+There is a 2D/3D image viewer, a viewer for CATMAID data fetched from 
+the web, and several fractals. All can be interactively manipulated.
+I hope you'll have some fun playing with them!
+
+The code for the viewers themselves is in the new (resp. resurrected)
+subproject "imglib2-ui". The viewers can use either a Swing JFrame or
+IJ1 ImagePlus back-end for display. (The examples use Swing currently,
+but this can be very easily switched). I hope we can have an OpenGL
+back-end at some point...
+
+best regards,
+Tobias
+
+

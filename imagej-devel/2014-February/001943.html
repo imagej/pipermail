@@ -1,0 +1,171 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] ImageJ2 plugin thread question
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImageJ2%20plugin%20thread%20question&In-Reply-To=%3CCADN69ykjx_QuB37sa%2BeLL7Yu0VJqcP5gxa%3Dd8UfB1odv%3DQFc5Q%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001942.html">
+   <LINK REL="Next"  HREF="001945.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] ImageJ2 plugin thread question</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImageJ2%20plugin%20thread%20question&In-Reply-To=%3CCADN69ykjx_QuB37sa%2BeLL7Yu0VJqcP5gxa%3Dd8UfB1odv%3DQFc5Q%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] ImageJ2 plugin thread question">ctrueden at wisc.edu
+       </A><BR>
+    <I>Thu Feb 13 16:53:09 CST 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001942.html">[ImageJ-devel] ImageJ2 plugin thread question
+</A></li>
+        <LI>Next message: <A HREF="001945.html">[ImageJ-devel] ImageJ2 plugin thread question
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1943">[ date ]</a>
+              <a href="thread.html#1943">[ thread ]</a>
+              <a href="subject.html#1943">[ subject ]</a>
+              <a href="author.html#1943">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Yili,
+
+&gt;<i> will ImageJ2 run its plugin in a new thread?
+</I>
+Yes, ImageJ2 launches plugins in their thread. See:
+<A HREF="http://jenkins.imagej.net/job/ImageJ-daily/javadoc/imagej/module/ModuleService.html#run(imagej.module.ModuleInfo,">http://jenkins.imagej.net/job/ImageJ-daily/javadoc/imagej/module/ModuleService.html#run(imagej.module.ModuleInfo,</A>
+boolean, java.lang.Object...)
+
+ImageJ modules are typically fired using these run methods, which spawn a
+new thread using the ThreadService -- well, it's out of a ThreadPool, so in
+theory you could hit a limit if you run tons of modules at the same time.
+
+Note that the methods return a Future, so that you can block till execution
+is complete *if you want* but you are not forced to do so.
+
+&gt;<i> Suppose this plugin will perform a long time-consumed task
+</I>
+If you write a command whose sole job is to perform some long-running task,
+just implement the task in the run method. You do not have to worry about
+threading unless you want the execution itself to be done using multiple
+threads. (In the future we plan to provide more transparent
+multi-threading, but right now modules execute on a single new thread.)
+
+&gt;<i> If this plugin need its own GUI, but this plugin is running in a
+</I>&gt;<i> thread which is not the UI thread (event dispatch thread), and this
+</I>&gt;<i> plugin's GUI should be created in UI thread for thread safe, how can
+</I>&gt;<i> this be done?
+</I>
+You do not need to create Swing UI component on the EDT. You can do it in
+any thread. It is only *after* you pack() and setVisible(true) that you
+need to be concerned about the EDT, and even then, if all you are doing is
+listening for GUI events (e.g., actionPerformed callbacks) then those
+already happen on the EDT so you don't need to worry.
+
+In short, in 99% of cases, you actually do not need to use
+EventQueue.invokeLater and similar. So even if you write an ImageJ command
+that spawns a Swing UI, you may not need this method.
+
+As Johannes says, if you want to stay general, look at the ImageJ
+ThreadService. It has UI-agnostic entry points into concepts like the EDT,
+without explicitly tying them to AWT/Swing in particular.
+
+&gt;<i> In the task running process, I want to report the running progress to
+</I>&gt;<i> the ImageJ2 main frame
+</I>
+<A HREF="http://jenkins.imagej.net/job/SciJava-common-javadoc/javadoc/org/scijava/app/StatusService.html">http://jenkins.imagej.net/job/SciJava-common-javadoc/javadoc/org/scijava/app/StatusService.html</A>
+
+The ImageJ UI (be it a Swing one, or other one) will take care of rendering
+your status messages and progress updates to the status bar or however it
+sees fit.
+
+Regards,
+Curtis
+
+
+On Thu, Feb 13, 2014 at 8:19 AM, Yili Zhao &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">panovr at gmail.com</A>&gt; wrote:
+
+&gt;<i> Hi,
+</I>&gt;<i>   if I want to develop a plugin for ImageJ2, there are basically two kinds
+</I>&gt;<i> of plugin:
+</I>&gt;<i>
+</I>&gt;<i>   1. first kind plugin does not need GUI;
+</I>&gt;<i>
+</I>&gt;<i>   2. second kind plugin does need GUI.
+</I>&gt;<i>
+</I>&gt;<i>   Suppose this plugin will perform a long time-consumed task, so I want to
+</I>&gt;<i> ask that:
+</I>&gt;<i>
+</I>&gt;<i>   1. will ImageJ2 run its plugin in a new thread? Because in Swing
+</I>&gt;<i> toolkit, all UI events should be processed in UI thread or the main thread,
+</I>&gt;<i> and there is only One UI thread, so it is a single thread model.
+</I>&gt;<i> Running a plugin in a new thread can guarantee the plugin will not block
+</I>&gt;<i> ImageJ2's GUI.
+</I>&gt;<i>
+</I>&gt;<i>   2. If this plugin need its own GUI, but this plugin is running in a
+</I>&gt;<i> thread which is not the UI thread (event dispatch thread), and this
+</I>&gt;<i> plugin's GUI should be created in UI thread for thread safe, how can this
+</I>&gt;<i> be done?
+</I>&gt;<i>
+</I>&gt;<i>   In order to avoid blocking the ImageJ2' user interface, I plan to do
+</I>&gt;<i> like this:
+</I>&gt;<i>
+</I>&gt;<i>   1. execute the &quot;long time-consumed task&quot; in a separate worker thread;
+</I>&gt;<i>
+</I>&gt;<i>   2. In the task running process, I want to report the running progress to
+</I>&gt;<i> the ImageJ2 main frame, so that the main frame can display a progress
+</I>&gt;<i> information to let user know the current status;
+</I>&gt;<i>
+</I>&gt;<i>   3. When the task completed, it can notify the main frame, and the main
+</I>&gt;<i> frame can response to this event.
+</I>&gt;<i>
+</I>&gt;<i>   How can I implement this asynchronous task model in ImageJ2? (I think
+</I>&gt;<i> maybe I need some helper classes like  &quot;SwingWorker&quot; in JDK 6)
+</I>&gt;<i>
+</I>&gt;<i>   Thanks!
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> --
+</I>&gt;<i> Yili Zhao
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140213/63d81f6f/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20140213/63d81f6f/attachment.html</A>&gt;
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001942.html">[ImageJ-devel] ImageJ2 plugin thread question
+</A></li>
+	<LI>Next message: <A HREF="001945.html">[ImageJ-devel] ImageJ2 plugin thread question
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1943">[ date ]</a>
+              <a href="thread.html#1943">[ thread ]</a>
+              <a href="subject.html#1943">[ subject ]</a>
+              <a href="author.html#1943">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

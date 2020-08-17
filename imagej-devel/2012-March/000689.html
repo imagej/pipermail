@@ -1,0 +1,238 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] proposed changes in the ImgLib2 abstract class	hierarchy
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20proposed%20changes%20in%20the%20ImgLib2%20abstract%20class%0A%09hierarchy&In-Reply-To=%3CCADN69yktrX6htRgzxf2QwSRFws48F1fdnKwGQsY3cH8BD0v5UQ%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000661.html">
+   <LINK REL="Next"  HREF="000693.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] proposed changes in the ImgLib2 abstract class	hierarchy</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20proposed%20changes%20in%20the%20ImgLib2%20abstract%20class%0A%09hierarchy&In-Reply-To=%3CCADN69yktrX6htRgzxf2QwSRFws48F1fdnKwGQsY3cH8BD0v5UQ%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] proposed changes in the ImgLib2 abstract class	hierarchy">ctrueden at wisc.edu
+       </A><BR>
+    <I>Tue Mar 20 23:17:59 CDT 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000661.html">[ImageJ-devel] proposed changes in the ImgLib2 abstract class hierarchy
+</A></li>
+        <LI>Next message: <A HREF="000693.html">[ImageJ-devel] proposed changes in the ImgLib2 abstract class hierarchy
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#689">[ date ]</a>
+              <a href="thread.html#689">[ thread ]</a>
+              <a href="subject.html#689">[ subject ]</a>
+              <a href="author.html#689">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Tobias,
+
+First of all, thanks very much for all the API improvements!
+
+I just have one comment...
+
+ Why is there the Object x in there?
+&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> If it wouldn't be there, then the compiler would be unable to
+</I>&gt;<i> distinguish whether you call
+</I>&gt;<i> protected Realpoint( final double[] position )
+</I>&gt;<i> or
+</I>&gt;<i> public RealPoint( final double... position )
+</I>&gt;<i>
+</I>
+Sure, the dummy Object parameter differentiates the constructors. However,
+I do not believe such drastic measures are necessary. Why not do something
+like this instead:
+
+    <A HREF="https://gist.github.com/2144264">https://gist.github.com/2144264</A>
+
+I think it is easier to understand and accomplishes the same ends.
+
+Regards,
+Curtis
+
+
+On Fri, Mar 16, 2012 at 10:18 AM, Tobias Pietzsch &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pietzsch at mpi-cbg.de</A>&gt;wrote:
+
+&gt;<i> Hi Steffi,
+</I>&gt;<i>
+</I>&gt;<i> thanks a lot for having a look!
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On 03/16/2012 03:33 PM, Stephan Preibisch wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> I have one question about a protected constructor in RealPoint though:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> /**
+</I>&gt;&gt;<i> * Protected constructor that re-uses the passed position array.
+</I>&gt;&gt;<i> *
+</I>&gt;&gt;<i> * @param position
+</I>&gt;&gt;<i> * array used to store the position.
+</I>&gt;&gt;<i> * @paramx
+</I>&gt;&gt;<i> * unused parameter that changes the method signature
+</I>&gt;&gt;<i> */
+</I>&gt;&gt;<i> protected RealPoint( final double[] position, final Object x )
+</I>&gt;&gt;<i> {
+</I>&gt;&gt;<i> super( position );
+</I>&gt;&gt;<i> }
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Why is there the Object x in there?
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> If it wouldn't be there, then the compiler would be unable to
+</I>&gt;<i> distinguish whether you call
+</I>&gt;<i> protected Realpoint( final double[] position )
+</I>&gt;<i> or
+</I>&gt;<i> public RealPoint( final double... position )
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>  Also I have a small question about the CellImg. The ListImgCells which
+</I>&gt;&gt;<i> holds all cells is typed to DefaultCell, and also always instantiates
+</I>&gt;&gt;<i> DefaultCells. Shouldn't that be the part where we are able to exchange
+</I>&gt;&gt;<i> them for other types of cells? So shouldn't it be typed to something
+</I>&gt;&gt;<i> like C extends AbstractCell&lt;A&gt; or so? Or is there another level where
+</I>&gt;&gt;<i> you want to introduce that?
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> What we will exchange for the is the Cells&lt; A, C &gt; cells that is passed to
+</I>&gt;<i> the CellImg constructor.  ListImgCells implements that interface such
+</I>&gt;<i> that every Cell is stored as an Object.  If we would alter the Cell type
+</I>&gt;<i> here, than there would still be an Object required for cells that are
+</I>&gt;<i> currently not in memory.  So the idea was to change the Cells&lt; A, C &gt;
+</I>&gt;<i> implementation from ListImgCells to something else, that does the caching
+</I>&gt;<i> and creates Cell objects when required.
+</I>&gt;<i>
+</I>&gt;<i> Currently, I'm using &quot;new DefaultCell&lt; A &gt;(...)&quot; to create cells to
+</I>&gt;<i> create all the cells in the ListImgCells constructor. When we type
+</I>&gt;<i> ListImgCells to C extends AbstractCell&lt;A&gt;, we would need to pass a
+</I>&gt;<i> type variable into the constructor and add a createNewCell() method
+</I>&gt;<i> to the AbstractCell.  This could be done, but let's wait until we
+</I>&gt;<i> actually need it.
+</I>&gt;<i>
+</I>&gt;<i> The current idea is to exchange the Cells&lt; A, C &gt; implementation.
+</I>&gt;<i>
+</I>&gt;<i> best regards,
+</I>&gt;<i> Tobias
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;&gt;<i> Ciao ciao,
+</I>&gt;&gt;<i> Steffi
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> On Mar 15, 2012, at 16:57 , Tobias Pietzsch wrote:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>  Hi,
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> I've implemented more changes to the ImgLib2 abstract class hierarchy.
+</I>&gt;&gt;&gt;<i> This time, I restructured the integer Positionables, Localizables, and
+</I>&gt;&gt;&gt;<i> RandomAccesses.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> While I was at it, I merged a new version of CellImg (this is in
+</I>&gt;&gt;&gt;<i> preparation for CellImgs that swap Cells to disk) because I didn't
+</I>&gt;&gt;&gt;<i> want to need to fix that for the new abstract hierarchy later.
+</I>&gt;&gt;&gt;<i> ListImg has also been changed a bit. And I made some cosmetic changes
+</I>&gt;&gt;&gt;<i> here and there...
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> I think I broke nothing and I would merge this into master soon.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> It would be totally awesome, if you could try your ImgLib2 stuff with
+</I>&gt;&gt;&gt;<i> the branch &quot;modified-abstract-hierarchy&quot; and see if everything works
+</I>&gt;&gt;&gt;<i> okay. If you have time to comment on the changes I made - even better.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> best regards,
+</I>&gt;&gt;&gt;<i> Tobias
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> BTW: did you see the cool fractal example on
+</I>&gt;&gt;&gt;<i> <A HREF="http://fiji.sc/wiki/index.php/**ImgLib2_Documentation#A_**">http://fiji.sc/wiki/index.php/**ImgLib2_Documentation#A_**</A>
+</I>&gt;&gt;&gt;<i> RealRandomAccess_to_Render_**Mandelbrot_Fractals&lt;<A HREF="http://fiji.sc/wiki/index.php/ImgLib2_Documentation#A_RealRandomAccess_to_Render_Mandelbrot_Fractals">http://fiji.sc/wiki/index.php/ImgLib2_Documentation#A_RealRandomAccess_to_Render_Mandelbrot_Fractals</A>&gt;
+</I>&gt;&gt;&gt;<i> ?
+</I>&gt;&gt;&gt;<i> :-)
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> On 03/13/2012 09:01 PM, Tobias Pietzsch wrote:
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> Hi guys,
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> while I was writing ImgLib docs, I noticed that the current
+</I>&gt;&gt;&gt;&gt;<i> abstract class hierarchy which leads to AbstractRandomAccess&lt;T&gt;
+</I>&gt;&gt;&gt;&gt;<i> is a little bit stupid (see attached imglib2-abstract-current.png)
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> There is no need for the abstract class hierarchy to pull the
+</I>&gt;&gt;&gt;&gt;<i> Sampler&lt;T&gt; interface all the way through. The Sampler&lt;T&gt; is only
+</I>&gt;&gt;&gt;&gt;<i> implemented in the concrete classes. There is really no need to have
+</I>&gt;&gt;&gt;&gt;<i> the dependency on T in the abstract hierarchy. This prevents for
+</I>&gt;&gt;&gt;&gt;<i> instance RealPoint to make use of the RealPositionable and
+</I>&gt;&gt;&gt;&gt;<i> RealLocalizable implementations in AbstractRealRandomAccess&lt;T&gt;.
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> Therefore I propose to change the hierarchy as shown in the
+</I>&gt;&gt;&gt;&gt;<i> second attached diagram, imglib2-abstract-proposed.png.
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> I implemented those changes for the &quot;real&quot; path, see branch
+</I>&gt;&gt;&gt;&gt;<i> &quot;modified-abstract-hierarchy&quot;. Note how nicely RealPoint fits
+</I>&gt;&gt;&gt;&gt;<i> into the picture now :-)
+</I>&gt;&gt;&gt;&gt;<i> Before I go ahead and do the same for the integer accessors, I wanted
+</I>&gt;&gt;&gt;&gt;<i> to ask whether you agree that this is a good thing to do...
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> There is one more thing: The AbstractRealRandomAccess implemented
+</I>&gt;&gt;&gt;&gt;<i> the complete RealPositionable interface, while AbstractRandomAccess
+</I>&gt;&gt;&gt;&gt;<i> only implements part of Positionable - with the implemented part
+</I>&gt;&gt;&gt;&gt;<i> based on the unimplemented methods. The idea was that if a derived
+</I>&gt;&gt;&gt;&gt;<i> concrete accessor compiles you know you implemented what was necessary.
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> However, I found the approach of AbstractRealRandomAccess to implement
+</I>&gt;&gt;&gt;&gt;<i> anything quite nice when using it. I would suggest doing the same for
+</I>&gt;&gt;&gt;&gt;<i> integer. Then either
+</I>&gt;&gt;&gt;&gt;<i> * you know what you are doing when overriding (parts of) the
+</I>&gt;&gt;&gt;&gt;<i> Positionable implementation
+</I>&gt;&gt;&gt;&gt;<i> * you leave it as is (e.g. Point)
+</I>&gt;&gt;&gt;&gt;<i> * you derive from AbstractLocalizable and implement Positionable
+</I>&gt;&gt;&gt;&gt;<i> completely on your own.
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> Thoughts?
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> best regards,
+</I>&gt;&gt;&gt;&gt;<i> Tobias
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> ______________________________**_________________
+</I>&gt;&gt;&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/**listinfo/imagej-devel&lt;http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/**listinfo/imagej-devel&lt;http://imagej.net/mailman/listinfo/imagej-devel</A>&gt;
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20120320/da88f590/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20120320/da88f590/attachment-0001.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000661.html">[ImageJ-devel] proposed changes in the ImgLib2 abstract class hierarchy
+</A></li>
+	<LI>Next message: <A HREF="000693.html">[ImageJ-devel] proposed changes in the ImgLib2 abstract class hierarchy
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#689">[ date ]</a>
+              <a href="thread.html#689">[ thread ]</a>
+              <a href="subject.html#689">[ subject ]</a>
+              <a href="author.html#689">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

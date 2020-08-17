@@ -1,0 +1,50 @@
+<tt>
+Hi&nbsp;all,&lt;br&gt;&lt;br&gt;&lt;blockquote&nbsp;style=&quot;margin:&nbsp;0pt&nbsp;0pt&nbsp;0pt&nbsp;0.8ex;&nbsp;border-left:&nbsp;1px&nbsp;solid&nbsp;rgb(204,&nbsp;204,&nbsp;204);&nbsp;padding-left:&nbsp;1ex;&quot;&nbsp;class=&quot;gmail_quote&quot;&gt;Barry&nbsp;is&nbsp;out&nbsp;today&nbsp;but&nbsp;I&nbsp;will&nbsp;investigate&nbsp;this&nbsp;afternoon&nbsp;and&nbsp;hopefully&nbsp;have&nbsp;a&nbsp;fix&nbsp;soon.&lt;br&gt;<br>
+<br>
+&lt;/blockquote&gt;&lt;br&gt;I&nbsp;believe&nbsp;this&nbsp;issue&nbsp;is&nbsp;fixed&nbsp;in&nbsp;r3939.&nbsp;Please&nbsp;let&nbsp;me&nbsp;know&nbsp;if&nbsp;not.&lt;br&gt;&lt;br&gt;-Curtis&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;div&nbsp;class=&quot;gmail_quote&quot;&gt;On&nbsp;Wed,&nbsp;Sep&nbsp;21,&nbsp;2011&nbsp;at&nbsp;12:27&nbsp;PM,&nbsp;Curtis&nbsp;Rueden&nbsp;&lt;span&nbsp;dir=&quot;ltr&quot;&gt;&amp;lt;&lt;a&nbsp;href=&quot;mailto:ctrueden@wisc.edu&quot;&gt;ctrueden@wisc.edu&lt;/a&gt;&amp;gt;&lt;/span&gt;&nbsp;wrote:&lt;br&gt;<br>
+<br>
+&lt;blockquote&nbsp;class=&quot;gmail_quote&quot;&nbsp;style=&quot;margin:0&nbsp;0&nbsp;0&nbsp;.8ex;border-left:1px&nbsp;#ccc&nbsp;solid;padding-left:1ex;&quot;&gt;Hi&nbsp;Grant,&lt;div&nbsp;class=&quot;im&quot;&gt;&lt;br&gt;&lt;br&gt;&lt;blockquote&nbsp;style=&quot;margin:0pt&nbsp;0pt&nbsp;0pt&nbsp;0.8ex;border-left:1px&nbsp;solid&nbsp;rgb(204,&nbsp;204,&nbsp;204);padding-left:1ex&quot;&nbsp;class=&quot;gmail_quote&quot;&gt;<br>
+<br>
+<br>
+Anyone&nbsp;else&nbsp;seeing&nbsp;the&nbsp;CPU&nbsp;usage&nbsp;stuck&nbsp;at&nbsp;+12%&nbsp;ofter&nbsp;opening&nbsp;an&nbsp;image&nbsp;in&nbsp;IJ2?&nbsp; Or&nbsp;is&nbsp;it&nbsp;just&nbsp;me?&lt;br&gt;&lt;/blockquote&gt;&lt;blockquote&nbsp;style=&quot;margin:0pt&nbsp;0pt&nbsp;0pt&nbsp;0.8ex;border-left:1px&nbsp;solid&nbsp;rgb(204,&nbsp;204,&nbsp;204);padding-left:1ex&quot;&nbsp;class=&quot;gmail_quote&quot;&gt;<br>
+<br>
+<br>
+<br>
+(Related:&nbsp;has&nbsp;anyone&nbsp;tried&nbsp;profiling&nbsp;the&nbsp;app?&nbsp; I&amp;#39;m&nbsp;having&nbsp;trouble&nbsp;doing&nbsp;so&nbsp;in&nbsp;NetBeans...&nbsp;going&nbsp;to&nbsp;try&nbsp;VirtualVM&nbsp;next.)&lt;br&gt;&lt;/blockquote&gt;<br>
+&lt;br&gt;&lt;/div&gt;If&nbsp;you&nbsp;run&nbsp;ImageJ&nbsp;from&nbsp;the&nbsp;command&nbsp;line&nbsp;(see&nbsp;&lt;a&nbsp;href=&quot;http://imagejdev.org/command-line&quot;&nbsp;target=&quot;_blank&quot;&gt;http://imagejdev.org/command-line&lt;/a&gt;)&nbsp;then&nbsp;press&nbsp;Ctrl+Pause&nbsp;(Ctrl+\&nbsp;on&nbsp;non-Windows&nbsp;platforms)&nbsp;from&nbsp;the&nbsp;command&nbsp;prompt,&nbsp;you&nbsp;will&nbsp;get&nbsp;a&nbsp;full&nbsp;stack&nbsp;trace&nbsp;for&nbsp;all&nbsp;threads,&nbsp;which&nbsp;will&nbsp;be&nbsp;enlightening&nbsp;as&nbsp;to&nbsp;the&nbsp;cause.&lt;br&gt;<br>
+<br>
+<br>
+&lt;br&gt;I&nbsp;just&nbsp;tested&nbsp;on&nbsp;my&nbsp;machine&nbsp;here&nbsp;and&nbsp;am&nbsp;seeing&nbsp;100%&nbsp;CPU&nbsp;usage&nbsp;(of&nbsp;one&nbsp;CPU)&nbsp;on&nbsp;my&nbsp;system,&nbsp;after&nbsp;opening&nbsp;Blobs.&lt;br&gt;&lt;br&gt;The&nbsp;stack&nbsp;trace&nbsp;reveals&nbsp;that&nbsp;there&nbsp;is&nbsp;a&nbsp;recursive&nbsp;loop&nbsp;going&nbsp;on&nbsp;with&nbsp;the&nbsp;options&nbsp;synchronization.&nbsp;Relevant&nbsp;portion&nbsp;is:&lt;br&gt;<br>
+<br>
+<br>
+&lt;br&gt;   &nbsp;at&nbsp;imagej.event.EventService.publish(EventService.java:72)&lt;br&gt;   &nbsp;at&nbsp;imagej.event.Events.publish(Events.java:61)&lt;br&gt;   &nbsp;at&nbsp;imagej.ext.options.OptionsPlugin.run(OptionsPlugin.java:116)&lt;br&gt;   &nbsp;at&nbsp;imagej.ext.plugin.PluginModule.run(PluginModule.java:163)&lt;br&gt;<br>
+<br>
+<br>
+   &nbsp;at&nbsp;imagej.ext.options.OptionsService.setOption(OptionsService.java:178)&lt;br&gt;   &nbsp;at&nbsp;imagej.ext.options.OptionsService.setOption(OptionsService.java:153)&lt;br&gt;   &nbsp;at&nbsp;imagej.legacy.patches.PrefsMethods.set(PrefsMethods.java:90)&lt;br&gt;<br>
+<br>
+<br>
+   &nbsp;at&nbsp;ij.Prefs.set(Prefs.java:455)&lt;br&gt;   &nbsp;at&nbsp;ij.Prefs.set(Prefs.java:461)&lt;br&gt;   &nbsp;at&nbsp;imagej.legacy.OptionsSynchronizer.arrowOptions(OptionsSynchronizer.java:171)&lt;br&gt;   &nbsp;at&nbsp;imagej.legacy.OptionsSynchronizer.updateIJ1SettingsFromIJ2(OptionsSynchronizer.java:82)&lt;br&gt;<br>
+<br>
+<br>
+   &nbsp;at&nbsp;imagej.legacy.LegacyService.updateIJ1Settings(LegacyService.java:143)&lt;br&gt;   &nbsp;at&nbsp;imagej.legacy.LegacyService$2.onEvent(LegacyService.java:194)&lt;br&gt;   &nbsp;at&nbsp;imagej.legacy.LegacyService$2.onEvent(LegacyService.java:190)&lt;br&gt;<br>
+<br>
+<br>
+   &nbsp;at&nbsp;org.bushe.swing.event.ThreadSafeEventService.publish(ThreadSafeEventService.java:971)&lt;br&gt;   &nbsp;at&nbsp;org.bushe.swing.event.ThreadSafeEventService.publish(ThreadSafeEventService.java:904)&lt;br&gt;   &nbsp;at&nbsp;imagej.event.EventService.publish(EventService.java:72)&lt;br&gt;<br>
+<br>
+<br>
+   &nbsp;at&nbsp;imagej.event.Events.publish(Events.java:61)&lt;br&gt;   &nbsp;at&nbsp;imagej.ext.options.OptionsPlugin.run(OptionsPlugin.java:116)&lt;br&gt;   &nbsp;at&nbsp;imagej.ext.plugin.PluginModule.run(PluginModule.java:163)&lt;br&gt;   &nbsp;at&nbsp;imagej.ext.options.OptionsService.setOption(OptionsService.java:178)&lt;br&gt;<br>
+<br>
+<br>
+   &nbsp;at&nbsp;imagej.ext.options.OptionsService.setOption(OptionsService.java:153)&lt;br&gt;   &nbsp;at&nbsp;imagej.legacy.patches.PrefsMethods.set(PrefsMethods.java:90)&lt;br&gt;   &nbsp;at&nbsp;ij.Prefs.set(Prefs.java:455)&lt;br&gt;   &nbsp;at&nbsp;ij.Prefs.set(Prefs.java:461)&lt;br&gt;<br>
+<br>
+<br>
+   &nbsp;at&nbsp;imagej.legacy.OptionsSynchronizer.arrowOptions(OptionsSynchronizer.java:171)&lt;br&gt;   &nbsp;at&nbsp;imagej.legacy.OptionsSynchronizer.updateIJ1SettingsFromIJ2(OptionsSynchronizer.java:82)&lt;br&gt;   &nbsp;at&nbsp;imagej.legacy.LegacyService.updateIJ1Settings(LegacyService.java:143)&lt;br&gt;<br>
+<br>
+<br>
+   &nbsp;at&nbsp;imagej.legacy.LegacyService$2.onEvent(LegacyService.java:194)&lt;br&gt;   &nbsp;at&nbsp;imagej.legacy.LegacyService$2.onEvent(LegacyService.java:190)&lt;br&gt;   &nbsp;at&nbsp;org.bushe.swing.event.ThreadSafeEventService.publish(ThreadSafeEventService.java:971)&lt;br&gt;<br>
+<br>
+<br>
+&lt;br&gt;Barry&nbsp;is&nbsp;out&nbsp;today&nbsp;but&nbsp;I&nbsp;will&nbsp;investigate&nbsp;this&nbsp;afternoon&nbsp;and&nbsp;hopefully&nbsp;have&nbsp;a&nbsp;fix&nbsp;soon.&lt;br&gt;&lt;font&nbsp;color=&quot;#888888&quot;&gt;&lt;br&gt;-Curtis&lt;br&gt;&lt;br&gt;<br>
+&lt;/font&gt;&lt;/blockquote&gt;&lt;/div&gt;&lt;br&gt;<br>
+
+</tt>

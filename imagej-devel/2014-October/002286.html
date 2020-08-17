@@ -1,0 +1,116 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [fiji-devel] Lock-free bit fields, was Re:  What's left to do for ImgLib2
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20Lock-free%20bit%20fields%2C%0A%20was%20Re%3A%20%20What%27s%20left%20to%20do%20for%20ImgLib2&In-Reply-To=%3C5452425D.9060609%40univ-paris-diderot.fr%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002285.html">
+   <LINK REL="Next"  HREF="002287.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [fiji-devel] Lock-free bit fields, was Re:  What's left to do for ImgLib2</H1>
+    <B>Adrian Daerr</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20Lock-free%20bit%20fields%2C%0A%20was%20Re%3A%20%20What%27s%20left%20to%20do%20for%20ImgLib2&In-Reply-To=%3C5452425D.9060609%40univ-paris-diderot.fr%3E"
+       TITLE="[ImageJ-devel] [fiji-devel] Lock-free bit fields, was Re:  What's left to do for ImgLib2">adrian.daerr at univ-paris-diderot.fr
+       </A><BR>
+    <I>Thu Oct 30 08:51:25 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002285.html">[ImageJ-devel] Lock-free bit fields, was Re:  What's left to do for ImgLib2
+</A></li>
+        <LI>Next message: <A HREF="002287.html">[ImageJ-devel] [fiji-devel] Lock-free bit fields, was Re:  What's left to do for ImgLib2
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2286">[ date ]</a>
+              <a href="thread.html#2286">[ thread ]</a>
+              <a href="subject.html#2286">[ subject ]</a>
+              <a href="author.html#2286">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+&gt;&gt;<i> By lock-free I mean setting the value and then checking whether the
+</I>&gt;&gt;<i> value is actually what was expected (and if not, retry).
+</I>&gt;<i>
+</I>&gt;<i> A na&#239;ve implementation of this technique could easily result in a very
+</I>&gt;<i> nasty ping-pong effect: if one thread tries to clear a bit and the next
+</I>&gt;<i> thread tries to set it, it is very to run into a trap when not leaving a
+</I>&gt;<i> way for one thread to win.
+</I>&gt;<i>
+</I>&gt;<i> The safest way to resolve this issue is to reinstate the lock-on-write
+</I>&gt;<i> method that was in place earlier
+</I>[..]
+&gt;<i>
+</I>&gt;<i> An alternative might be to give up lock-freedom in favor of wait-freedom
+</I>&gt;<i> [*2*]. In this regard, a more performant version might be
+</I>[..]
+&gt;<i> to use Optimistic Concurrency Control [*3*]:
+</I>
+&gt;<i> 	final long original = dataAccess.getValue(i1);
+</I>&gt;<i> 	if ( value ) {
+</I>&gt;<i> 		final long newValue = original | (1l &lt;&lt; shift);
+</I>&gt;<i> 		dataAccess.setValue(i1, newValue);
+</I>&gt;<i> 		if ( newValue != dataAccess.getValue( i1 ) ) {
+</I>&gt;<i> 			synchronized (dataAccess) {
+</I>&gt;<i> 				dataAccess.setValue( i1, dataAccess.getValue(i1) | (1l &lt;&lt; shift) );
+</I>&gt;<i> 			}
+</I>&gt;<i> 		}
+</I>&gt;<i> 	}
+</I>[snip]
+
+Hum, I do not if this is really a comparable situation, but it looks a 
+lot like the double-checked locking (DCL) idiom, which is broken [1].
+
+FWIW,
+cheers and good luck,
+Adrian
+
+
+[1]
+TL;DR : You cannot have as-if-serial semantics across threads unless you 
+use synchronized.
+
+&quot;Double-checked locking: Clever, but broken
+Do you know what synchronized really means?&quot; By Brian Goetz
+<A HREF="http://www.javaworld.com/article/2074979/java-concurrency/double-checked-locking--clever--but-broken.html">http://www.javaworld.com/article/2074979/java-concurrency/double-checked-locking--clever--but-broken.html</A>
+
+and its follow-up article
+
+&quot;Can double-checked locking be fixed?
+No matter how you rig it, double-checked locking still fails&quot; (also by 
+Brian Goetz)
+<A HREF="http://www.javaworld.com/article/2075306/java-concurrency/can-double-checked-locking-be-fixed-.html">http://www.javaworld.com/article/2075306/java-concurrency/can-double-checked-locking-be-fixed-.html</A>
+
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002285.html">[ImageJ-devel] Lock-free bit fields, was Re:  What's left to do for ImgLib2
+</A></li>
+	<LI>Next message: <A HREF="002287.html">[ImageJ-devel] [fiji-devel] Lock-free bit fields, was Re:  What's left to do for ImgLib2
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2286">[ date ]</a>
+              <a href="thread.html#2286">[ thread ]</a>
+              <a href="subject.html#2286">[ subject ]</a>
+              <a href="author.html#2286">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,153 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] when to close cursors,	was Re: [fiji-devel] imglib coding style
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20when%20to%20close%20cursors%2C%0A%09was%20Re%3A%20%5Bfiji-devel%5D%20imglib%20coding%20style&In-Reply-To=%3C1271333529.2746.175.camel%40saalfeld-laptop%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000046.html">
+   <LINK REL="Next"  HREF="000047.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] when to close cursors,	was Re: [fiji-devel] imglib coding style</H1>
+    <B>Stephan Saalfeld</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20when%20to%20close%20cursors%2C%0A%09was%20Re%3A%20%5Bfiji-devel%5D%20imglib%20coding%20style&In-Reply-To=%3C1271333529.2746.175.camel%40saalfeld-laptop%3E"
+       TITLE="[ImageJ-devel] when to close cursors,	was Re: [fiji-devel] imglib coding style">saalfeld at mpi-cbg.de
+       </A><BR>
+    <I>Thu Apr 15 07:12:09 CDT 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000046.html">[ImageJ-devel] when to close cursors,	was Re: [fiji-devel] imglib coding style
+</A></li>
+        <LI>Next message: <A HREF="000047.html">[ImageJ-devel] when to close cursors,	was Re: [fiji-devel] imglib coding style
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#45">[ date ]</a>
+              <a href="thread.html#45">[ thread ]</a>
+              <a href="subject.html#45">[ subject ]</a>
+              <a href="author.html#45">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi,
+
+&gt;<i> right now the Cursor.close() call is not necessary for any of the
+</I>&gt;<i> containers. But it will be when we start paging data and each Cursor
+</I>&gt;<i> will get a lock on the cell it currently works on. So when writing
+</I>&gt;<i> stuff using imglib one should think ahead and close cursors when they
+</I>&gt;<i> are not needed anymore. 
+</I>&gt;<i> 
+</I>&gt;<i> I do not really see how the new design should get rid of that
+</I>&gt;<i> paging-lock-cell problem Stephan -  how should it work without
+</I>&gt;<i> explicitly closing the cursor so that it releases the cell it is
+</I>&gt;<i> currently on when not needed anymore...
+</I>
+As I said---I was tired :)  I thought about not locking cells at all and
+delivering a copy of the data for each cursor independently which then
+would be deleted automatically on cursor death but that violates data
+persistence for many cursors accessing the same data.  So we need an
+external instance providing the paged data in a single instance and,
+therefore, the close construct.
+
+&gt;<i> It might also be that Cursors have a local cache (which might be again
+</I>&gt;<i> an Image) they can empty when they are not needed anymore or that only
+</I>&gt;<i> a certain number of Cursors in parallel is allowed for some reason. 
+</I>&gt;<i> 
+</I>
+Deleting the cursor the Java way would delete the Cache too, Caches on
+container- or image-level would need the close construct though.  For
+constraining the number of cursors allowed to run in parallel, I cannot
+figure out a proper reason.
+
+Still, Image collects the cursors working on it but never removes them,
+this needs to be fixed.
+
+Best,
+Stephan
+
+
+&gt;<i> Ciao ciao,
+</I>&gt;<i> Steffi
+</I>&gt;<i> 
+</I>&gt;<i> &gt; -----Original Message-----
+</I>&gt;<i> &gt; From: Stephan Saalfeld [mailto:<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">saalfeld at mpi-cbg.de</A>]
+</I>&gt;<i> &gt; Sent: Donnerstag, 15. April 2010 00:34
+</I>&gt;<i> &gt; Cc: Johannes Schindelin; <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">preibisch at mpi-cbg.de</A>; fiji-
+</I>&gt;<i> &gt; <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">devel at googlegroups.com</A>; Imagejdev.org Developers
+</I>&gt;<i> &gt; Subject: Re: when to close cursors, was Re: [fiji-devel] imglib coding
+</I>&gt;<i> &gt; style
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; Hi,
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; Cursor.hasNext() == false does not mean that the cursor is out of image
+</I>&gt;<i> &gt; bounds and, depending on the container may still point to some data.
+</I>&gt;<i> &gt; Image keeping track of its cursors, it is good to close them for
+</I>&gt;<i> &gt; freeing
+</I>&gt;<i> &gt; this data.  Currently, this is important in cell containers only.
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; I think that the recent design changes regarding data access make this
+</I>&gt;<i> &gt; tracking of cursors obsolete and so Cursor.close() too.  A good hint is
+</I>&gt;<i> &gt; that Image.removeCursor() is just never called.  But I am very tired
+</I>&gt;<i> &gt; and
+</I>&gt;<i> &gt; have to check this.
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; Good night,
+</I>&gt;<i> &gt; Stephan
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; On Wed, 2010-04-14 at 17:10 -0500, Curtis Rueden wrote:
+</I>&gt;<i> &gt; &gt; Hi Johannes,
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> &gt; &gt; At the hackathon Steffi told me it is best practice to always close
+</I>&gt;<i> &gt; &gt; cursors. I had not done this in SquareTest so I committed a change
+</I>&gt;<i> &gt; &gt; that now does so.
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> &gt; &gt; Thanks,
+</I>&gt;<i> &gt; &gt; Curtis
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> &gt; &gt; On Wed, Apr 14, 2010 at 4:51 PM, Johannes Schindelin
+</I>&gt;<i> &gt; &gt; &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">Johannes.Schindelin at gmx.de</A>&gt; wrote:
+</I>&gt;<i> &gt; &gt;         Hi,
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> &gt; &gt;         while writing a base class for JUnit tests, I realized that I
+</I>&gt;<i> &gt; &gt;         did not
+</I>&gt;<i> &gt; &gt;         close() the cursors when cursor.hasNext() returned false. Are
+</I>&gt;<i> &gt; &gt;         you supposed
+</I>&gt;<i> &gt; &gt;         to close() them even then?
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> &gt; &gt;         Ciao,
+</I>&gt;<i> &gt; &gt;         Johannes
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> &gt; &gt;
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000046.html">[ImageJ-devel] when to close cursors,	was Re: [fiji-devel] imglib coding style
+</A></li>
+	<LI>Next message: <A HREF="000047.html">[ImageJ-devel] when to close cursors,	was Re: [fiji-devel] imglib coding style
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#45">[ date ]</a>
+              <a href="thread.html#45">[ thread ]</a>
+              <a href="subject.html#45">[ subject ]</a>
+              <a href="author.html#45">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

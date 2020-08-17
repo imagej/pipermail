@@ -1,0 +1,199 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] ImgLib2 release underway -- plus a question
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImgLib2%20release%20underway%20--%20plus%20a%20question&In-Reply-To=%3CCADN69ykYx4em3%3Di44ciaGbQgLB080Pb4Gr9-79f-3dptdL5nJQ%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002279.html">
+   <LINK REL="Next"  HREF="002281.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] ImgLib2 release underway -- plus a question</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImgLib2%20release%20underway%20--%20plus%20a%20question&In-Reply-To=%3CCADN69ykYx4em3%3Di44ciaGbQgLB080Pb4Gr9-79f-3dptdL5nJQ%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] ImgLib2 release underway -- plus a question">ctrueden at wisc.edu
+       </A><BR>
+    <I>Tue Oct 28 16:56:58 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002279.html">[ImageJ-devel] Randomization seed option
+</A></li>
+        <LI>Next message: <A HREF="002281.html">[ImageJ-devel] What's left to do for ImgLib2
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2280">[ date ]</a>
+              <a href="thread.html#2280">[ thread ]</a>
+              <a href="subject.html#2280">[ subject ]</a>
+              <a href="author.html#2280">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi everyone,
+
+Earlier this month, LOCI hosted an ImgLib2 hackathon in Madison, with the
+goal of finally getting the ImgLib2 core library out of beta. We have been
+working through the ramifications of that release for the past week and a
+half, but some issues have arisen that complicate matters.
+
+So, this mail is a quick status update on where we are at, and a question
+for the community. An official release announcement for ImgLib2 will come
+soon, as soon as the issues in question have been fully resolved.
+
+Release status:
+- Can always be seen at <A HREF="http://status.imagej.net/">http://status.imagej.net/</A>
+- See the P.S. below for a complete rundown as of this writing.
+
+On to the question. It is technical and Maven-centric, so if you don't care
+about that, then feel free to stop reading here.
+
+Background: when preparing for the ImgLib2 release, we decided to
+restructure the dependency hierarchy of a couple of components. In
+particular, the imglib2-meta component moved into imagej-common. This is
+elegant:
+
+* ImgLib2 now represents the N-dimensional core
+* ImageJ (specifically: imagej-common) provides metadata-rich extensions to
+that core, built on the SciJava Common plugin framework
+* The SCIFIO library provides I/O capabilities also driven by SciJava
+Common, built on the metadata-rich image structures of ImageJ.
+
+More details at the newly minted page: <A HREF="http://imagej.net/Architecture">http://imagej.net/Architecture</A>
+
+This restructuring exacerbated an already-known problem: the hierarchy of
+organizational parent POMs does not, and cannot, match the core library
+dependency hierarchy above. Or to put another way: the imagej, imglib2 and
+scifio organizations (on GitHub) each have projects that utilize components
+from the other two organizations; e.g.:
+
+* <A HREF="https://github.com/imagej/imagej,">https://github.com/imagej/imagej,</A> which provides the top-level ImageJ
+application itself depending on both ImgLib2 and SCIFIO libraries
+* <A HREF="https://github.com/imglib/imglib2-tutorials,">https://github.com/imglib/imglib2-tutorials,</A> which uses SCIFIO for image
+I/O and ImageJ1 for displaying images
+* <A HREF="https://github.com/scifio/scifio,">https://github.com/scifio/scifio,</A> which utilizes data structures from
+ImgLib2 and ImageJ Common.
+
+Hence, these three organizations are fundamentally interdependent.
+
+One function of the pom-scijava parent (
+<A HREF="https://github.com/scijava/pom-scijava">https://github.com/scijava/pom-scijava</A>) has been to act as a &quot;Bill of
+Materials&quot; defining all the component versions which are intended to be
+used together. Recently, we factored out a separate Bill of Materials for
+each of the three organizations. But then we realized that due to the
+interdependence explained above, each of the three parent POMs (pom-imagej,
+pom-imglib2 and pom-scifio) needed to inherit the BOMs of all three
+organizations.
+
+Like Java, Maven POMs support only single inheritance. But they do support
+a limited form of composition via an &quot;import scope&quot; which allows you to
+import the managed dependency versions from a non-parent POM. We tried to
+do this, creating three new artifacts -- bom-imagej, bom-imagej and
+bom-scifio -- and having each of the three POM parents import all three of
+the bom artifacts. But I am sorry to say that after trying it in anger, it
+has been a failed experiment. The import scope _only_ supports managed
+versions, not properties and not profiles. So we lost access to the version
+properties (which are occasionally extremely useful) as well as the dev
+profiles (which make it easier to couple the latest versions of multiple
+components together for local development). It also locks out the
+possibility of any other shared configuration between the projects of the
+three affected organizations.
+
+Yesterday and today, we (dscho, hinerm and myself) discussed three
+potential solutions to the problem; see the chatlogs [1] for some gory
+details.
+
+The solution we converged upon is to put the shared configuration of
+pom-imagej, pom-imglib2 and pom-scifio into pom-imagej, and have
+pom-imglib2 and pom-scifio now extend pom-imagej instead of pom-scijava
+directly. (pom-imagej would still extend pom-scijava, of course.)
+
+We like it because it isolates the version management of those three &quot;core
+SciJava orgs&quot; into its own place (rather than &quot;polluting&quot; pom-scijava
+directly), but without the need to create yet another potentially confusing
+parent POM (&quot;pom-imagej-imglib2-scifio-shared-configuration-and-bom&quot;).
+
+The question for the community -- especially Tobias, Stephan P. &amp; Stephan
+S. -- is: do you agree? Or do you have any better ideas?
+
+If everyone is OK with it, I will push ahead and complete this work.
+Current topic branches are at:
+
+* <A HREF="https://github.com/imagej/pom-imagej/compare/imagej-is-da-bom">https://github.com/imagej/pom-imagej/compare/imagej-is-da-bom</A>
+* <A HREF="https://github.com/imglib/pom-imglib2/compare/imagej-is-da-bom">https://github.com/imglib/pom-imglib2/compare/imagej-is-da-bom</A>
+* <A HREF="https://github.com/scifio/pom-scifio/compare/imagej-is-da-bom">https://github.com/scifio/pom-scifio/compare/imagej-is-da-bom</A>
+
+Regards,
+Curtis
+
+[1]
+<A HREF="http://code.imagej.net/chatlogs/imagejdev?times=prefix&amp;start-date=2014-10-28&amp;start-time=0400&amp;end-date=2014-10-28&amp;end-time=1500">http://code.imagej.net/chatlogs/imagejdev?times=prefix&amp;start-date=2014-10-28&amp;start-time=0400&amp;end-date=2014-10-28&amp;end-time=1500</A>
+
+P.S. Here is the complete rundown of components:
+
+The following components are released:
+
+* imglib2 2.0.1
+* imglib2-algorithm 0.1.0
+* imglib2-algorithm-fft 0.1.0
+* imglib2-algorithm-gpl 0.1.0
+* imglib2-ij 2.0.0-beta-27
+* imglib2-realtransform 2.0.0-beta-27
+* imagej-common 0.10.0
+* scifio 0.17.0
+
+The following components are not done yet:
+
+* imglib2-script 0.1.0
+* imglib2-tests
+* imglib2-tutorials
+
+(Note that for tests and tutorials, it is just a matter of updating the
+master branch, since we will never cut Maven release of those.)
+
+* imagej-ops 0.6.0
+* imagej-plugins-commands 0.3.0
+* imagej-ui-swing 0.8.0
+* scifio-ome-xml 0.10.0
+
+And probably others that will become obvious as we proceed further along.
+
+Lastly, each of the following components has an &quot;imglib2-release&quot; branch
+which is ostensibly complete but still has build or test failures:
+
+* imglib2-tests
+* imglib2-script
+* imagej-ops
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20141028/efd8ca24/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20141028/efd8ca24/attachment.html</A>&gt;
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002279.html">[ImageJ-devel] Randomization seed option
+</A></li>
+	<LI>Next message: <A HREF="002281.html">[ImageJ-devel] What's left to do for ImgLib2
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2280">[ date ]</a>
+              <a href="thread.html#2280">[ thread ]</a>
+              <a href="subject.html#2280">[ subject ]</a>
+              <a href="author.html#2280">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

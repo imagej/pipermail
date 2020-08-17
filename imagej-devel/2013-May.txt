@@ -1,0 +1,2415 @@
+From melissa at glencoesoftware.com  Wed May  1 17:25:02 2013
+From: melissa at glencoesoftware.com (Melissa Linkert)
+Date: Wed, 1 May 2013 18:25:02 -0400
+Subject: [ImageJ-devel] [icy] Re: .MRXS files in ICY
+In-Reply-To: <93878a19-c331-4c94-b179-fa5641b2c899@googlegroups.com>
+References: <21571e87-cf46-4a4d-b68e-5449aae6d4ea@googlegroups.com>
+	<9ef8cfa2-8bb3-447d-af37-6b2ece0f91b1@googlegroups.com>
+	<D4EC8695-4B30-434C-9352-A68366995726@broadpark.no>
+	<25cb5bd7-0364-487d-8181-162df062eb9d@googlegroups.com>
+	<517E5FFD.2020802@broadpark.no>
+	<78304048-eaf5-4ce1-9508-5738d543f4e7@googlegroups.com>
+	<CADN69yk+aNpPC++WCmZb+iFzkRFmVhK1Wx1pg6JBMVqnDySB7g@mail.gmail.com>
+	<93878a19-c331-4c94-b179-fa5641b2c899@googlegroups.com>
+Message-ID: <20130501222502.GA18255@medusa>
+
+Hi Stephane,
+
+> Thanks for the information.
+> We are currently testing the following method to open image tile by tile:
+>    byte[] openBytes(int no, byte[] buf, int x, int y, int w, int h)
+> 
+> but it appears that all reader do not support it very well, we tested both 
+> on JPEG and NDPI reader and obtained errors in both case.
+
+> Is there any way 
+> to know how much this method is supported ?
+
+Your best bet is to ask on ome-devel and/or look at the open tickets:
+
+http://trac.openmicroscopy.org.uk/ome/query?status=accepted&status=new&status=reopened&component=Bio-Formats&col=id&col=summary&col=status&col=type&col=priority&col=milestone&col=component&order=priority
+
+In general, pretty much everything except for JPEG-based formats (JPEG,
+NDPI, Hamamatsu VMS) will work in the latest stable version; for very
+large images those won't work because the entire image needs to be
+decoded in order to get a tile.  Support for NDPI and VMS is much better on
+the develop branch (i.e.  trunk builds), but opening tiles from a JPEG still
+requires that the entire image be decoded first.
+
+Regards,
+-Melissa
+
+On Mon, Apr 29, 2013 at 09:09:37AM -0700, Stephane wrote:
+> Hi Curtis,
+> 
+> Thanks for the information.
+> We are currently testing the following method to open image tile by tile:
+>    byte[] openBytes(int no, byte[] buf, int x, int y, int w, int h)
+> 
+> but it appears that all reader do not support it very well, we tested both 
+> on JPEG and NDPI reader and obtained errors in both case. Is there any way 
+> to know how much this method is supported ?
+> 
+> Glad to hear about the IJ2 work on smart image disk caching, i am impatient 
+> to see that in action :)
+> 
+> Cheers,
+> 
+> - Stephane
+> 
+> 
+> Le lundi 29 avril 2013 17:40:21 UTC+2, Curtis Rueden a ?crit :
+> >
+> > Hi Stephane & everyone,
+> >
+> > > We are also developing a plugin which may be used to split very large
+> > > images in tiles but again we are very dependant to what the
+> > > Bio-Formats library is able to do so it could be limited in some way.
+> >
+> > Bio-Formats provides an API for opening very large image planes in tiles:
+> >
+> >     byte[] openBytes(int no, int x, int y, int w, int h)
+> >     byte[] openBytes(int no, byte[] buf, int x, int y, int w, int h)
+> >
+> > Any valid tile width and height should behave correctly, but for optimal 
+> > performance you can ask for the data's ideal tile size using:
+> >
+> >     int getOptimalTileWidth()
+> >     int getOptimalTileHeight()
+> >
+> > So hopefully it would not be too difficult for Icy to provide a "crop 
+> > image on import" sort of feature -- and maybe eventually a tile-based image 
+> > viewer. Please let us know if you have any trouble with it!
+> >
+> > Regards,
+> > Curtis
+> >
+> > P.S. This week, the ImageJ2 team will be working on the underpinnings in 
+> > ImgLib2 for a SCIFIO-driven CellImg with intelligent disk caching. Once 
+> > this work is ready, and if Icy becomes capable of using ImgLib2 data 
+> > structures at the interface level, you could potentially harness this 
+> > feature for tile-based image support.
+> >
+> >
+> > On Mon, Apr 29, 2013 at 9:59 AM, Stephane <stephane.da... at pasteur.fr<javascript:>
+> > > wrote:
+> >
+> >> Hi,
+> >>
+> >> Generally that type of microscope generate multi series image (with 
+> >> different resolution) so even if Icy can't open the full resolution, you 
+> >> should be able to open a sub resolution of the image.
+> >> We are also developing a plugin which may be used to split very large 
+> >> images in tiles but again we are very dependant to what the Bio-Formats 
+> >> library is able to do so it could be limited in some way. Did you try to re 
+> >> open your image with the last version of Bio-Format ? you should have 
+> >> received an automatic update last friday.
+> >>
+> >> Cheers,
+> >>
+> >> - Stephane
+> >>
+> >>
+> >> Le lundi 29 avril 2013 13:56:45 UTC+2, henrik aamodt a ?crit :
+> >>>
+> >>>  Hi again, thank You for Your reply. Is there a quick way to reduce the 
+> >>> X/Y in images, or has that to be done *before* importing them to ICY or 
+> >>> maybe even when the slides are beeing scanned?
+> >>>
+> >>> sincerly
+> >>> Henrik Aamodt
+> >>> Oslo University Hospital
+> >>> Norway
+> >>>
+> >>> Den 29.04.13 13:15, skrev Stephane: 
+> >>>
+> >>> Hi,
+> >>>
+> >>> 4 or 5 GB is really huge image, if the X/Y dimension is too large (> 
+> >>> 32000x32000) then you may experience problems to open them.
+> >>>
+> >>> Le vendredi 26 avril 2013 22:00:16 UTC+2, Henrik Aamodt a ?crit : 
+> >>>>
+> >>>>  hi, thanks for Your reply. we will be able to scan to .tiff soon, 
+> >>>> that should resolve the issue. FYI the mirax files are aprox 4.5-5 GB, dont 
+> >>>> have the x/y
+> >>>>
+> >>>>  henrik aamodt
+> >>>> norway
+> >>>>
+> >>>> Den 26. apr. 2013 kl. 21:38 skrev Stephane <stephane.da... at pasteur.fr>:
+> >>>>
+> >>>>  Hello,
+> >>>>
+> >>>> Sorry for the delay !
+> >>>> Actually mirax format is not yet supported by Bio-Formats (the library 
+> >>>> we use to open image files) :
+> >>>>
+> >>>> http://www.openmicroscopy.org/**site/support/bio-formats/**
+> >>>> supported-formats.html<http://www.openmicroscopy.org/site/support/bio-formats/supported-formats.html>
+> >>>> http://trac.openmicroscopy.**org.uk/ome/ticket/4121<http://trac.openmicroscopy.org.uk/ome/ticket/4121>
+> >>>>
+> >>>> But at some point they will add support for it.
+> >>>> From the error message we counld think your image is too big to be 
+> >>>> laoded, do you know the size (X / Y dimension) of your image ?
+> >>>>
+> >>>> - Stephane
+> >>>>
+> >>>> Le lundi 22 avril 2013 19:38:00 UTC+2, hen... at broadpark.no a ?crit : 
+> >>>>>
+> >>>>> Hi, anyone know a way to import .MRXS image files to ICY? I tried but 
+> >>>>> got "image plane too large".  
+> >>>>>
+> >>>>>  thanks
+> >>>>>
+> >>>> -- 
+> >>>> You received this message because you are subscribed to a topic in the 
+> >>>> Google Groups "Icy imaging" group.
+> >>>> To unsubscribe from this topic, visit https://groups.google.com/d/**
+> >>>> topic/icy-software/**utQCSLMvr1Y/unsubscribe?hl=en<https://groups.google.com/d/topic/icy-software/utQCSLMvr1Y/unsubscribe?hl=en>
+> >>>> .
+> >>>> To unsubscribe from this group and all its topics, send an email to 
+> >>>> icy-software... at googlegroups.**com.
+> >>>> To post to this group, send email to icy-so... at googlegroups.com.
+> >>>> To view this discussion on the web visit https://groups.google.com/d/**
+> >>>> msg/icy-software/-/**CrqZqyNHJAgJ<https://groups.google.com/d/msg/icy-software/-/CrqZqyNHJAgJ>
+> >>>> .
+> >>>> For more options, visit https://groups.google.com/**groups/opt_out<https://groups.google.com/groups/opt_out>
+> >>>> .
+> >>>>  
+> >>>>  
+> >>>>  
+> >>>>  -- 
+> >>> You received this message because you are subscribed to a topic in the 
+> >>> Google Groups "Icy imaging" group.
+> >>> To unsubscribe from this topic, visit https://groups.google.com/d/**
+> >>> topic/icy-software/**utQCSLMvr1Y/unsubscribe?hl=en<https://groups.google.com/d/topic/icy-software/utQCSLMvr1Y/unsubscribe?hl=en>
+> >>> .
+> >>> To unsubscribe from this group and all its topics, send an email to 
+> >>> icy-software...@**googlegroups.com.
+> >>> To post to this group, send email to icy-so... at googlegroups.com.
+> >>> To view this discussion on the web visit https://groups.google.com/d/**
+> >>> msg/icy-software/-/2YDns-**bhefAJ<https://groups.google.com/d/msg/icy-software/-/2YDns-bhefAJ>
+> >>> .
+> >>> For more options, visit https://groups.google.com/**groups/opt_out<https://groups.google.com/groups/opt_out>
+> >>> .
+> >>>  
+> >>>  
+> >>>
+> >>>   -- 
+> >> You received this message because you are subscribed to the Google Groups 
+> >> "Icy imaging" group.
+> >> To unsubscribe from this group and stop receiving emails from it, send an 
+> >> email to icy-software... at googlegroups.com <javascript:>.
+> >> To post to this group, send email to icy-so... at googlegroups.com<javascript:>
+> >> .
+> >> To view this discussion on the web visit 
+> >> https://groups.google.com/d/msg/icy-software/-/l-yO979eP_MJ.
+> >>
+> >> For more options, visit https://groups.google.com/groups/opt_out.
+> >>  
+> >>  
+> >>
+> >
+> >
+
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+
+
+
+From pietzsch at mpi-cbg.de  Tue May  7 08:26:33 2013
+From: pietzsch at mpi-cbg.de (Tobias Pietzsch)
+Date: Tue, 7 May 2013 15:26:33 +0200
+Subject: [ImageJ-devel] experiments with a new ops framework for imglib2
+Message-ID: <FAD28B20-195D-4CBD-908C-B2CF3548A52B@mpi-cbg.de>
+
+Hi all,
+
+during the mini-hackathon last week in Madison, I tried to play with some ideas
+of a framework that could possibly unify the currently existing Functions, Ops,
+and Region-Of-Interest concepts in imglib2. At this point it is all very
+experimental and there are several open problems (see end of this mail).
+Anyway, here are some details on what I tried. I realize that it's a very long
+mail, it would be great if some of you grind through and comment anyway :-)
+
+Goals
+=====
+
+The goals of the stuff in net.imglib2.ops.expressions were the following:
+
+* Make ops easier to manipulate (i.e. concatenate, iterate, ...) than with the
+  current net.imglib2.ops.operations design.
+
+* The same design should be apply on all levels, for example pixels, images,
+  lists of images, and mixtures of those things.
+
+* It should be possible to make this nearly as fast as hand-written code.
+  The goal is that you actually would use a pixelwise operation with an iterate
+  construct to apply it to images instead of handcoding loops. (Unfortunately,
+  there is still much room for performance improvement...)
+
+
+
+Basic Ops
+=========
+
+The basic idea is that an Op producing a result of type T is a Sampler<T>.
+  public interface Op< O > extends Sampler< O > {...}
+Calling op.get() triggers the computation and returns the result.
+
+
+
+The inputs to an Op should also be Sampler<T>.
+This makes it easy to connect either cursors etc or other Ops to the inputs.
+
+
+
+If you have something like
+  op1 = A + 10
+  op2 = B + C
+  op3 = op1 + op2
+then I think we need some concept of a "port" to refer to the inputs.
+We want to be able to say: Here is a binary operation "op3" which has two
+inputs "A" and "C", iterate that over (two input and one output) images!
+Note, that we leave port "C" open. Maybe later we want to connect a list of
+constants there when we iterate over sets of images.
+
+I made the following interface
+  public interface Port< T >
+  {
+    public void set( Sampler< T > sampler );
+    public void setConst( T t );
+  }
+where setConst() is just a convenience method supposed to create a Sampler<T>
+wrapper if you just want to connect a value directly.
+
+
+
+The interfaces for unary and binary operations can be asked for input and output
+ports:
+
+  public interface Op< O > extends Sampler< O >
+  {
+    public Port< O > output();
+  }
+
+  public interface UnaryOp< O, I1 > extends Op< O >
+  {
+    public Port< I1 > input1();
+  }
+
+  public interface BinaryOp< O, I1, I2  > extends Op< O >
+  {
+    public Port< I1 > input1();
+    public Port< I2 > input2();
+  }
+
+
+
+Lets look at an example of creating and using a binary op.
+(All examples can be found in net.imglib2.ops.expression.examples on the
+roi-experiments branch.)
+  public static void addExample1(
+        final Img< FloatType > inputA,
+        final Img< FloatType > inputB,
+        final Img< FloatType > output )
+  {
+    final Cursor< FloatType > ca = inputA.cursor();
+    final Cursor< FloatType > cb = inputB.cursor();
+    final Cursor< FloatType > cc = output.cursor();
+
+    final Add< FloatType > op = new Add< FloatType >();
+    op.input1().set( ca );
+    op.input2().set( cb );
+    op.output().set( cc );
+
+    while ( cc.hasNext() )
+    {
+      ca.fwd();
+      cb.fwd();
+      cc.fwd();
+      op.get();
+    }
+  }
+The op is created using new Add<FloatType>() which creates a
+BinaryOp<FloatType,FloatType,FloatType> with undefined inputs and outputs.
+Then we connect cursors over the input and output images to the ops ports
+and manually iterate over all pixels in the input and output image using a
+while loop and fwd()ing all cursors.
+
+Alternatively, we could have connected the cursors when constructing the op
+    final Add< FloatType > op = new Add< FloatType >( cc, ca, cb );
+or even used a static Ops creator method
+    final Add< FloatType > op = Ops.add( cc, ca, cb );
+
+
+
+If we look at the implementation of Add it is actually quite harmless.
+Boilerplate code for implementing Ports etc is inherited from AbstractBinaryOp.
+  public final class Add< T extends NumericType< T > >
+      extends AbstractBinaryOp< T, T, T >
+  {
+    public Add()
+    {}
+
+    public Add( final Sampler< T > output,
+        final Sampler< T > input1, final Sampler< T > input2 )
+    {
+      super( output, input1, input2 );
+    }
+
+    @Override
+    public T get()
+    {
+      final T t = output.get();
+      t.set( input1.get() );
+      t.add( input2.get() );
+      return t;
+    }
+
+    protected Add( final Add< T > expression )
+    {
+      super( expression );
+    }
+
+    @Override
+    public Add< T > copy()
+    {
+      return new Add< T >( this );
+    }
+  }
+
+
+
+Iterating Ops
+=============
+
+Next, lets use an Iteration construct to apply the pixel op to the images
+instead of doing the iteration manually.
+  public static void addExample2(
+      final Img< FloatType > inputA,
+      final Img< FloatType > inputB,
+      final Img< FloatType > output )
+  {
+    final Add< FloatType > pixelOp = new Add< FloatType >();
+    final BinaryIterate< FloatType, FloatType, FloatType > op =
+      new BinaryIterate<FloatType, FloatType, FloatType>( pixelOp );
+
+    // setConst(t) creates a new Sampler<T> object whose get() returns t.
+    op.input1().setConst( inputA );
+    op.input2().setConst( inputB );
+    op.output().setConst( output );
+    op.get();
+  }
+We "lift" the binary pixel op to a binary operation on IterableIntervals using a
+BinaryIterate operation.  BinaryIterate< A, B, C > is a
+BinaryOp< IterableInterval<A>, IterableInterval<B>, IterableInterval<C> >.
+So next we connect the input and output images to its ports, call get() once
+and are done.
+
+Alternatively,
+  Ops.compute( op, output, inputA, inputB );
+would do the connecting and get()ing for us.
+
+We can even write the whole addExample2 in one line:
+  Ops.compute( Ops.iterate( Ops.<FloatType>add() ), output, inputA, inputB );
+
+
+
+Chaining Ops
+============
+
+Lets create a slightly more complex pixelwise binary operation on inputs i1 and
+i2 that computes ( ( 100 + i1 ) + i2 ). Then we use the BinaryIterate operation
+and run it on the input and output images.
+  public static void addExample3(
+      final Img< FloatType > inputA,
+      final Img< FloatType > inputB,
+      final Img< FloatType > output )
+  {
+    final Add< FloatType > innerpixelop =
+      Ops.add( Ops.floatTemp(), Ops.floatConstant( 100 ), null );
+    final Add< FloatType > outerpixelop =
+      Ops.add( null, innerpixelop, null );
+    final WrapBinary<FloatType,FloatType,FloatType> pixelop =
+      Ops.wrap( outerpixelop, innerpixelop.input2(), outerpixelop.input2() );
+
+    final BinaryIterate< FloatType, FloatType, FloatType > op =
+      Ops.iterate( pixelop );
+    Ops.compute( op, output, inputA, inputB );
+  }
+First we create innerpixelop to compute (100 + i1) and store the result in a
+temporary variable (created using Ops.floatTemp()). Note that the second input
+port is null for now. Later we want BinaryIterate to connect a cursor to it.
+Next we create outerpixelop to compute (innerpixelop + i2). Again, the second
+input port is null.
+Now we have a tree of ops that should be presented to BinaryIterate as a
+BinaryOp. Therefore, we need to create a wrapper by specifying one Op (output)
+and two input ports. This happens in Ops.wrap(). outerpixelop is the op that
+provides the result, and the two ports we left set to null are the input ports.
+
+
+It would be nice to be able to write the pixelop construction compactly in one
+line. However, above we need the innerpixelop and outerpixel intermediate
+variables because we need to access innerpixelop.input2() and
+outerpixelop.input2() in order to construct the WrapBinary!
+
+Therefore, I have PortRef objects, which can act as names for ports.
+Introducing PortRefs i1 and i2,
+    final PortRef< FloatType > i1 = new PortRef< FloatType >();
+    final PortRef< FloatType > i2 = new PortRef< FloatType >();
+we can rewrite the above to
+    final Add< FloatType > innerpixelop =
+      Ops.add( Ops.floatTemp(), Ops.floatConstant( 100 ), i1 );
+    final Add< FloatType > outerpixelop =
+      Ops.add( null, innerpixelop, i2 );
+    final WrapBinary< FloatType, FloatType, FloatType > pixelop =
+      Ops.wrap( outerpixelop, i1, i2 );
+or in one (very long) line
+    final BinaryIterate< FloatType, FloatType, FloatType > op = Ops.iterate(
+      Ops.wrap(
+        Ops.add(null, Ops.add(Ops.floatTemp(), Ops.floatConstant(100), i1), i2),
+        i1, i2 ) );
+
+Now if only we could get rid of having to create the PortRefs...
+
+
+
+More "Lifting" Ops
+==================
+
+One more helpful tool I played with is a Reduce operation. Given a binary
+operation *:(x,y)->z, it is applied recursively to a sequence [a,b,d,...] as
+((((a*b)*c)*d)*...)
+
+Example:
+  public static void main( final String[] args )
+  {
+    final float[] data = new float[] { 12, 7, 4, 100, 9, 30, 34, 97.2f, 13.4f };
+    final Img< FloatType > imgA = ArrayImgs.floats( data, data.length );
+
+    final IntervalReduce< FloatType > reduceMin =
+      Ops.reduce( Ops.<FloatType>min() );
+    reduceMin.input1().setConst( imgA );
+    reduceMin.output().setConst( new FloatType() );
+    System.out.println( "minimum is " + reduceMin.get().get() );
+
+    System.out.println( "maximum is " +
+      Ops.compute( Ops.reduce( Ops.<FloatType>max() ), new FloatType(), imgA ));
+
+    System.out.println( "sum is " +
+      Ops.compute( Ops.reduce( Ops.<FloatType>add() ), new FloatType(), imgA ));
+  }
+First we create a 1D test image containing some values.
+Then we compute the minimum, maximum, and sum of the values by reduce with
+pixelwise min, max, and add.
+
+For the minimum operation, I have written it a bit more verbose than for the
+other two: IntervalReduce<T> is an Op that implements the reduce operation. It
+is a UnaryOp<T, IterableInterval<T>>. It is constructed with a BinaryOp<T,T,T>, 
+done here with the Ops.reduce() static convenience method.
+
+
+
+Final example. A reduce operation as the one discussed before, takes an
+IterableInterval<T> and computes a T. Now assume that the IterableInterval is
+a subset of pixels in an image, for instance all pixels within a hypersphere
+centered at X. The reduce the would compute for example the minimum of those
+pixels. Now if we can move the Hypersphere to different center X, compute the
+minimum there etc, and write the minima to another image, we have a minimum
+filter.
+
+With the region-of-iterest stuff (that the roi-experiments branch was actually
+about) we can do that easily.
+  public static void main( final String[] args ) throws ImgIOException
+  {
+    final String fn = "/Users/pietzsch/workspace/data/DrosophilaWing.tif";
+    final int span = 2;
+
+    final ArrayImgFactory<FloatType> factory = new ArrayImgFactory<FloatType>();
+    final FloatType type = new FloatType();
+    final Img<FloatType> imgInput = new ImgOpener().openImg(fn, factory, type);
+    final Img<FloatType> imgOutput = factory.create(imgInput, type);
+
+    // a min filter using 2D hypersphere neighborhoods of radius 3.
+    final RegionFilter< FloatType, BoolType, HyperSphereRegion > op =
+      Ops.regionfilter( new HyperSphereRegion( 2, 3 ),
+                        Ops.reduce( Ops.<FloatType>min() ) );
+    Ops.compute( op, imgOutput, Views.extendBorder( imgInput ) );
+
+    // ... or a sum filter using 5x5 hyperbox neighborhoods ...
+    Ops.compute( Ops.regionfilter(
+        new HyperBoxRegion( Intervals.createMinMax( -2, -2, 2, 2 ) ),
+        Ops.reduce( Ops.<FloatType>add() ) ),
+      imgOutput, Views.extendBorder( imgInput ) );
+
+    // ... or a max filter using hypersphere neighborhoods of radius 5 ...
+    Ops.compute( Ops.regionfilter(
+        new HyperSphereRegion( 2, 5 ),
+        Ops.reduce( Ops.<FloatType>max() ) ),
+      imgOutput, Views.extendBorder( imgInput ) );
+
+    ImageJFunctions.show( imgInput, "input" );
+    ImageJFunctions.show( imgOutput, "filtered" );
+  }
+Note that in the RegionFilter op that we construct we lift the reduce operation
+that is already a lifted pixel operation to obtain a
+UnaryOp< IterableInterval<T>, IterableInterval<IterableInterval<T> > >.
+I think that this also shows that the "ROI stuff" we proposed in the Dundee
+hackathon fits very nicely into this framework (however that ROI stuff is still
+completely unoptimized, so the examples above are ... slow).
+
+
+Problems
+========
+Performance:
+We have seen that we now are at nesting levels where the JIT becomes quite
+unpredictable. So performance tuning for this stuff is not easy. In Madison,
+Johannes showed that for special cases we can become very fast using javassist
+to basically compile it ourselves.
+
+Temporaries:
+One problem that is completely unsolved in this proposal is the creation of
+temporary results (pixels, images, etc...). I had discussions with Christian
+Dietz about this, because they really need this in KNIME. I mainly remember,
+that there are all kinds of problems and we couldn't come up with a satisfying
+solution. Christian, maybe you can comment a bit, on what the requirements for
+temporary creation are.
+
+Copying Ops:
+For parallelization it is necessary that we copy Ops (which can be rather
+complicated nested trees) in order to run on partitions of the input data in
+parallel. This is not trivial, because the copying mechanism has to decide
+which temporaries to recreate, reassign ports between copied ops, etc...
+
+Samplers everywhere:
+Ok, so this was the original idea of the design, but sometimes it introduces
+an additional layer of indirection. Not always though: For instance if you
+connect accessors to the input and output of an op this actually avoids copying
+the data. I couldn't see a nice way around it, but maybe someone else does!
+
+
+
+Ok, if you've read this far, thanks a lot! If you want to take a closer look,
+it's all in the "roi-experiments" branch of imglib2, in package net.imglib2.ops.expression.
+
+Comments and suggestions are very welcome.
+
+best regards,
+Tobias
+
+From christian.dietz at uni-konstanz.de  Wed May  8 02:55:53 2013
+From: christian.dietz at uni-konstanz.de (Christian Dietz)
+Date: Wed, 08 May 2013 09:55:53 +0200
+Subject: [ImageJ-devel] experiments with a new ops framework for imglib2
+In-Reply-To: <FAD28B20-195D-4CBD-908C-B2CF3548A52B@mpi-cbg.de>
+References: <FAD28B20-195D-4CBD-908C-B2CF3548A52B@mpi-cbg.de>
+Message-ID: <518A0509.4000805@uni-konstanz.de>
+
+Hi Tobias,
+
+this sounds amazing. I'm looking forward to adapt our KNIME related code 
+to the new ops/ROIs. See below for some comments on the problems you 
+mentioned.
+
+Am 05/07/2013 03:26 PM, schrieb Tobias Pietzsch:
+> Problems
+> ========
+> Performance:
+> We have seen that we now are at nesting levels where the JIT becomes quite
+> unpredictable. So performance tuning for this stuff is not easy. In Madison,
+> Johannes showed that for special cases we can become very fast using javassist
+> to basically compile it ourselves.
+
+This is really important for us. We should think about optimizing
+the iteration over special ROIs like 0-1-planes in a n-dimensional 
+image, as we already started in Octobre 
+(https://github.com/imagej/imglib/tree/subinterval-cursor).
+
+> Temporaries:
+> One problem that is completely unsolved in this proposal is the creation of
+> temporary results (pixels, images, etc...). I had discussions with Christian
+> Dietz about this, because they really need this in KNIME. I mainly remember,
+> that there are all kinds of problems and we couldn't come up with a satisfying
+> solution. Christian, maybe you can comment a bit, on what the requirements for
+> temporary creation are.
+
+If you concatenate operations, you are often not interested in the 
+intermediate results. For example if you do n-iterations of a 
+morphological erode, you really just need to know the final output.
+If you process tons of images, one may want to avoid creating an output 
+(e.g. a temporary image) for each of the intermediate results, as in 
+many cases one temporary image is sufficient.
+
+So the requirements would be, that if you concatenate ops, some 
+OperationBuilder is capable to reduce the amount of created temporary 
+images. Ideally, the OperationBuilder would also recognize, that e.g. a 
+Img<FloatType> could be used as a Img<BitType> temporary image.
+
+> Copying Ops:
+> For parallelization it is necessary that we copy Ops (which can be rather
+> complicated nested trees) in order to run on partitions of the input data in
+> parallel. This is not trivial, because the copying mechanism has to decide
+> which temporaries to recreate, reassign ports between copied ops, etc...
+
+This is also crucial for us. As we already run the current ops in 
+parallel on partitions of the input data.
+Two more questions: Are there plans to merge your 
+implementations/concept of ROIs with the work of Lee? What about 
+Labelings in ImgLib2 and ImageJ2, did you talk about them?
+
+Best regards,
+
+Christian
+
+
+From schindelin at wisc.edu  Sat May 11 12:01:42 2013
+From: schindelin at wisc.edu (Johannes Schindelin)
+Date: Sat, 11 May 2013 12:01:42 -0500 (CDT)
+Subject: [ImageJ-devel] Tons of "back to normal" Jenkins messages
+Message-ID: <alpine.DEB.1.00.1305111142160.8213@s15462909.onlinehome-server.info>
+
+Hi all,
+
+those of you who subscribed to imagej-builds will have gotten a flurry of
+"Build is back to normal" messages. While this is soothing, the absence of
+mails claiming that the builds failed might be discomforting.
+
+The reason those mails were not sent is actually the same reason as why
+those builds failed in the first place: Jenkins' JVM ran out of PermSpace.
+
+So what is PermSpace? This is the area of the memory in which the JVM
+stores things that are supposed never to be unloaded from memory. Like
+class definitions. In Java 1.7, you can actually mark a URLClassLoader as
+no longer required, but in Java 1.6 this is not the case. There are
+workarounds with the garbage collector going around on demand to clean
+those class definitions which fell out of use when their corresponding
+class loaders get garbage collected. Contrary to my belief, this
+functionality is opt-in, not opt-out in Java 1.6.
+
+But why did Jenkins run out of PermSpace to begin with?
+
+Alas, this is my fault. In my endeavor to show the changes of the
+Stable-Fiji job (i.e. the changes in the uploaded files), I had to fake a
+Subversion changelog (the Changes in Jenkins are tied very tightly to an
+SCM, even if just parsing the persisted list of changes). To make that
+happen, I had to instantiate a class loader because the Groovy Postbuild
+script generating those Changes did not have a default class loader that
+knew about the Subversion ChangeLog classes.
+
+So I punted and built a URLClassLoader myself. Everytime the Stable-Fiji
+job ran, which apparently was quite, quite often.
+
+I should have researched a little more back then and found the place in
+Jenkins where it loads its plugins itself. I did that now and fixed the
+Stable-Fiji job.
+
+However, I could be all wrong and the PermSpace issue is not at all caused
+by that URLClassLoader thingie, but rather by something as mundane as the
+mere fact that we run a gazillion jobs on Jenkins. Well, maybe not a
+gazillion. At the moment the tally is 170. Quite something, still.
+
+So let's be wary and if we find that Jenkins is stuck (i.e. its CPU load
+on dev is 99-100%), let's first inspect the respective /proc/<pid>/fd/ to
+find the (probably deleted by the logrotator) log and cat it into a file
+for future inspection. If the issue is PermSpace again, we might need to
+simply increase the PermSpace with -XX:MaxPermSize=<memory> and/or require
+the surefire plugin to fork by passing the -Dsurefire.forkMode=once
+property (since a couple of recent unit tests in ImageJ/Fiji actually use
+custom ClassLoaders).
+
+All the current work on this issue can be found here:
+
+http://trac.imagej.net/ticket/1863
+
+The bug is marked as resolved because I expect the Stable-Fiji
+configuration to have been the culprit, but if the issue arises again,
+please reopen that ticket instead of adding a new one.
+
+Thank you for your attention,
+Dscho
+
+
+From ctrueden at wisc.edu  Mon May 13 10:12:10 2013
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Mon, 13 May 2013 10:12:10 -0500
+Subject: [ImageJ-devel] ImageJA pom-scijava version
+Message-ID: <CADN69ykA-RHZuWrG9-QQtz05GgyrtEgnP8VuU7a0pDw4yc60-w@mail.gmail.com>
+
+Hi everyone (mostly Dscho),
+
+FYI, Jenkins undid a bump in ImageJA's pom.xml from 1.35 to 1.38:
+https://github.com/fiji/ImageJA/commit/9f2ffb4e01c6f9853dfee08c6e9eb4870da4cf19
+
+Looks like the script will need a tweak to avoid that in the future.
+
+Regards,
+Curtis
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130513/53a84cb7/attachment.html>
+
+From schindelin at wisc.edu  Mon May 13 15:48:21 2013
+From: schindelin at wisc.edu (Johannes Schindelin)
+Date: Mon, 13 May 2013 15:48:21 -0500 (CDT)
+Subject: [ImageJ-devel] ImageJA pom-scijava version
+In-Reply-To: <CADN69ykA-RHZuWrG9-QQtz05GgyrtEgnP8VuU7a0pDw4yc60-w@mail.gmail.com>
+References: <CADN69ykA-RHZuWrG9-QQtz05GgyrtEgnP8VuU7a0pDw4yc60-w@mail.gmail.com>
+Message-ID: <alpine.DEB.1.00.1305131506180.8213@s15462909.onlinehome-server.info>
+
+Hi Curtis,
+
+On Mon, 13 May 2013, Curtis Rueden wrote:
+
+> FYI, Jenkins undid a bump in ImageJA's pom.xml from 1.35 to 1.38:
+> https://github.com/fiji/ImageJA/commit/9f2ffb4e01c6f9853dfee08c6e9eb4870da4cf19
+> 
+> Looks like the script will need a tweak to avoid that in the future.
+
+The idea is indeed that it updates to the latest pom-scijava version
+whenever ImageJ is synchronized (not more often, to prevent problems with
+deploying the same ij version multiple times).
+
+Note that it did not happen with the most recent update:
+
+https://github.com/fiji/ImageJA/commit/99e224cf27f85f5c1ea8fbf741d7112d1b1fbacc
+
+And note that the problem you pointed out was caused by the Jenkins job. I
+had another look and it seems I missed that Maven 2 does not update the
+"latest" tag when deploying, even when the property updateReleaseInfo is
+set. But the "release" tag is...
+
+I fixed it in the latest commit to the 'tools' branch of ImageJA (which is
+used by the Jenkins job), so the next ImageJ 1 deployment should update
+automatically to the most recent pom-scijava version (1.41 at time of
+writing).
+
+Thanks for the report!
+Dscho
+
+
+From Johannes.Schindelin at gmx.de  Tue May 14 12:42:37 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Tue, 14 May 2013 12:42:37 -0500 (CDT)
+Subject: [ImageJ-devel] Announcment: personal update sites
+Message-ID: <alpine.DEB.1.00.1305141157230.8213@s15462909.onlinehome-server.info>
+
+Dear all,
+
+one of Fiji's most important contributions to the ImageJ community is
+probably the updater. It makes it easy to stay up-to-date with 3rdparty
+plugins, and it makes it easy for anybody to make their plugins, scripts
+and macros available to every ImageJ user. See the list here (and extend
+it if you see something missing):
+
+	http://fiji.sc/List_of_update_sites
+
+All that is required to offer an update site is some webserver.
+
+To make that easier -- to take away the requirement of having a webserver
+-- a couple of weeks ago, I suggested to use Dropbox to serve one's own
+site: http://fiji.sc/How_to_set_up_and_populate_an_update_site#Dropbox;
+Unfortunately, I can no longer recommend using Dropbox to offer an update
+site due to a recent change in Dropbox' service.
+
+So after some brainstorming with the good LOCI people, in particular Kevin
+Eliceiri and Curtis Rueden, we decided that we can do much better than
+to rely on Dropbox: we now offer personal update sites for everyone.
+
+For security reasons, you need an account on the Fiji Wiki [*1*] and after
+that, you can direct your web browser to
+
+	http://fiji.sc/Special:ChangeUploadPassword
+
+and initialize your personal update site which will be hosted at
+http://sites.imagej.net/<username>/ (where <username> is your name on the
+Fiji Wiki). When you do so, please do not forget to add your site to
+http://fiji.sc/List_of_update_sites.
+
+Over the course of the next weeks, we will work on making this easier from
+within the updater, both for initializing your own personal update site as
+well as following any update site listed on the page
+http://fiji.sc/List_of_update_sites.
+
+Have fun, and add a ton of update sites,
+Johannes & the rest of LOCI
+
+Footnote *1*: It is hard to imagine what an amount of maintenance a simple
+Wiki requires (and so will the personal update sites). We still want to
+offer that service to the ImageJ community because of the benefits, of
+course. To strike a balance between ease-of-use and maintenance cost, we
+currently require new accounts to be verified via emails, but not more
+(i.e. we no longer require new accounts to be added by someone with an
+existing account). Of course, we are always open to suggestions how to
+improve things!
+
+
+From grislis at wisc.edu  Tue May 14 13:56:12 2013
+From: grislis at wisc.edu (Aivar Grislis)
+Date: Tue, 14 May 2013 13:56:12 -0500
+Subject: [ImageJ-devel] LUT ranges
+Message-ID: <519288CC.10804@wisc.edu>
+
+This e-mail discusses some issues regarding what I would call the LUT 
+range, the min/max value that a LUT is mapped to.
+
+My motivation comes from SLIM Plugin:  In SLIM Plugin the min/max LUT 
+range is used to colorized fitted pixels and also to control the range 
+of generated histograms.  Suppose a user has fitted some data that has 
+been gathered for multiple spectral channels.  It would be useful to be 
+able to combine all of the channels when setting min/max, to see how the 
+channels relate to each other, and also to be able to set an individual 
+channel min/max independently, to zoom in on an individual channel.  I 
+can discuss further upon request.
+
+IJ1 only supported one min/max range per image, so only a combined 
+channels LUT range is possible.  IJ2 supports more than one, but it's 
+limited:
+
+IJ2 currently supports individual RealLUTConverters and hence individual 
+min/max ranges only for the special-cased CHANNEL Axis. Having 
+individual RealLUTConverters is essential to the way RGB images are 
+rendered (you need separate red, green, and blue converters).  However 
+being able to specify separate ranges is actually not important in that 
+case.
+
+(Currently there's a bug in DefaultDatasetView 
+http://trac.imagej.net/ticket/1866 . For RGB images each channel 
+converter is autoscaled independently, which only distorts the colors.  
+You want to set the same scale for all.  Here's a thought experiment:  
+Suppose you have an all-blue image with one gray pixel.  The only red in 
+the entire image is in that gray pixel.  You don't want to autoscale 
+that red component value so it becomes the maximal value possible.  See 
+the attached image for 1866.)
+
+For more flexibility I'd suggest adding two new properties to the Axis 
+class:  One would be whether it supports multiple LUTs.  The other would 
+be whether LUT ranges should be combined.
+
+The default would be for both properties to be false.  We'd have to 
+ensure they are both true in the RGB, CHANNEL Axis situation. Otherwise 
+a programmer could tweak these settings before the dataset is displayed, 
+especially when setting up a custom Axis type.
+
+Thanks!
+Aivar
+
+
+
+
+
+From michael.zinsmaier at gmx.de  Wed May 15 08:08:10 2013
+From: michael.zinsmaier at gmx.de (Michael Zinsmaier)
+Date: Wed, 15 May 2013 15:08:10 +0200
+Subject: [ImageJ-devel] ImageJ - KNIME Integration: open questions
+Message-ID: <519388BA.60608@gmx.de>
+
+Hi all,
+
+after you guys have made so much progress during the hackathon, we felt 
+motivated to review ourKNIME-ImageJ2 integration and try to further 
+improve it, as we want to have everything set-up when you release 
+ImageJ2 ;-)
+
+Anyway, we discussed several things and a lot of questions came up 
+concerning ImageJ2:
+
+* The previewcheckbox in many dialogsis a bit problematic for us because 
+(at the moment) we cannot support it
+properly. We usethe ImageJ2 dialog building tools and thus always get a
+preview checkbox if the plugin supports this. Would it be possible to 
+add a flag that
+surpresses previews checkboxes during dialog building?
+
+* Why is the threshold plugin an interactive command? This for instance 
+prevents the plugin from  beeing executing in headless mode (and hence 
+from appearing as a KNIME node), which might be desirable in some use  
+cases.
+
+* Dynamic Commands: is there a way to determine if a command is dynamic?
+   Currently wedo it via an instanceof-check which was commented with 
+(probaby by Curtis):
+           // SO UGLY! TODO: add API to ModuleInfo to query whether the 
+module has
+         // dynamically generated inputs and outputs (isStatic? isDynamic?)
+
+* In KNIME we are currently loading all available plugins in the 
+classpath which are headless executable. But therewith plugins like 
+"Help", "Easteregg", "LoadDataSet" will appear as KNIME nodes as well. 
+However they can't do anything useful in the KNIME context (as they are  
+ImageJ2 specific). Are you planing to re-organize the plugins, e.g. such 
+that plugins, which are interesting for any application reside in their 
+own jar-file?
+
+* Will the package path of the plugins be stable after ImageJ2 1.0.0 was 
+released?
+
+*Are there  plans how the "dimension selection" will be integrated into 
+ImageJ2,  i.e. how algorithms can be run on arbitrary dimensions? 
+(Mapping from  AxesNames to indicies of dimensions in images). Can we 
+help here?(see Doc hackathon!?)
+
+* ROIs: Are there plans to support Labelings in ImageJ2? Or will 
+Labelings somehow be replaced in the future?
+*In thecurrent snapshot (compared to beta6) some functionalitywas 
+movedfrom  ImageJ to sifio / scijava (e.g. the Services). Regarding this 
+some questions:
+   - Is "new ImageJ(services...)" replaced by"new Context(...services)"?
+- How can we query the ImageJ version? (previously ImageJ.VERSION)
+   - the log level system property "System.setProperty("ij.log.level", 
+"error");"doesn't
+seem to  work any more can you confirm this?
+   -The services seem to have some  ordering requirements now, we had to 
+move
+ModuleService behind  MenuService in the constructor call to avoid a 
+null pointer during
+initialization (onEvent(ModulesAddedEvent) was called before 
+initialize). Is there a defined
+     service order?
+((So far, we have tons of ideas where we could do more things together. 
+Thank you in advance for answering all these questions ;)))
+
+Cheers,
+
+Martin, Christian and Michael Z.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130515/b02e4bbe/attachment.html>
+
+From leek at broadinstitute.org  Wed May 15 09:35:50 2013
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Wed, 15 May 2013 10:35:50 -0400
+Subject: [ImageJ-devel] ImageJ - KNIME Integration: open questions
+In-Reply-To: <519388BA.60608@gmx.de>
+References: <519388BA.60608@gmx.de>
+Message-ID: <CAHLFyjd0rDNJz+0SM7QB1-s_t5JG1VhVJr7spA6X-70bSf5njQ@mail.gmail.com>
+
+On Wed, May 15, 2013 at 9:08 AM, Michael Zinsmaier <michael.zinsmaier at gmx.de
+> wrote:
+
+>  Hi all,
+>
+>  after you guys have made so much progress during the hackathon, we felt
+> motivated to review our KNIME-ImageJ2 integration and try to further
+> improve it, as we want to have everything set-up when you release ImageJ2
+> ;-)
+>
+> Anyway, we discussed several things and a lot of questions came up
+> concerning ImageJ2:
+>
+> Thx guys, lots of stuff below also applies to CellProfiler running
+ImageJ2.0 plugins.
+
+>
+
+>  * Why is the threshold  plugin an interactive command? This for instance
+> prevents the plugin from  beeing executing in headless mode (and hence from
+> appearing as a KNIME node), which might be desirable in some use  cases.
+>
+
+I hadn't looked at the interactive commands with regard to CellProfiler. It
+looks like "buttons" could be interpreted as possible headless actions that
+could be performed... at least in some cases. I have CellProfiler analogs
+for most of the parameter types, but that one is new. I'm thinking that I
+might detect whether a plugin is interactive and, if so, display each
+button as a radio button, so that the button's callback could be executed
+in the context of a CellProfiler headless pipeline execution. For
+Threshold, I can see reasons for executing the callbacks for "auto",
+"apply" and "delete" in a headless context - unfortunately, CellProfiler
+would convert the ThresholdOverlay to a binary mask, so "delete" doesn't
+make much sense for us.
+
+>
+>
+> * In KNIME we are currently loading all available plugins in the classpath
+> which are headless executable. But therewith plugins like "Help",
+> "Easteregg", "LoadDataSet" will appear as KNIME nodes as well. However they
+> can't do anything useful in the KNIME context (as they are  ImageJ2
+> specific). Are you planing to re-organize the plugins, e.g. such that
+> plugins, which are interesting for any application reside in their own
+> jar-file?
+>
+> We're using the plugin menu system to display the available plugins
+hierarchically in CellProfiler. I guess that some plugins are less useful
+or arguably useless but who am I to judge (I'm still waiting for someone to
+publish a paper citing use of CellProfiler's "game of life" morphology
+operation). Hopefully, the hierarchy leads the users to the most useful
+plugins. I could see some other sort of annotation, e.g. "tags", but I
+don't want to be the one who manages the tag ongology ;-).
+
+
+>
+ * Are there  plans how the "dimension selection" will be integrated into
+> ImageJ2,  i.e. how algorithms can be run on arbitrary dimensions? (Mapping
+> from  AxesNames to indicies of dimensions in images). Can we help here? (see
+> Doc hackathon!?)
+>
+> CellProfiler does use the AxesNames to transform the N-dimensional arrays
+to our representation. I think that there's enough functionality in the
+restructuring commands to let power users pull out individual hyperplanes
+for processing in lower dimensions. Perhaps a "ExtractData" and
+"ReplaceData" plugin need to be added in order to create and reinsert
+lower-dimension datasets?
+
+There isn't any mechanism to handle AxesNames algebra - you don't know
+whether a plugin will reduce or augment a dataset's dimensionality or
+whether a plugin is only suitable for two dimensions. CellProfiler and, I'm
+guessing, Knime do a lot of matching inputs to outputs which is a contrast
+to ImageJ. I think our users can handle this ambiguity (they'd use only 2-D
+or N-D plugins adaptable to 2-D), but annotation improvements here would be
+nice.
+
+ * ROIs: Are there plans to support Labelings in ImageJ2? Or will Labelings
+> somehow be replaced in the future?
+>
+
+We're also looking forward to labelings being first-class entities in
+ImageJ, partially my fault personally that this is not better developed.
+I'm mostly interested in us having some agreement for the datatype for a
+labeling parameter - I think that once we have that sort of
+interoperability, we'll see lots of progress in both segmentation methods
+and use of segmentations in downstream analysis.
+
+>
+>
+> * In the current snapshot (compared to beta6) some functionality was movedfrom  ImageJ to sifio / scijava (e.g. the Services).  Regarding
+> this some questions:
+>   - The services seem to have some  ordering requirements now, we had to
+> move
+>     ModuleService behind  MenuService in the constructor call to avoid a
+> null pointer during
+>     initialization (onEvent(ModulesAddedEvent) was called before
+> initialize). Is there a defined
+>     service order?
+>
+It would be nice to have a headless service profile, something a little
+easier than leaving out the AWT dependent jars and crossing fingers.
+CellProfiler might instantiate both GUI and headless contexts in the same
+JVM - we'd appreciate being able to choose the UI configuration in a simple
+way.
+
+>
+>
+
+> ((So far, we have tons of ideas where we could do more things together.
+> Thank you in advance for answering all these questions ;) ))
+>
+
+Likewise, thank you, thank you - don't misconstrue any of the above as
+demands. We all appreciate how all of this is being done and the time it
+all takes.
+
+>
+>  Cheers,
+>
+>  Martin, Christian and Michael Z.
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130515/3967a1f5/attachment-0001.html>
+
+From schindelin at wisc.edu  Thu May 16 10:40:41 2013
+From: schindelin at wisc.edu (Johannes Schindelin)
+Date: Thu, 16 May 2013 10:40:41 -0500 (CDT)
+Subject: [ImageJ-devel] (no subject)
+Message-ID: <alpine.DEB.1.00.1305161034250.8213@s15462909.onlinehome-server.info>
+
+Hi Curtis,
+
+I need to upload a new updater very soon now, but I fear that recent
+changes in scijava-common require quite a lot of things to be uploaded. In
+particular, the simulated complete-site upload says this:
+
+-- snip --
+$ app/ImageJ.app/ImageJ-linux64 --update upload-complete-site --simulate ImageJ
+[... checksumming ...]
+Done: Checksummer
+
+Would upload new version of jars/jai_imageio-4.5-SNAPSHOT.jar
+Warning: obsolete 'jars/lwf-stubs-4.5-SNAPSHOT.jar' still installed!
+Would upload new version of jars/ij-io-2.0.0-SNAPSHOT.jar
+Would upload new version of jars/ij-updater-core-2.0.0-SNAPSHOT.jar
+Would upload new version of jars/ij-updater-ssh-2.0.0-SNAPSHOT.jar
+Would upload new version of jars/ij-ui-common-awt-2.0.0-SNAPSHOT.jar
+Would upload new version of jars/ome-xml-4.5-SNAPSHOT.jar
+Would upload new version of jars/ij-core-2.0.0-SNAPSHOT.jar
+Would upload new version of jars/ij-ui-2.0.0-SNAPSHOT.jar
+Would upload new version of jars/ij-legacy-2.0.0-SNAPSHOT.jar
+Would upload new version of jars/ij-data-2.0.0-SNAPSHOT.jar
+Would upload new version of jars/scifio-4.5-SNAPSHOT.jar
+Would mark jars/loci-common-4.4.9-SNAPSHOT.jar obsolete
+Would upload new version of jars/ij-util-swing-2.0.0-SNAPSHOT.jar
+Would upload new version of jars/imglib2-algorithms-2.0.0-SNAPSHOT.jar
+Would upload new version of jars/imglib2-2.0.0-SNAPSHOT.jar
+Would upload new version of jars/ij-ui-swing-2.0.0-SNAPSHOT.jar
+Would upload new version of jars/ij-ui-swing-commands-2.0.0-SNAPSHOT.jar
+Warning: obsolete 'jars/loci-legacy-4.5-SNAPSHOT.jar' still installed!
+Warning: obsolete 'jars/scifio-devel-4.5-SNAPSHOT.jar' still installed!
+Warning: obsolete 'jars/turbojpeg-4.5-SNAPSHOT.jar' still installed!
+Would upload new version of jars/scijava-common-1.4.0.jar
+Would upload new version of jars/ij-commands-2.0.0-SNAPSHOT.jar
+Would upload new version of jars/ij-updater-webdav-2.0.0-SNAPSHOT.jar
+Use --force to ignore warnings and upload anyway
+-- snap --
+
+In particular, I am worried about these four lines:
+
+Warning: obsolete 'jars/lwf-stubs-4.5-SNAPSHOT.jar' still installed!
+Warning: obsolete 'jars/loci-legacy-4.5-SNAPSHOT.jar' still installed!
+Warning: obsolete 'jars/scifio-devel-4.5-SNAPSHOT.jar' still installed!
+Warning: obsolete 'jars/turbojpeg-4.5-SNAPSHOT.jar' still installed!
+
+It appears to me that that would interfere with the careful downgrading of
+Bio-Formats... what should I do?
+
+Ciao,
+Dscho
+
+P.S.: I will now test whether the uploader still works if I copy over only
+jars/*updater*.jar to Fiji; this would allow us to punt on Bio-Formats for
+now and do a full upload later, at a more opportune time.
+
+
+From schindelin at wisc.edu  Thu May 16 10:50:59 2013
+From: schindelin at wisc.edu (Johannes Schindelin)
+Date: Thu, 16 May 2013 10:50:59 -0500 (CDT)
+Subject: [ImageJ-devel] (no subject)
+In-Reply-To: <alpine.DEB.1.00.1305161034250.8213@s15462909.onlinehome-server.info>
+References: <alpine.DEB.1.00.1305161034250.8213@s15462909.onlinehome-server.info>
+Message-ID: <alpine.DEB.1.00.1305161049180.8213@s15462909.onlinehome-server.info>
+
+Hi Curtis,
+
+On Thu, 16 May 2013, Johannes Schindelin wrote:
+
+> P.S.: I will now test whether the uploader still works if I copy over
+> only jars/*updater*.jar to Fiji; this would allow us to punt on
+> Bio-Formats for now and do a full upload later, at a more opportune
+> time.
+
+In my test, things worked as expected, so I uploaded just the
+jars/*updater*.jar files (actually, the Swing UI did not need any update
+-- that will change when I fixed the 0-width input fields).
+
+So no need to stress right now.
+
+Ciao,
+Dscho
+
+P.S.: In the interest of keeping the stress level low, I decided to
+postpone making the UploaderService a SingletonService ;-)
+
+
+From schindelin at wisc.edu  Thu May 16 10:53:14 2013
+From: schindelin at wisc.edu (Johannes Schindelin)
+Date: Thu, 16 May 2013 10:53:14 -0500 (CDT)
+Subject: [ImageJ-devel] To upload the updater or not to upload the updater,
+ was Re:  (no subject)
+In-Reply-To: <alpine.DEB.1.00.1305161049180.8213@s15462909.onlinehome-server.info>
+References: <alpine.DEB.1.00.1305161034250.8213@s15462909.onlinehome-server.info>
+	<alpine.DEB.1.00.1305161049180.8213@s15462909.onlinehome-server.info>
+Message-ID: <alpine.DEB.1.00.1305161052040.8213@s15462909.onlinehome-server.info>
+
+Hi again,
+
+I just realized that I managed to send this without a subject, so I'm
+responding to the thread with a mail that sets the subject properly...
+
+Sorry,
+Dscho
+
+
+From ctrueden at wisc.edu  Thu May 16 10:52:54 2013
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Thu, 16 May 2013 10:52:54 -0500
+Subject: [ImageJ-devel] (no subject)
+In-Reply-To: <alpine.DEB.1.00.1305161034250.8213@s15462909.onlinehome-server.info>
+References: <alpine.DEB.1.00.1305161034250.8213@s15462909.onlinehome-server.info>
+Message-ID: <CADN69ykxMHrxsgAti-DrUb4V2AFR9EmiQ2MHWB2+KhTNZZzZMg@mail.gmail.com>
+
+Hi Dscho,
+
+> In particular, I am worried about these four lines:
+>
+> Warning: obsolete 'jars/lwf-stubs-4.5-SNAPSHOT.jar' still installed!
+> Warning: obsolete 'jars/loci-legacy-4.5-SNAPSHOT.jar' still installed!
+> Warning: obsolete 'jars/scifio-devel-4.5-SNAPSHOT.jar' still installed!
+> Warning: obsolete 'jars/turbojpeg-4.5-SNAPSHOT.jar' still installed!
+
+Yes, and these lines would also break things:
+
+> Would upload new version of jars/jai_imageio-4.5-SNAPSHOT.jar
+> Would upload new version of jars/ome-xml-4.5-SNAPSHOT.jar
+> Would upload new version of jars/scifio-4.5-SNAPSHOT.jar
+> Would mark jars/loci-common-4.4.9-SNAPSHOT.jar obsolete
+
+> P.S.: I will now test whether the uploader still works if I copy over
+> only jars/*updater*.jar to Fiji; this would allow us to punt on
+> Bio-Formats for now and do a full upload later, at a more opportune
+> time.
+
+OK, that may be the best plan for now. We will have to resolve this within
+the next two weeks anyway for the ImageJ 2.0.0-beta-7 release. My current
+thinking is that we can ship Bio-Formats 4.4.x stable releases (used by the
+"LOCI plugins") in parallel to SCIFIO development releases (used by
+ImgLib2/ImageJ2/etc.), because they have different package structures. We
+will just need to strip out the loci.* packages from the SCIFIO development
+releases first, which should be easy enough.
+
+Another thing we could do to assist with this sort of thing is to set up a
+test update site for ImageJ, and one for Fiji. Then we can verify behavior
+in a safe environment before uploading to the real update sites.
+
+Regards,
+Curtis
+
+
+On Thu, May 16, 2013 at 10:40 AM, Johannes Schindelin
+<schindelin at wisc.edu>wrote:
+
+> Hi Curtis,
+>
+> I need to upload a new updater very soon now, but I fear that recent
+> changes in scijava-common require quite a lot of things to be uploaded. In
+> particular, the simulated complete-site upload says this:
+>
+> -- snip --
+> $ app/ImageJ.app/ImageJ-linux64 --update upload-complete-site --simulate
+> ImageJ
+> [... checksumming ...]
+> Done: Checksummer
+>
+> Would upload new version of jars/jai_imageio-4.5-SNAPSHOT.jar
+> Warning: obsolete 'jars/lwf-stubs-4.5-SNAPSHOT.jar' still installed!
+> Would upload new version of jars/ij-io-2.0.0-SNAPSHOT.jar
+> Would upload new version of jars/ij-updater-core-2.0.0-SNAPSHOT.jar
+> Would upload new version of jars/ij-updater-ssh-2.0.0-SNAPSHOT.jar
+> Would upload new version of jars/ij-ui-common-awt-2.0.0-SNAPSHOT.jar
+> Would upload new version of jars/ome-xml-4.5-SNAPSHOT.jar
+> Would upload new version of jars/ij-core-2.0.0-SNAPSHOT.jar
+> Would upload new version of jars/ij-ui-2.0.0-SNAPSHOT.jar
+> Would upload new version of jars/ij-legacy-2.0.0-SNAPSHOT.jar
+> Would upload new version of jars/ij-data-2.0.0-SNAPSHOT.jar
+> Would upload new version of jars/scifio-4.5-SNAPSHOT.jar
+> Would mark jars/loci-common-4.4.9-SNAPSHOT.jar obsolete
+> Would upload new version of jars/ij-util-swing-2.0.0-SNAPSHOT.jar
+> Would upload new version of jars/imglib2-algorithms-2.0.0-SNAPSHOT.jar
+> Would upload new version of jars/imglib2-2.0.0-SNAPSHOT.jar
+> Would upload new version of jars/ij-ui-swing-2.0.0-SNAPSHOT.jar
+> Would upload new version of jars/ij-ui-swing-commands-2.0.0-SNAPSHOT.jar
+> Warning: obsolete 'jars/loci-legacy-4.5-SNAPSHOT.jar' still installed!
+> Warning: obsolete 'jars/scifio-devel-4.5-SNAPSHOT.jar' still installed!
+> Warning: obsolete 'jars/turbojpeg-4.5-SNAPSHOT.jar' still installed!
+> Would upload new version of jars/scijava-common-1.4.0.jar
+> Would upload new version of jars/ij-commands-2.0.0-SNAPSHOT.jar
+> Would upload new version of jars/ij-updater-webdav-2.0.0-SNAPSHOT.jar
+> Use --force to ignore warnings and upload anyway
+> -- snap --
+>
+> In particular, I am worried about these four lines:
+>
+> Warning: obsolete 'jars/lwf-stubs-4.5-SNAPSHOT.jar' still installed!
+> Warning: obsolete 'jars/loci-legacy-4.5-SNAPSHOT.jar' still installed!
+> Warning: obsolete 'jars/scifio-devel-4.5-SNAPSHOT.jar' still installed!
+> Warning: obsolete 'jars/turbojpeg-4.5-SNAPSHOT.jar' still installed!
+>
+> It appears to me that that would interfere with the careful downgrading of
+> Bio-Formats... what should I do?
+>
+> Ciao,
+> Dscho
+>
+> P.S.: I will now test whether the uploader still works if I copy over only
+> jars/*updater*.jar to Fiji; this would allow us to punt on Bio-Formats for
+> now and do a full upload later, at a more opportune time.
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130516/88f404f9/attachment.html>
+
+From schindelin at wisc.edu  Thu May 16 11:25:38 2013
+From: schindelin at wisc.edu (Johannes Schindelin)
+Date: Thu, 16 May 2013 11:25:38 -0500 (CDT)
+Subject: [ImageJ-devel] (no subject)
+In-Reply-To: <CADN69ykxMHrxsgAti-DrUb4V2AFR9EmiQ2MHWB2+KhTNZZzZMg@mail.gmail.com>
+References: <alpine.DEB.1.00.1305161034250.8213@s15462909.onlinehome-server.info>
+	<CADN69ykxMHrxsgAti-DrUb4V2AFR9EmiQ2MHWB2+KhTNZZzZMg@mail.gmail.com>
+Message-ID: <alpine.DEB.1.00.1305161123040.8213@s15462909.onlinehome-server.info>
+
+Hi Curtis,
+
+On Thu, 16 May 2013, Curtis Rueden wrote:
+
+> > In particular, I am worried about these four lines:
+> >
+> > Warning: obsolete 'jars/lwf-stubs-4.5-SNAPSHOT.jar' still installed!
+> > Warning: obsolete 'jars/loci-legacy-4.5-SNAPSHOT.jar' still installed!
+> > Warning: obsolete 'jars/scifio-devel-4.5-SNAPSHOT.jar' still installed!
+> > Warning: obsolete 'jars/turbojpeg-4.5-SNAPSHOT.jar' still installed!
+> 
+> Yes, and these lines would also break things:
+> 
+> > Would upload new version of jars/jai_imageio-4.5-SNAPSHOT.jar
+> > Would upload new version of jars/ome-xml-4.5-SNAPSHOT.jar
+> > Would upload new version of jars/scifio-4.5-SNAPSHOT.jar
+> > Would mark jars/loci-common-4.4.9-SNAPSHOT.jar obsolete
+
+Bummer.
+
+> > P.S.: I will now test whether the uploader still works if I copy over
+> > only jars/*updater*.jar to Fiji; this would allow us to punt on
+> > Bio-Formats for now and do a full upload later, at a more opportune
+> > time.
+> 
+> OK, that may be the best plan for now. We will have to resolve this within
+> the next two weeks anyway for the ImageJ 2.0.0-beta-7 release. My current
+> thinking is that we can ship Bio-Formats 4.4.x stable releases (used by the
+> "LOCI plugins") in parallel to SCIFIO development releases (used by
+> ImgLib2/ImageJ2/etc.), because they have different package structures. We
+> will just need to strip out the loci.* packages from the SCIFIO development
+> releases first, which should be easy enough.
+> 
+> Another thing we could do to assist with this sort of thing is to set up a
+> test update site for ImageJ, and one for Fiji. Then we can verify behavior
+> in a safe environment before uploading to the real update sites.
+
+The problem with all of this is that both you and me are not exactly in
+dear need of yet more tasks.
+
+So I would like to suggest humbly that we should just switch back things
+to the bleeding edge as we used to? Do not get me wrong, I would love to
+have stable versions, but history taught us that that's not what our users
+need. And if we can somehow support our users better while having a
+lighter maintenance burden, what could be wrong with that?
+
+Ciao,
+Dscho
+
+
+From Johannes.Schindelin at gmx.de  Fri May 17 19:12:42 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Sat, 18 May 2013 02:12:42 +0200 (CEST)
+Subject: [ImageJ-devel] Big objects in the imglib2 repository
+Message-ID: <alpine.DEB.1.00.1305180205110.650@s15462909.onlinehome-server.info>
+
+Hi Stephan,
+
+when I just pulled imglib2, it was an eighteen-megabyte download even if I
+had fetched from that repository recently. Helper script to the rescue:
+
+https://github.com/msysgit/msysgit/blob/master/bin/what-made-this-repo-so-large.sh
+
+It looks like you added a 20MB examples/l1-cns.tif.zip as an example to
+the copy-realtransformaccess branch. Maybe it would be a good idea to
+learn from the problems we had with precompiled/ in Fiji (and that you
+pointed out so eloquently a couple of times which triggered my suggesting
+using soft-commits, then introducing the precompiled-fallback hack to
+Fake, and finally our switch to Maven, all to address the same problem)
+and try to keep binary data out of the source code repository?
+
+I could imagine that we either switch to a binary-only repository for
+example files, or that we use fiji.sc/samples/ for them?
+
+Ciao,
+Johannes
+
+
+From saalfeld at mpi-cbg.de  Sat May 18 02:09:29 2013
+From: saalfeld at mpi-cbg.de (Stephan Saalfeld)
+Date: Sat, 18 May 2013 09:09:29 +0200
+Subject: [ImageJ-devel] Big objects in the imglib2 repository
+In-Reply-To: <alpine.DEB.1.00.1305180205110.650@s15462909.onlinehome-server.info>
+References: <alpine.DEB.1.00.1305180205110.650@s15462909.onlinehome-server.info>
+Message-ID: <1368860969.2167.3.camel@saalfeld-thinkpad>
+
+Sorry---I hadn't thought that through.  I wanted to have this file at a
+location that is easy to access when reporting the 50x slower opening
+ZIP-files issue with ImgOpener recently.  It then made it into master
+when I merged which I regret.  Do you have a good solution for removing
+it without breaking everybodies history?
+
+Sorry again,
+Stephan
+
+
+
+On Sat, 2013-05-18 at 02:12 +0200, Johannes Schindelin wrote: 
+> Hi Stephan,
+> 
+> when I just pulled imglib2, it was an eighteen-megabyte download even if I
+> had fetched from that repository recently. Helper script to the rescue:
+> 
+> https://github.com/msysgit/msysgit/blob/master/bin/what-made-this-repo-so-large.sh
+> 
+> It looks like you added a 20MB examples/l1-cns.tif.zip as an example to
+> the copy-realtransformaccess branch. Maybe it would be a good idea to
+> learn from the problems we had with precompiled/ in Fiji (and that you
+> pointed out so eloquently a couple of times which triggered my suggesting
+> using soft-commits, then introducing the precompiled-fallback hack to
+> Fake, and finally our switch to Maven, all to address the same problem)
+> and try to keep binary data out of the source code repository?
+> 
+> I could imagine that we either switch to a binary-only repository for
+> example files, or that we use fiji.sc/samples/ for them?
+> 
+> Ciao,
+> Johannes
+
+
+
+From saalfeld at mpi-cbg.de  Sat May 18 02:25:01 2013
+From: saalfeld at mpi-cbg.de (Stephan Saalfeld)
+Date: Sat, 18 May 2013 09:25:01 +0200
+Subject: [ImageJ-devel] Big objects in the imglib2 repository
+In-Reply-To: <1368860969.2167.3.camel@saalfeld-thinkpad>
+References: <alpine.DEB.1.00.1305180205110.650@s15462909.onlinehome-server.info>
+	<1368860969.2167.3.camel@saalfeld-thinkpad>
+Message-ID: <1368861901.2167.6.camel@saalfeld-thinkpad>
+
+Following up:
+
+This may be interesting:
+
+http://stackoverflow.com/questions/2164581/remove-file-from-git-repository-history
+
+But I would strongly prefer to hear your opinion before starting any
+action. 
+
+And a second note:  All that has not to be done immediately.  First
+things first, depending on your preferred priority queue.
+
+Thanks in advance,
+Stephan
+
+
+
+On Sat, 2013-05-18 at 09:09 +0200, Stephan Saalfeld wrote: 
+> Sorry---I hadn't thought that through.  I wanted to have this file at a
+> location that is easy to access when reporting the 50x slower opening
+> ZIP-files issue with ImgOpener recently.  It then made it into master
+> when I merged which I regret.  Do you have a good solution for removing
+> it without breaking everybodies history?
+> 
+> Sorry again,
+> Stephan
+> 
+> 
+> 
+> On Sat, 2013-05-18 at 02:12 +0200, Johannes Schindelin wrote: 
+> > Hi Stephan,
+> > 
+> > when I just pulled imglib2, it was an eighteen-megabyte download even if I
+> > had fetched from that repository recently. Helper script to the rescue:
+> > 
+> > https://github.com/msysgit/msysgit/blob/master/bin/what-made-this-repo-so-large.sh
+> > 
+> > It looks like you added a 20MB examples/l1-cns.tif.zip as an example to
+> > the copy-realtransformaccess branch. Maybe it would be a good idea to
+> > learn from the problems we had with precompiled/ in Fiji (and that you
+> > pointed out so eloquently a couple of times which triggered my suggesting
+> > using soft-commits, then introducing the precompiled-fallback hack to
+> > Fake, and finally our switch to Maven, all to address the same problem)
+> > and try to keep binary data out of the source code repository?
+> > 
+> > I could imagine that we either switch to a binary-only repository for
+> > example files, or that we use fiji.sc/samples/ for them?
+> > 
+> > Ciao,
+> > Johannes
+> 
+> 
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+
+
+
+From Johannes.Schindelin at gmx.de  Sat May 18 11:52:16 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Sat, 18 May 2013 18:52:16 +0200 (CEST)
+Subject: [ImageJ-devel] Big objects in the imglib2 repository
+In-Reply-To: <1368860969.2167.3.camel@saalfeld-thinkpad>
+References: <alpine.DEB.1.00.1305180205110.650@s15462909.onlinehome-server.info>
+	<1368860969.2167.3.camel@saalfeld-thinkpad>
+Message-ID: <alpine.DEB.1.00.1305181814030.650@s15462909.onlinehome-server.info>
+
+Hi Stephan,
+
+On Sat, 18 May 2013, Stephan Saalfeld wrote:
+
+> Sorry---I hadn't thought that through.  I wanted to have this file at a
+> location that is easy to access when reporting the 50x slower opening
+> ZIP-files issue with ImgOpener recently.
+
+A much better solution, as we worked out in the little project back in
+Dresden about regression testing in TrakEM2 (which was your idea, thanks!)
+is to generate test data.
+
+> It then made it into master when I merged which I regret.
+
+It already made downloads large when only the topic branch existed.
+
+> Do you have a good solution for removing it without breaking everybodies
+> history?
+
+There is no removing it without breaking everybody's history; in the best
+case, people will just get merge conflicts, in the worst case, they will
+add the large file back without realizing.
+
+Sorry,
+Johannes
+
+
+From saalfeld at mpi-cbg.de  Tue May 21 04:41:28 2013
+From: saalfeld at mpi-cbg.de (Stephan Saalfeld)
+Date: Tue, 21 May 2013 11:41:28 +0200
+Subject: [ImageJ-devel] Big objects in the imglib2 repository
+In-Reply-To: <alpine.DEB.1.00.1305181814030.650@s15462909.onlinehome-server.info>
+References: <alpine.DEB.1.00.1305180205110.650@s15462909.onlinehome-server.info>
+	<1368860969.2167.3.camel@saalfeld-thinkpad>
+	<alpine.DEB.1.00.1305181814030.650@s15462909.onlinehome-server.info>
+Message-ID: <1369129288.11230.60.camel@saalfeld-thinkpad>
+
+Hi Johannes,
+
+> > Do you have a good solution for removing it without breaking everybodies
+> > history?
+> 
+> There is no removing it without breaking everybody's history; in the best
+> case, people will just get merge conflicts, in the worst case, they will
+> add the large file back without realizing.
+> 
+
+Ok.  But if I understand it correctly, we could clean up the repository
+for all future checkouts with little friction for all existing copies?
+What do you think about the following:
+
+I commit the file as deleted.  We wait for a few days and announce that
+everybody may please pull to make sure that the file is gone.  Then, I
+rebase away the commit that first introduced the file and force push to
+master and the branch where it occurred.  Following pulls would may be
+claim a merge conflict that is easy to resolve.  What do you think.
+
+Best,
+Stephan
+
+
+
+From Johannes.Schindelin at gmx.de  Tue May 21 09:19:53 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Tue, 21 May 2013 16:19:53 +0200 (CEST)
+Subject: [ImageJ-devel] Big objects in the imglib2 repository
+In-Reply-To: <1369129288.11230.60.camel@saalfeld-thinkpad>
+References: <alpine.DEB.1.00.1305180205110.650@s15462909.onlinehome-server.info>
+	<1368860969.2167.3.camel@saalfeld-thinkpad>
+	<alpine.DEB.1.00.1305181814030.650@s15462909.onlinehome-server.info>
+	<1369129288.11230.60.camel@saalfeld-thinkpad>
+Message-ID: <alpine.DEB.1.00.1305211618410.650@s15462909.onlinehome-server.info>
+
+Hi Stephan,
+
+On Tue, 21 May 2013, Stephan Saalfeld wrote:
+
+> > > Do you have a good solution for removing it without breaking
+> > > everybodies history?
+> > 
+> > There is no removing it without breaking everybody's history; in the
+> > best case, people will just get merge conflicts, in the worst case,
+> > they will add the large file back without realizing.
+> 
+> Ok.  But if I understand it correctly, we could clean up the repository
+> for all future checkouts with little friction for all existing copies?
+> What do you think about the following:
+> 
+> I commit the file as deleted.  We wait for a few days and announce that
+> everybody may please pull to make sure that the file is gone.  Then, I
+> rebase away the commit that first introduced the file and force push to
+> master and the branch where it occurred.  Following pulls would may be
+> claim a merge conflict that is easy to resolve.  What do you think.
+
+That's not how Git works. The rebase would cause all the problems
+mentioned in earlier mails. If you could dictate to everybody who cloned
+ImgLib, it would be possible.
+
+Ciao,
+Johannes
+
+
+From chris at gaiag.net  Thu May 23 18:46:57 2013
+From: chris at gaiag.net (Chris)
+Date: Thu, 23 May 2013 16:46:57 -0700
+Subject: [ImageJ-devel] Failure of Netbeans project to build
+Message-ID: <802F5945-7A6F-43FE-B91D-D310C3061825@gaiag.net>
+
+I have been developing an ImageJ project in Netbeans but suddenly I can no longer build the project or run it to get an instance of ImageJ.  I get the following error, but I do not know enough about Maven to resolve it on my own.  I'm hoping someone can assist me in getting the project running again.  
+
+Thanks,
+
+Chris Coulon
+
+Here is the error 
+
+Failed to execute goal on project APC_: Could not resolve dependencies for project sc.fiji:APC_:jar:1.0.0: Failed to collect dependencies for [net.imagej:ij:jar:[1.45s,) (compile), org.swinglabs:swing-layout:jar:1.0.3 (compile), unknown.binary:AbsoluteLayout:jar:SNAPSHOT (compile), imagej:ij:jar:2.0-SNAPSHOT (compile)]: Failed to read artifact descriptor for mpicbg:imglib:jar:2.0-SNAPSHOT: Could not transfer artifact net.imglib2:pom-imglib:pom:2.0-SNAPSHOT from/to unifi.it (http://ulisse.pin.unifi.it:8081/nexus/content/groups/open.repos): Connection to http://ulisse.pin.unifi.it:8081 refused: Operation timed out -> [Help 1]
+
+To see the full stack trace of the errors, re-run Maven with the -e switch.
+Re-run Maven using the -X switch to enable full debug logging.
+
+
+
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130523/23152bda/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Thu May 23 21:10:55 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Fri, 24 May 2013 04:10:55 +0200 (CEST)
+Subject: [ImageJ-devel] Failure of Netbeans project to build
+In-Reply-To: <802F5945-7A6F-43FE-B91D-D310C3061825@gaiag.net>
+References: <802F5945-7A6F-43FE-B91D-D310C3061825@gaiag.net>
+Message-ID: <alpine.DEB.1.00.1305240409030.650@s15462909.onlinehome-server.info>
+
+Hi Chris,
+
+On Thu, 23 May 2013, Chris wrote:
+
+> I have been developing an ImageJ project in Netbeans but suddenly I can
+> no longer build the project or run it to get an instance of ImageJ.  I
+> get the following error, but I do not know enough about Maven to resolve
+> it on my own.  I'm hoping someone can assist me in getting the project
+> running again.  
+
+Are you sure that you have a section like this in your pom.xml?
+
+-- snipsnap --
+<!-- NB: for project parent -->
+<repositories>
+	<repository>
+		<id>imagej.releases</id>
+		<url>http://maven.imagej.net/content/repositories/releases</url>
+	</repository>
+	<repository>
+		<id>imagej.snapshots</id>
+		<url>http://maven.imagej.net/content/repositories/snapshots</url>
+	</repository>
+</repositories>
+
+
+From chris at gaiag.net  Thu May 23 21:32:34 2013
+From: chris at gaiag.net (Chris)
+Date: Thu, 23 May 2013 19:32:34 -0700
+Subject: [ImageJ-devel] Failure of Netbeans project to build
+In-Reply-To: <alpine.DEB.1.00.1305240409030.650@s15462909.onlinehome-server.info>
+References: <802F5945-7A6F-43FE-B91D-D310C3061825@gaiag.net>
+	<alpine.DEB.1.00.1305240409030.650@s15462909.onlinehome-server.info>
+Message-ID: <E84F65B5-CEFF-4C8D-AC58-7F0DAA808819@gaiag.net>
+
+> Hi Chris,
+> 
+> On Thu, 23 May 2013, Chris wrote:
+> 
+>> I have been developing an ImageJ project in Netbeans but suddenly I can
+>> no longer build the project or run it to get an instance of ImageJ.  I
+>> get the following error, but I do not know enough about Maven to resolve
+>> it on my own.  I'm hoping someone can assist me in getting the project
+>> running again.  
+> 
+> Are you sure that you have a section like this in your pom.xml?
+> 
+> -- snipsnap --
+> <!-- NB: for project parent -->
+> <repositories>
+> 	<repository>
+> 		<id>imagej.releases</id>
+> 		<url>http://maven.imagej.net/content/repositories/releases</url>
+> 	</repository>
+> 	<repository>
+> 		<id>imagej.snapshots</id>
+> 		<url>http://maven.imagej.net/content/repositories/snapshots</url>
+> 	</repository>
+> </repositories>
+
+Yes, that section is definitely there.  Here is my pom.xml:
+
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+		http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>org.scijava</groupId>
+		<artifactId>pom-scijava</artifactId>
+		<version>1.25</version>
+	</parent>
+
+	<groupId>sc.fiji</groupId>
+	<artifactId>APC_</artifactId>
+	<version>1.0.0</version>
+
+	<name>plugins/APC_.jar</name>
+	<description>A Maven project implementing an ImageJ 1.x plugin</description>
+
+	<dependencies>
+		<dependency>
+			<groupId>net.imagej</groupId>
+			<artifactId>ij</artifactId>
+			<version>${imagej1.version}</version>
+		</dependency>
+	 <dependency>
+	  <groupId>org.swinglabs</groupId>
+	  <artifactId>swing-layout</artifactId>
+	  <version>1.0.3</version>
+	 </dependency>
+	 <dependency>
+	  <groupId>unknown.binary</groupId>
+	  <artifactId>AbsoluteLayout</artifactId>
+	  <version>SNAPSHOT</version>
+	 </dependency>
+	 <dependency>
+	  <groupId>imagej</groupId>
+	  <artifactId>ij</artifactId>
+	  <version>2.0-SNAPSHOT</version>
+	  <type>jar</type>
+	 </dependency>
+	</dependencies>
+
+	<!-- NB: for project parent -->
+	<repositories>
+		<repository>
+			<id>imagej.releases</id>
+			<url>http://maven.imagej.net/content/repositories/releases</url>
+		</repository>
+		<repository>
+			<id>imagej.snapshots</id>
+			<url>http://maven.imagej.net/content/repositories/snapshots</url>
+		</repository>
+	 <repository>
+	  <id>unknown-jars-temp-repo</id>
+	  <name>A temporary repository created by NetBeans for libraries and jars it could not identify. Please replace the dependencies in this repository with correct ones and delete this repository.</name>
+	  <url>file:${project.basedir}/lib</url>
+	 </repository>
+	</repositories>
+
+</project>
+
+
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130523/e1a35a73/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Fri May 24 10:46:15 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Fri, 24 May 2013 17:46:15 +0200 (CEST)
+Subject: [ImageJ-devel] Failure of Netbeans project to build
+In-Reply-To: <E84F65B5-CEFF-4C8D-AC58-7F0DAA808819@gaiag.net>
+References: <802F5945-7A6F-43FE-B91D-D310C3061825@gaiag.net>
+	<alpine.DEB.1.00.1305240409030.650@s15462909.onlinehome-server.info>
+	<E84F65B5-CEFF-4C8D-AC58-7F0DAA808819@gaiag.net>
+Message-ID: <alpine.DEB.1.00.1305241745050.650@s15462909.onlinehome-server.info>
+
+Hi Chris,
+
+On Thu, 23 May 2013, Chris wrote:
+
+> > On Thu, 23 May 2013, Chris wrote:
+> > 
+> >> I have been developing an ImageJ project in Netbeans but suddenly I can
+> >> no longer build the project or run it to get an instance of ImageJ.  I
+> >> get the following error, but I do not know enough about Maven to resolve
+> >> it on my own.  I'm hoping someone can assist me in getting the project
+> >> running again.  
+> > 
+> > Are you sure that you have a section like this in your pom.xml?
+> > 
+> > -- snipsnap --
+> > <!-- NB: for project parent -->
+> > <repositories>
+> > 	<repository>
+> > 		<id>imagej.releases</id>
+> > 		<url>http://maven.imagej.net/content/repositories/releases</url>
+> > 	</repository>
+> > 	<repository>
+> > 		<id>imagej.snapshots</id>
+> > 		<url>http://maven.imagej.net/content/repositories/snapshots</url>
+> > 	</repository>
+> > </repositories>
+> 
+> Yes, that section is definitely there.  Here is my pom.xml:
+> 
+> [...]
+> 
+> 	<!-- NB: for project parent -->
+> 	<repositories>
+> 		<repository>
+> 			<id>imagej.releases</id>
+> 			<url>http://maven.imagej.net/content/repositories/releases</url>
+> 		</repository>
+> 		<repository>
+> 			<id>imagej.snapshots</id>
+> 			<url>http://maven.imagej.net/content/repositories/snapshots</url>
+> 		</repository>
+> 	 <repository>
+> 	  <id>unknown-jars-temp-repo</id>
+> 	  <name>A temporary repository created by NetBeans for libraries and jars it could not identify. Please replace the dependencies in this repository with correct ones and delete this repository.</name>
+> 	  <url>file:${project.basedir}/lib</url>
+> 	 </repository>
+> 	</repositories>
+> 
+> </project>
+
+Yep, that should definitely work. Is there a place from where I can clone
+your source code repository so I can try to reproduce?
+
+Ciao,
+Johannes
+
+
+From Johannes.Schindelin at gmx.de  Fri May 24 14:12:07 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Fri, 24 May 2013 21:12:07 +0200 (CEST)
+Subject: [ImageJ-devel] ImgLib and SCIFIO
+Message-ID: <alpine.DEB.1.00.1305242100200.650@s15462909.onlinehome-server.info>
+
+r ImgLib developers & users,
+
+some of you might have noticed that a couple of Jenkins jobs failed in
+order to warn us that some code no longer compiles. The reason is that
+ImgLib2's ImgOpener (and also legacy-ImgLib1's) require instances of
+OMEXMLMetadata, and the public method in Bio-Formats to construct that
+instance was removed on April 29th of this year.
+
+The long-term plan, of course, is to not even require implementation
+details of the I/O layer -- such as the OME-XML data structures -- to be
+known by the calling class. In effect, we will migrate functionality of
+imglib2-io into SCIFIO.
+
+In the short-term, we worked around the issue by pasting the former code
+of the createOMEXMLMetadata() method.
+
+As for legacy-imglib1, the same work-around was put into place, but
+without the long-term plan to go to SCIFIO: legacy-imglib1 will eventually
+just join Milton on the beach for a Pina Colada.
+
+Ciao,
+Johannes
+
+P.S.: As always, feel free to comment or question what I wrote about. I am
+prepared to elaborate on any specifics, and to go into detail about the
+reasoning behind our decisions (but would like to save the time if nobody
+cares anyway ;-)).
+
+
+From coulonchris59 at gmail.com  Fri May 24 13:52:27 2013
+From: coulonchris59 at gmail.com (Chris)
+Date: Fri, 24 May 2013 11:52:27 -0700
+Subject: [ImageJ-devel] Failure of Netbeans project to build
+In-Reply-To: <alpine.DEB.1.00.1305240409030.650@s15462909.onlinehome-server.info>
+References: <802F5945-7A6F-43FE-B91D-D310C3061825@gaiag.net>
+	<alpine.DEB.1.00.1305240409030.650@s15462909.onlinehome-server.info>
+Message-ID: <CBFFC3E1-A728-40CE-857A-34184F71548C@gaiag.net>
+
+Below is the relevant feedback from my console that prevents me from building and running my project.  It seems to be linked to SNAPSHOT:
+
+Downloading: http://download.java.net/maven/2/unknown/binary/AbsoluteLayout/SNAPSHOT/AbsoluteLayout-SNAPSHOT.pom
+                  
+The POM for unknown.binary:AbsoluteLayout:jar:SNAPSHOT is missing, no dependency information available
+
+Downloading: http://download.java.net/maven/2/imagej/bf-imglib/2.0-SNAPSHOT/maven-metadata.xml
+Downloading: http://ulisse.pin.unifi.it:8081/nexus/content/groups/open.repos/imagej/bf-imglib/2.0-SNAPSHOT/maven-metadata.xml
+               
+Could not transfer metadata imagej:bf-imglib:2.0-SNAPSHOT/maven-metadata.xml from/to unifi.it (http://ulisse.pin.unifi.it:8081/nexus/content/groups/open.repos): Connection to http://ulisse.pin.unifi.it:8081 refused
+Failure to transfer imagej:bf-imglib:2.0-SNAPSHOT/maven-metadata.xml from http://ulisse.pin.unifi.it:8081/nexus/content/groups/open.repos was cached in the local repository, resolution will not be reattempted until the update interval of unifi.it has elapsed or updates are forced. Original error: Could not transfer metadata imagej:bf-imglib:2.0-SNAPSHOT/maven-metadata.xml from/to unifi.it (http://ulisse.pin.unifi.it:8081/nexus/content/groups/open.repos): Connection to http://ulisse.pin.unifi.it:8081 refused
+
+Downloading: http://ulisse.pin.unifi.it:8081/nexus/content/groups/open.repos/mpicbg/imglib/2.0-SNAPSHOT/maven-metadata.xml
+                    
+Could not transfer metadata mpicbg:imglib:2.0-SNAPSHOT/maven-metadata.xml from/to unifi.it (http://ulisse.pin.unifi.it:8081/nexus/content/groups/open.repos): Connection to http://ulisse.pin.unifi.it:8081 refused
+
+Downloaded: http://maven.imagej.net/content/repositories/snapshots/mpicbg/pom-imglib1/2.0-SNAPSHOT/maven-metadata.xml (353 B at 1.1 KB/sec)
+                      
+Could not transfer metadata mpicbg:pom-imglib1:2.0-SNAPSHOT/maven-metadata.xml from/to unifi.it (http://ulisse.pin.unifi.it:8081/nexus/content/groups/open.repos): Connection to http://ulisse.pin.unifi.it:8081 refused
+
+Downloading: http://ulisse.pin.unifi.it:8081/nexus/content/groups/open.repos/net/imglib2/pom-imglib/2.0-SNAPSHOT/maven-metadata.xml
+                     
+Could not transfer metadata net.imglib2:pom-imglib:2.0-SNAPSHOT/maven-metadata.xml from/to unifi.it (http://ulisse.pin.unifi.it:8081/nexus/content/groups/open.repos): Connection to http://ulisse.pin.unifi.it:8081 refused
+
+Downloading: http://ulisse.pin.unifi.it:8081/nexus/content/groups/open.repos/loci/loci-common/5.0-SNAPSHOT/maven-metadata.xml
+                       
+Could not transfer metadata loci:loci-common:5.0-SNAPSHOT/maven-metadata.xml from/to unifi.it (http://ulisse.pin.unifi.it:8081/nexus/content/groups/open.repos): Connection to http://ulisse.pin.unifi.it:8081 refused
+
+Downloaded: http://maven.imagej.net/content/repositories/snapshots/loci/bio-formats-base/5.0-SNAPSHOT/maven-metadata.xml (356 B at 1.2 KB/sec)
+                      
+Could not transfer metadata loci:bio-formats-base:5.0-SNAPSHOT/maven-metadata.xml from/to unifi.it (http://ulisse.pin.unifi.it:8081/nexus/content/groups/open.repos): Connection to http://ulisse.pin.unifi.it:8081 refused
+
+Downloaded: http://dev.loci.wisc.edu/maven2/snapshots/loci/bio-formats/5.0-SNAPSHOT/maven-metadata.xml (351 B at 1.1 KB/sec)
+                                                
+Could not transfer metadata loci:bio-formats:5.0-SNAPSHOT/maven-metadata.xml from/to unifi.it (http://ulisse.pin.unifi.it:8081/nexus/content/groups/open.repos): Connection to http://ulisse.pin.unifi.it:8081 refused
+
+Downloading: http://dev.loci.wisc.edu/maven2/thirdparty/loci/jai_imageio/5.0-SNAPSHOT/maven-metadata.xml
+                        
+Could not transfer metadata loci:jai_imageio:5.0-SNAPSHOT/maven-metadata.xml from/to unifi.it (http://ulisse.pin.unifi.it:8081/nexus/content/groups/open.repos): Connection to http://ulisse.pin.unifi.it:8081 refused
+
+Downloading: http://dev.loci.wisc.edu/maven2/thirdparty/loci/lwf-stubs/5.0-SNAPSHOT/maven-metadata.xml
+                                                                                              
+Could not transfer metadata loci:lwf-stubs:5.0-SNAPSHOT/maven-metadata.xml from/to unifi.it (http://ulisse.pin.unifi.it:8081/nexus/content/groups/open.repos): Connection to http://ulisse.pin.unifi.it:8081 refused
+
+Downloaded: http://dev.loci.wisc.edu/maven2/snapshots/loci/mdbtools-java/5.0-SNAPSHOT/maven-metadata.xml (353 B at 0.5 KB/sec)
+            
+Could not transfer metadata loci:mdbtools-java:5.0-SNAPSHOT/maven-metadata.xml from/to unifi.it (http://ulisse.pin.unifi.it:8081/nexus/content/groups/open.repos): Connection to http://ulisse.pin.unifi.it:8081 refused
+
+Downloading: http://dev.loci.wisc.edu/maven2/thirdparty/loci/metakit/5.0-SNAPSHOT/maven-metadata.xml
+                  
+Could not transfer metadata loci:metakit:5.0-SNAPSHOT/maven-metadata.xml from/to unifi.it (http://ulisse.pin.unifi.it:8081/nexus/content/groups/open.repos): Connection to http://ulisse.pin.unifi.it:8081 refused
+
+Downloading: http://dev.loci.wisc.edu/maven2/thirdparty/loci/ome-xml/5.0-SNAPSHOT/maven-metadata.xml
+                       
+Could not transfer metadata loci:ome-xml:5.0-SNAPSHOT/maven-metadata.xml from/to unifi.it (http://ulisse.pin.unifi.it:8081/nexus/content/groups/open.repos): Connection to http://ulisse.pin.unifi.it:8081 refused
+
+Downloaded: http://maven.imagej.net/content/repositories/snapshots/loci/poi-loci/5.0-SNAPSHOT/maven-metadata.xml (348 B at 0.9 KB/sec)
+                                               
+Could not transfer metadata loci:poi-loci:5.0-SNAPSHOT/maven-metadata.xml from/to unifi.it (http://ulisse.pin.unifi.it:8081/nexus/content/groups/open.repos): Connection to http://ulisse.pin.unifi.it:8081 refused
+------------------------------------------------------------------------
+BUILD FAILURE
+------------------------------------------------------------------------
+Total time: 17:51.217s
+Finished at: Fri May 24 06:20:31 PDT 2013
+Final Memory: 6M/76M
+------------------------------------------------------------------------
+Failed to execute goal on project APC_: Could not resolve dependencies for project sc.fiji:APC_:jar:1.0.0: Failed to collect dependencies for [net.imagej:ij:jar:[1.45s,) (compile), org.swinglabs:swing-layout:jar:1.0.3 (compile), unknown.binary:AbsoluteLayout:jar:SNAPSHOT (compile), imagej:ij:jar:2.0-SNAPSHOT (compile)]: Failed to read artifact descriptor for mpicbg:imglib:jar:2.0-SNAPSHOT: Could not transfer artifact net.imglib2:pom-imglib:pom:2.0-SNAPSHOT from/to unifi.it (http://ulisse.pin.unifi.it:8081/nexus/content/groups/open.repos): Connection to http://ulisse.pin.unifi.it:8081 refused: Operation timed out -> [Help 1]
+
+To see the full stack trace of the errors, re-run Maven with the -e switch.
+Re-run Maven using the -X switch to enable full debug logging.
+
+On May 23, 2013, at 7:10 PM, Johannes Schindelin wrote:
+
+> Hi Chris,
+> 
+> On Thu, 23 May 2013, Chris wrote:
+> 
+>> I have been developing an ImageJ project in Netbeans but suddenly I can
+>> no longer build the project or run it to get an instance of ImageJ.  I
+>> get the following error, but I do not know enough about Maven to resolve
+>> it on my own.  I'm hoping someone can assist me in getting the project
+>> running again.  
+> 
+> Are you sure that you have a section like this in your pom.xml?
+> 
+> -- snipsnap --
+> <!-- NB: for project parent -->
+> <repositories>
+> 	<repository>
+> 		<id>imagej.releases</id>
+> 		<url>http://maven.imagej.net/content/repositories/releases</url>
+> 	</repository>
+> 	<repository>
+> 		<id>imagej.snapshots</id>
+> 		<url>http://maven.imagej.net/content/repositories/snapshots</url>
+> 	</repository>
+> </repositories>
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130524/c03c62a9/attachment-0001.html>
+
+From Johannes.Schindelin at gmx.de  Fri May 24 14:51:43 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Fri, 24 May 2013 21:51:43 +0200 (CEST)
+Subject: [ImageJ-devel] Failure of Netbeans project to build
+In-Reply-To: <CBFFC3E1-A728-40CE-857A-34184F71548C@gaiag.net>
+References: <802F5945-7A6F-43FE-B91D-D310C3061825@gaiag.net>
+	<alpine.DEB.1.00.1305240409030.650@s15462909.onlinehome-server.info>
+	<CBFFC3E1-A728-40CE-857A-34184F71548C@gaiag.net>
+Message-ID: <alpine.DEB.1.00.1305242145300.650@s15462909.onlinehome-server.info>
+
+Hi Chris,
+
+On Fri, 24 May 2013, Chris wrote:
+
+> Below is the relevant feedback from my console that prevents me from
+> building and running my project.  It seems to be linked to SNAPSHOT:
+> 
+> Downloading:
+> http://download.java.net/maven/2/unknown/binary/AbsoluteLayout/SNAPSHOT/AbsoluteLayout-SNAPSHOT.pom
+>                   
+> The POM for unknown.binary:AbsoluteLayout:jar:SNAPSHOT is missing, no
+> dependency information available
+
+>From your POM you sent earlier, it appears as if you wanted to provide the
+AbsoluteLayout artifact via an in-repository repository in the lib/
+directory.
+
+I *suspect* that you simply copied AbsoluteLayout.jar into lib/, but that
+does not make lib/ a Maven repository. You have to "deploy" it there:
+
+	mvn deploy:deploy-file \
+		-DrepositoryId=unknown-jars-temp-repo \
+		-Dfile=AbsoluteLayout.jar \
+		-DgroupId=unknown.binary -DartifactId=AbsoluteLayout \
+		-Dversion=SNAPSHOT
+
+because Maven will add metadata about the version and use a standard
+directory layout there.
+
+I suspect, though that your version will trigger an error because it does
+not follow any convention I know of: SNAPSHOT versions still need to have
+a valid version prefix.
+
+Also, I suspect that you did not follow the help on
+http://fiji.sc/Maven#How_to_find_a_dependency.27s_groupId.2FartifactId.2Fversion_.28GAV.29.3F
+because I could find information about the AbsoluteLayout dependency
+pretty easily via our Maven repository:
+http://dev.imagejdev.org:8081/index.html#nexus-search;quick~absolutelayout
+
+Clicking on the RELEASE72 line, I got this:
+
+<dependency>
+  <groupId>org.netbeans.external</groupId>
+  <artifactId>AbsoluteLayout</artifactId>
+  <version>RELEASE72</version>
+</dependency>
+
+Ciao,
+Johannes
+
+
+From david.parsons at inria.fr  Mon May 27 03:46:09 2013
+From: david.parsons at inria.fr (David Parsons)
+Date: Mon, 27 May 2013 10:46:09 +0200
+Subject: [ImageJ-devel] IJ2 GUI
+Message-ID: <51A31D51.9020705@inria.fr>
+
+Hi all,
+
+I have a very simple and basic question : will ImageJ2 GUI be Swing 
+based or will you stick to AWT ?
+
+Thanks
+David
+
+
+From Johannes.Schindelin at gmx.de  Mon May 27 10:02:03 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Mon, 27 May 2013 17:02:03 +0200 (CEST)
+Subject: [ImageJ-devel] IJ2 GUI
+In-Reply-To: <51A31D51.9020705@inria.fr>
+References: <51A31D51.9020705@inria.fr>
+Message-ID: <alpine.DEB.1.00.1305271701010.650@s15462909.onlinehome-server.info>
+
+Hi David,
+
+On Mon, 27 May 2013, David Parsons wrote:
+
+> I have a very simple and basic question : will ImageJ2 GUI be Swing
+> based or will you stick to AWT ?
+
+The idea is to be independent of any specific windowing library and have
+UI plugins. The default will be Swing, but we also have proof-of-concept
+implementations (read: at this point incomplete) for AWT, SWT and Pivot.
+
+Ciao,
+Johannes
+
+
+From david.parsons at inria.fr  Mon May 27 11:00:35 2013
+From: david.parsons at inria.fr (David Parsons)
+Date: Mon, 27 May 2013 18:00:35 +0200
+Subject: [ImageJ-devel] IJ2 GUI
+In-Reply-To: <alpine.DEB.1.00.1305271701010.650@s15462909.onlinehome-server.info>
+References: <51A31D51.9020705@inria.fr>
+	<alpine.DEB.1.00.1305271701010.650@s15462909.onlinehome-server.info>
+Message-ID: <51A38323.6090501@inria.fr>
+
+OK, Thanks
+
+David
+
+
+Le 27/05/2013 17:02, Johannes Schindelin a ?crit :
+> Hi David,
+>
+> On Mon, 27 May 2013, David Parsons wrote:
+>
+>> I have a very simple and basic question : will ImageJ2 GUI be Swing
+>> based or will you stick to AWT ?
+> The idea is to be independent of any specific windowing library and have
+> UI plugins. The default will be Swing, but we also have proof-of-concept
+> implementations (read: at this point incomplete) for AWT, SWT and Pivot.
+>
+> Ciao,
+> Johannes
+
+
+
+From schindelin at wisc.edu  Tue May 28 16:18:28 2013
+From: schindelin at wisc.edu (Johannes Schindelin)
+Date: Tue, 28 May 2013 23:18:28 +0200 (CEST)
+Subject: [ImageJ-devel] 'loci-common.jar' issue resolved
+Message-ID: <alpine.DEB.1.00.1305282317170.650@s15462909.onlinehome-server.info>
+
+Hi Curtis,
+
+I stumbled over this issue again and found the problem, fixed it and
+uploaded a new updater:
+
+	https://github.com/imagej/imagej/commit/642b5b6f372bcf1eb976bb045c7d06fcb0d82775
+
+Ciao,
+Dscho
+
+
+From chris at gaiag.net  Fri May 31 03:53:38 2013
+From: chris at gaiag.net (Chris)
+Date: Fri, 31 May 2013 01:53:38 -0700
+Subject: [ImageJ-devel] ImageJ with java 1.7?
+Message-ID: <9C0E8133-F635-413B-85BC-1BDE63299F9A@gaiag.net>
+
+I am getting this error when trying to run my plugin in ImageJ after I developed the plugin in Netbeans 7.3:
+
+java.lang.UnsupportedClassVersionError: APC_ : Unsupported major.minor version 51.0
+ 
+This plugin requires Java 1.7 or later.
+
+Does ImageJ work with java 1.7?  I am using Mac OS 10.7.5 and the only java version on my machine is 1.7
+
+Thanks in advance for any help.
+
+Chris Coulon
+
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130531/387c3aa2/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Fri May 31 09:33:17 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Fri, 31 May 2013 16:33:17 +0200 (CEST)
+Subject: [ImageJ-devel] ImageJ with java 1.7?
+In-Reply-To: <9C0E8133-F635-413B-85BC-1BDE63299F9A@gaiag.net>
+References: <9C0E8133-F635-413B-85BC-1BDE63299F9A@gaiag.net>
+Message-ID: <alpine.DEB.1.00.1305311630220.650@s15462909.onlinehome-server.info>
+
+Hi Chris,
+
+On Fri, 31 May 2013, Chris wrote:
+
+> I am getting this error when trying to run my plugin in ImageJ after I
+> developed the plugin in Netbeans 7.3:
+> 
+> > java.lang.UnsupportedClassVersionError: APC_ : Unsupported major.minor
+> > version 51.0
+> >
+> > This plugin requires Java 1.7 or later.
+> 
+> Does ImageJ work with java 1.7?
+
+Well, it says that the plugin requires Java 1.7, not that ImageJ requires
+Java 1.7, although, to answer your question, ImageJ works with Java 1.7.
+
+> I am using Mac OS 10.7.5 and the only java version on my machine is 1.7
+
+This is another issue: MacOSX' Java 1.7 support is unfortunately not as
+stable as Java 1.6 support.
+
+Therefore I would suggest to configure Netbeans to target Java 1.6.
+
+Besides, it is always better to target *not* the latest and buggiest, but
+the most prevalent, in this case, Java 1.6, *especially* if you want to
+make your code available (which you should, as a scientist).
+
+Ciao,
+Johannes
+
+
+From G.Landini at bham.ac.uk  Fri May 31 09:49:36 2013
+From: G.Landini at bham.ac.uk (Gabriel Landini)
+Date: Fri, 31 May 2013 15:49:36 +0100
+Subject: [ImageJ-devel] ImageJ with java 1.7?
+In-Reply-To: <alpine.DEB.1.00.1305311630220.650@s15462909.onlinehome-server.info>
+References: <9C0E8133-F635-413B-85BC-1BDE63299F9A@gaiag.net>
+	<alpine.DEB.1.00.1305311630220.650@s15462909.onlinehome-server.info>
+Message-ID: <1455573.zJED34iAu8@linux-g.site>
+
+On Friday 31 May 2013 15:33:17 Johannes Schindelin wrote:
+> Well, it says that the plugin requires Java 1.7, not that ImageJ requires
+> Java 1.7, although, to answer your question, ImageJ works with Java 1.7.
+
+In Linux I still get the occasional frozen session with openJDK.
+Is there anybody else experiencing this?
+
+G.
+
+
+
+
+
+From Johannes.Schindelin at gmx.de  Fri May 31 09:59:15 2013
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Fri, 31 May 2013 16:59:15 +0200 (CEST)
+Subject: [ImageJ-devel] ImageJ with java 1.7?
+In-Reply-To: <1455573.zJED34iAu8@linux-g.site>
+References: <9C0E8133-F635-413B-85BC-1BDE63299F9A@gaiag.net>
+	<alpine.DEB.1.00.1305311630220.650@s15462909.onlinehome-server.info>
+	<1455573.zJED34iAu8@linux-g.site>
+Message-ID: <alpine.DEB.1.00.1305311658250.650@s15462909.onlinehome-server.info>
+
+Hi Gabriel,
+
+On Fri, 31 May 2013, Gabriel Landini wrote:
+
+> On Friday 31 May 2013 15:33:17 Johannes Schindelin wrote:
+> > Well, it says that the plugin requires Java 1.7, not that ImageJ
+> > requires Java 1.7, although, to answer your question, ImageJ works
+> > with Java 1.7.
+> 
+> In Linux I still get the occasional frozen session with openJDK.  Is
+> there anybody else experiencing this?
+
+I experienced worse: hard crashes (segmentation faults, to be precise).
+That's when I stopped using Java 1.7, but that was a year ago. I should go
+and re-test... ;-)
+
+Ciao,
+Dscho
+
+
+From chris at gaiag.net  Fri May 31 10:17:55 2013
+From: chris at gaiag.net (Chris)
+Date: Fri, 31 May 2013 08:17:55 -0700
+Subject: [ImageJ-devel] ImageJ with java 1.7?
+In-Reply-To: <alpine.DEB.1.00.1305311630220.650@s15462909.onlinehome-server.info>
+References: <9C0E8133-F635-413B-85BC-1BDE63299F9A@gaiag.net>
+	<alpine.DEB.1.00.1305311630220.650@s15462909.onlinehome-server.info>
+Message-ID: <6C02A60B-7549-43AF-BFD3-A796CA82101F@gaiag.net>
+
+> Hi Chris,
+> 
+> On Fri, 31 May 2013, Chris wrote:
+> 
+>> I am getting this error when trying to run my plugin in ImageJ after I
+>> developed the plugin in Netbeans 7.3:
+>> 
+>>> java.lang.UnsupportedClassVersionError: APC_ : Unsupported major.minor
+>>> version 51.0
+>>> 
+>>> This plugin requires Java 1.7 or later.
+>> 
+>> Does ImageJ work with java 1.7?
+> 
+> Well, it says that the plugin requires Java 1.7, not that ImageJ requires
+> Java 1.7, although, to answer your question, ImageJ works with Java 1.7.
+> 
+>> I am using Mac OS 10.7.5 and the only java version on my machine is 1.7
+> 
+> This is another issue: MacOSX' Java 1.7 support is unfortunately not as
+> stable as Java 1.6 support.
+> 
+> Therefore I would suggest to configure Netbeans to target Java 1.6.
+> 
+> Besides, it is always better to target *not* the latest and buggiest, but
+> the most prevalent, in this case, Java 1.6, *especially* if you want to
+> make your code available (which you should, as a scientist).
+
+Yes, of course I want to make it available, that's the whole point of cooperation.   :-)  I downloaded Netbeans IDE 7.3 and suddenly my only option for java was java 1.7.0_21 on my Mac PowerBook Pro.  I no longer have any other version of java on my computer!  Also, I can't find any way to download java 1.6 and have it as an option for running Netbeans.  Even my older versions of Netbeans now run java 1.7.  That's my problem in addition to the inability to build my project on Maven anymore due to the unresolved (unresolvable?) error I reported earlier.
+
+And thanks for responding!  I really appreciate it!  :-)
+
+Chris
+
+
+
+From ctrueden at wisc.edu  Fri May 31 11:42:53 2013
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Fri, 31 May 2013 11:42:53 -0500
+Subject: [ImageJ-devel] ImageJ with java 1.7?
+In-Reply-To: <6C02A60B-7549-43AF-BFD3-A796CA82101F@gaiag.net>
+References: <9C0E8133-F635-413B-85BC-1BDE63299F9A@gaiag.net>
+	<alpine.DEB.1.00.1305311630220.650@s15462909.onlinehome-server.info>
+	<6C02A60B-7549-43AF-BFD3-A796CA82101F@gaiag.net>
+Message-ID: <CADN69ymXNW1o7JMjOB=+DQv0p2a86TkfTZU=g5iYBFdgjPu30g@mail.gmail.com>
+
+Hi Chris,
+
+> I can't find any way to download java 1.6 and have it as an option for
+> running Netbeans.
+
+You can reinstall Java 6 on OS X. See e.g.:
+  http://stackoverflow.com/questions/13653597/jdk-6-on-mountain-lion
+
+You can verify which Javas are installed using this script:
+  https://github.com/ctrueden/ctr-scripts/blob/master/java-info
+
+You can configure which JDK NetBeans uses using the Tools > Platforms menu
+command. Click "Add Platform" and choose the Contents/Home subfolder of
+something in /Library/Java/JavaVirtualMachines (or maybe
+/System/Library/Java/JavaVirtualMachines if the JDK in question is not in
+the former folder).
+
+HTH,
+Curtis
+
+
+On Fri, May 31, 2013 at 10:17 AM, Chris <chris at gaiag.net> wrote:
+
+> > Hi Chris,
+> >
+> > On Fri, 31 May 2013, Chris wrote:
+> >
+> >> I am getting this error when trying to run my plugin in ImageJ after I
+> >> developed the plugin in Netbeans 7.3:
+> >>
+> >>> java.lang.UnsupportedClassVersionError: APC_ : Unsupported major.minor
+> >>> version 51.0
+> >>>
+> >>> This plugin requires Java 1.7 or later.
+> >>
+> >> Does ImageJ work with java 1.7?
+> >
+> > Well, it says that the plugin requires Java 1.7, not that ImageJ requires
+> > Java 1.7, although, to answer your question, ImageJ works with Java 1.7.
+> >
+> >> I am using Mac OS 10.7.5 and the only java version on my machine is 1.7
+> >
+> > This is another issue: MacOSX' Java 1.7 support is unfortunately not as
+> > stable as Java 1.6 support.
+> >
+> > Therefore I would suggest to configure Netbeans to target Java 1.6.
+> >
+> > Besides, it is always better to target *not* the latest and buggiest, but
+> > the most prevalent, in this case, Java 1.6, *especially* if you want to
+> > make your code available (which you should, as a scientist).
+>
+> Yes, of course I want to make it available, that's the whole point of
+> cooperation.   :-)  I downloaded Netbeans IDE 7.3 and suddenly my only
+> option for java was java 1.7.0_21 on my Mac PowerBook Pro.  I no longer
+> have any other version of java on my computer!  Also, I can't find any way
+> to download java 1.6 and have it as an option for running Netbeans.  Even
+> my older versions of Netbeans now run java 1.7.  That's my problem in
+> addition to the inability to build my project on Maven anymore due to the
+> unresolved (unresolvable?) error I reported earlier.
+>
+> And thanks for responding!  I really appreciate it!  :-)
+>
+> Chris
+>
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagej.net
+> http://imagej.net/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20130531/5f29be27/attachment.html>
+

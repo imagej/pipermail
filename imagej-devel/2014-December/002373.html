@@ -1,0 +1,154 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Differences between .fft.FourierTransform and	.fft2.FFT
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Differences%20between%20.fft.FourierTransform%20and%0A%09.fft2.FFT&In-Reply-To=%3CCAMWa8i2HeyXzoXyAu%3Dd7%2Bk7hSk%2B3b4TB7qSYmupZx7bhisaGRg%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002372.html">
+   <LINK REL="Next"  HREF="002381.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Differences between .fft.FourierTransform and	.fft2.FFT</H1>
+    <B>Brian Northan</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Differences%20between%20.fft.FourierTransform%20and%0A%09.fft2.FFT&In-Reply-To=%3CCAMWa8i2HeyXzoXyAu%3Dd7%2Bk7hSk%2B3b4TB7qSYmupZx7bhisaGRg%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Differences between .fft.FourierTransform and	.fft2.FFT">bnorthan at gmail.com
+       </A><BR>
+    <I>Wed Dec 17 08:42:42 CST 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002372.html">[ImageJ-devel] Differences between .fft.FourierTransform and	.fft2.FFT
+</A></li>
+        <LI>Next message: <A HREF="002381.html">[ImageJ-devel] Disruptive ImageJ updates this Friday
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2373">[ date ]</a>
+              <a href="thread.html#2373">[ thread ]</a>
+              <a href="subject.html#2373">[ subject ]</a>
+              <a href="author.html#2373">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Micheal
+
+I am not entirely familiar with 'FourierTransform' because I've been using
+the newer FFT.java class but I think the differences you are seeing are
+because 'FourierTransform' has different preprocessing and extension
+related settings.
+
+If you look at FourierTransform.java you can see that the constructor you
+used in turn calls another constructor
+
+<A HREF="https://github.com/imglib/imglib2-algorithm-gpl/blob/master/src/main/java/net/imglib2/algorithm/fft/FourierTransform.java">https://github.com/imglib/imglib2-algorithm-gpl/blob/master/src/main/java/net/imglib2/algorithm/fft/FourierTransform.java</A>
+
+It looks like the 'preprocessing' option defaults to
+&quot;relativeExtensionFade' and 'relativeImageExtension' is set to 0.25.
+
+In contrast FFT.java only extends to the nearest 'fast' FFT size and uses a
+constant padding strategy.
+
+Keep us up to date on how things are going.  If you manage to get the
+tutorial working with the new FFT I think that would be a great addition to
+the tutorial.
+
+Brian
+
+
+
+On Wed, Dec 17, 2014 at 3:54 AM, Michael Ellis &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">michael.ellis at dsuk.biz</A>&gt;
+wrote:
+&gt;<i>
+</I>&gt;<i> I am trying to reproduce example
+</I>&gt;<i>
+</I>&gt;<i> imglib2-tutorials Example6c
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> <A HREF="https://github.com/imglib/imglib2-tutorials/blob/master/src/main/java/Example6c.java">https://github.com/imglib/imglib2-tutorials/blob/master/src/main/java/Example6c.java</A>
+</I>&gt;<i>
+</I>&gt;<i> using the new net.imglib2.algorithm.fft2.FFT rather than the old
+</I>&gt;<i> deprecated net.imglib2.algorithm.fft.FourierTransform
+</I>&gt;<i>
+</I>&gt;<i> The original example code does:
+</I>&gt;<i>
+</I>&gt;<i>         // compute fourier transform of the template
+</I>&gt;<i>         final FourierTransform&lt; FloatType, ComplexFloatType&gt; fft
+</I>&gt;<i>                 = new FourierTransform&lt; FloatType, ComplexFloatType&gt;(
+</I>&gt;<i>                         template, new ComplexFloatType());
+</I>&gt;<i>         fft.process();
+</I>&gt;<i>         Img&lt; ComplexFloatType&gt; templateFFT = fft.getResult();
+</I>&gt;<i>
+</I>&gt;<i> Which produces an image of size templateFFT minX=0 minY=0 maxX=40 maxY=79
+</I>&gt;<i>
+</I>&gt;<i> My new code looks like this:
+</I>&gt;<i>
+</I>&gt;<i>             ImgFactory&lt;ComplexFloatType&gt; fftImgFactory = null;
+</I>&gt;<i>             try {
+</I>&gt;<i>                 fftImgFactory = template.factory().imgFactory(new
+</I>&gt;<i> ComplexFloatType());
+</I>&gt;<i>             } catch (IncompatibleTypeException ex) {
+</I>&gt;<i>                 fftImgFactory = null;
+</I>&gt;<i>             }
+</I>&gt;<i>
+</I>&gt;<i>             // compute fourier transform of the template
+</I>&gt;<i>             Img&lt; ComplexFloatType&gt; templateFFT2 =
+</I>&gt;<i> FFT.realToComplex(template, fftImgFactory);
+</I>&gt;<i>
+</I>&gt;<i> Which produces an image of size templateFFT2 minX=0 minY=0 maxX=36 maxY=71
+</I>&gt;<i>
+</I>&gt;<i> Also it looks like the image produced by the old FourierTransform and new
+</I>&gt;<i> FFT differ in that the results are shifted in X and Y.
+</I>&gt;<i>
+</I>&gt;<i> Can anyone help?
+</I>&gt;<i>
+</I>&gt;<i> In particular I want to achieve the image alignment functionality that is
+</I>&gt;<i> done in Example6c.java without using deprecated code.
+</I>&gt;<i>
+</I>&gt;<i> Many thanks &#8212; Michael Ellis
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20141217/c399b3e5/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20141217/c399b3e5/attachment.html</A>&gt;
+</PRE>
+
+
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002372.html">[ImageJ-devel] Differences between .fft.FourierTransform and	.fft2.FFT
+</A></li>
+	<LI>Next message: <A HREF="002381.html">[ImageJ-devel] Disruptive ImageJ updates this Friday
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2373">[ date ]</a>
+              <a href="thread.html#2373">[ thread ]</a>
+              <a href="subject.html#2373">[ subject ]</a>
+              <a href="author.html#2373">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,110 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-bugs] [Bug 857] Stack Dump window appears on play image	stack
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%20857%5D%20Stack%20Dump%20window%20appears%20on%20play%20image%0A%09stack&In-Reply-To=%3Cbug-857-19-Zjfle5z3rb%40http.fiji.sc/bugzilla/%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000035.html">
+   <LINK REL="Next"  HREF="000024.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-bugs] [Bug 857] Stack Dump window appears on play image	stack</H1>
+    <B>bugzilla at fiji.sc</B> 
+    <A HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%20857%5D%20Stack%20Dump%20window%20appears%20on%20play%20image%0A%09stack&In-Reply-To=%3Cbug-857-19-Zjfle5z3rb%40http.fiji.sc/bugzilla/%3E"
+       TITLE="[ImageJ-bugs] [Bug 857] Stack Dump window appears on play image	stack">bugzilla at fiji.sc
+       </A><BR>
+    <I>Fri Jul 18 12:34:50 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000035.html">[ImageJ-bugs] [Bug 857] Stack Dump window appears on play image	stack
+</A></li>
+        <LI>Next message: <A HREF="000024.html">[ImageJ-bugs] [Bug 835] Fiji hangs when installing macro tool
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#36">[ date ]</a>
+              <a href="thread.html#36">[ thread ]</a>
+              <a href="subject.html#36">[ subject ]</a>
+              <a href="author.html#36">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE><A HREF="http://fiji.sc/bugzilla/show_bug.cgi?id=857">http://fiji.sc/bugzilla/show_bug.cgi?id=857</A>
+
+Johannes Schindelin &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">johannes.schindelin at gmx.de</A>&gt; changed:
+
+           What    |Removed                     |Added
+----------------------------------------------------------------------------
+                 CC|                            |<A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">johannes.schindelin at gmx.de</A>
+
+--- Comment #2 from Johannes Schindelin &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">johannes.schindelin at gmx.de</A>&gt; ---
+I believe the culprit lies in
+<A HREF="https://github.com/imagej/imagej-legacy/blob/daf71a07afe0bdbc02d3294665c290e8e75912b9/src/main/java/net/imagej/legacy/DefaultLegacyHooks.java#L468-L469">https://github.com/imagej/imagej-legacy/blob/daf71a07afe0bdbc02d3294665c290e8e75912b9/src/main/java/net/imagej/legacy/DefaultLegacyHooks.java#L468-L469</A>
+
+There are two problems:
+
+* imagej-legacy it intercepts, but somehow ImageJ 1.x does not get the message
+that it should not continue to process key events, and then goes on to handle
+'\'.
+
+* imagej-legacy does not know about the '\' shortcut, so it tries to handle
+that one first, sees nothing to handle that shortcut, and DWIMs a Control key.
+
+The solution for this bug (and the second bullet point) is to register a dummy
+handler in the legacy service. This is proper because imagej-legacy needs to
+bend over to work around ImageJ 1.x' limitations, including knowing about
+pre-existing keyboard shortcuts.
+
+That does not address the first bullet point, though, and if (and when) it is
+addressed, the dummy shortcut actually needs to call
+
+    doCommand(&quot;Start Animation [\\]&quot;);
+
+itself.
+
+-- 
+You are receiving this mail because:
+You are on the CC list for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-bugs/attachments/20140718/54f84821/attachment.html">http://imagej.net/pipermail/imagej-bugs/attachments/20140718/54f84821/attachment.html</A>&gt;
+</PRE>
+
+
+
+
+
+
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000035.html">[ImageJ-bugs] [Bug 857] Stack Dump window appears on play image	stack
+</A></li>
+	<LI>Next message: <A HREF="000024.html">[ImageJ-bugs] [Bug 835] Fiji hangs when installing macro tool
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#36">[ date ]</a>
+              <a href="thread.html#36">[ thread ]</a>
+              <a href="subject.html#36">[ subject ]</a>
+              <a href="author.html#36">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-bugs">More information about the Imagej-bugs
+mailing list</a><br>
+</body></html>

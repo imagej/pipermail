@@ -1,0 +1,118 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-bugs] [Bug 835] Fiji hangs when installing macro tool
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%20835%5D%20Fiji%20hangs%20when%20installing%20macro%20tool&In-Reply-To=%3Cbug-835-19-GbpGC6opde%40http.fiji.sc/bugzilla/%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000336.html">
+   <LINK REL="Next"  HREF="000338.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-bugs] [Bug 835] Fiji hangs when installing macro tool</H1>
+    <B>bugzilla at fiji.sc</B> 
+    <A HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%20835%5D%20Fiji%20hangs%20when%20installing%20macro%20tool&In-Reply-To=%3Cbug-835-19-GbpGC6opde%40http.fiji.sc/bugzilla/%3E"
+       TITLE="[ImageJ-bugs] [Bug 835] Fiji hangs when installing macro tool">bugzilla at fiji.sc
+       </A><BR>
+    <I>Wed Aug 27 00:33:28 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000336.html">[ImageJ-bugs] [Bug 835] Fiji hangs when installing macro tool
+</A></li>
+        <LI>Next message: <A HREF="000338.html">[ImageJ-bugs] [Bug 916] New: Tiff fiel not opened/displayed right
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#337">[ date ]</a>
+              <a href="thread.html#337">[ thread ]</a>
+              <a href="subject.html#337">[ subject ]</a>
+              <a href="author.html#337">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE><A HREF="http://fiji.sc/bugzilla/show_bug.cgi?id=835">http://fiji.sc/bugzilla/show_bug.cgi?id=835</A>
+
+--- Comment #18 from Ilan Tal &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">ilan.tal at gmail.com</A>&gt; ---
+Hi Curtis,
+First and foremost I am delighted that you are thinking about the problem.
+Until I used Mark's idea of attaching a debugger to the actual running Fiji
+program, I could do absolutely nothing. With the debugger I can set break
+points, investigate object values and the world opens up to investigation.
+
+To clear up a minor point, isFiji is probably a variable which someone added
+long ago for some long forgotten purpose. With the debugger I demonstrated that
+it no longer does anything useful. You say it shouldn't be there and I said it
+should either be fixed or be removed. To have something which might work if you
+start Fiji under the old fiji command, but won't work if you start it with the
+current imageJ command is just another bug waiting to appear.
+
+What I did was spread around break points until I caught the path which was
+being followed and then I could compare values and see what the differences
+were between Fiji and ImageJ. In looking at the differences I could see that in
+ImageJ macroFiles had valid information including my file, whereas in Fiji it
+was null.
+
+The next logical step was to find out why macroFiles was null. That led me to
+Menus.java and see what the differences were in that program. In Menus.java I
+found that validMacroName wasn't working in Fiji, but worked fine in ImageJ. In
+comment 11 I found 5 additional files which should have passed the test but
+failed. After 5 files, I stopped counting but macroFiles never reached a non
+null value.
+
+What is clear is that validMacroName is broken inside Fiji. The question is:
+why? The 2 possibilities which I could see is either there is some invisible
+character which trim() could eliminate, or something subtle in the fact that it
+is a static procedure. If name.endsWith(&quot;.jar&quot;) works correctly, common sense
+would say the name.endsWith(&quot;.ijm&quot;) should work as well. The problem is that it
+fails. Why?
+
+
+I see that you looked at the fallout after the explosion. Here is what I think
+is happening. The macro, instead of being installed, is being executed. The
+macro calls to log to print a message. That apparently starts a new thread and
+something goes hay wire in unwinding the stack.
+
+You can solve that problem, but that isn't the real problem. The real problem
+is why is going down the wrong path in the first place? I traced it back to
+validMacroName which isn't doing its job correctly. Solve that and the other
+problem will disappear.
+
+Thanks again for all your help,
+Ilan
+
+-- 
+You are receiving this mail because:
+You are on the CC list for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-bugs/attachments/20140827/9ac37c66/attachment-0001.html">http://imagej.net/pipermail/imagej-bugs/attachments/20140827/9ac37c66/attachment-0001.html</A>&gt;
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000336.html">[ImageJ-bugs] [Bug 835] Fiji hangs when installing macro tool
+</A></li>
+	<LI>Next message: <A HREF="000338.html">[ImageJ-bugs] [Bug 916] New: Tiff fiel not opened/displayed right
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#337">[ date ]</a>
+              <a href="thread.html#337">[ thread ]</a>
+              <a href="subject.html#337">[ subject ]</a>
+              <a href="author.html#337">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-bugs">More information about the Imagej-bugs
+mailing list</a><br>
+</body></html>

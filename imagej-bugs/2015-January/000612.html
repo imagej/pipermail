@@ -1,0 +1,156 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-bugs] [Bug 987] saveAs(&quot;Results&quot;, &quot;...&quot;) does not work
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%20987%5D%20saveAs%28%22Results%22%2C%20%22...%22%29%20does%20not%20work&In-Reply-To=%3Cbug-987-19-BVN0AdWwYb%40http.fiji.sc/bugzilla/%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000611.html">
+   <LINK REL="Next"  HREF="000613.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-bugs] [Bug 987] saveAs(&quot;Results&quot;, &quot;...&quot;) does not work</H1>
+    <B>bugzilla at fiji.sc</B> 
+    <A HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%20987%5D%20saveAs%28%22Results%22%2C%20%22...%22%29%20does%20not%20work&In-Reply-To=%3Cbug-987-19-BVN0AdWwYb%40http.fiji.sc/bugzilla/%3E"
+       TITLE="[ImageJ-bugs] [Bug 987] saveAs(&quot;Results&quot;, &quot;...&quot;) does not work">bugzilla at fiji.sc
+       </A><BR>
+    <I>Thu Jan 15 14:18:24 CST 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000611.html">[ImageJ-bugs] [Bug 987] saveAs(&quot;Results&quot;, &quot;...&quot;) does not work
+</A></li>
+        <LI>Next message: <A HREF="000613.html">[ImageJ-bugs] [Bug 987] saveAs(&quot;Results&quot;, &quot;...&quot;) does not work
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#612">[ date ]</a>
+              <a href="thread.html#612">[ thread ]</a>
+              <a href="subject.html#612">[ subject ]</a>
+              <a href="author.html#612">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE><A HREF="http://fiji.sc/bugzilla/show_bug.cgi?id=987">http://fiji.sc/bugzilla/show_bug.cgi?id=987</A>
+
+--- Comment #4 from <A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">tokamoto at biosearchtech.com</A> ---
+I've re-created the issue in a macro that emulates my macro, and the steps that
+it takes through functions and saving to the tables.  
+
+In my macro, I'm running the Measure tool on three separate selections on an
+image (emulated here by creating some random data) and then doing some
+calculations based on the results (emulated here by calculating the ratio and
+half ratio).  The results are saved on the first row in their own column, and
+then all three rows are printed to the Points table, replacing the space
+between data with commas.  Since I still have the ratios stored in variables, I
+print just the results to another table that excludes the raw measure data from
+earlier.  After it runs on all images in a directory(emulated here by just
+running it ten times) it selects the tables, saves them, and then closes them.
+
+The macro below works on 1.49m, but not 1.49n.  If you comment out the close
+commands after the saveAs commands, you can see the tables have data in them.
+
+setBatchMode(true);
+setOption(&quot;ShowRowNumbers&quot;, false);
+requires(&quot;1.49m&quot;);
+run(&quot;Set Measurements...&quot;, &quot;area mean standard min median redirect=None
+decimal=3&quot;);
+run(&quot;Input/Output...&quot;, &quot;jpeg=85 gif=-1 file=.csv save_column&quot;);
+print(&quot;\\Clear&quot;);
+run(&quot;Clear Results&quot;);
+ratiovalue = 0;
+half = 0;
+
+//Initialize Tables
+run(&quot;Table...&quot;, &quot;name=Points width=400 height=200&quot;);
+run(&quot;Table...&quot;, &quot;name=Condensed width=400 height=200&quot;);
+print(&quot;[Points]&quot;, &quot;Double, Value, Ratio, Ratio2&quot;);
+print(&quot;[Condensed]&quot;, &quot;Number, Ratio, Ratio2&quot;);
+
+//Run main function
+testfunction();
+
+updateResults;
+//Save Tables
+selectWindow(&quot;Points&quot;);
+saveAs(&quot;Results&quot;, &quot;C:\\Users\\tokamoto\\Desktop\\Results_Points.csv&quot;);
+run(&quot;Close&quot;);
+selectWindow(&quot;Condensed&quot;);
+saveAs(&quot;Results&quot;, &quot;C:\\Users\\tokamoto\\Desktop\\Results_Condensed.csv&quot;);
+run(&quot;Close&quot;);
+
+function testfunction() {
+    for (i = 0; i &lt; 10; i++) { 
+        for (n = 0; n &lt; 3; n++) { //Create three sets of random data
+            setResult(&quot;Double&quot;, n, (n+1)*2);
+            setResult(&quot;Value&quot;, n, random * 10);
+        }
+        updateResults();
+        //Run the ratio function which separates the data and condenses it into
+the two tables
+        ratio();
+    }
+}
+
+function ratio() {
+    //Calculate ratio
+    ratiovalue = getResult(&quot;Double&quot;, nResults - 3) / getResult(&quot;Value&quot;,
+nResults - 3);
+    half = ratiovalue / 2;
+    //Set Results
+    setResult(&quot;Ratio&quot;, 0, ratiovalue);
+    setResult(&quot;Ratio2&quot;, 0, half);
+    updateResults();
+    //String manipulation and writing to table
+    String.resetBuffer;
+    String.copyResults;
+    String.append(String.paste);
+    print(&quot;[Points]&quot;, replace(String.buffer, &quot;    &quot;, &quot;, &quot;));
+    run(&quot;Clear Results&quot;);
+
+    //Save Condensed results (Just the ratio)
+    setResult(&quot;Number&quot;, nResults, i);
+    setResult(&quot;Ratio&quot;, 0, ratiovalue);
+    setResult(&quot;Ratio2&quot;, 0, half);
+    updateResults();
+    String.resetBuffer;
+    String.copyResults;
+    String.append(String.paste);
+    print(&quot;[Condensed]&quot;, replace(String.buffer, &quot;    &quot;, &quot;, &quot;));
+    run(&quot;Clear Results&quot;);
+}
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-bugs/attachments/20150115/66e48716/attachment.html">http://imagej.net/pipermail/imagej-bugs/attachments/20150115/66e48716/attachment.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000611.html">[ImageJ-bugs] [Bug 987] saveAs(&quot;Results&quot;, &quot;...&quot;) does not work
+</A></li>
+	<LI>Next message: <A HREF="000613.html">[ImageJ-bugs] [Bug 987] saveAs(&quot;Results&quot;, &quot;...&quot;) does not work
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#612">[ date ]</a>
+              <a href="thread.html#612">[ thread ]</a>
+              <a href="subject.html#612">[ subject ]</a>
+              <a href="author.html#612">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-bugs">More information about the Imagej-bugs
+mailing list</a><br>
+</body></html>

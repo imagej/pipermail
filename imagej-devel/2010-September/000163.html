@@ -1,0 +1,131 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Imglib project organization &amp; Bio-Formats support
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Imglib%20project%20organization%20%26%20Bio-Formats%20support&In-Reply-To=%3C1285779787.1976.20.camel%40saalfeld-laptop%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000162.html">
+   <LINK REL="Next"  HREF="000164.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Imglib project organization &amp; Bio-Formats support</H1>
+    <B>Stephan Saalfeld</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Imglib%20project%20organization%20%26%20Bio-Formats%20support&In-Reply-To=%3C1285779787.1976.20.camel%40saalfeld-laptop%3E"
+       TITLE="[ImageJ-devel] Imglib project organization &amp; Bio-Formats support">saalfeld at mpi-cbg.de
+       </A><BR>
+    <I>Wed Sep 29 12:03:07 CDT 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000162.html">[ImageJ-devel] Imglib project organization &amp; Bio-Formats support
+</A></li>
+        <LI>Next message: <A HREF="000164.html">[ImageJ-devel] Imglib project organization &amp; Bio-Formats support
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#163">[ date ]</a>
+              <a href="thread.html#163">[ thread ]</a>
+              <a href="subject.html#163">[ subject ]</a>
+              <a href="author.html#163">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Dear Curtis,
+
+I like the separation and I am looking forward to check maven as a
+builder.  What about you, Steffi and Johannes?
+
+Best,
+StephanS
+
+
+
+
+On Mon, 2010-09-27 at 12:27 -0500, Curtis Rueden wrote:
+&gt;<i> Hi everyone,
+</I>&gt;<i> 
+</I>&gt;<i> I have created a new branch on imglib.git called maven, which does two
+</I>&gt;<i> things:
+</I>&gt;<i> 
+</I>&gt;<i> 1) It reorganizes imglib as a Maven project.
+</I>&gt;<i> 
+</I>&gt;<i> 2) To achieve cleaner dependencies, it splits imglib into several
+</I>&gt;<i> subprojects:
+</I>&gt;<i>   * imglib &#8211; core imglib infrastructure [dependencies: mpicbg]
+</I>&gt;<i>   * imglib-algorithms &#8211; algorithm implementations [dependencies:
+</I>&gt;<i> imglib, mpicbg, mines-jtk]
+</I>&gt;<i>   * imglib-imagej &#8211; ImageJ-specific display logic [dependencies:
+</I>&gt;<i> imglib, imglib-algorithms, imagej, mpicbg]
+</I>&gt;<i>   * imglib-io &#8211; S&amp;S's Bio-Formats support for imglib [dependencies:
+</I>&gt;<i> imglib, imglib-imagej, bio-formats]
+</I>&gt;<i> 
+</I>&gt;<i> One major reason to do this is to avoid a circular dependency between
+</I>&gt;<i> imglib and ij, since we want ij-2.0 to depend on imglib core.
+</I>&gt;<i> 
+</I>&gt;<i> Also, I have implemented a new imglib Bio-Formats reader at:
+</I>&gt;<i>   <A HREF="http://dev.imagejdev.org/svn/imagej/trunk/bf-imglib">http://dev.imagejdev.org/svn/imagej/trunk/bf-imglib</A>
+</I>&gt;<i> 
+</I>&gt;<i> Unlike imglib-io, it fully supports N-dimensional data in imglib, and
+</I>&gt;<i> without any dependency on ImageJ. However, I am still polishing it a
+</I>&gt;<i> bit&#8212;it needs to do everything that imglib-io did, including setting
+</I>&gt;<i> physical XYZ calibration. Once it is ready, if you all agree, I could
+</I>&gt;<i> replace the old imglib-io implementation.
+</I>&gt;<i> 
+</I>&gt;<i> Regarding Maven: I think it makes development in Eclipse much better
+</I>&gt;<i> (using the m2eclipse &amp; m2eclipse Extras plugins). Project dependencies
+</I>&gt;<i> in Eclipse with Maven are extremely smart. For example: let's say I
+</I>&gt;<i> have bf-imglib open alone. For the dependencies (ij.jar and
+</I>&gt;<i> imglib.jar), Eclipse uses the ij.jar and imglib.jar present in the
+</I>&gt;<i> local Maven repository. But let's say I want to fix a bug in ImageJ
+</I>&gt;<i> that affects bf-imglib. I just open the ij Maven project, and the
+</I>&gt;<i> bf-imglib dependency magically becomes an Eclipse project reference
+</I>&gt;<i> rather than a binary JAR reference.
+</I>&gt;<i> 
+</I>&gt;<i> Maven also solves the Eclipse configuration wars with
+</I>&gt;<i> conflicting .project, .classpath and .settings files being committed
+</I>&gt;<i> to the repository from various machines&#8212;you simply add these files
+</I>&gt;<i> to .gitignore and the files are generated locally when you first
+</I>&gt;<i> import the Maven project using m2eclipse. After that you can tweak
+</I>&gt;<i> your local project settings however you like.
+</I>&gt;<i> 
+</I>&gt;<i> My questions are:
+</I>&gt;<i> 
+</I>&gt;<i> 1) Do you like this split project organization for imglib?
+</I>&gt;<i> 
+</I>&gt;<i> 2) What do you think of imglib using Maven in this way?
+</I>&gt;<i> 
+</I>&gt;<i> 3) Any initial thoughts on the bf-imglib implementation?
+</I>&gt;<i> 
+</I>&gt;<i> If people are happy with these changes, I would like to merge the
+</I>&gt;<i> imglib maven branch to master, and maybe also move bf-imglib into the
+</I>&gt;<i> imglib git repository. If people have concerns, let's discuss them to
+</I>&gt;<i> find a better solution that works for everyone.
+</I>&gt;<i> 
+</I>&gt;<i> Thanks,
+</I>&gt;<i> Curtis
+</I>
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000162.html">[ImageJ-devel] Imglib project organization &amp; Bio-Formats support
+</A></li>
+	<LI>Next message: <A HREF="000164.html">[ImageJ-devel] Imglib project organization &amp; Bio-Formats support
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#163">[ date ]</a>
+              <a href="thread.html#163">[ thread ]</a>
+              <a href="subject.html#163">[ subject ]</a>
+              <a href="author.html#163">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

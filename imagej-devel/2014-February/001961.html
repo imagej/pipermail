@@ -1,0 +1,134 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [fiji-devel] Re:  jython scripting, No compatible service: io.scif.SCIFIOService
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20Re%3A%20%20jython%20scripting%2C%0A%20No%20compatible%20service%3A%20io.scif.SCIFIOService&In-Reply-To=%3CCA%2BB%3DmGqTdmpvrC5CLj67pbbnbjWqGn%2BG4VBhncFpHvBZj_0H4A%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001960.html">
+   <LINK REL="Next"  HREF="001962.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [fiji-devel] Re:  jython scripting, No compatible service: io.scif.SCIFIOService</H1>
+    <B>Mark Hiner</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20Re%3A%20%20jython%20scripting%2C%0A%20No%20compatible%20service%3A%20io.scif.SCIFIOService&In-Reply-To=%3CCA%2BB%3DmGqTdmpvrC5CLj67pbbnbjWqGn%2BG4VBhncFpHvBZj_0H4A%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] [fiji-devel] Re:  jython scripting, No compatible service: io.scif.SCIFIOService">hinerm at gmail.com
+       </A><BR>
+    <I>Wed Feb 26 08:41:33 CST 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001960.html">[ImageJ-devel] [fiji-devel] Re:  jython scripting, No compatible service: io.scif.SCIFIOService
+</A></li>
+        <LI>Next message: <A HREF="001962.html">[ImageJ-devel] [fiji-devel] Re:  jython scripting, No compatible service: io.scif.SCIFIOService
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1961">[ date ]</a>
+              <a href="thread.html#1961">[ thread ]</a>
+              <a href="subject.html#1961">[ subject ]</a>
+              <a href="author.html#1961">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Harri,
+
+java.lang.
+&gt;<i> IllegalArgumentException: java.lang.IllegalArgumentException: No
+</I>&gt;<i> compatible service: io.scif.SCIFIOService
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">hajaalin at biotek973</A>:~/Software/
+</I>&gt;<i> mvn-IJ2$ jar tvf target/dependency/scifio-0.9.2.jar |grep SCIFIOService
+</I>&gt;<i>    150 Fri Feb 14 16:24:24 EET 2014 io/scif/SCIFIOService.class
+</I>&gt;<i>
+</I>
+So this exception may be slightly misleading. SCIFIOService is a marker
+interface for all the services that are part of SCIFIO. When an
+org.scijava.Context is initialized as it is here, it's typically given a
+set of base service interfaces and then loads all implementations of that
+service. So it seems like the Context knows about the SCIFIOService
+interface, but didn't discover any implementations (things like
+DefaultFormatService, DefaultImgUtilityService).
+
+ So this brings me to my next point: I think there is either a) a bug in
+jython where annotations are not preserved or b) a bug with the class
+loading logic used by Fiji/IJ2. I am leaning towards a) right now.
+
+ I am using an Ubuntu 12.04 64-bit VM. I installed Jython 2.5.3, but I
+suspect you can get this working with 2.5.1.
+
+ Anyway, I went back to OSX and tested jython with the -Dpython.path
+option, and got the same missing service exception. But! If I set
+$CLASSPATH (java automatically picks up the $CLASSPATH environment
+variable) and run the equivalent of:
+
+jython macros/imglib0.py /home/hajaalin/Data/Misha/composite1.ome.tif
+
+it works! Thus I believe that python.path has a bug and although jython
+supports discovery of classes on python.path, it does not preserve their
+annotations (or some similar metadata is being lost).
+
+So instead of setting CP and passing it via -Dpython.path, just use:
+
+export CLASSPATH=`find /home/hajaalin/Software/fiji-20140219/Fiji.app/jars
+-name '*.jar' |sed ':a;N;$!ba;s/\n/:/g'`
+
+A simple rule of thumb is, try running a random SCIFIO class like &quot;java
+io.scif.SCIFIOService&quot; from the command line. If you get a NoClassDef
+error, your CLASSPATH is not configured correctly. If you get a
+&quot;NoSuchMethodError: main&quot;, your CLASSPATH is correct and your jython will
+pick up all the desired classes.
+
+Moving on...
+
+jython macros/imglib0.py /home/hajaalin/Data/Misha/composite1.ome.tif
+
+^ That then works a bit better with my CLASSPATH set, except I get a
+different runtime error about how ImgMode.CELL can't be coerced to ImgMode.
+(same error I get when running using Fiji).
+
+I notice that you aren't actually using the SCIFIOConfig you construct, so
+if you delete those lines and I'm finally able to open an image. The
+SCIFIOConfig isn't strictly necessary either - SCIFIO will open it as a
+CellImg automatically if it needs to. I will try to investigate further as
+to how to get the types working for a nested enum in jython..
+
+You may see yet another error message about io.scif.bf.BioFormatsFormat
+failing. This is because some jars in Fiji are out of date, but that
+shouldn't cause catastrophic failure (it just means that some proprietary
+formats won't be supported right now). These jars should be updated this
+week.
+
+I hope this helps. Let me know if you can't get this working on your end.
+
+- Mark
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140226/499ccce4/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20140226/499ccce4/attachment-0001.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001960.html">[ImageJ-devel] [fiji-devel] Re:  jython scripting, No compatible service: io.scif.SCIFIOService
+</A></li>
+	<LI>Next message: <A HREF="001962.html">[ImageJ-devel] [fiji-devel] Re:  jython scripting, No compatible service: io.scif.SCIFIOService
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1961">[ date ]</a>
+              <a href="thread.html#1961">[ thread ]</a>
+              <a href="subject.html#1961">[ subject ]</a>
+              <a href="author.html#1961">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

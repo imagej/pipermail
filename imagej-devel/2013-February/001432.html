@@ -1,0 +1,160 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Fwd: SciJava Common plugin framework
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Fwd%3A%20SciJava%20Common%20plugin%20framework&In-Reply-To=%3CCADN69y%3DCSUH6sq%2BvjL-U12sawTXyaiDRBHL9ZDkf4d_AqoSFQw%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001431.html">
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Fwd: SciJava Common plugin framework</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Fwd%3A%20SciJava%20Common%20plugin%20framework&In-Reply-To=%3CCADN69y%3DCSUH6sq%2BvjL-U12sawTXyaiDRBHL9ZDkf4d_AqoSFQw%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Fwd: SciJava Common plugin framework">ctrueden at wisc.edu
+       </A><BR>
+    <I>Mon Feb 25 13:45:11 CST 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001431.html">[ImageJ-devel] Fix_Updater.js can now initialize Fiji/ImageJ2 in any existing ImageJ 1.x
+</A></li>
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1432">[ date ]</a>
+              <a href="thread.html#1432">[ thread ]</a>
+              <a href="subject.html#1432">[ subject ]</a>
+              <a href="author.html#1432">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi all,
+
+For those not on the scijava mailing list (see <A HREF="http://www.scijava.org/">http://www.scijava.org/</A> for
+details), we have recently improved the ImageJ2 plugin framework to be more
+general, rebranding it the SciJava Common plugin framework.
+
+As some of you already know, SciJava is an umbrella effort to unify efforts
+across several different software projects, including ImageJ2, Fiji,
+ImgLib2, Bio-Formats, SCIFIO, OMERO, CellProfiler, KNIME, Icy and more. The
+primary goal is to share code as much as is practical, and have common
+standards (e.g, for regions of interests) even when it is not.
+
+The SciJava Common framework gives us a very small, common place to put
+shared functionality across these projects. For example, the improved
+plugin framework means that ImageJ2 plugins (e.g., commands) and SCIFIO
+plugins (e.g., file format readers) are now two flavors of the same
+kool-aid.
+
+See below for further details.
+
+Regards,
+Curtis
+
+
+---------- Forwarded message ----------
+From: Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt;
+Date: Tue, Feb 19, 2013 at 11:22 AM
+Subject: SciJava Common plugin framework
+To: SciJava &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">scijava at googlegroups.com</A>&gt;
+
+
+Hi everyone,
+
+In the past few days, I factored out the ImageJ2 plugin framework from
+ImageJ2 core, migrating it into SciJava Common [1].
+
+SciJava Common now provides a plugin framework, with an extensible
+mechanism for service discovery, driven by the SezPoz library, so that
+plugins can be loaded dynamically. We have already updated ImageJ2 to use
+it, and are in the process of refactoring SCIFIO to use it as well.
+
+SCIFIO and ImageJ2 were both using SezPoz for extensibility/discovery, and
+had each invented their own simple application contexts to support this.
+Using a common library greatly improves DRYness, and truly cements SCIFIO
+as *the* driving I/O library for ImageJ2 and ImgLib2 [2].
+
+In short, we figured: with ImageJ2 and SCIFIO being developed in the same
+office, and both of them part of this common SciJava effort, there really
+was no excuse not to reuse code between them.
+
+In addition, we have been desiring a way to add extensibility features to
+ImgLib2, without creating a circular dependency on ImageJ2, and this will
+now be possible. That is, parts of ImgLib2 could now depend on SciJava
+Common if they wish to provide new types of plugins (e.g., OPS functions)
+with automatic discovery.
+
+This refactoring also migrates the ImageJ event subsystem into SciJava
+Common, meaning that anything using SciJava Common now gets a pub/sub style
+event system for free. (This will also be useful for SCIFIO/Bio-Formats and
+ImgLib2, since a long-standing issue has been better hooks into ongoing
+operations.)
+
+SciJava Common has two dependencies, SezPoz [3] and EventBus [4], both of
+which are completely encapsulated such that downstream code does not
+directly depend on either library. So in the future, we could theoretically
+switch to a different discovery mechanism or event library with no
+downstream code changes.
+
+Still to do: improve SciJava Common's logging implementation. We have an
+SLF4J-based LogService (as well as a stderr-based one, for simplicity), but
+it needs to work in a more granular way, with a separate logger for each
+calling class, similar to how Bio-Formats works now. But I want to avoid
+the need to manually configure a logger in downstream code; it should
+rather &quot;just work&quot;. This will give more flexibility when configuring
+logging.
+
+Lastly, just for fun, some SLOC counts (Java only) as of today:
+
+SciJava Common: 8K
+ImgLib1: 37K
+ImageJ2: 75K
+ImageJ1: 96K
+ImgLib2: 101K
+OMERO: 392K [all components, Java only]
+Fiji: 506K [no submodules]
+Bio-Formats: 584K [develop branch]
+SCIFIO: 619K [hinerm/scifio-wrappers branch]
+
+And remember, kids: every line of code is a liability!
+
+Regards,
+Curtis
+
+[1] <A HREF="https://github.com/scijava/scijava-common">https://github.com/scijava/scijava-common</A>
+[2] <A HREF="http://trac.imagej.net/ticket/9">http://trac.imagej.net/ticket/9</A>
+[3] <A HREF="http://sezpoz.java.net/">http://sezpoz.java.net/</A>
+[4] <A HREF="http://eventbus.org/">http://eventbus.org/</A>
+
+P.S. Did you know sloccount has concurrency issues?
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20130225/2630e63e/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20130225/2630e63e/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001431.html">[ImageJ-devel] Fix_Updater.js can now initialize Fiji/ImageJ2 in any existing ImageJ 1.x
+</A></li>
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1432">[ date ]</a>
+              <a href="thread.html#1432">[ thread ]</a>
+              <a href="subject.html#1432">[ subject ]</a>
+              <a href="author.html#1432">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

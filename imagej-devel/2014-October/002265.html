@@ -1,0 +1,148 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] ImageJ OPS hackathon results
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImageJ%20OPS%20hackathon%20results&In-Reply-To=%3C5ADF0478-77FC-4F79-9CD5-4E08A90E75D3%40wisc.edu%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002264.html">
+   <LINK REL="Next"  HREF="002266.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] ImageJ OPS hackathon results</H1>
+    <B>Jay Warrick</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImageJ%20OPS%20hackathon%20results&In-Reply-To=%3C5ADF0478-77FC-4F79-9CD5-4E08A90E75D3%40wisc.edu%3E"
+       TITLE="[ImageJ-devel] ImageJ OPS hackathon results">warrick at wisc.edu
+       </A><BR>
+    <I>Fri Oct  3 07:21:48 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002264.html">[ImageJ-devel] ImageJ OPS hackathon results
+</A></li>
+        <LI>Next message: <A HREF="002266.html">[ImageJ-devel] ImageJ OPS hackathon results
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2265">[ date ]</a>
+              <a href="thread.html#2265">[ thread ]</a>
+              <a href="subject.html#2265">[ subject ]</a>
+              <a href="author.html#2265">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi All, 
+
+After looking at some of the test classes I can see a partial answer to #2 which is that the ops.run(&lt;name&gt;, &lt;args&gt;) method can be used to set both compute method arguments and @Parameter objects via the magic of modules and the OpsMatchingService. However, how are potential ambiguities resolved when trying to set two parameters of the same type? For example, if I had..
+
+@Parameter
+double min;
+
+@Parameter
+double max;
+
+and I called my Op with ops.run(&quot;MyOp&quot;, 10.0, 100.0). 
+
+How does this call know which to assign to min and which to max? Order that it is listed in the Op class def and order of args provided to the ops.run() methods? 
+
+Thanks,
+
+Jay
+
+On Oct 2, 2014, at 4:53 PM, Jay Warrick &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">warrick at wisc.edu</A>&gt; wrote:
+
+&gt;<i> Curtis - Sweet! I like it. I can see myself making small packages of Ops for things we do in our research that we could easily make available for others. It's also a great way for us to reuse capabilities across different JEX functions we create that allows us to share them with the rest of the community instead of just creating static methods hoarded in various &quot;utility classes&quot; in our software, not that we would ever do that :-)
+</I>&gt;<i> 
+</I>&gt;<i> Curtis and everyone else :-) - First of all, thanks to all for their hard work to lay the foundation for this really useful Ops package. 2 things, though, I would appreciate some help with. Although I've looked at most of the Ops and the tutorials on creating and using Ops, I still have a couple questions.
+</I>&gt;<i> 
+</I>&gt;<i> 1) When should we use the &quot;Command&quot; style method of doing things where all information is specified using the @Parameter methodology and run via the &quot;run&quot; method, and when should we use the &quot;Function&quot; style of things with a typed input and output &quot;compute&quot; method? Advantages/disadvantages of each? Can you get by with either?
+</I>&gt;<i> 
+</I>&gt;<i> 2) I couldn't see how some of the @Parameter objects would be or are injected or set. What is the &quot;sleekest&quot; method for setting these parameters if I wanted to use these Ops in my own program without resorting to setting private Parameter fields accessible etc (e.g., the @Parameter private T threshold;&quot; of the ApplyConstantThreshold.java Op)? Am I forgetting some tool/method for easily injecting/setting Op/Command parameters? It seems like calls to ij.op().&lt;whatever&gt; only pass parameters to compute method and don't do any @Parameter object injection/setting. Am I wrong? Or, eventually, would these Ops have getters and setters. Are getters and setters automatically generated already that I'm not aware of by just looking over the code?
+</I>&gt;<i> 
+</I>&gt;<i> Thanks,
+</I>&gt;<i> 
+</I>&gt;<i> Jay
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> On Oct 2, 2014, at 12:35 PM, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt; wrote:
+</I>&gt;<i> 
+</I>&gt;&gt;<i> Hi Jay,
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> &gt; Am I right that Ops sort of occupies the niche between ImgLib2 and
+</I>&gt;&gt;<i> &gt; ImageJ Plugins... something that makes it easier to do the image
+</I>&gt;&gt;<i> &gt; manipulations but can be reused a bit more easily given they don't
+</I>&gt;&gt;<i> &gt; require many of the Service parameters and preprocessors that many of
+</I>&gt;&gt;<i> &gt; the plugins take/need?
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> Yes, OPS is intended for pure image processing operations and functions. The rule of thumb is that they be deterministic, and have no side effects. So you give same inputs, you get same outputs, every time. Many of them are also multithreadable, though that is not a requirement. And OPS are also supposed to be &quot;static&quot; rather than dynamic -- i.e., they shouldn't have a variable number of input or output parameters, unlike commands in general.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> That said, OPS are still allowed to depend on services, but it is expected that the service methods you call will not compromise the determinism of the op -- i.e., only utility methods of services should really be used. Perhaps in the future we could add annotations to each service method indicating what sort of method it is, and hence where it is &quot;safe&quot; to use.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> I want to thank you for your feedback and discussion from a few months ago, regarding reuse of ImageJ2 commands in JEX. Your perspective provided some of the inspiration for the design of OPS, because it became clear that we need a &quot;pure functional&quot; layer for image processing that does not rely on side effects from services, etc. The idea is that KNIME Image Processing, CellProfiler, OMERO, JEX, etc., can all consume and expose the ops with the assumption that they will behave well (work headless, etc.).
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> Regards,
+</I>&gt;&gt;<i> Curtis
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> On Thu, Oct 2, 2014 at 12:08 PM, Jay Warrick &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">warrick at wisc.edu</A>&gt; wrote:
+</I>&gt;&gt;<i> Looks promising. Am I right that Ops sort of occupies the niche between ImgLib2 and ImageJ Plugins... something that makes it easier to do the image manipulations but can be reused a bit more easily given they don't require many of the Service parameters and preprocessors that many of the plugins take/need?
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> On Oct 1, 2014, at 4:58 PM, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt; wrote:
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> Hi everyone,
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> The ImageJ2 and KNIME Image Processing teams met in Madison during the week of September 15 - 19, to work on ImageJ OPS, which seeks to be a unifying library for scientific image processing.
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> On behalf of the OPS development team, I am pleased to announce the results of that hackathon, including accomplishments, project goals and milestones. See the news post for full details:
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> <A HREF="http://imagej.net/2014-10-01_-_ImageJ_OPS_Hackathon">http://imagej.net/2014-10-01_-_ImageJ_OPS_Hackathon</A>
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> Regards,
+</I>&gt;&gt;&gt;<i> Curtis Rueden
+</I>&gt;&gt;&gt;<i> ImageJ2 project lead
+</I>&gt;&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20141003/dd9df550/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20141003/dd9df550/attachment-0001.html</A>&gt;
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002264.html">[ImageJ-devel] ImageJ OPS hackathon results
+</A></li>
+	<LI>Next message: <A HREF="002266.html">[ImageJ-devel] ImageJ OPS hackathon results
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2265">[ date ]</a>
+              <a href="thread.html#2265">[ thread ]</a>
+              <a href="subject.html#2265">[ subject ]</a>
+              <a href="author.html#2265">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

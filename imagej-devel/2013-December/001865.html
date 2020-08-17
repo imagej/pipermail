@@ -1,0 +1,218 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] The mystery of the vanishing menu in ImageJ2
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20The%20mystery%20of%20the%20vanishing%20menu%20in%20ImageJ2&In-Reply-To=%3CCAKcvfuSx_8T0ta5uVKOY1faHbikpc0uH-hw5p8sGdihu2xOPMg%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001864.html">
+   <LINK REL="Next"  HREF="001867.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] The mystery of the vanishing menu in ImageJ2</H1>
+    <B>Barry DeZonia</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20The%20mystery%20of%20the%20vanishing%20menu%20in%20ImageJ2&In-Reply-To=%3CCAKcvfuSx_8T0ta5uVKOY1faHbikpc0uH-hw5p8sGdihu2xOPMg%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] The mystery of the vanishing menu in ImageJ2">bdezonia at gmail.com
+       </A><BR>
+    <I>Fri Dec 13 23:58:00 CST 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001864.html">[ImageJ-devel] The mystery of the vanishing menu in ImageJ2
+</A></li>
+        <LI>Next message: <A HREF="001867.html">[ImageJ-devel] [ImgLib2] The img-metadata branch
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1865">[ date ]</a>
+              <a href="thread.html#1865">[ thread ]</a>
+              <a href="subject.html#1865">[ subject ]</a>
+              <a href="author.html#1865">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Good catch Johannes! I miss you and the rest of the gang too. Remember I'll
+always be around until you've closed all the tickets I ever filed. :) Happy
+holidays and best wishes to the ImageJ2 team.
+
+
+On Fri, Dec 13, 2013 at 11:12 PM, Johannes Schindelin &lt;
+<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">Johannes.Schindelin at gmx.de</A>&gt; wrote:
+
+&gt;<i> Hi all,
+</I>&gt;<i>
+</I>&gt;<i> I dedicate this mail to Barry because he reported the issue first, and
+</I>&gt;<i> besides, I miss him ;-)
+</I>&gt;<i>
+</I>&gt;<i> The issue Barry pointed out earlier, on Ubuntu, was that ImageJ2 started
+</I>&gt;<i> behaving strangely with regards to the menu: as soon as the mouse was
+</I>&gt;<i> hovering over the tool bar, the menu would go away.
+</I>&gt;<i>
+</I>&gt;<i> Back then, I could not reproduce the issue, but today I could, so I went
+</I>&gt;<i> on a hunt, and here is the write-up for everybody to enjoy:
+</I>&gt;<i>
+</I>&gt;<i> First of all, I figured that I should find out whether some strange AWT
+</I>&gt;<i> events were processed, so I fired up Eclipse -- because I wanted to use
+</I>&gt;<i> Eclipse's debugger to investigate the issue -- and added this code to the
+</I>&gt;<i> end of AbstractSwingUI#createUI():
+</I>&gt;<i>
+</I>&gt;<i> -- snip --
+</I>&gt;<i> Toolkit.getDefaultToolkit().addAWTEventListener(new AWTEventListener() {
+</I>&gt;<i>
+</I>&gt;<i>         @Override
+</I>&gt;<i>         public void eventDispatched(AWTEvent event) {
+</I>&gt;<i>                 System.err.println(&quot;event: &quot; + event);
+</I>&gt;<i>         }
+</I>&gt;<i> }, -1);
+</I>&gt;<i> -- snap --
+</I>&gt;<i>
+</I>&gt;<i> Basically, this code asks Java to output all the UI events as they
+</I>&gt;<i> happen.
+</I>&gt;<i>
+</I>&gt;<i> Then, I set a breakpoint on the first line and started ImageJ2 in debug
+</I>&gt;<i> mode. A little-known gem is that Eclipse's Console window not only shows
+</I>&gt;<i> the standard output and standard error stream of the debugged program,
+</I>&gt;<i> but also accepts the standard input. I used this fact by adding some
+</I>&gt;<i> empty lines (simply focusing the Console window and hitting the Return
+</I>&gt;<i> key a couple of times) as soon as the main window was visible because
+</I>&gt;<i> the events that had been shown so far could not be responsible (or so I
+</I>&gt;<i> thought).
+</I>&gt;<i>
+</I>&gt;<i> But after moving the mouse over the toolbar (and the menu bar
+</I>&gt;<i> vanishing), really only the obvious events were shown: mouse enter,
+</I>&gt;<i> mouse moves (and then mouse leave).
+</I>&gt;<i>
+</I>&gt;<i> So I imagined that another way to debug the issue might be to look
+</I>&gt;<i> whether there actually *was* a menu bar still when the tool bar was
+</I>&gt;<i> painted after the mouse entered the main window.
+</I>&gt;<i>
+</I>&gt;<i> To this end, I patched in a paintComponent method into the SwingToolBar
+</I>&gt;<i> class:
+</I>&gt;<i>
+</I>&gt;<i> -- snip --
+</I>&gt;<i>         @Override
+</I>&gt;<i>         public void paintComponent(final Graphics g) {
+</I>&gt;<i>                 Container c = getParent();
+</I>&gt;<i>                 c = c.getParent();
+</I>&gt;<i>                 c = c.getParent();
+</I>&gt;<i>                 c = c.getParent();
+</I>&gt;<i>                 System.err.println(c);
+</I>&gt;<i>                 System.err.println(((JFrame)c).getJMenuBar());
+</I>&gt;<i>                 super.paintComponent(g);
+</I>&gt;<i>         }
+</I>&gt;<i> -- snap --
+</I>&gt;<i>
+</I>&gt;<i> Of course, that was not the initial version. The initial version assumed
+</I>&gt;<i> that already the direct parent container of the tool bar would be the
+</I>&gt;<i> JFrame, and in hindsight, I'd better have written something like:
+</I>&gt;<i>
+</I>&gt;<i>                 Container c = getParent();
+</I>&gt;<i>                 while (c != null &amp;&amp; !(c instanceof JFrame)) {
+</I>&gt;<i>                         c = c.getParent();
+</I>&gt;<i>                 }
+</I>&gt;<i>
+</I>&gt;<i> but hindsight is 20/20 and I did not have the luxury of that yet.
+</I>&gt;<i> However, I had the luxury of incremental compilation (as performed by
+</I>&gt;<i> Eclipse, one of the few things I really like about Eclipse): I could set
+</I>&gt;<i> a breakpoint on the &quot;System.err.println(c);&quot; call, launch ImageJ2 in debug
+</I>&gt;<i> mode, and then insert the &quot;c = c.getParent();&quot; lines one by one, saving
+</I>&gt;<i> them, which would trigger Eclipse's incremental compiler and move
+</I>&gt;<i> execution back to the first line of the method, until I had the right
+</I>&gt;<i> amount.
+</I>&gt;<i>
+</I>&gt;<i> And sure enough, the first time round, there was a menu bar, but after
+</I>&gt;<i> moving the mouse over the main window the menu bar was null!
+</I>&gt;<i>
+</I>&gt;<i> Therefore the next step was to find out when it was set to null. To find
+</I>&gt;<i> out, I edited the SwingApplicationFrame class (which I found out from
+</I>&gt;<i> inspecting the &quot;c&quot; variable in the SwingToolBar#paintComponent(Graphics)
+</I>&gt;<i> method above) like so:
+</I>&gt;<i>
+</I>&gt;<i> -- snip --
+</I>&gt;<i>         @Override
+</I>&gt;<i>         public void setJMenuBar(final JMenuBar bar) {
+</I>&gt;<i>                 super.setJMenuBar(bar);
+</I>&gt;<i>         }
+</I>&gt;<i> -- snap --
+</I>&gt;<i>
+</I>&gt;<i> and -- you probably guessed it by now -- added a breakpoint on the
+</I>&gt;<i> &quot;super.setJMenuBar(bar);&quot; line.
+</I>&gt;<i>
+</I>&gt;<i> It turns out that it is called the first time from
+</I>&gt;<i> AbstractSwingUI#createUI(), as expected, but then -- unexpectedly --
+</I>&gt;<i> from MacOSXPlatform#onEvent(WinActivatedEvent)! On Linux, no less...
+</I>&gt;<i>
+</I>&gt;<i> There we have the culprit. As I found out by inserting
+</I>&gt;<i>
+</I>&gt;<i> -- snip --
+</I>&gt;<i> if (c.getName().endsWith(&quot;WinActivatedEvent&quot;)) {
+</I>&gt;<i>         System.err.println();
+</I>&gt;<i> }
+</I>&gt;<i> -- snap --
+</I>&gt;<i>
+</I>&gt;<i> into the DefaultEventService#subscribe(Class, EventSubscriber) method
+</I>&gt;<i> and -- you probably guessed that again -- setting a breakpoint on the
+</I>&gt;<i> &quot;System.err.println();&quot; line (after importing scijava-common into the
+</I>&gt;<i> Eclipse workspace and adjusting ImageJ2's pom.xml to set the
+</I>&gt;<i> scijava-common.version property to point to the checked out version),
+</I>&gt;<i> MacOSXPlatform is registered as an event listener.
+</I>&gt;<i>
+</I>&gt;<i> This is the consequence of some subtle, recent change that at the same
+</I>&gt;<i> time a Context is injected, the class is also automatically registered
+</I>&gt;<i> as event listener if it has @EventHandler-annotated methods).
+</I>&gt;<i>
+</I>&gt;<i> Now, MacOSXPlatform's onEvent() method does not verify that the current
+</I>&gt;<i> platform is actually MacOSX, nor does the EventService &quot;forget&quot; the
+</I>&gt;<i> MacOSXPlatform as one would expect when the MacOSXPlatform is
+</I>&gt;<i> garbage-collected after it has been determined that it does not match
+</I>&gt;<i> the current platform because the PlatformService is now a
+</I>&gt;<i> SingletonService that does not let go of its instances...
+</I>&gt;<i>
+</I>&gt;<i> So we actually need two changes to fix this:
+</I>&gt;<i>
+</I>&gt;<i> 1) MacOSXPlatform#onEvent(WinActivatedEvent) needs to be safe, and
+</I>&gt;<i>
+</I>&gt;<i> 2) the DefaultPlatformService must not keep references to Platform
+</I>&gt;<i> instances that are not applicable to the currently-running platform.
+</I>&gt;<i>
+</I>&gt;<i> <A HREF="https://github.com/imagej/imagej/commit/c814f4b0">https://github.com/imagej/imagej/commit/c814f4b0</A> addresses 1) while
+</I>&gt;<i> <A HREF="https://github.com/scijava/scijava-common/commit/46f64db2">https://github.com/scijava/scijava-common/commit/46f64db2</A> and
+</I>&gt;<i> <A HREF="https://github.com/scijava/scijava-common/commit/522f524">https://github.com/scijava/scijava-common/commit/522f524</A> address 2)
+</I>&gt;<i>
+</I>&gt;<i> Ciao,
+</I>&gt;<i> Dscho
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20131213/12a49bab/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20131213/12a49bab/attachment-0001.html</A>&gt;
+</PRE>
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001864.html">[ImageJ-devel] The mystery of the vanishing menu in ImageJ2
+</A></li>
+	<LI>Next message: <A HREF="001867.html">[ImageJ-devel] [ImgLib2] The img-metadata branch
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1865">[ date ]</a>
+              <a href="thread.html#1865">[ thread ]</a>
+              <a href="subject.html#1865">[ subject ]</a>
+              <a href="author.html#1865">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

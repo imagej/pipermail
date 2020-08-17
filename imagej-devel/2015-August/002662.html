@@ -1,0 +1,243 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] @parameter choice update in component callback
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%40parameter%20choice%20update%20in%20component%20callback&In-Reply-To=%3Cweb-159742879%40univ-paris7.fr%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002661.html">
+   <LINK REL="Next"  HREF="002667.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] @parameter choice update in component callback</H1>
+    <B>Adrian Daerr</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%40parameter%20choice%20update%20in%20component%20callback&In-Reply-To=%3Cweb-159742879%40univ-paris7.fr%3E"
+       TITLE="[ImageJ-devel] @parameter choice update in component callback">adrian.daerr at univ-paris-diderot.fr
+       </A><BR>
+    <I>Fri Aug 21 06:18:32 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002661.html">[ImageJ-devel] @parameter choice update in component callback
+</A></li>
+        <LI>Next message: <A HREF="002667.html">[ImageJ-devel] @parameter choice update in component callback
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2662">[ date ]</a>
+              <a href="thread.html#2662">[ thread ]</a>
+              <a href="subject.html#2662">[ subject ]</a>
+              <a href="author.html#2662">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Curtis, Felix, Jan, and others,
+
+In the CommandWithPreview tutorial example[*] that Curtis sent to
+the list a few weeks back, there is a @Parameter which is
+initialised to a value depending on the initialisation of another
+parameter:
+
+@Parameter private ImagePlus imp;
+
+@Parameter(persist = false, initializer = &quot;initTitle&quot;) private String 
+title;
+
+/** Initializes the {@link #title} parameter. */
+protected void initTitle() {
+	title = initialTitle = imp.getTitle();
+}
+
+[*]
+<A HREF="https://github.com/imagej/imagej-tutorials/blob/master/commands-with-preview/src/main/java/CommandWithPreview.java">https://github.com/imagej/imagej-tutorials/blob/master/commands-with-preview/src/main/java/CommandWithPreview.java</A>
+
+Doesn't that allow doing what Felix would like to do, by
+populating the combobox through such an initialiser ?
+
+Are the parameters populated/initialised in the order they
+appear? In particular, is the initialisation done serially or can
+there be parallel execution of initialisers ? I ask because I
+have parameters a, b, c whose initialisation depend on a common
+calculation (depending on the image gotten through a previous
+@Parameter ImagePlus imp): can I do this calculation in the
+initialiser for the first parameter a, and then in the
+initialisers of b and c rely on the fact that the calculation was
+already done ?
+
+cheers,
+Adrian
+
+
+
+On Thu, 20 Aug 2015 17:13:11 -0500
+  Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt; wrote:
+&gt;<i> Hi Felix, Jan and everyone,
+</I>&gt;<i> 
+</I>&gt;&gt;<i> I couldn&#8217;t find any hint that it is possible to update the choices 
+</I>&gt;&gt;<i>of
+</I>&gt;&gt;<i> a parameter (declared with the annotator) in a callback that for
+</I>&gt;&gt;<i> another parameter.
+</I>&gt;<i> 
+</I>&gt;<i> It is possible to dynamically adjust parameters from Java code [1]. 
+</I>&gt;<i>You can
+</I>&gt;<i> also dynamically add and remove parameters. Such commands extend the
+</I>&gt;<i> DynamicCommand class.
+</I>&gt;<i> 
+</I>&gt;<i> There are many examples currently in the imagej-plugins-commands 
+</I>&gt;<i>project;
+</I>&gt;<i> e.g.:
+</I>&gt;<i> <A HREF="https://github.com/imagej/imagej-plugins-commands/blob/imagej-plugins-commands-0.5.1/src/main/java/net/imagej/plugins/commands/restructure/AddAxis.java">https://github.com/imagej/imagej-plugins-commands/blob/imagej-plugins-commands-0.5.1/src/main/java/net/imagej/plugins/commands/restructure/AddAxis.java</A>
+</I>&gt;<i> 
+</I>&gt;<i> However, a couple of notes:
+</I>&gt;<i> 
+</I>&gt;<i> - This pattern makes the command less reusable from other contexts, 
+</I>&gt;<i>because
+</I>&gt;<i> some contexts require a priori knowledge about the number and types 
+</I>&gt;<i>of
+</I>&gt;<i> input and output parameters.
+</I>&gt;<i> 
+</I>&gt;<i> - The user interface currently does not properly refresh the input
+</I>&gt;<i> harvester dialog if changes are made to parameters from a callback. 
+</I>&gt;<i>So
+</I>&gt;<i> while you can technically do things like change the choices array of 
+</I>&gt;<i>a
+</I>&gt;<i> multiple-choice input, the user will not actually see it.
+</I>&gt;<i> 
+</I>&gt;<i> - What does work currently is to determine the multiple-choice 
+</I>&gt;<i>values at
+</I>&gt;<i> initialization time, based on the values of parameters which have 
+</I>&gt;<i>already
+</I>&gt;<i> been populated earlier, such as an active dataset. This is what many 
+</I>&gt;<i>of the
+</I>&gt;<i> DynamicCommand implementations in imagej-plugins-commands do.
+</I>&gt;<i> 
+</I>&gt;<i> Really, there are _five_ different classes of commands here:
+</I>&gt;<i> 
+</I>&gt;<i> 1) Totally fixed, with inputs and outputs known in advance.
+</I>&gt;<i> 2) Updates parameter attributes (such as choices&#8212;but not # or type 
+</I>&gt;<i>of
+</I>&gt;<i> inputs/outputs) once during initialization.
+</I>&gt;<i> 3) Updates parameter number and type (i.e., adding/removing 
+</I>&gt;<i>inputs/outputs)
+</I>&gt;<i> once during initialization.
+</I>&gt;<i> 4) Updates parameter attributes repeatedly e.g. during callbacks.
+</I>&gt;<i> 5) Updates parameter number and type repeatedly e.g. during 
+</I>&gt;<i>callbacks.
+</I>&gt;<i> 
+</I>&gt;<i> Of these, type #1 is most desirable for a variety of reasons. 
+</I>&gt;<i>Failing that,
+</I>&gt;<i> types #2 and #3 can be done right now using DynamicCommand and it 
+</I>&gt;<i>works
+</I>&gt;<i> properly from the ImageJ UI&#8212;but not from other contexts like 
+</I>&gt;<i>CellProfiler,
+</I>&gt;<i> KNIME, etc. Types #4 and #5 can also be coded but will not work 
+</I>&gt;<i>properly
+</I>&gt;<i> from the UI in ImageJ because the input harvester is not rebuilt on
+</I>&gt;<i> callbacks.
+</I>&gt;<i> 
+</I>&gt;<i> See also:
+</I>&gt;<i> * <A HREF="https://github.com/scijava/scijava-common/issues/42">https://github.com/scijava/scijava-common/issues/42</A>
+</I>&gt;<i> * <A HREF="https://github.com/scijava/scijava-common/issues/43">https://github.com/scijava/scijava-common/issues/43</A>
+</I>&gt;<i> * <A HREF="https://github.com/CellProfiler/CellProfiler/issues/647">https://github.com/CellProfiler/CellProfiler/issues/647</A>
+</I>&gt;<i> 
+</I>&gt;<i> Regards,
+</I>&gt;<i> Curtis
+</I>&gt;<i> 
+</I>&gt;<i> [1] Dynamically updating parameters from scripts would be a 
+</I>&gt;<i>different
+</I>&gt;<i> story. No plans to do that any time soon...
+</I>&gt;<i> 
+</I>&gt;<i> On Thu, Aug 20, 2015 at 6:50 AM, Jan Eglinger 
+</I>&gt;<i>&lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">jan.eglinger at gmail.com</A>&gt;
+</I>&gt;<i> wrote:
+</I>&gt;<i> 
+</I>&gt;&gt;<i> Hi Felix and all,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> On 20.08.2015 10:06, MEYENHOFER Felix wrote:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> I couldn&#8217;t find any hint that it is possible to update the choices 
+</I>&gt;&gt;&gt;<i>of a
+</I>&gt;&gt;&gt;<i> parameter (declared with the annotator) in a callback that for 
+</I>&gt;&gt;&gt;<i>another
+</I>&gt;&gt;&gt;<i> parameter. For example; I have a file chooser and once a file hase 
+</I>&gt;&gt;&gt;<i>been
+</I>&gt;&gt;&gt;<i> chosen, I want to read some file metadata and then update the 
+</I>&gt;&gt;&gt;<i>choices of
+</I>&gt;&gt;&gt;<i> the combobox that allows to select the images series.
+</I>&gt;&gt;&gt;<i> Since I could not figure a way to do it, I wanted to ask here if it 
+</I>&gt;&gt;&gt;<i>is
+</I>&gt;&gt;&gt;<i> possible at all?
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;<i> I think dynamic adjustment of parameters isn't possible currently, 
+</I>&gt;&gt;<i>but I
+</I>&gt;&gt;<i> agree that it would be a great thing to have.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I know quite some use cases where either a DialogListener or a 
+</I>&gt;&gt;<i>series of
+</I>&gt;&gt;<i> subsequent dialogs are used in ImageJ 1.x plugins to adjust 
+</I>&gt;&gt;<i>parameter
+</I>&gt;&gt;<i> choice to previously harvested input.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Furthermore, is it possible to get a directory chooser instead of a 
+</I>&gt;&gt;<i>file
+</I>&gt;&gt;&gt;<i> chooser in the configuration dialog of a command using the 
+</I>&gt;&gt;&gt;<i>@Parameter
+</I>&gt;&gt;&gt;<i> annotation?
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;<i> Yes, by using the
+</I>&gt;&gt;<i>     style = &quot;directory&quot;
+</I>&gt;&gt;<i> attribute. See *Templates &gt; Python &gt; Process Folder* in the script 
+</I>&gt;&gt;<i>editor,
+</I>&gt;&gt;<i> and this related discussion:
+</I>&gt;&gt;<i>   <A HREF="https://github.com/imagej/imagej-legacy/pull/114">https://github.com/imagej/imagej-legacy/pull/114</A>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Best,
+</I>&gt;&gt;<i> Jan
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;&gt;<i>
+</I>
+-- 
+<A HREF="http://www.msc.univ-paris-diderot.fr/~daerr/">http://www.msc.univ-paris-diderot.fr/~daerr/</A>
+
+</PRE>
+
+
+
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002661.html">[ImageJ-devel] @parameter choice update in component callback
+</A></li>
+	<LI>Next message: <A HREF="002667.html">[ImageJ-devel] @parameter choice update in component callback
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2662">[ date ]</a>
+              <a href="thread.html#2662">[ thread ]</a>
+              <a href="subject.html#2662">[ subject ]</a>
+              <a href="author.html#2662">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

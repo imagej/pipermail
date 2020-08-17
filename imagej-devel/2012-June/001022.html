@@ -1,0 +1,169 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] KNIP dynamic ImageJ plugin loading
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20KNIP%20dynamic%20ImageJ%20plugin%20loading&In-Reply-To=%3CCADN69ymNn%3DUJT9BCHR%3D9NDB9ExS%3Dymj7%2BPoyxk_JDeJbwgTi6w%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001021.html">
+   <LINK REL="Next"  HREF="001023.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] KNIP dynamic ImageJ plugin loading</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20KNIP%20dynamic%20ImageJ%20plugin%20loading&In-Reply-To=%3CCADN69ymNn%3DUJT9BCHR%3D9NDB9ExS%3Dymj7%2BPoyxk_JDeJbwgTi6w%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] KNIP dynamic ImageJ plugin loading">ctrueden at wisc.edu
+       </A><BR>
+    <I>Tue Jun  5 15:33:58 CDT 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001021.html">[ImageJ-devel] Jenkins build is back to normal :	ImgLib-synchronizer #29088
+</A></li>
+        <LI>Next message: <A HREF="001023.html">[ImageJ-devel] KNIP dynamic ImageJ plugin loading
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1022">[ date ]</a>
+              <a href="thread.html#1022">[ thread ]</a>
+              <a href="subject.html#1022">[ subject ]</a>
+              <a href="author.html#1022">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Michael,
+
+I apologize for the delay in my reply; I was on vacation recently and am
+still a bit behind on email.
+
+
+&gt;<i> Do you currently plan to support user defined Plugin folders in ImageJ2?
+</I>&gt;<i>
+</I>
+Yes, we plan to support specification of an ij.plugins.path system
+property, similar to Java classpath, that defines the folder(s) where
+ImageJ plugins can be found. Actually, discovery of plugins will not be
+limited to this path either, but ImageJ2 will be more thorough in scanning
+those folders, versus other classpath elements.
+
+I filed a ticket for this: <A HREF="http://trac.imagej.net/ticket/1208">http://trac.imagej.net/ticket/1208</A>
+
+
+&gt;<i> Furthermore I had some trouble while creating a test plugin for ImageJ2
+</I>&gt;<i> with Eclipse and I wrote down the learned lessons because this might be
+</I>&gt;<i> usefull for other users as well.
+</I>
+
+Yes, we need to make it easier to develop plugins in Eclipse. We have a
+feature ticket covering these issues:
+   <A HREF="http://trac.imagej.net/ticket/1207">http://trac.imagej.net/ticket/1207</A>
+
+The main idea is to generate an Eclipse project from ImageJ, so you don't
+have to worry about getting these configuration settings right. And also
+for ImageJ to automatically update your SezPoz metadata for you, since
+Eclipse only does it when you clean the project.
+
+The Eclipse problems have been the subject of many discussions but there is
+still much work to do to iron it all out.
+
+Sorry,
+Curtis
+
+
+On Tue, May 15, 2012 at 3:46 AM, Michael Zinsmaier &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">michael.zinsmaier at gmx.de</A>
+&gt;<i> wrote:
+</I>
+&gt;<i> Dear Curtis and Barry,
+</I>&gt;<i>
+</I>&gt;<i> I am the new guy at KNIP and I am currently working on the ImageJ2
+</I>&gt;<i> integration. For KNIP it would be very useful
+</I>&gt;<i> if we could load Plugins/(Runnable Modules) during runtime such that a
+</I>&gt;<i> user could select a ImageJ2 Plugin directory and KNIP browses this
+</I>&gt;<i> directory and loads the respective plugins.
+</I>&gt;<i>
+</I>&gt;<i> To my knowledge this could basically be implemented by either manipulating
+</I>&gt;<i> the classpath or with ClassLoaders to
+</I>&gt;<i> make the additional jar files visible for the PluginFinder. However due to
+</I>&gt;<i> the eclipse plugin based KNIME architecture and the class.forName calls in
+</I>&gt;<i> ImageJ2 I don't get either of these options to work.
+</I>&gt;<i>
+</I>&gt;<i> Do you currently plan to support user defined Plugin folders in ImageJ2?
+</I>&gt;<i>
+</I>&gt;<i> I attached a sample of my ClassLoader code in case that there exists a
+</I>&gt;<i> simple solution that I missed (-:
+</I>&gt;<i> Furthermore I had some trouble while creating a test plugin for ImageJ2
+</I>&gt;<i> with Eclipse and I wrote down the learned lessons because this might be
+</I>&gt;<i> usefull for other users as well.
+</I>&gt;<i>
+</I>&gt;<i> regards Michael
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> ClassLoader based sample Code:
+</I>&gt;<i> ------------------------------**--------------------
+</I>&gt;<i>
+</I>&gt;<i> I experimented with code like this:
+</I>&gt;<i>
+</I>&gt;<i> File f = new File(&quot;MySmallPlugin.jar&quot;);
+</I>&gt;<i>
+</I>&gt;<i> ClassLoader cl = null;
+</I>&gt;<i> try {
+</I>&gt;<i>       ClassLoader prev = IJ2Modules.class.**getClassLoader();
+</I>&gt;<i>       cl = new URLClassLoader(new URL[] { f.toURI().toURL() }, prev);
+</I>&gt;<i> } catch (MalformedURLException e) {
+</I>&gt;<i>        e.printStackTrace();
+</I>&gt;<i> }
+</I>&gt;<i>
+</I>&gt;<i> final ArrayList&lt;PluginInfo&lt;?&gt;&gt; plugins = new ArrayList&lt;PluginInfo&lt;?&gt;&gt;();
+</I>&gt;<i> PluginFinder pf = new PluginFinder(cl);
+</I>&gt;<i> pf.findPlugins(plugins);
+</I>&gt;<i>
+</I>&gt;<i> I can find my new plugin like this however the ImageJ2 classes belong as
+</I>&gt;<i> far as I understand to the &quot;prev&quot; classloader and class.forName will thus
+</I>&gt;<i> not work in subsequent calls.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Plugin creation with Eclipse:
+</I>&gt;<i> ------------------------------**----------------------------
+</I>&gt;<i> To do the experiments I created a simple Plugin with Eclipse and there are
+</I>&gt;<i> some pitfalls
+</I>&gt;<i>
+</I>&gt;<i>  - one has to consider the Eclipse-specific notes of sezpoz (
+</I>&gt;<i> sezpoz.java.net -&gt;  Notes)
+</I>&gt;<i>  - it seems that the sezpoz library has to be included in the buildpath of
+</I>&gt;<i> the pluginproject although eclipse will never ask for it (I think it might
+</I>&gt;<i> be used during the jar creation to generate the annotations folder in the
+</I>&gt;<i> jar file but this is just a guess)
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20120605/99eec3bd/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20120605/99eec3bd/attachment.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001021.html">[ImageJ-devel] Jenkins build is back to normal :	ImgLib-synchronizer #29088
+</A></li>
+	<LI>Next message: <A HREF="001023.html">[ImageJ-devel] KNIP dynamic ImageJ plugin loading
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1022">[ date ]</a>
+              <a href="thread.html#1022">[ thread ]</a>
+              <a href="subject.html#1022">[ subject ]</a>
+              <a href="author.html#1022">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

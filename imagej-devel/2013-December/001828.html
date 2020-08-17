@@ -1,0 +1,263 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [ImgLib2] The img-metadata branch
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5BImgLib2%5D%20The%20img-metadata%20branch&In-Reply-To=%3CCADN69ykKh8Y0eu11yLn08uRS0WqfP165fOPyW5ojXCppfsMFZw%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001827.html">
+   <LINK REL="Next"  HREF="001858.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [ImgLib2] The img-metadata branch</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5BImgLib2%5D%20The%20img-metadata%20branch&In-Reply-To=%3CCADN69ykKh8Y0eu11yLn08uRS0WqfP165fOPyW5ojXCppfsMFZw%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] [ImgLib2] The img-metadata branch">ctrueden at wisc.edu
+       </A><BR>
+    <I>Wed Dec  4 15:57:16 CST 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001827.html">[ImageJ-devel] LUT ranges
+</A></li>
+        <LI>Next message: <A HREF="001858.html">[ImageJ-devel] [ImgLib2] The img-metadata branch
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1828">[ date ]</a>
+              <a href="thread.html#1828">[ thread ]</a>
+              <a href="subject.html#1828">[ subject ]</a>
+              <a href="author.html#1828">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Brian &amp; everyone,
+
+&gt;<i> there is currently a bug in ImgSaver preventing things from working
+</I>...
+&gt;<i> We are working on a fix now and will reply back when the bug is
+</I>&gt;<i> resolved.
+</I>
+Just a quick update that ImgSaver of scifio-0.7.3 is working better. The
+following code now produces a multi-page TIFF as expected:
+
+--snip--
+import io.scif.SCIFIO;
+import io.scif.img.ImgOpener;
+import io.scif.img.ImgOptions;
+import io.scif.img.ImgOptions.ImgMode;
+import io.scif.img.ImgSaver;
+import net.imglib2.meta.ImgPlus;
+
+public class WriteAnImgPlus {
+public static void main(final String... args) throws Exception {
+final SCIFIO scifio = new SCIFIO();
+ final ImgOpener opener = new ImgOpener(scifio.getContext());
+
+// NB: ImgSaver only supports PlanarImg for now!
+ final ImgOptions options = new ImgOptions().setImgModes(ImgMode.PLANAR);
+final ImgPlus&lt;?&gt; imgPlus =
+ opener.openImg(&quot;stack&amp;axes=X,Y,Z&amp;lengths=128,128,10.fake&quot;, options);
+
+System.out.println(&quot;imgPlus = &quot; + imgPlus);
+ System.out.println(&quot;numDimensions = &quot; + imgPlus.numDimensions());
+for (int d=0; d&lt;imgPlus.numDimensions(); d++) {
+ System.out.println(&quot;dim #&quot; + d + &quot; = &quot; + imgPlus.dimension(d));
+System.out.println(&quot;axis #&quot; + d + &quot; = &quot; + imgPlus.axis(d).type());
+ }
+
+final ImgSaver saver = new ImgSaver(scifio.getContext());
+saver.saveImg(&quot;stack.tif&quot;, (ImgPlus) imgPlus);
+ }
+}
+--snap--
+
+As of this writing, please note that you will only be able to save as
+OME-TIFF if you include the ome-formats library [1] plus dependencies on
+your classpath.
+
+Regards,
+Curtis
+
+[1] <A HREF="https://github.com/scifio/ome-formats">https://github.com/scifio/ome-formats</A>
+
+
+On Thu, Oct 24, 2013 at 1:14 PM, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt; wrote:
+
+&gt;<i> Hi Brian,
+</I>&gt;<i>
+</I>&gt;<i> Apologies for the long delay in reply. It is better to write to a public
+</I>&gt;<i> mailing list. I am CCing imagej-devel.
+</I>&gt;<i>
+</I>&gt;<i> &gt; Is the following code snippet still correct given recent changes??
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; AxisType[] ax = new AxisType[3]; ax[0]=Axes.X; ax[1]=Axes.Y;
+</I>&gt;<i> &gt; ax[2]=Axes.Z;
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; ImgPlus&lt;T&gt; imgPlus = new ImgPlus&lt;T&gt;(image, name, ax);
+</I>&gt;<i>  &gt;
+</I>&gt;<i> &gt; new ImgSaver().saveImg(&quot;name.ome.tif&quot;, imgPlus);
+</I>&gt;<i>
+</I>&gt;<i> Firstly, as an aside, please note that ImgSaver has moved from the
+</I>&gt;<i> net.imglib2:imglib2-io project into io.scif:scifio core.
+</I>&gt;<i>
+</I>&gt;<i> But yes, the above code is still supposed to work.
+</I>&gt;<i>
+</I>&gt;<i> However, in practice there is currently a bug in ImgSaver preventing
+</I>&gt;<i> things from working correctly.
+</I>&gt;<i>
+</I>&gt;<i> Here is a complete (non-)working example:
+</I>&gt;<i> <A HREF="https://gist.github.com/ctrueden/6234396">https://gist.github.com/ctrueden/6234396</A>
+</I>&gt;<i>
+</I>&gt;<i> We are working on a fix now and will reply back when the bug is resolved.
+</I>&gt;<i>
+</I>&gt;<i> Regards,
+</I>&gt;<i> Curtis
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On Tue, Aug 13, 2013 at 5:21 AM, Brian Northan &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">bnorthan at gmail.com</A>&gt; wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> Hi Curtis
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> So after updating imglib this morning I now get lots of errors.  Which is
+</I>&gt;&gt;<i> expected after your changes.  So I suspect after I sort through them and
+</I>&gt;&gt;<i> rework my code for the changes that saving the axis types will work again.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> But one other quick question.  Is the ImageJ2 scripting ready for use??
+</I>&gt;&gt;<i> I looked at it a bit a while ago but it didn't seem quite ready.   I have a
+</I>&gt;&gt;<i> series of commands I call, so temporarily I just use a bash script calling
+</I>&gt;&gt;<i> Imagej2 in headless mode, with a utility I wrote to parse command name and
+</I>&gt;&gt;<i> parameters.   Eventually I will switch to the ImageJ scripting...  is it
+</I>&gt;&gt;<i> usable yet or should I wait a few more months?
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Thanks, this stuff is really great.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Brian
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> On Tue, Aug 13, 2013 at 4:46 AM, Brian Northan &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">bnorthan at gmail.com</A>&gt;wrote:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Hi Curtis
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> I have some simple code to wrap an 3D Img&lt;T&gt; as an ImgPlus, define the
+</I>&gt;&gt;&gt;<i> axis as x,y and z and then save it.  Up until a week or so ago it seemed to
+</I>&gt;&gt;&gt;<i> work fine.  But now when I read back the image it come in as x, y, t.   Is
+</I>&gt;&gt;&gt;<i> the following code snippet still correct given recent changes??   Thanks-
+</I>&gt;&gt;&gt;<i> Brian
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> AxisType[] ax = new AxisType[3];
+</I>&gt;&gt;&gt;<i>         ax[0]=Axes.X;
+</I>&gt;&gt;&gt;<i>         ax[1]=Axes.Y;
+</I>&gt;&gt;&gt;<i>         ax[2]=Axes.Z;
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> ImgPlus&lt;T&gt; imgPlus = new ImgPlus&lt;T&gt;(image, name, ax);
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> new ImgSaver().saveImg(&quot;name.ome.tif&quot;, imgPlus);
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> On Mon, Aug 12, 2013 at 1:39 PM, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt;wrote:
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> Hi all,
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> &gt; I will merge the img-metadata branch to master on Thursday.
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> Got a bit busy in the interim, but img-metadata is now merged to
+</I>&gt;&gt;&gt;&gt;<i> imglib.git's master branch:
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> <A HREF="https://github.com/imagej/imglib/commit/e4e26aa05e0f42ff1a90e8c6d67235431471de44">https://github.com/imagej/imglib/commit/e4e26aa05e0f42ff1a90e8c6d67235431471de44</A>
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i>  The commit message gives a quick gist of the changes, including future
+</I>&gt;&gt;&gt;&gt;<i> directions.
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> Please let me know of any questions or problems with it!
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> Regards,
+</I>&gt;&gt;&gt;&gt;<i> Curtis
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> On Tue, Jul 30, 2013 at 10:28 AM, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt;wrote:
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i> Hi all, and especially ImgLib2 developers,
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i> At the ImgLib2 hackathon this past May, I started work on a branch to
+</I>&gt;&gt;&gt;&gt;&gt;<i> make it easier to attach per-axis metadata to N-dimensional spaces. I think
+</I>&gt;&gt;&gt;&gt;&gt;<i> this branch is finally in a merge-worthy state.
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i> It introduces an AnnotatedSpace extension to EuclideanSpace which lets
+</I>&gt;&gt;&gt;&gt;&gt;<i> you attach on Axis per dimension. It defines TypedSpace, which declares an
+</I>&gt;&gt;&gt;&gt;&gt;<i> AxisType for each Axis, as well as a CalibratedSpace, which in addition
+</I>&gt;&gt;&gt;&gt;&gt;<i> adds a calibration value and optional unit name to the mix.
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i> This approach is much more flexible than the previous CalibratedSpace,
+</I>&gt;&gt;&gt;&gt;&gt;<i> which has been renamed to OldCalibratedSpace and deprecated until we can
+</I>&gt;&gt;&gt;&gt;&gt;<i> fully transition all the code away from it. In particular, having the axes
+</I>&gt;&gt;&gt;&gt;&gt;<i> attached to the space directly will allows Views to maintain the axis
+</I>&gt;&gt;&gt;&gt;&gt;<i> metadata without much additional work.
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i> Note that these new classes are defined in the net.imglib2.meta
+</I>&gt;&gt;&gt;&gt;&gt;<i> component, which was split into a separate module called imglib2-meta. The
+</I>&gt;&gt;&gt;&gt;&gt;<i> ImgPlus class moved there, too (it should have been there all along). So
+</I>&gt;&gt;&gt;&gt;&gt;<i> merging this branch will cause some code breakage, but all should be
+</I>&gt;&gt;&gt;&gt;&gt;<i> straightforward to fix: rename usages of CalibratedSpace to
+</I>&gt;&gt;&gt;&gt;&gt;<i> OldCalibratedSpace, and rename the ImgPlus package from net.imglib2.img to
+</I>&gt;&gt;&gt;&gt;&gt;<i> net.imglib2.meta.
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i> Going forward, we can also add a CalibratedViews class to the
+</I>&gt;&gt;&gt;&gt;&gt;<i> net.imglib2.meta package which has some additional features such as
+</I>&gt;&gt;&gt;&gt;&gt;<i> exposing resampled Imgs from a source CalibratedSpace into a target one
+</I>&gt;&gt;&gt;&gt;&gt;<i> based on the units used. We can lean on a units library for this, as we
+</I>&gt;&gt;&gt;&gt;&gt;<i> have discussed in the past.
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i> If interested, you can browse the branch at:
+</I>&gt;&gt;&gt;&gt;&gt;<i> <A HREF="https://github.com/imagej/imglib/compare/img-metadata">https://github.com/imagej/imglib/compare/img-metadata</A>
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i> If no one objects, I will merge the img-metadata branch to master on
+</I>&gt;&gt;&gt;&gt;&gt;<i> Thursday.
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i> Regards,
+</I>&gt;&gt;&gt;&gt;&gt;<i> Curtis
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20131204/c164d41a/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20131204/c164d41a/attachment.html</A>&gt;
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001827.html">[ImageJ-devel] LUT ranges
+</A></li>
+	<LI>Next message: <A HREF="001858.html">[ImageJ-devel] [ImgLib2] The img-metadata branch
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1828">[ date ]</a>
+              <a href="thread.html#1828">[ thread ]</a>
+              <a href="subject.html#1828">[ subject ]</a>
+              <a href="author.html#1828">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

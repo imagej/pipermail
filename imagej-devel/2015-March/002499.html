@@ -1,0 +1,214 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] external plugins
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20external%20plugins&In-Reply-To=%3CCADN69ykPpinHToA%2B%2BycnARGxKCqmwez5dkufPUCHQP5LB3%2BPsQ%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002498.html">
+   <LINK REL="Next"  HREF="002501.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] external plugins</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20external%20plugins&In-Reply-To=%3CCADN69ykPpinHToA%2B%2BycnARGxKCqmwez5dkufPUCHQP5LB3%2BPsQ%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] external plugins">ctrueden at wisc.edu
+       </A><BR>
+    <I>Thu Mar 19 11:36:56 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002498.html">[ImageJ-devel] external plugins
+</A></li>
+        <LI>Next message: <A HREF="002501.html">[ImageJ-devel] external plugins
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2499">[ date ]</a>
+              <a href="thread.html#2499">[ thread ]</a>
+              <a href="subject.html#2499">[ subject ]</a>
+              <a href="author.html#2499">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Jay,
+
+&gt;<i> Person (A) also downloads the .java/.class file of a just a plugin
+</I>&gt;<i> that would work within my software from third person (C).
+</I>
+This is the scenario we are trying to move away from: distributing bare
+.java or .class files. As long as plugins are distributed as .jar files
+which contain the plugin annotation metadata (in
+META-INF/json/org.scijava.plugin.Plugin), then all is well.
+
+&gt;<i> Person (A) wants to run my binary and load/use the plugin from person
+</I>&gt;<i> (C) at runtime. How would the SciJava plugin framework know how to
+</I>&gt;<i> automatically discover this plugin?
+</I>
+The plugin (as a .jar file) is placed somewhere where it will be included
+in the classpath at launch time. As long as the new .jar file is on the
+classpath, it will be discovered at runtime.
+
+&gt;<i> I thought that if my program is already compiled and running before I
+</I>&gt;<i> specify where this &quot;external plugin&quot; resides and load the class, the
+</I>&gt;<i> PluginService would be unaware of the external plugin.
+</I>
+Is it really a requirement that users be able to load additional plugins
+_after_ your program starts up, without restarting the program? If not,
+then I wouldn't worry about making this work, as it adds complexity for
+little gain. Just put the new plugin somewhere on the classpath, start JEX,
+and all is well.
+
+If you really need to be able to load plugins after startup, this _can_ be
+done. But you have to manually add them to the plugin service via the
+addPlugins API method.
+
+Regards,
+Curtis
+
+On Thu, Mar 19, 2015 at 11:32 AM, Jay Warrick &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">jay.w.warrick at gmail.com</A>&gt;
+wrote:
+
+&gt;<i> Thanks, Mark. I should likely be using this Handler methodology in a few
+</I>&gt;<i> places in my software, including in this case. However, I'm still concerned
+</I>&gt;<i> about detection of the plugin given the scenario I'm thinking of. But,
+</I>&gt;<i> maybe you can help me understand. I have already been able to build my
+</I>&gt;<i> software project around the SciJava plugin framework and ImageJ's
+</I>&gt;<i> PluginService to automatically recognize the plugins that are part of my
+</I>&gt;<i> own software project. The SciJava framework does its job beautifully to
+</I>&gt;<i> automatically discover the plugins I've developed within my software.
+</I>&gt;<i> However, what about the following scenario?
+</I>&gt;<i>
+</I>&gt;<i> Person (A) downloads the binary of my software from me (B). Person (A)
+</I>&gt;<i> also downloads the .java/.class file of a just a plugin that would work
+</I>&gt;<i> within my software from third person (C). Person (A) wants to run my binary
+</I>&gt;<i> and load/use the plugin from person (C) at runtime. How would the SciJava
+</I>&gt;<i> plugin framework know how to automatically discover this plugin?
+</I>&gt;<i>
+</I>&gt;<i> My recollection is that the list of plugins loaded by the PluginService
+</I>&gt;<i> are determined from a java annotation index file that is created during
+</I>&gt;<i> early in the build process. Thus, I thought that if my program is already
+</I>&gt;<i> compiled and running before I specify where this &quot;external plugin&quot; resides
+</I>&gt;<i> and load the class, the PluginService would be unaware of the external
+</I>&gt;<i> plugin. Am I correct? If it can detect it, then it appears I'm home free
+</I>&gt;<i> and am worrying for nothing, which would be awesome.
+</I>&gt;<i>
+</I>&gt;<i> Thanks!
+</I>&gt;<i>
+</I>&gt;<i> Jay
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On Mar 19, 2015, at 8:51 AM, Mark Hiner &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">hiner at wisc.edu</A>&gt; wrote:
+</I>&gt;<i>
+</I>&gt;<i> Hi Jay,
+</I>&gt;<i>
+</I>&gt;<i> &gt;One of the main things I can't quite envision is how to process the
+</I>&gt;<i> annotations of an external .java file at runtime so that I can utilize that
+</I>&gt;<i> information
+</I>&gt;<i>
+</I>&gt;<i> You shouldn't have to do this yourself. By using the SciJava plugin
+</I>&gt;<i> framework you get discovery of all annotated plugins on your classpath, and
+</I>&gt;<i> processing/indexing of those plugins, for free.
+</I>&gt;<i>
+</I>&gt;<i> I'm assuming the paradigm that would match your needs is a
+</I>&gt;<i> HandlerService[1]. The service would perform some function (e.g. opening a
+</I>&gt;<i> path) and the behavior of that function would be extensible via
+</I>&gt;<i> HandlerPlugins[2] (e.g. a plugin for handling URLs, files on disk, files in
+</I>&gt;<i> a database, etc...).
+</I>&gt;<i>
+</I>&gt;<i> The simplest example of &quot;service chooses a plugin appropriate for the
+</I>&gt;<i> circumstances&quot; is the AnimalService tutorial[3]. Note that it's not
+</I>&gt;<i> actually a HandlerService but could easily be converted to one. More
+</I>&gt;<i> complex examples would be the IOService[4] or SCIFIO's FormatService[5].
+</I>&gt;<i>
+</I>&gt;<i> Best,
+</I>&gt;<i> Mark
+</I>&gt;<i>
+</I>&gt;<i> [1]
+</I>&gt;<i> <A HREF="https://github.com/scijava/scijava-common/blob/scijava-common-2.39.0/src/main/java/org/scijava/plugin/HandlerService.java">https://github.com/scijava/scijava-common/blob/scijava-common-2.39.0/src/main/java/org/scijava/plugin/HandlerService.java</A>
+</I>&gt;<i> [2]
+</I>&gt;<i> <A HREF="https://github.com/scijava/scijava-common/blob/scijava-common-2.39.0/src/main/java/org/scijava/plugin/HandlerPlugin.java">https://github.com/scijava/scijava-common/blob/scijava-common-2.39.0/src/main/java/org/scijava/plugin/HandlerPlugin.java</A>
+</I>&gt;<i> [3]
+</I>&gt;<i> <A HREF="https://github.com/imagej/imagej-tutorials/tree/00394f9f5010d1787b9bf584b6e90eed01beec0d/create-a-new-plugin-type/src/main/java">https://github.com/imagej/imagej-tutorials/tree/00394f9f5010d1787b9bf584b6e90eed01beec0d/create-a-new-plugin-type/src/main/java</A>
+</I>&gt;<i> [4]
+</I>&gt;<i> <A HREF="https://github.com/scijava/scijava-common/blob/scijava-common-2.39.0/src/main/java/org/scijava/io/IOService.java">https://github.com/scijava/scijava-common/blob/scijava-common-2.39.0/src/main/java/org/scijava/io/IOService.java</A>
+</I>&gt;<i> [5]
+</I>&gt;<i> <A HREF="https://github.com/scifio/scifio/blob/scifio-0.21.1/src/main/java/io/scif/services/FormatService.java">https://github.com/scifio/scifio/blob/scifio-0.21.1/src/main/java/io/scif/services/FormatService.java</A>
+</I>&gt;<i>
+</I>&gt;<i> On Wed, Mar 18, 2015 at 6:42 PM, Jay Warrick &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">jay.w.warrick at gmail.com</A>&gt;
+</I>&gt;<i> wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> Hi All,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I am using the scijava plugin framework, ImageJ2, and its Plugin service.
+</I>&gt;&gt;<i> I would like to allow other people to write a plugin for my software. I'm
+</I>&gt;&gt;<i> open to suggestions but I'd probably like to enable them to place their
+</I>&gt;&gt;<i> java/jar/class plugin file in a folder, and I could look into that folder
+</I>&gt;&gt;<i> to load their plugin. I'm thinking along the lines of how how old ImageJ
+</I>&gt;&gt;<i> did things. Does anyone have suggestions or example code (e.g., in FIJI
+</I>&gt;&gt;<i> somewhere) for loading/compiling such plugin files during runtime. One of
+</I>&gt;&gt;<i> the main things I can't quite envision is how to process the annotations of
+</I>&gt;&gt;<i> an external .java file at runtime so that I can utilize that information
+</I>&gt;&gt;<i> (e.g., in conjunction with the PluginService). If there is an inherent
+</I>&gt;&gt;<i> problem in what I'm hoping to do, please let me know :-) (e.g., if I am
+</I>&gt;&gt;<i> provided compiled code, I suspect I might need an annotation index to go
+</I>&gt;&gt;<i> with it if I need that information).
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I figured you guys have tackled this problem thoroughly already and thus
+</I>&gt;&gt;<i> would be a good resource. Thanks in advance!
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Regards,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Jay
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20150319/0eec9998/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20150319/0eec9998/attachment-0001.html</A>&gt;
+</PRE>
+
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002498.html">[ImageJ-devel] external plugins
+</A></li>
+	<LI>Next message: <A HREF="002501.html">[ImageJ-devel] external plugins
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2499">[ date ]</a>
+              <a href="thread.html#2499">[ thread ]</a>
+              <a href="subject.html#2499">[ subject ]</a>
+              <a href="author.html#2499">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

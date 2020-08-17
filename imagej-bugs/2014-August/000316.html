@@ -1,0 +1,207 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-bugs] [Bug 835] Fiji hangs when installing macro tool
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%20835%5D%20Fiji%20hangs%20when%20installing%20macro%20tool&In-Reply-To=%3Cbug-835-19-8MZWQYhn0x%40http.fiji.sc/bugzilla/%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000315.html">
+   <LINK REL="Next"  HREF="000317.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-bugs] [Bug 835] Fiji hangs when installing macro tool</H1>
+    <B>bugzilla at fiji.sc</B> 
+    <A HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%20835%5D%20Fiji%20hangs%20when%20installing%20macro%20tool&In-Reply-To=%3Cbug-835-19-8MZWQYhn0x%40http.fiji.sc/bugzilla/%3E"
+       TITLE="[ImageJ-bugs] [Bug 835] Fiji hangs when installing macro tool">bugzilla at fiji.sc
+       </A><BR>
+    <I>Mon Aug 25 07:12:53 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000315.html">[ImageJ-bugs] [Bug 703] Trackmate Update 19 Feb 2014 - missing	class definition
+</A></li>
+        <LI>Next message: <A HREF="000317.html">[ImageJ-bugs] [Bug 912] New: *Image &gt; Overlay &gt; Flatten* fails in	Composite Mode
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#316">[ date ]</a>
+              <a href="thread.html#316">[ thread ]</a>
+              <a href="subject.html#316">[ subject ]</a>
+              <a href="author.html#316">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE><A HREF="http://fiji.sc/bugzilla/show_bug.cgi?id=835">http://fiji.sc/bugzilla/show_bug.cgi?id=835</A>
+
+--- Comment #11 from Ilan Tal &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">ilan.tal at gmail.com</A>&gt; ---
+I managed to track down the problem to Menus.java. Here is the relevant code
+
+    /** Returns a list of the plugins in the plugins menu. */
+    public static synchronized String[] getPlugins() {
+        File f = pluginsPath!=null?new File(pluginsPath):null;
+        if (f==null || (f!=null &amp;&amp; !f.isDirectory()))
+            return null;
+        String[] list = f.list();
+        if (list==null)
+            return null;
+        Vector v = new Vector();
+        jarFiles = null;
+        macroFiles = null;
+        for (int i=0; i&lt;list.length; i++) {
+            String name = list[i];
+            boolean isClassFile = name.endsWith(&quot;.class&quot;);
+            boolean hasUnderscore = name.indexOf('_')&gt;=0;
+            if (hasUnderscore &amp;&amp; isClassFile &amp;&amp; name.indexOf('$')&lt;0 ) {
+                name = name.substring(0, name.length()-6); // remove &quot;.class&quot;
+                v.addElement(name);
+            } else if (hasUnderscore &amp;&amp; (name.endsWith(&quot;.jar&quot;) ||
+name.endsWith(&quot;.zip&quot;))) {
+                if (jarFiles==null) jarFiles = new Vector();
+                jarFiles.addElement(pluginsPath + name);
+            } else if (validMacroName(name,hasUnderscore)) {
+                if (macroFiles==null) macroFiles = new Vector();
+                macroFiles.addElement(name);
+            } else {
+                if (!isClassFile)
+                    checkSubdirectory(pluginsPath, name, v);
+            }
+        }
+        list = new String[v.size()];
+        v.copyInto((String[])list);
+        StringSorter.sort(list);
+        return list;
+    }
+
+    /** Looks for plugins and jar files in a subdirectory of the plugins
+directory. */
+    private static void checkSubdirectory(String path, String dir, Vector v) {
+        if (dir.endsWith(&quot;.java&quot;))
+            return;
+        File f = new File(path, dir);
+        if (!f.isDirectory())
+            return;
+        String[] list = f.list();
+        if (list==null)
+            return;
+        dir += &quot;/&quot;;
+        int classCount=0, otherCount=0;
+        String className = null;
+        for (int i=0; i&lt;list.length; i++) {
+            String name = list[i];
+            boolean hasUnderscore = name.indexOf('_')&gt;=0;
+            if (hasUnderscore &amp;&amp; name.endsWith(&quot;.class&quot;) &amp;&amp;
+name.indexOf('$')&lt;0) {
+                name = name.substring(0, name.length()-6); // remove &quot;.class&quot;
+                v.addElement(dir+name);
+                classCount++;
+                className = name;
+                //IJ.write(&quot;File: &quot;+f+&quot;/&quot;+name);
+            } else if (hasUnderscore &amp;&amp; (name.endsWith(&quot;.jar&quot;) ||
+name.endsWith(&quot;.zip&quot;))) {
+                if (jarFiles==null) jarFiles = new Vector();
+                jarFiles.addElement(f.getPath() + File.separator + name);
+                otherCount++;
+            } else if (validMacroName(name,hasUnderscore)) {
+                if (macroFiles==null) macroFiles = new Vector();
+                macroFiles.addElement(dir + name);
+                otherCount++;
+            } else {
+                File f2 = new File(f, name);
+                if (f2.isDirectory()) installSubdirectorMacros(f2, dir+name);
+            }
+        }
+        if (Prefs.moveToMisc &amp;&amp; classCount==1 &amp;&amp; otherCount==0 &amp;&amp;
+dir.indexOf(&quot;_&quot;)==-1)
+            v.setElementAt(&quot;Miscellaneous/&quot; + className,
+                v.size() - 1);
+    }
+
+The problem is macroFiles never gets a non null value in Fiji. In ImageJ, it
+works with no problems. In the end the problem comes down to
+
+    private static boolean validMacroName(String name, boolean hasUnderscore) {
+        return
+(hasUnderscore&amp;&amp;name.endsWith(&quot;.txt&quot;))||name.endsWith(&quot;.ijm&quot;)||name.endsWith(&quot;.js&quot;)
+           
+||<i>(name.endsWith(&quot;.bsh&quot;)&amp;&amp;!isFiji)||(name.endsWith(&quot;.py&quot;)&amp;&amp;!isFiji);
+</I>    }
+ which returns a value of FALSE for a valid macro name. I verified that this
+routine hasn't changed even in the latest 1.49f. It should return TRUE if the
+name end in &quot;.txt&quot; and has an underscore, or if name ends in &quot;.ijm&quot; without any
+connection to an underscore. Again, in ImageJ it works fine, but not in Fiji.
+
+The process begins in getPlugins where macroFiles gets initialized to null.
+&gt;<i>From there it looks for valid macros to store. In my case I've got
+</I>Postage_Action_Tool.ijm which is a perfectly valid macro file name. This file
+name is in the Tools directory inside the plugins directory.
+
+The getPlugins gets a file list where the interesting entry is Tools. Of course
+Tools isn't a macro so it gets down to checkSubdirectory(...). Inside
+checkSubdirectory there is directory list which includes my file
+Postage_Action_Tool.ijm. Even though this is a perfectly valid macro name,
+validMacroName insists it isn't valid. Thus macroFiles never gets a non null
+value and no elements are added to it.
+
+I thought maybe there were some invisible characters which might cause the
+endsWith(&quot;.ijm&quot;) to fail, so I copied over the exact same file from ImageJ into
+Fiji. I was going to suggest to add a trim to the list line
+
+String name = list[i].trim();
+
+but now I have strong doubts that it would help. This is especially after I
+looked at some other macros which should have been added. They are
+
+About_Plugins_Macros.txt
+batch_convert_any_to_tif.txt
+Polygon_.txt
+RGB_Histogram.txt
+
+All of them should have passed the test and none of them passed in fact. These
+are all .txt files, but they all have underscores.
+
+So the problem is wider than the bug I reported, but it also affects me, which
+is the part which is most annoying to me. Someone may be familiar with one or
+more of the above macros. If I knew what to expect from them, I might verify
+that they work differently in ImageJ.
+
+Thanks,
+Ilan
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-bugs/attachments/20140825/279395d4/attachment-0001.html">http://imagej.net/pipermail/imagej-bugs/attachments/20140825/279395d4/attachment-0001.html</A>&gt;
+</PRE>
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000315.html">[ImageJ-bugs] [Bug 703] Trackmate Update 19 Feb 2014 - missing	class definition
+</A></li>
+	<LI>Next message: <A HREF="000317.html">[ImageJ-bugs] [Bug 912] New: *Image &gt; Overlay &gt; Flatten* fails in	Composite Mode
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#316">[ date ]</a>
+              <a href="thread.html#316">[ thread ]</a>
+              <a href="subject.html#316">[ subject ]</a>
+              <a href="author.html#316">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-bugs">More information about the Imagej-bugs
+mailing list</a><br>
+</body></html>

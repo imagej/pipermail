@@ -1,0 +1,161 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [fiji-devel] Re: equal iteration order
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20Re%3A%20equal%20iteration%20order&In-Reply-To=%3C2B4A9DED-78B2-4851-9534-6B6099450972%40mpi-cbg.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000696.html">
+   <LINK REL="Next"  HREF="000698.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [fiji-devel] Re: equal iteration order</H1>
+    <B>Stephan Preibisch</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20Re%3A%20equal%20iteration%20order&In-Reply-To=%3C2B4A9DED-78B2-4851-9534-6B6099450972%40mpi-cbg.de%3E"
+       TITLE="[ImageJ-devel] [fiji-devel] Re: equal iteration order">preibisch at mpi-cbg.de
+       </A><BR>
+    <I>Wed Mar 21 12:57:30 CDT 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000696.html">[ImageJ-devel] [fiji-devel] Re: equal iteration order
+</A></li>
+        <LI>Next message: <A HREF="000698.html">[ImageJ-devel] [fiji-devel] Re: equal iteration order
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#697">[ date ]</a>
+              <a href="thread.html#697">[ thread ]</a>
+              <a href="subject.html#697">[ subject ]</a>
+              <a href="author.html#697">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Tobias, 
+
+great! 
+
+Just one question, should we always create the instance in each Img like ArrayImg from the beginning or maybe just instantiate it once equalIterationOrder is called the first time? 
+
+This would reduce the initial overhead of each Img, just imagine you have a lot of small ones ... Because I guess there are a lot of examples where this method will never be called.
+
+@Override
+public Object iterationOrder()
+{
+	if ( iterationOrder == null )
+		iterationOrder = new FlatIterationOrder( this );
+	return iterationOrder;
+}
+
+Steffi
+
+On Mar 21, 2012, at 13:27 , Tobias Pietzsch wrote:
+
+&gt;<i> Hi,
+</I>&gt;<i> 
+</I>&gt;<i> I cleaned up the &quot;equal iteration order&quot; mechanism.
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> In the end, I did not use an interface &quot;FlatIterationOrder&quot;.
+</I>&gt;<i> The reason was that this interface can not be propagated through wrapper
+</I>&gt;<i> classes (like ImgPlus). Even though ImgPlus.equalIterationOrder( f )
+</I>&gt;<i> propagates to its wrapped img like
+</I>&gt;<i> 
+</I>&gt;<i>  return img.equalIterationOrder( f );
+</I>&gt;<i> 
+</I>&gt;<i> this breaks when you try to compare the iteration orders of two ImgPlus
+</I>&gt;<i> for instance. The first solution to this would be to
+</I>&gt;<i> 
+</I>&gt;<i>  return f.equalIterationOrder( img );
+</I>&gt;<i> 
+</I>&gt;<i> and assume f does the same and you propagate alternately down to the
+</I>&gt;<i> un-wrapped IterableIntervals. However, you would have to be super
+</I>&gt;<i> careful not to provoke infinite loops in this way.
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> So instead of this, I introduced a new method in the
+</I>&gt;<i> IterableRealInterval interface:
+</I>&gt;<i> 
+</I>&gt;<i>  public Object iterationOrder()
+</I>&gt;<i> 
+</I>&gt;<i> It is supposed to return an Object that represents the particular
+</I>&gt;<i> iteration order. Comparison of iteration orders is via Object.equals().
+</I>&gt;<i> That is, if you want to find whether IterableIntervals A and B have
+</I>&gt;<i> equal iteration order, you ask whether
+</I>&gt;<i> 
+</I>&gt;<i>  A.iterationOrder().equals(B.iterationOrder()).
+</I>&gt;<i> 
+</I>&gt;<i> equalIterationOrder() is deprecated. I still changed it everywhere to
+</I>&gt;<i> have it still work but some day we should remove it to keep the
+</I>&gt;<i> IterableRealInterval interface as small as possible.
+</I>&gt;<i> 
+</I>&gt;<i> So, FlatIterationOrder is a class now. If you support flat iteration
+</I>&gt;<i> order, then your iterationOrder() method should return a
+</I>&gt;<i> FlatIterationOrder instance constructed with your Interval.
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> best regards,
+</I>&gt;<i> Tobias
+</I>&gt;<i> 
+</I>&gt;<i> On 03/13/2012 02:40 PM, Albert Cardona wrote:
+</I>&gt;&gt;<i> El 13 de mar&#231; de 2012 9:39, Albert Cardona&lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">sapristi at gmail.com</A>&gt;  ha escrit:
+</I>&gt;&gt;&gt;<i> ImgLib2'ers:
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> Instead of this:
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i>  ( IterableRandomAccessibleInterval.class.isInstance( f ) ||
+</I>&gt;&gt;&gt;<i> ArrayImg.class.isInstance( f ) || ListImg.class.isInstance( f ) ) )
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> Why not create the empty interface EqualIterationOrder and make all
+</I>&gt;&gt;&gt;<i> the above classes implement it? This way code will be future-proof,
+</I>&gt;&gt;&gt;<i> and flexible to user-defined new Img classes.
+</I>&gt;&gt;&gt;<i> 
+</I>&gt;&gt;&gt;<i> Albert
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> Too early in the morning. I meant a new interface &quot;FlatIterationOrder&quot;.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> Albert
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20120321/a38c56d8/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20120321/a38c56d8/attachment.html</A>&gt;
+</PRE>
+
+
+
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000696.html">[ImageJ-devel] [fiji-devel] Re: equal iteration order
+</A></li>
+	<LI>Next message: <A HREF="000698.html">[ImageJ-devel] [fiji-devel] Re: equal iteration order
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#697">[ date ]</a>
+              <a href="thread.html#697">[ thread ]</a>
+              <a href="subject.html#697">[ subject ]</a>
+              <a href="author.html#697">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

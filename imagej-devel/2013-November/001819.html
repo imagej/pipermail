@@ -1,0 +1,326 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] SCIFIO via Avian, was Re:  [VIGRA] Avian VM and Bio-Formats
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20SCIFIO%20via%20Avian%2C%0A%20was%20Re%3A%20%20%5BVIGRA%5D%20Avian%20VM%20and%20Bio-Formats&In-Reply-To=%3Calpine.DEB.1.00.1311281016230.3906%40bonsai2%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001818.html">
+   <LINK REL="Next"  HREF="001820.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] SCIFIO via Avian, was Re:  [VIGRA] Avian VM and Bio-Formats</H1>
+    <B>Johannes Schindelin</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20SCIFIO%20via%20Avian%2C%0A%20was%20Re%3A%20%20%5BVIGRA%5D%20Avian%20VM%20and%20Bio-Formats&In-Reply-To=%3Calpine.DEB.1.00.1311281016230.3906%40bonsai2%3E"
+       TITLE="[ImageJ-devel] SCIFIO via Avian, was Re:  [VIGRA] Avian VM and Bio-Formats">Johannes.Schindelin at gmx.de
+       </A><BR>
+    <I>Thu Nov 28 12:26:45 CST 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001818.html">[ImageJ-devel] Unit test problems
+</A></li>
+        <LI>Next message: <A HREF="001820.html">[ImageJ-devel] SCIFIO via Avian, was Re:  [VIGRA] Avian VM and Bio-Formats
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1819">[ date ]</a>
+              <a href="thread.html#1819">[ thread ]</a>
+              <a href="subject.html#1819">[ subject ]</a>
+              <a href="author.html#1819">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Ulli,
+
+since you had the impression in a recent Skype chat that nothing has
+happened with this project of mine since the last time I wrote a mail, let
+me clarify the status, and add a few questions of my own.
+
+[sorry for the long mail, everyone, I tried to make it more succinct, but
+despite spending three hours on this mail, I did not succeed.]
+
+On Thu, 17 Oct 2013, Johannes Schindelin wrote:
+
+&gt;<i> On Thu, 17 Oct 2013, Ullrich Koethe wrote:
+</I>&gt;<i> 
+</I>&gt;<i> &gt; thank you for this very encouraging effort! Do I understand correctly
+</I>&gt;<i> &gt; that you achieved the following:
+</I>&gt;<i> &gt; 
+</I>&gt;<i> &gt; * embed Avian in a C++ program
+</I>&gt;<i> &gt; * call BioFormats via the embedded Avian to convert a file into
+</I>&gt;<i> &gt; another format
+</I>&gt;<i> 
+</I>&gt;<i> Yes, that is essentially what I did. Except that the C++ program was
+</I>&gt;<i> Avian's default one.
+</I>
+I still use Avian's default executable (which essentially is a Java
+look-alike) for the moment, so the main program is still a Java one, the
+plan being to make this a C++ library that starts the Avian VM on demand.
+
+But in the meantime, I use SCIFIO instead of Bio-Formats. The reason is
+that Bio-Formats was not designed with a flexible data store in mind.
+SCIFIO (which is essentially to Bio-Formats what ImageJ2 is to ImageJ1: a
+complete overhaul of the architecture, applying lessons learned over the
+years) offers a very convenient ImgOpener interface that works on ImgLib2
+data structures (which are, as I pointed out at EuBIAS in Barcelona, at
+least partially modeled after VIGRA). In particular, SCIFIO does no
+dictate what data storage should be used, but instead uses the interfaces
+defined by ImgLib2 to access whatever data storage you throw at it.
+
+The good news first: I essentially got SCIFIO running in an Avian VM on
+top of data structures backed by VIGRA (see below for more about the
+backing data structures).
+
+To be able to do that, I had to work quite a bit on Avian and got already
+18 pull requests merged into the official Avian's master branch, with
+three still waiting to be reviewed and merged. There are basically only
+two changes I still need to implement/clean up and submit pull requests
+for: Proper support for Runtime#availableMemory() and
+Field#getGenericType().
+
+Among other things, I even had to implement a full regular expression
+engine (technically, I could have punted on that and only provided
+handling for special cases but that is a very fragile solution and prone
+to break; besides, I always wanted to implement a regex engine to
+understand how these things work). So while there were some serious
+obstacles, I am starting to see the sun. In fact, the remaining parts are
+so easy, a first-year student could finish this project (under my
+guidance, at least).
+
+To put things into perspective, and also to correct your impression how
+dedicated I am to this project: My first commit in the Avian project was
+on October 17th -- the earliest date I could afford to work on this topic
+after coming back from the EuBIAS meeting -- and in Avian's master branch
+I am already the top #5 committer with 86 non-merge commits -- despite a
+full week dedicated to a KNIME hackathon, and some intense release
+engineering for the nar-maven-plugin mentioned below. The outstanding pull
+requests should soon add 41 commits to that so that I'll be within 17
+commits to tie top committer #3. For the record, Avian's initial commit
+dates May 21st, 2007, i.e. within less than three percent of Avian's life
+time, I made the top 5 of 44 committers in total. You see: I am dead set
+to see VIGRA/SCIFIO integration working via Avian.
+
+I also had to work on SCIFIO a little bit -- mainly bugs that were outside
+the default call path, easily fixed with the awesome help of Mark Hiner
+and Curtis Rueden.
+
+To compile the native part, I use the nar-maven-plugin (which I foolishly
+took maintainership of, but at least we have something pretty reliable now
+both as plugin and as project). Tobias pointed out a few problems (due to
+very unfortunate timing, I did not have the chance to fix them other than
+suggest to use a stable Linux to compile rather than updating to a
+just-released XCode and expect things to work flawlessly -- history be
+ignored) that are mostly fixed now, thanks to the awesome Curtis Rueden
+who cannot be thanked enough for all his help!
+
+If you want to try things out, you will need to
+
+- have compiled and installed VIGRA (I actually tested with revision
+  494bd66423782280f31239b12dd2e7a6184d916b and had no reason to update so
+  far)
+
+- have an Oracle JDK for compiling (*not* for running)
+
+- have a working Maven (e.g. from
+  <A HREF="http://www.apache.org/dyn/closer.cgi/maven/maven-3/3.0.4/binaries/apache-maven-3.0.4-bin.tar.gz">http://www.apache.org/dyn/closer.cgi/maven/maven-3/3.0.4/binaries/apache-maven-3.0.4-bin.tar.gz</A>);
+  Maven is essentially for Java what CMake tries to be for C++, but Maven
+  is both easier to use and to extend.
+
+- have the following branches of the following projects built (just call &quot;mvn
+  install&quot; after cloning and switching to the correct branch):
+
+  'avian' of <A HREF="https://github.com/scifio/scifio">https://github.com/scifio/scifio</A>
+  'debug/scifio' of <A HREF="https://github.com/dscho/avian">https://github.com/dscho/avian</A>
+  'wip' of <A HREF="https://github.com/dscho/vigra-imglib2">https://github.com/dscho/vigra-imglib2</A>
+
+After that, 'avian-run.sh' in the vigra-imglib2 directory should be able
+to convert any given grayscale /tmp/img.pgm into a /tmp/img.tiff (being
+read by SCIFIO, written by VIGRA). Yes, this does not do anything
+interesting, but the example was designed to demonstrate the interaction
+between SCIFIO and VIGRA, nothing else.
+
+Depending on how fast we can resolve the questions below, I estimate that
+we can have a stable C++ library offering SCIFIO to VIGRA (based on
+'master' or even release versions of scifio, avian and vigra-imglib2)
+early next year.
+
+&gt;<i> &gt; but you didn't yet try to use Avian/BioFormats to read the data
+</I>&gt;<i> &gt; directly into a C++ data structure (such as vigra::MultiArray)? Is
+</I>&gt;<i> &gt; this latter step easy to achieve using standard JNI tools once the
+</I>&gt;<i> &gt; embedding/running of BioFormats works?
+</I>&gt;<i> 
+</I>&gt;<i> That would be the next step after cleaning up my Avian patches and
+</I>&gt;<i> trying to read files via SCIFIO.
+</I>
+As I said, Bio-Formats does not lend itself to that kind of usage. It will
+always require you to copy the data after reading them. SCIFIO, in
+contrast, allows you to specify the factory to make instances of the
+backing data store, including VIGRA-backed ones. This, BTW, is working now.
+
+&gt;<i> Once I can call a Java class that uses SCIFIO to read a file, it should be
+</I>&gt;<i> very, very easy to access the read data via C++. Of course, the ultimate
+</I>&gt;<i> goal would be to let SCIFIO read the data *directly* into VIGRA's data
+</I>&gt;<i> structures, something I hope ImgLib2 makes easy: I would simply wrap the
+</I>&gt;<i> C++ arrays in an ImgLib2-compatible container and ask SCIFIO to use that
+</I>&gt;<i> as the destination.
+</I>
+I had a proof-of-concept of that VIGRA-backed ImgFactory already on
+October 24th, thinking that maybe you'd have a glimpse at the progress in
+my (public) GitHub repository ;-)
+
+So now -- as promised -- the questions:
+
+* SCIFIO's jpg and png support rely on Java Advanced Imaging which in turn
+  relies on AWT (which is not available in Avian's class path library).
+  While my long-term plan is to implement enough of AWT to support JAI,
+  would it be okay to punt on jpg/png support via SCIFIO for now?
+
+* as discussed in Skype, I am a bit lost (seven years after my last
+  serious design of a C++-based architecture) how to make sure that once
+  created in the Java part, the data structures are actually handled using
+  the correct specializations of the C++ templates: SCIFIO can return images
+  of any number of dimensions and any data type.
+
+  My first idea would be to have the callback into C++ that creates the
+  data structure (and needs to know the number of dimensions and the data
+  type, of course) not only create the data structure but also provide
+  kind of a virtual function table associated with said data structure. In
+  essence, the C++ caller would pass a container to SCIFIO which would not
+  only contain a pointer to the MultiArray upon return but also a pointer to
+  the virtual function table of functions that are to be called on the
+  loaded image.
+
+  However, since you have waaay more extensive experience with this type of
+  interfacing, may I ask you to whip up a quick mockup of the C++ side of
+  this? IOW: how would you like the C++ side of the SCIFIO opener to look
+  like?
+
+* also as discussed in Skype, there is the issue whose responsibility it
+  is to allocate and hold the data (including reference counting and
+  especially releasing the memory at the appropriate time): Java's, or
+  C++'s?
+
+  For the benefit of those who have not been in that Skype chat, let me
+  summarize the options we discussed (note that I make no distinction
+  between Avian or Oracle JRE because Tobias wants to make the
+  VIGRA/ImgLib2 bridge work in the other direction, using Oracle Java):
+
+  From Java's perspective, the easiest would be if Java would allocate the
+  memory because Java's memory management is pretty adamant about full
+  control: to avoid memory fragmentation, Java's garbage collector wants
+  to be able to shift data around (and therefore, it not only needs a
+  reference *count* but a *list* of references and the ability to update
+  them). For interaction with C/C++, Java has the notion of &quot;pinning&quot;,
+  i.e. telling the garbage collector that no, this chunk of memory needs to
+  stay *exactly* where it is, right now, until I say otherwise. The API
+  calls are named Get*ArrayElements()/Release*ArrayElements() for &quot;pin&quot;
+  and &quot;unpin&quot; respectively. *All* the documentation referring to this feature
+  say that pinning should be avoided, hampering performance of Java rather
+  badly.
+
+  From my own perspective, the easiest seemed to be to let VIGRA do all
+  the data management and provide accessors for Java. Currently, still
+  being in proof-of-concept phase, I was satisfied with individual JNI
+  calls accessing the pixels individually, content with the notion that
+  Avian (and most likely also Oracle's JRE) would be clever enough to
+  optimize most of the call chain, even if the C++ function wrapping the
+  call to MultiArray's [] operator will not be inlined, of course. Tobias
+  pointed out correctly that we should be able to make use of the
+  DirectByteBuffer feature to make this faster. And indeed, it is very
+  easy: standard JNI provides the NewDirectByteBuffer() function accepting
+  an address and a capacity and that's that. No pinning needed. Just your
+  responsibility to make sure that endian issues do not bite you (I almost
+  wrote &quot;byte you&quot; here...): Java handles *all* data as big endian.
+
+  From Tobias' perspective, it looked the best to use the sun.misc.Unsafe
+  class to allocate the memory (which would give us both an
+  eternally-pinned C++ byte array as well as a Java byte[] access), then map
+  it into VIGRA via a custom allocator. As I pointed out, my gut feeling
+  strongly suggested this to be a finicky solution. In the meantime, I can
+  put this into more coherent words (it does help that I thought these
+  thoughts in a different week now than the one that was theoretically
+  dedicated to the KNIME hackathon): if Unsafe is used to allocate the
+  memory, the responsibility for releasing the memory should logically
+  *also* be on the Java side, but by calling this from a C++ allocator, the
+  roles are now confused: if C++ allocates the data structure, the C++
+  destructor *needs* to release the memory, too.
+
+  So the three options are:
+
+	1) allocating/deallocating in Java, pinning whenever we call C++
+	   (making sure that C++ does not keep any references after
+	   returning)
+
+	2) allocating/deallocating in C++, providing Java with access to
+	   the allocated memory
+
+	3) allocating/deallocating in C++, except allocating the pixel
+	   array using Java's Unsafe class (requiring the Java VM to
+	   continue up and running during the complete life time of the
+	   image)
+
+  I actually see the need for both 1) and 2) because we either start the
+  bridge from C++ (in which case we'll want to let go of the VM as soon as
+  the image is read/processed) or from Java (in which case we'll want the
+  optimal performance of the Java code), but my experience tells me that
+  3) will only lead to problems because of muddled responsibilities and
+  therefore ample opportunity for race conditions.
+
+  Having said that, quite often elegant design does not quite provide the
+  performance we need. Therefore, I believe that we absolutely require a
+  performance testing framework and preferably implementations of all
+  three allocation methods mentioned above, to be pitted against each
+  other (and may the fastest survive).
+
+  Tobias, I guess this means you: you mentioned that you wrote such a
+  performance test already (but I vaguely remember that you said you no
+  longer have it, which means that you'll have to do it again). It will be
+  essential to be able to test performance regularly, not only to test
+  existing allocation strategies against each other, but new ones, too,
+  and also different virtual machines (or versions thereof, think of the
+  different performance characteristics of different versions of Oracle's
+  JRE).
+
+  So here the question: Tobias, where is that performance testing
+  framework? If it is no longer there, when do you think you will have it
+  again?
+
+- from day one of my project, I developed this project in the open, for
+  everybody to see, with at least three status updates. I understand that
+  you worked on very related things, but instead of going on a hunt through
+  your combined GitHub repositories to find it and try to avoid duplicating
+  your work, may I ask you to tell me what you did so far, where I can
+  find it, and where you want to go with it?
+
+Happy thanksgiving!
+Johannes
+
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001818.html">[ImageJ-devel] Unit test problems
+</A></li>
+	<LI>Next message: <A HREF="001820.html">[ImageJ-devel] SCIFIO via Avian, was Re:  [VIGRA] Avian VM and Bio-Formats
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1819">[ date ]</a>
+              <a href="thread.html#1819">[ thread ]</a>
+              <a href="subject.html#1819">[ subject ]</a>
+              <a href="author.html#1819">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,327 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Local Neighborhood stuff
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Local%20Neighborhood%20stuff&In-Reply-To=%3C1345460171.2241.70.camel%40saalfeld-thinkpad%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001204.html">
+   <LINK REL="Next"  HREF="001199.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Local Neighborhood stuff</H1>
+    <B>Stephan Saalfeld</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Local%20Neighborhood%20stuff&In-Reply-To=%3C1345460171.2241.70.camel%40saalfeld-thinkpad%3E"
+       TITLE="[ImageJ-devel] Local Neighborhood stuff">saalfeld at mpi-cbg.de
+       </A><BR>
+    <I>Mon Aug 20 05:56:11 CDT 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001204.html">[ImageJ-devel] Local Neighborhood stuff
+</A></li>
+        <LI>Next message: <A HREF="001199.html">[ImageJ-devel] Local Neighborhood stuff
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1198">[ date ]</a>
+              <a href="thread.html#1198">[ thread ]</a>
+              <a href="subject.html#1198">[ subject ]</a>
+              <a href="author.html#1198">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Tobias and all,
+
+great---thanks for spending time on that.
+
+The most important design question in my opinion is what Tobias has now
+called the `Safe' vs. `UnSafe' concept.  As far as I remember from
+previous discussions we do not have a final answer yet to that problem
+and I sucked in posting the discussion to the Wiki.  So I suggest to
+discuss it here now it becomes relevant.
+
+The problem:
+
+Both, accessors (e.g. Cursor) and proxy types (e.g. NativeType) are
+stateful.  How should they be used in concurrent (e.g. multi-threaded)
+code?  So far, the contract in ImgLib2 is: one accessor should not be
+used concurrently, concurrent threads should each acquire a unique
+accessor which, if required, provides a unique proxy type.  The inverse
+contract is that if you have an accessible (e.g. IterableInterval), then
+you can write concurrent code by requesting a unique accessor for each
+thread.  This becomes problematic when accessibles are `nested', i.e.
+the proxy type is an accessible.  The contract holds at all nested
+levels when using what Tobias has implemented as the `Safe' solution.
+It holds only at the top nesting level when using the `UnSafe' solution
+where the `inner' accessible uses one single accessor instance.  Why
+then doing it?  Because it is faster.  Iterating a 4-neighborhood for
+each pixel in a 2d image would be slower when creating a new accessor at
+each pixel-location.  Why is it problematic?  Because methods working
+with an accessible as input can be applied to the inner accessibles,
+may be implemented concurrently (e.g. apply convolution to a
+neighborhood), and do not know at which `nesting' level they are called
+(it also sucks to require thinking about that).
+
+Nesting accessibles is clearly a good thing and basically the reason why
+ImgLib2 is designed as it is.  For `small' accessibles, it is necessary
+to break the current contract that an accessible generates independent
+accessors, because they would be slow otherwise.  So that contract is
+broken.
+
+My current idea to solve this issue at compile time is by introducing
+the empty interface ConcurrencySafe and require each accessible that
+generates independent accessors to implement this interface.  Methods
+that depend on that must then require their input to implement this
+interface, e.g.
+
+&lt;A extends RandomAccessible&lt;T&gt; &amp; ConcurrencySafe&gt;
+void convolve(A a, A b){ ... }
+
+Since it doesn't interfere with existing code, it would enable to slowly
+add this `security' constraint slowly over time while keeping things
+running.
+
+It also means that the safe and unsafe factories would return a generic
+interface combination and it can become a bit convoluted to keep that
+information for passing such an object into another method using the
+buggy Oracle compiler...
+
+An Oracle-friendly option would be to embed that interface into the
+interface hierarchy and create the full bunch of concurrency safe
+extensions of existing interfaces:
+ConcurrencySafeRandomAccessible extends RandomAccessible
+ConcurrencySafeIterableInterval extends IterableInterval ...
+
+Obviously, the JDK is not doing this and instead throws Exceptions for
+an enormous synchronization and testing overhead at runtime (compare
+Vector and ArrayList).
+
+What do you think?
+
+Best,
+Stephan
+
+
+
+On Fri, 2012-08-17 at 16:24 +0200, Tobias Pietzsch wrote: 
+&gt;<i> Hi,
+</I>&gt;<i> 
+</I>&gt;<i> the last two days, I finally took some time to take a deeper look at
+</I>&gt;<i> the Local Neighborhoods. About a year ago, I discussed with Stephan
+</I>&gt;<i> Saalfeld the idea that Neighborhood systems could just be nested
+</I>&gt;<i> Accessibles. I did a lot of exploratory implementation and it all lead
+</I>&gt;<i> naturally back to this idea. It just feels very &quot;Imglib-like&quot;. I think
+</I>&gt;<i> it's the way to go.
+</I>&gt;<i> 
+</I>&gt;<i> I made a proof-of-concept implementation which I just pushed to branch
+</I>&gt;<i> &quot;tobias-neighborhood-experiments&quot;.  After playing around a lot, I have
+</I>&gt;<i> basically come up with the following design:
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> Neighborhood&lt;T&gt;
+</I>&gt;<i> ===============
+</I>&gt;<i> The interface Neighborhood&lt;T&gt; extends Localizable, IterableInterval&lt;T&gt;.
+</I>&gt;<i> It is _not_ Positionable. It is simply at a fixed location.
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> Cursor/RandomAccess&lt; Neighborhood&lt;T&gt; &gt;
+</I>&gt;<i> ========================================
+</I>&gt;<i> To move a neighborhood around, we use standard accessor interfaces.
+</I>&gt;<i> Assume you have a RandomAccess&lt;Neighborhood&lt;T&gt;&gt; a.
+</I>&gt;<i> Using a.setPosition() you can position the center of the neighborhood.
+</I>&gt;<i> Using a.get() you obtain a Neighborhood&lt;T&gt; (which you can then iterate).
+</I>&gt;<i> 
+</I>&gt;<i> In many ways, the Neighborhood is like a NativeType. It is just a
+</I>&gt;<i> reference into an underlying structure. If you have a Cursor&lt;T&gt; of
+</I>&gt;<i> a NativeType, then the result T t = cursor.get() will be invalidated
+</I>&gt;<i> when you advance the cursor. The same holds for Cursor&lt;Neighborhood&lt;T&gt;&gt;.
+</I>&gt;<i> When you move the cursor, the neighborhood Neighborhood&lt;T&gt; n =
+</I>&gt;<i> cursor.get() will be invalidated when you advance the cursor.
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> IterableInterval/RandomAccessible&lt; Neighborhood&lt;T&gt; &gt;
+</I>&gt;<i> ====================================================
+</I>&gt;<i> Of course, once you have the Accessors, it's easy to put the into
+</I>&gt;<i> Accessibles and benefit from all the goodies that are in ImgLib already.
+</I>&gt;<i> For example, if you have implemented a RandomAccess&lt;Neighborhood&lt;T&gt;&gt;
+</I>&gt;<i> it is straightforward to wrap it into a RandomAccessible and use
+</I>&gt;<i> Views.iterable() to get a Cursor over Neighborhood&lt;T&gt;.
+</I>&gt;<i> 
+</I>&gt;<i> This results is pure syntactic sugar and lets you write sexy code like
+</I>&gt;<i> this:
+</I>&gt;<i>    for ( Neighborhood&lt;T&gt; n : neighborhoods )
+</I>&gt;<i>        for ( T t : n )
+</I>&gt;<i>            ...
+</I>&gt;<i> 
+</I>&gt;<i> Shape
+</I>&gt;<i> =====
+</I>&gt;<i> At the top level is the interface &quot;Shape&quot;. This is basically a factory
+</I>&gt;<i> for Accessibles on Neighborhoods. Every type of neighborhood should 
+</I>&gt;<i> provide such a factory. There are four methods. The first is
+</I>&gt;<i> 
+</I>&gt;<i>    public &lt;T&gt; IterableInterval&lt;Neighborhood&lt;T&gt;&gt;
+</I>&gt;<i>        neighborhoods( final RandomAccessibleInterval&lt;T&gt; source );
+</I>&gt;<i> 
+</I>&gt;<i> This will give you an IteratableInterval over all neighborhoods in the 
+</I>&gt;<i> source image. Augmenting the above example, in actual code it is used
+</I>&gt;<i> like this:
+</I>&gt;<i>    Img&lt;FloatType&gt; img;
+</I>&gt;<i>    long radius;
+</I>&gt;<i>    HyperSphereShape shape = new HyperSphereShape( radius );
+</I>&gt;<i>    for ( Neighborhood&lt;FloatType&gt; n : shape.neighborhoods( img ) )
+</I>&gt;<i>        for ( FloatType t : n )
+</I>&gt;<i>            ...
+</I>&gt;<i> 
+</I>&gt;<i> The second method is
+</I>&gt;<i> 
+</I>&gt;<i>    public &lt;T&gt; RandomAccessibleInterval&lt;Neighborhood&lt;T&gt;&gt;
+</I>&gt;<i>        neighborhoodsRandomAccessible(
+</I>&gt;<i>            final RandomAccessibleInterval&lt;T&gt; source );
+</I>&gt;<i> 
+</I>&gt;<i> which gives you a RandomAccessibleInterval over all neighborhoods.
+</I>&gt;<i> Then there are &quot;safe&quot; variants of these two methods, which I will 
+</I>&gt;<i> discuss later because it goes a bit deeper into the details...
+</I>&gt;<i> 
+</I>&gt;<i> Examples
+</I>&gt;<i> ========
+</I>&gt;<i> I have fully implemented RectangleShape which supports
+</I>&gt;<i> (hyper-)rectangular neighborhoods. This is rather involved, because
+</I>&gt;<i> it supports both neighborhoods that skip the center pixel and such
+</I>&gt;<i> that don't; it has both an implementation of Cursor&lt;Neighborhood&lt;T&gt;&gt;
+</I>&gt;<i> and RandomAccess&lt;Neighborhood&lt;T&gt;&gt; for optimal speed; and so on...
+</I>&gt;<i> 
+</I>&gt;<i> There is an incomplete implementation of HyperSphereShape, which
+</I>&gt;<i> despite being incomplete should be a better example to look at first.
+</I>&gt;<i> Basically I just copied and pasted from HyperSphereCursor.
+</I>&gt;<i> In this case, there is only a RandomAccess&lt;Neighborhood&lt;T&gt;&gt;. The
+</I>&gt;<i> Cursor is simply build using Views.iterable().
+</I>&gt;<i> 
+</I>&gt;<i> Unfortunately, the code is still largely undocumented. I put effort
+</I>&gt;<i> into documenting the Shape interface, but that's it basically :(
+</I>&gt;<i> 
+</I>&gt;<i> As an example for how to use Neighborhoods, please see
+</I>&gt;<i> net.imglib2.algorithm.region.localneighborhood.MinFilterExample
+</I>&gt;<i> in the imglib2-tests sub-project.
+</I>&gt;<i> Actually, just let me paste a fragement here. This implements a
+</I>&gt;<i> minimum filter using arbitrary neighborhood Shape:
+</I>&gt;<i> 
+</I>&gt;<i> public static &lt;T extends Type&lt;T&gt; &amp; Comparable&lt;T&gt; &gt; void
+</I>&gt;<i>      minFilter( final RandomAccessibleInterval&lt;T&gt; input,
+</I>&gt;<i>                 final RandomAccessibleInterval&lt;T&gt; output,
+</I>&gt;<i>                 final Shape shape )
+</I>&gt;<i> {
+</I>&gt;<i>    final RandomAccess&lt; T &gt; out = output.randomAccess();
+</I>&gt;<i>    for (final Neighborhood&lt;T&gt; neighborhood : shape.neighborhoods(input))
+</I>&gt;<i>    {
+</I>&gt;<i>      out.setPosition( neighborhood );
+</I>&gt;<i>      final T o = out.get();
+</I>&gt;<i>      o.set( neighborhood.firstElement() );
+</I>&gt;<i>      for ( final T i : neighborhood )
+</I>&gt;<i>        if ( i.compareTo( o ) &lt; 0 )
+</I>&gt;<i>          o.set( i );
+</I>&gt;<i>    }
+</I>&gt;<i> }
+</I>&gt;<i> 
+</I>&gt;<i> Beautiful, isn't it?
+</I>&gt;<i> 
+</I>&gt;<i> Safe vs Unsafe Neighborhoods
+</I>&gt;<i> ============================
+</I>&gt;<i> About the &quot;safe&quot; variants of the methods in Shape. The above &quot;unsafe&quot;
+</I>&gt;<i> variants behave as follows: A Neighborhood&lt;T&gt; that you obtained from the
+</I>&gt;<i> returned accessible will re-use a single Cursor instance. That is:
+</I>&gt;<i>    Neighborhood&lt;T&gt; n = shape.neighborhoods( img ).firstElement();
+</I>&gt;<i>    Cursor&lt;T&gt; c1 = n.cursor();
+</I>&gt;<i>    Cursor&lt;T&gt; c2 = n.cursor();
+</I>&gt;<i> Here, c1 and c2 will be the same object! This is necessary to make
+</I>&gt;<i> the nested loops shown above really fast. Otherwise here,
+</I>&gt;<i>    for ( Neighborhood&lt;T&gt; n : neighborhoods )
+</I>&gt;<i>        for ( T t : n )
+</I>&gt;<i> in every iteration of the outer loop, a new Cursor would be created for
+</I>&gt;<i> the inner loop.
+</I>&gt;<i> I decided to make the &quot;unsafe&quot; option the default, i.e., the methods are
+</I>&gt;<i> called Shape.neighborhoods() and Shape.neighborhoodsSafe() instead of
+</I>&gt;<i> Shape.neighborhoodsUnsafe() and Shape.neighborhoods(). I'm open to 
+</I>&gt;<i> change that, though.
+</I>&gt;<i> 
+</I>&gt;<i> If you require a different behaviour, you can use the
+</I>&gt;<i> Shape.neighborhoodsSafe and neighborhoodsRandomAccessibleSafe methods.
+</I>&gt;<i> There are also other options which are described in the javadoc of the 
+</I>&gt;<i> Shape interface. Please have a look!
+</I>&gt;<i> 
+</I>&gt;<i> Performance
+</I>&gt;<i> ===========
+</I>&gt;<i> It can be made quite fast, actually. I have implemented a find-local-
+</I>&gt;<i> maxima benchmark (see LocalMaximaBenchmark) that compares several
+</I>&gt;<i> implementations of (3x3x...x3) Neighborhood.
+</I>&gt;<i> 
+</I>&gt;<i> To count local maxima in a 200x200x200 float image, I get
+</I>&gt;<i> 683 ms using RectangleShape vs
+</I>&gt;<i> 877 ms using the old LocalNeighborhoodCursor
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> As you might have noticed, I have completely neclected the copyOn() and
+</I>&gt;<i> updateSource() methods we discussed before.  I don't really see the need
+</I>&gt;<i> for them in the above design.
+</I>&gt;<i> 
+</I>&gt;<i> Ok, I hope you will have a look at the code
+</I>&gt;<i> (branch &quot;tobias-neighborhood-experiments&quot;) and tell me what you think.
+</I>&gt;<i> 
+</I>&gt;<i> best regards,
+</I>&gt;<i> Tobias
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> On 07/27/2012 05:35 PM, Jean-Yves Tinevez wrote:
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Hi all
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; I pushed some changes to the test branch: I removed the realpositionable
+</I>&gt;<i> &gt; stuff, and tried to draft the mother interface from our discussions.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; But I got stuck at the copyOn method. If I try to make it as generic as
+</I>&gt;<i> &gt; I can (copy on a different RandomAccessible type and on a different
+</I>&gt;<i> &gt; type), concrete implementations that are more specific (like the
+</I>&gt;<i> &gt; buffered rectangle) fail on bad type bounds. I could use some help there.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Best
+</I>&gt;<i> &gt; jy
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>
+
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001204.html">[ImageJ-devel] Local Neighborhood stuff
+</A></li>
+	<LI>Next message: <A HREF="001199.html">[ImageJ-devel] Local Neighborhood stuff
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1198">[ date ]</a>
+              <a href="thread.html#1198">[ thread ]</a>
+              <a href="subject.html#1198">[ subject ]</a>
+              <a href="author.html#1198">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

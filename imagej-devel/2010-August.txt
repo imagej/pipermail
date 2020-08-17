@@ -1,0 +1,537 @@
+From ctrueden at wisc.edu  Fri Aug  6 18:50:47 2010
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Fri, 6 Aug 2010 18:50:47 -0500
+Subject: [ImageJ-devel] Maven-based build system for LOCI software
+Message-ID: <AANLkTinLswvsQrJGTUjykYtbfsDSYdN7QBL_TZLx67cp@mail.gmail.com>
+
+Hello OMERO, ImageJ2 and Fiji developers,
+
+I wanted to let you know that I just committed an experimental branch to
+LOCI's SVN that reorganizes the components as Maven projects. At the moment
+the following components have been migrated:
+
+  * projects/bio-formats
+  * projects/loci-common
+  * projects/loci-plugins
+  * projects/ome-xml
+  * forks/jai
+  * forks/mdbtools
+  * forks/poi
+  * stubs/lwf-stubs
+
+I will be migrating the remaining components, as well as doing the same for
+ImageJ and imglib in our Git repositories, next week. If there are no major
+obstacles or objections, I will also merge the branches to trunk/master
+within the next 2-6 weeks, and announce to relevant lists. These changes
+should make it easier for Fiji to adopt ImageJ2 as it develops without
+worrying about transitive dependency problems.
+
+As part of this effort, I set up a Nexus repository at
+http://loci.wisc.edu:8081/, which you are welcome to try out. In related
+news, as some of you already know, we also set up our own Hudson at
+http://loci.wisc.edu:8080/. (But note that these URLs may change again to "
+dev.loci.wisc.edu" once our new developer server arrives.)
+
+One major advantage of Maven is that you can check out only the project you
+want to build, rather than the entire LOCI Software repository. For example,
+you can:
+
+$ svn co http://loci.wisc.edu/svn/java/branches/maven/projects/bio-formats
+$ cd bio-formats
+$ mvn jar:jar
+
+To build bio-formats.jar.
+
+You don't need the source for the dependent projects because it will fetch
+all the dependencies as binaries from our Nexus server and store them in
+your local Maven repository (in ~/.m2/repository).
+
+You can also generate an Eclipse project with:
+
+$ mvn eclipse:eclipse
+
+You just have to define a classpath variable called M2_REPO pointing at
+~/.m2/repository and you're ready to go (or you can the
+eclipse:configure-workspace target to do it... or you can use the m2eclipse
+Eclipse plugins).
+
+Alternately, you can check out the entire source tree as before, and create
+Eclipse projects with project dependencies rather than JAR dependencies:
+
+$ svn co http://loci.wisc.edu/svn/java/branches/maven
+$ cd maven
+$ mvn eclipse:eclipse
+
+This will compile and build the source for all Mavenized projects?it works
+because there is an aggregate project in the base directory declaring the
+involved submodules.
+
+I haven't tested it yet but Maven supposedly works well with NetBeans and
+IDEA also.
+
+In the conversion to Maven, I was amazed how much metadata I had
+independently identified and declared in either custom Ant build.properties
+files, or in my hacky scan-deps.pl dependency analysis script in the base
+directory. With Maven It should be very doable to migrate away from those
+custom solutions now. E.g., you can analyze the dependencies for correctness
+with:
+
+$ mvn dependency:analyze
+
+In conclusion, I am unilaterally very impressed with Maven so far. And from
+what I've read, it believe it will play nicely with OMERO's usage of Ivy.
+
+For those with time and interest, feel free to check it out. Any feedback is
+welcome!
+
+-Curtis
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20100806/0d2766e2/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Sat Aug  7 04:51:59 2010
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Sat, 7 Aug 2010 11:51:59 +0200 (CEST)
+Subject: [ImageJ-devel] [fiji-devel] Maven-based build system for LOCI
+	software
+In-Reply-To: <AANLkTinLswvsQrJGTUjykYtbfsDSYdN7QBL_TZLx67cp@mail.gmail.com>
+References: <AANLkTinLswvsQrJGTUjykYtbfsDSYdN7QBL_TZLx67cp@mail.gmail.com>
+Message-ID: <alpine.DEB.1.00.1008071151040.2983@bonsai2>
+
+Hi,
+
+On Fri, 6 Aug 2010, Curtis Rueden wrote:
+
+> $ mvn jar:jar
+
+For developers' convenience, I included the script bin/maven.sh in Fiji 
+some time ago, which will download maven on-demand, and thus can be used 
+in Fakefiles.
+
+Ciao,
+Dscho
+
+
+
+From gharris at mbl.edu  Mon Aug 16 10:01:41 2010
+From: gharris at mbl.edu (Grant B. Harris)
+Date: Mon, 16 Aug 2010 11:01:41 -0400
+Subject: [ImageJ-devel] Instantiation Questions
+Message-ID: <4C6952D5.8010503@mbl.edu>
+
+  Wayne, or anyone who might know,
+'
+I have two questions concerning instantiation of classes...
+
+1) The NewImage() constructor invokes openImage().
+Only call to it seems to be in ij.Commands, if (cmd.equals("new")) new 
+NewImage();
+Any reason not to call it this way?
+(new NewImage()).openImage();
+It would be convenient if there were a typical no-args constructor for this.
+
+2) Menus changed at some point recently to have an instance field and a 
+constructor.  What were the reasons for this?
+
+-- Grant
+
+
+
+From gharris at mbl.edu  Mon Aug 16 10:10:41 2010
+From: gharris at mbl.edu (Grant B. Harris)
+Date: Mon, 16 Aug 2010 11:10:41 -0400
+Subject: [ImageJ-devel] Command in ImageJA
+Message-ID: <4C6954F1.7000002@mbl.edu>
+
+  All --
+
+ImageJA has the classes Command, CommandListenerPlus, and a modified 
+Executer.  I infer that this has mainly to do with recording... Is that 
+correct?  Other reasons for them?
+Thanks.
+
+-- Grant
+
+
+
+From Johannes.Schindelin at gmx.de  Mon Aug 16 12:13:54 2010
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Mon, 16 Aug 2010 19:13:54 +0200 (CEST)
+Subject: [ImageJ-devel] Command in ImageJA
+In-Reply-To: <4C6954F1.7000002@mbl.edu>
+References: <4C6954F1.7000002@mbl.edu>
+Message-ID: <alpine.DEB.1.00.1008161913230.2204@intel-tinevez-2-302>
+
+Hi,
+
+On Mon, 16 Aug 2010, Grant B. Harris wrote:
+
+> ImageJA has the classes Command, CommandListenerPlus, and a modified 
+> Executer. I infer that this has mainly to do with recording... Is that 
+> correct?
+
+Absolutely correct. It is used in the Python recorder (which I really 
+should give some love so we can include it in Fiji).
+
+Ciao,
+Johannes
+
+
+
+
+From gharris at mbl.edu  Mon Aug 16 17:32:04 2010
+From: gharris at mbl.edu (Grant B. Harris)
+Date: Mon, 16 Aug 2010 18:32:04 -0400
+Subject: [ImageJ-devel] JSR-305 Annotations
+Message-ID: <4C69BC64.3050108@mbl.edu>
+
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20100816/93489e98/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Mon Aug 16 19:29:35 2010
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Tue, 17 Aug 2010 02:29:35 +0200 (CEST)
+Subject: [ImageJ-devel] JSR-305 Annotations
+In-Reply-To: <4C69BC64.3050108@mbl.edu>
+References: <4C69BC64.3050108@mbl.edu>
+Message-ID: <alpine.DEB.1.00.1008170226140.2983@bonsai2>
+
+Hi,
+
+On Mon, 16 Aug 2010, Grant B. Harris wrote:
+
+> JSR-305 defines annotations that enable static analysis, compiler 
+> checks, and other tools to improve safety and robustness.?They are 
+> expected to be in JDK7.?Any opinion on whether we might want to adopt 
+> the use of any of these as a group (perhaps at least in the 'core')?
+
+Once again, I have to caution against staying on the bleeding edge of 
+3rd-party developments (and Java is very much a 3rd-party development). 
+Unless the code compiles without problems in plain Oracle/Sun Java 6 (you 
+did not say anything about that), I would recommend against using such 
+experimental features: As far as I can tell, ImageJ2 is about a _stable_ 
+development using _known_ best practices.
+
+If you concentrate on unstable or experimental features, that will have an 
+impact on your project as well.
+
+Ciao,
+Johannes
+
+From Johannes.Schindelin at gmx.de  Mon Aug 16 19:34:05 2010
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Tue, 17 Aug 2010 02:34:05 +0200 (CEST)
+Subject: [ImageJ-devel] Instantiation Questions
+In-Reply-To: <4C6952D5.8010503@mbl.edu>
+References: <4C6952D5.8010503@mbl.edu>
+Message-ID: <alpine.DEB.1.00.1008170229510.2983@bonsai2>
+
+Hi,
+
+On Mon, 16 Aug 2010, Grant B. Harris wrote:
+
+> 1) The NewImage() constructor invokes openImage().
+> Only call to it seems to be in ij.Commands, if (cmd.equals("new")) new
+> NewImage();
+> Any reason not to call it this way?
+> (new NewImage()).openImage();
+> It would be convenient if there were a typical no-args constructor for this.
+
+I guess that the design was to keep things flexible. If NewImage() can be 
+changed without changing the caller, that's good.
+
+Besides, you can skip the extra parentheses: new Image().openImage() would 
+be enough.
+
+> 2) Menus changed at some point recently to have an instance field and a 
+>    constructor.  What were the reasons for this?
+
+That was probably my doing, even if the effort was not successful: There 
+are still static member variables. My intention was to make the whole 
+thing more object oriented (even if there is no chance at the moment to 
+have multiple instances of ImageJ running in the same process -- as would 
+be required to run multiple applets in the same webpage -- it would be a 
+small step towards that goal).
+
+Hth,
+Johannes
+
+
+
+
+From leek at broadinstitute.org  Tue Aug 17 07:44:16 2010
+From: leek at broadinstitute.org (Lee Kamentsky)
+Date: Tue, 17 Aug 2010 08:44:16 -0400
+Subject: [ImageJ-devel] JSR-305 Annotations
+In-Reply-To: <4C69BC64.3050108@mbl.edu>
+References: <4C69BC64.3050108@mbl.edu>
+Message-ID: <4C6A8420.7090706@broadinstitute.org>
+
+Admittedly, I'm not a day-to-day Java programmer so there's the first 
+caveat, I may be missing something. Having said that, I can't see much 
+downside to using the suggested annotations. At worst, the syntax 
+changes and the effort is somewhat wasted, aside from providing informal 
+documentation on a method argument's use. At best, these annotations 
+give valuable information on the intended use of an argument: is Null 
+expected, what's the concurrency policy for the argument, how secure is 
+the data in the argument.
+
+I'm assuming that the Java compiler is agnostic about annotations, aside 
+from being able to capture them unambiguously. If that's the case, I'd 
+say use them liberally.
+
+--Lee
+
+Grant B. Harris wrote:
+>       ImageJ'ers --
+>
+> JSR-305 defines annotations that enable static analysis, compiler checks, and 
+> other tools to improve safety and robustness.  They are expected to be in JDK7.  
+> Any opinion on whether we might want to adopt the use of any of these as a group 
+> (perhaps at least in the 'core')?
+>
+> See:
+>
+> *The Open Road: /javax/./annotation/* 
+> <http://java.net/article/2008/09/08/open-road-javaxannotation>
+>
+> /JSR 305: Annotations for Software Defect Detection in Java/ 
+> <http://code.google.com/p/jsr-305>
+>
+>
+> -- Grant
+>
+>
+>   
+> ------------------------------------------------------------------------
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+>   
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20100817/afdc66e9/attachment.html>
+
+From gharris at mbl.edu  Fri Aug 27 23:15:49 2010
+From: gharris at mbl.edu (Grant B. Harris)
+Date: Sat, 28 Aug 2010 00:15:49 -0400
+Subject: [ImageJ-devel] Plugin that Extends ImagePlus
+Message-ID: <4C788D75.4090305@mbl.edu>
+
+  I'm curious as to why HandleExtraFileTypes (and some other reader 
+plugins) extend ImagePlus.  This seems rather un-object-oriented... No?  
+Seems like a 'plugin' should operate on or create an ImagePlus.  I'm 
+sure there is a history I am unaware of, so perhaps someone can fill me in.
+
+Thanks, Grant
+
+
+
+From Johannes.Schindelin at gmx.de  Sat Aug 28 02:53:37 2010
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Sat, 28 Aug 2010 09:53:37 +0200 (CEST)
+Subject: [ImageJ-devel] Plugin that Extends ImagePlus
+In-Reply-To: <4C788D75.4090305@mbl.edu>
+References: <4C788D75.4090305@mbl.edu>
+Message-ID: <alpine.DEB.1.00.1008280951220.4461@bonsai2>
+
+Hi,
+
+On Sat, 28 Aug 2010, Grant B. Harris wrote:
+
+>  I'm curious as to why HandleExtraFileTypes (and some other reader plugins)
+> extend ImagePlus.  This seems rather un-object-oriented... No?  Seems like a
+> 'plugin' should operate on or create an ImagePlus.  I'm sure there is a
+> history I am unaware of, so perhaps someone can fill me in.
+
+I agree, it is clunky. But at the moment, it is the only way you can 
+implement and image opener that is batch-mode friendly. IOW if you call 
+IJ.openImage(), the result will be the image opened by your plugin, but 
+_only_ if the plugin itself implements ImagePlus.
+
+The reason is the design of the plugin architecture, which does not allow 
+for return values.
+
+(IOW the very same thing you and me addressed by "output parameters")
+
+Ciao,
+Johanns
+
+
+
+
+From gharris at mbl.edu  Tue Aug 31 10:48:55 2010
+From: gharris at mbl.edu (Grant B. Harris)
+Date: Tue, 31 Aug 2010 11:48:55 -0400
+Subject: [ImageJ-devel] Headlessness
+Message-ID: <4C7D2467.4060903@mbl.edu>
+
+  Image Jayers --
+
+For running headless, ImageJA uses the trick of prepending the 
+headless.jar to the classpath, replacing Menus, gui.GenericDialog, and 
+util.Tools with modified GUI-less versions.
+
+If we are to enable running headless in a future version, I'd like to 
+get ideas as to what strategies we might adopt (e.g. having a global 
+flag in the application context which allows gui-less operation of 
+plugins and other components,...)  Let's have a conversation on this.
+
+-- Grant
+
+
+
+From Johannes.Schindelin at gmx.de  Tue Aug 31 11:12:29 2010
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Tue, 31 Aug 2010 18:12:29 +0200 (CEST)
+Subject: [ImageJ-devel] Headlessness
+In-Reply-To: <4C7D2467.4060903@mbl.edu>
+References: <4C7D2467.4060903@mbl.edu>
+Message-ID: <alpine.DEB.1.00.1008311811440.3590@intel-tinevez-2-302>
+
+Hi,
+
+On Tue, 31 Aug 2010, Grant B. Harris wrote:
+
+> For running headless, ImageJA uses the trick of prepending the 
+> headless.jar to the classpath, replacing Menus, gui.GenericDialog, and 
+> util.Tools with modified GUI-less versions.
+> 
+> If we are to enable running headless in a future version, I'd like to 
+> get ideas as to what strategies we might adopt (e.g. having a global 
+> flag in the application context which allows gui-less operation of 
+> plugins and other components,...)  Let's have a conversation on this.
+
+The real problem with such a flag is that it should not exist in the first 
+place. The macros/scripts that you record should be able to run without 
+any GUI.
+
+Ciao,
+Johannes
+
+
+
+
+From ctrueden at wisc.edu  Tue Aug 31 12:48:39 2010
+From: ctrueden at wisc.edu (Curtis Rueden)
+Date: Tue, 31 Aug 2010 12:48:39 -0500
+Subject: [ImageJ-devel] Headlessness
+In-Reply-To: <4C7D2467.4060903@mbl.edu>
+References: <4C7D2467.4060903@mbl.edu>
+Message-ID: <AANLkTikrZzVKkZUxa8WpSBnEmij1iO46h76QXUSf0AUM@mail.gmail.com>
+
+Hi Grant,
+
+I think the "abstract plugin" mechanism that Dscho & you developed is a good
+start, at least for plugins. Then you do not need a global context flag, but
+rather GenericDialog is only created in the GUI case. So plugins written
+using that new style are one big step closer to working headless. I think it
+is less important that older plugins work headless as-is?they can be
+converted to use the new style, to solve the problem that way.
+
+For Menus and Tools, I have not examined them in detail yet, so cannot
+really comment. Do you have a list of the main offenders? Point to some line
+numbers in code where it's a problem? It would help save me time.
+
+Another thing we could do is write a program that is supposed to run
+headless, run it so, and see where the exceptions are raised. Then solve
+them one by one until it works.
+
+Thanks,
+Curtis
+
+On Tue, Aug 31, 2010 at 10:48 AM, Grant B. Harris <gharris at mbl.edu> wrote:
+
+>  Image Jayers --
+>
+> For running headless, ImageJA uses the trick of prepending the headless.jar
+> to the classpath, replacing Menus, gui.GenericDialog, and util.Tools with
+> modified GUI-less versions.
+>
+> If we are to enable running headless in a future version, I'd like to get
+> ideas as to what strategies we might adopt (e.g. having a global flag in the
+> application context which allows gui-less operation of plugins and other
+> components,...)  Let's have a conversation on this.
+>
+> -- Grant
+>
+> _______________________________________________
+> ImageJ-devel mailing list
+> ImageJ-devel at imagejdev.org
+> http://imagejdev.org/mailman/listinfo/imagej-devel
+>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://imagej.net/pipermail/imagej-devel/attachments/20100831/2d2bd656/attachment.html>
+
+From Johannes.Schindelin at gmx.de  Tue Aug 31 16:12:32 2010
+From: Johannes.Schindelin at gmx.de (Johannes Schindelin)
+Date: Tue, 31 Aug 2010 23:12:32 +0200 (CEST)
+Subject: [ImageJ-devel] Headlessness
+In-Reply-To: <AANLkTikrZzVKkZUxa8WpSBnEmij1iO46h76QXUSf0AUM@mail.gmail.com>
+References: <4C7D2467.4060903@mbl.edu>
+	<AANLkTikrZzVKkZUxa8WpSBnEmij1iO46h76QXUSf0AUM@mail.gmail.com>
+Message-ID: <alpine.DEB.1.00.1008312302450.4461@bonsai2>
+
+Hi,
+
+On Tue, 31 Aug 2010, Curtis Rueden wrote:
+
+> I think the "abstract plugin" mechanism that Dscho & you developed is a 
+> good start, at least for plugins. Then you do not need a global context 
+> flag, but rather GenericDialog is only created in the GUI case. So 
+> plugins written using that new style are one big step closer to working 
+> headless. I think it is less important that older plugins work headless 
+> as-is?they can be converted to use the new style, to solve the problem 
+> that way.
+> 
+> For Menus and Tools, I have not examined them in detail yet, so cannot 
+> really comment. Do you have a list of the main offenders? Point to some 
+> line numbers in code where it's a problem? It would help save me time.
+
+As I mentioned back in Heidelberg: the main problem is when plugins think 
+they should open a GUI. Or show anything.
+
+Split Channels. Plot Profile. Even all the filters that open a new 
+(filtered) image. All of that is a problem. (Obviously!)
+
+Why? Because ImageJ plugins do not have a concept of "output". They just 
+show stuff, instead of returning _anything_.
+
+> Another thing we could do is write a program that is supposed to run 
+> headless, run it so, and see where the exceptions are raised. Then solve 
+> them one by one until it works.
+
+That won't work. It is a losing battle to try until you found all of the 
+cases where macros go wrong.
+
+The design I put into the abstract plugin was carefully thought through. 
+Really.
+
+Instead of letting the developer make a dialog, she has to specify in a 
+high-level manner (similar to HTML or LaTeX) _what_ she means instead of 
+_how_ it should be displayed. That means both input and output.
+
+It would be positively good if there were things in ImageJ2 that 
+discouraged the developer rather strongly (such by breaking his code) to 
+open any GUI elements.
+
+Of course, there are -- some -- things that developers would like to do 
+with a GUI, such as interactions with sliders, aspect ratio constraining, 
+validation routines, etc. _All_ of these should be offered using the 
+abstract plugin API. So that nobody has an excuse to make proper plugins 
+that run in a headless manner, that indeed could be shipped in a task 
+packet to a TV, a mobile phone or a toaster via TCP/IP, returning as 
+result packets.
+
+The abstract plugin API should make specifying such things so easy that it 
+would be a bigger hassle to implement the GUI stuff yourself (thereby 
+breaking macro recording, headless operation, cluster queue submission, 
+etc).
+
+Ciao,
+Dscho
+

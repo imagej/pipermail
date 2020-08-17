@@ -1,0 +1,144 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] EventBus issues.
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20EventBus%20issues.&In-Reply-To=%3CBANLkTi%3D4Wp8rKyx-eumnbqvcx7m7CkwU_A%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000457.html">
+   <LINK REL="Next"  HREF="000459.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] EventBus issues.</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20EventBus%20issues.&In-Reply-To=%3CBANLkTi%3D4Wp8rKyx-eumnbqvcx7m7CkwU_A%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] EventBus issues.">ctrueden at wisc.edu
+       </A><BR>
+    <I>Thu Jun 30 13:27:12 CDT 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000457.html">[ImageJ-devel] EventBus issues.
+</A></li>
+        <LI>Next message: <A HREF="000459.html">[ImageJ-devel] EventBus issues.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#458">[ date ]</a>
+              <a href="thread.html#458">[ thread ]</a>
+              <a href="subject.html#458">[ subject ]</a>
+              <a href="author.html#458">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Grant et. al,
+
+Grant and I discussed this further, and we agree that it is much preferred
+to avoid depending on or altering the order events are delivered to
+subscribers. It should always be possible to create additional event types
+to discriminate more finely, as Lee describes.
+
+So Grant, I propose that we remove the PriorityEventSubscriber stuff we
+added the other day, to avoid complexifying the events package. What do you
+think?
+
+-Curtis
+
+On Thu, Jun 23, 2011 at 12:38 PM, Lee Kamentsky &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">leek at broadinstitute.org</A>&gt;wrote:
+
+&gt;<i> IMHO - if you depend on order for events, there's a good chance you're not
+</I>&gt;<i> doing something right. If you depend on order, I'm guessing that a direct
+</I>&gt;<i> function call is the appropriate solution or that you are not properly
+</I>&gt;<i> modeling what is really happening.
+</I>&gt;<i>
+</I>&gt;<i> I'm guessing that this has to do with the overlay manager - that you've
+</I>&gt;<i> received an overlay created/deleted event and you don't know whether it's in
+</I>&gt;<i> the overlay manager or not. There are two different events here:
+</I>&gt;<i> * an overlay object was created or deleted
+</I>&gt;<i> * the overlay manager added or removed an overlay
+</I>&gt;<i> so, the code that is experiencing difficulty should respond to the
+</I>&gt;<i> appropriate event. If you have a user interface that shows the overlays in
+</I>&gt;<i> the manager, it's the second event that you want. If I guessed wrong,
+</I>&gt;<i> perhaps it follows the same pattern?
+</I>&gt;<i>
+</I>&gt;<i> --Lee
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On 6/23/2011 12:58 PM, Grant B. Harris wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> Ooops... My bad.  I thought we were using 1.2... We are already using 1.4.
+</I>&gt;&gt;<i>  But we need to change Events framework.  I'll take a stab at it today.
+</I>&gt;&gt;<i> -- Grant
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> On 6/23/2011 12:55 PM, Grant B. Harris wrote:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> I think EventBus can serve us well, but I have run into a serious issue
+</I>&gt;&gt;&gt;<i> that demands that we move from EventBus version 1.2 to 1.4.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Because &quot;subscribers are called in the order in which they subscribed&quot;,
+</I>&gt;&gt;&gt;<i> we cannot use the EventBus (1.2) in ways that we need.  If I have a class
+</I>&gt;&gt;&gt;<i> which is watching things (say a ROI Manager or the Window menu list of open
+</I>&gt;&gt;&gt;<i> displays) it's behavior depends on when it was subscribed.  I've been
+</I>&gt;&gt;&gt;<i> working on this for a week and I have not found a way to manage this.
+</I>&gt;&gt;&gt;<i>  Fortunately I discovered that as of version 1.3 there is a
+</I>&gt;&gt;&gt;<i> PrioritizedEventSubscriber  (<A HREF="http://www.jarvana.com/**">http://www.jarvana.com/**</A>
+</I>&gt;&gt;&gt;<i> jarvana/view/org/bushe/**eventbus/1.3/eventbus-1.3-**
+</I>&gt;&gt;&gt;<i> javadoc.jar!/org/bushe/swing/**event/Prioritized.html&lt;<A HREF="http://www.jarvana.com/jarvana/view/org/bushe/eventbus/1.3/eventbus-1.3-javadoc.jar%21/org/bushe/swing/event/Prioritized.html">http://www.jarvana.com/jarvana/view/org/bushe/eventbus/1.3/eventbus-1.3-javadoc.jar%21/org/bushe/swing/event/Prioritized.html</A>&gt;)
+</I>&gt;&gt;&gt;<i>  I think this is just what we need.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> (Using this priority mechanism may also eliminate the need for the
+</I>&gt;&gt;&gt;<i> ObjectsUpdatedEvent that I added last week.)
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> EventBus version 1.4 is here: <A HREF="http://mvnrepository.com/**">http://mvnrepository.com/**</A>
+</I>&gt;&gt;&gt;<i> artifact/org.bushe/eventbus/1.**4&lt;<A HREF="http://mvnrepository.com/artifact/org.bushe/eventbus/1.4">http://mvnrepository.com/artifact/org.bushe/eventbus/1.4</A>&gt;
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> We will need to change the Events framework a bit to add Prioritized
+</I>&gt;&gt;&gt;<i> Event Subscription, but otherwise I don't think it will require any
+</I>&gt;&gt;&gt;<i> refactoring except for the subscribers that need to set priority.
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> -- Grant
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> ______________________________**_________________
+</I>&gt;&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagejdev.org</A>
+</I>&gt;&gt;&gt;<i> <A HREF="http://imagejdev.org/mailman/**listinfo/imagej-devel&lt;http://imagejdev.org/mailman/listinfo/imagej-devel">http://imagejdev.org/mailman/**listinfo/imagej-devel&lt;http://imagejdev.org/mailman/listinfo/imagej-devel</A>&gt;
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> ______________________________**_________________
+</I>&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagejdev.org</A>
+</I>&gt;&gt;<i> <A HREF="http://imagejdev.org/mailman/**listinfo/imagej-devel&lt;http://imagejdev.org/mailman/listinfo/imagej-devel">http://imagejdev.org/mailman/**listinfo/imagej-devel&lt;http://imagejdev.org/mailman/listinfo/imagej-devel</A>&gt;
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> ______________________________**_________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagejdev.org</A>
+</I>&gt;<i> <A HREF="http://imagejdev.org/mailman/**listinfo/imagej-devel&lt;http://imagejdev.org/mailman/listinfo/imagej-devel">http://imagejdev.org/mailman/**listinfo/imagej-devel&lt;http://imagejdev.org/mailman/listinfo/imagej-devel</A>&gt;
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20110630/094924a5/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20110630/094924a5/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000457.html">[ImageJ-devel] EventBus issues.
+</A></li>
+	<LI>Next message: <A HREF="000459.html">[ImageJ-devel] EventBus issues.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#458">[ date ]</a>
+              <a href="thread.html#458">[ thread ]</a>
+              <a href="subject.html#458">[ subject ]</a>
+              <a href="author.html#458">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

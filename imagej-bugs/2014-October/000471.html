@@ -1,0 +1,237 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-bugs] [Bug 945] New: macro not able to open a sequence of 12-bit compressed Tifs which can be normally be opened in Fiji
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%20945%5D%20New%3A%20macro%20not%20able%20to%20open%20a%20sequence%20of%0A%2012-bit%20compressed%20Tifs%20which%20can%20be%20normally%20be%20opened%20in%20Fiji&In-Reply-To=%3Cbug-945-19%40http.fiji.sc/bugzilla/%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000488.html">
+   <LINK REL="Next"  HREF="000473.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-bugs] [Bug 945] New: macro not able to open a sequence of 12-bit compressed Tifs which can be normally be opened in Fiji</H1>
+    <B>bugzilla at fiji.sc</B> 
+    <A HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%20945%5D%20New%3A%20macro%20not%20able%20to%20open%20a%20sequence%20of%0A%2012-bit%20compressed%20Tifs%20which%20can%20be%20normally%20be%20opened%20in%20Fiji&In-Reply-To=%3Cbug-945-19%40http.fiji.sc/bugzilla/%3E"
+       TITLE="[ImageJ-bugs] [Bug 945] New: macro not able to open a sequence of 12-bit compressed Tifs which can be normally be opened in Fiji">bugzilla at fiji.sc
+       </A><BR>
+    <I>Wed Oct 15 17:00:39 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000488.html">[ImageJ-bugs] [Bug 944] Errors during ImageJ launch
+</A></li>
+        <LI>Next message: <A HREF="000473.html">[ImageJ-bugs] [Bug 773] Fiji memory problems on macintosh
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#471">[ date ]</a>
+              <a href="thread.html#471">[ thread ]</a>
+              <a href="subject.html#471">[ subject ]</a>
+              <a href="author.html#471">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE><A HREF="http://fiji.sc/bugzilla/show_bug.cgi?id=945">http://fiji.sc/bugzilla/show_bug.cgi?id=945</A>
+
+            Bug ID: 945
+           Summary: macro not able to open a sequence of 12-bit compressed
+                    Tifs which can be normally be opened in Fiji
+           Product: Fiji
+           Version: unspecified
+          Hardware: PC
+                OS: Windows
+            Status: NEW
+          Severity: normal
+          Priority: P4
+         Component: Plugins
+          Assignee: <A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">imagej-bugs at imagej.net</A>
+          Reporter: <A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">adam.webb at lightsource.ca</A>
+                CC: <A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">adam.webb at lightsource.ca</A>
+
+I  have a problem running a macro that has been used for some time using
+ImageJ. Here is a small part that does not work as expected. 
+
+macro&quot;sum_dark&quot;{
+
+////////////////////////////////////////////////////////////Dark 
+    Darkdir = getDirectory(&quot;Choose DarkField Directory &quot;);
+    Darklist = getFileList(Darkdir);
+    setOption(&quot;display labels&quot;, true);
+    Darkpath = Darkdir+Darklist[0];
+    DarkOpenpath=&quot;open=[&quot;+Darkpath+&quot;]&quot;;
+    DarkFileCount=lengthOf(Darklist);    
+
+run(&quot;Image Sequence...&quot;, &quot;open = &quot; + DarkOpenpath+&quot; number=&quot;+DarkFileCount+&quot;
+starting=1 increment=1 scale=100 file=[] or=[] sort&quot;);
+rename(&quot;Raw Dark Fields&quot;);
+
+run(&quot;Z Project...&quot;, &quot;start=1 stop=&quot;+DarkFileCount+&quot; projection=[Average
+Intensity]&quot;);
+rename(&quot;Average Dark Field&quot;);
+
+selectWindow(&quot;Raw Dark Fields&quot;);
+close();
+
+The macro fails to open tifs giving the messege: Open TIFF: ImageJ cannot open
+12-bit LZW-compressed TIFFs
+
+The exception is:
+
+(Fiji Is Just) ImageJ 2.0.0-rc-15/1.49i; Java 1.6.0_24 [64-bit]; Windows NT
+(unknown) 6.2; 36MB of 24000MB (&lt;1%)
+
+java.io.IOException: io.scif.img.ImgIOException: java.io.IOException:
+io.scif.FormatException: Invalid TIFF file
+    at net.imagej.DefaultDatasetService.open(DefaultDatasetService.java:273)
+    at net.imagej.DefaultDatasetService.open(DefaultDatasetService.java:250)
+    at net.imagej.io.DatasetIOPlugin.open(DatasetIOPlugin.java:78)
+    at net.imagej.io.DatasetIOPlugin.open(DatasetIOPlugin.java:50)
+    at
+net.imagej.legacy.plugin.DefaultLegacyOpener.open(DefaultLegacyOpener.java:134)
+    at
+net.imagej.legacy.DefaultLegacyHooks.interceptOpenImage(DefaultLegacyHooks.java:336)
+    at ij.plugin.FolderOpener.run(FolderOpener.java:115)
+    at ij.IJ.runPlugIn(IJ.java:172)
+    at ij.Executer.runCommand(Executer.java:131)
+    at ij.Executer.run(Executer.java:64)
+    at ij.IJ.run(IJ.java:272)
+    at ij.macro.Functions.doRun(Functions.java:591)
+    at ij.macro.Functions.doFunction(Functions.java:89)
+    at ij.macro.Interpreter.doStatement(Interpreter.java:227)
+    at ij.macro.Interpreter.doBlock(Interpreter.java:599)
+    at ij.macro.Interpreter.runFirstMacro(Interpreter.java:698)
+    at ij.macro.Interpreter.doStatement(Interpreter.java:260)
+    at ij.macro.Interpreter.doStatements(Interpreter.java:215)
+    at ij.macro.Interpreter.run(Interpreter.java:112)
+    at ij.macro.Interpreter.run(Interpreter.java:82)
+    at ij.macro.Interpreter.run(Interpreter.java:93)
+    at ij.plugin.Macro_Runner.runMacro(Macro_Runner.java:153)
+    at ij.IJ.runMacro(IJ.java:119)
+    at ij.IJ.runMacro(IJ.java:108)
+    at net.imagej.legacy.IJ1Helper.runMacro(IJ1Helper.java:782)
+    at net.imagej.legacy.plugin.IJ1MacroEngine.eval(IJ1MacroEngine.java:116)
+    at net.imagej.legacy.plugin.IJ1MacroEngine.eval(IJ1MacroEngine.java:156)
+    at org.scijava.script.ScriptModule.run(ScriptModule.java:174)
+    at org.scijava.module.ModuleRunner.run(ModuleRunner.java:167)
+    at org.scijava.module.ModuleRunner.call(ModuleRunner.java:126)
+    at org.scijava.module.ModuleRunner.call(ModuleRunner.java:65)
+    at
+org.scijava.thread.DefaultThreadService$2.call(DefaultThreadService.java:164)
+    at java.util.concurrent.FutureTask$Sync.innerRun(FutureTask.java:303)
+    at java.util.concurrent.FutureTask.run(FutureTask.java:138)
+    at
+java.util.concurrent.ThreadPoolExecutor$Worker.runTask(ThreadPoolExecutor.java:886)
+    at
+java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:908)
+    at java.lang.Thread.run(Thread.java:662)
+Caused by: io.scif.img.ImgIOException: java.io.IOException:
+io.scif.FormatException: Invalid TIFF file
+    at io.scif.img.ImgOpener.createReader(ImgOpener.java:551)
+    at io.scif.img.ImgOpener.openImgs(ImgOpener.java:144)
+    at net.imagej.DefaultDatasetService.open(DefaultDatasetService.java:266)
+    ... 36 more
+Caused by: java.io.IOException: io.scif.FormatException: Invalid TIFF file
+    at io.scif.AbstractReader.setSource(AbstractReader.java:274)
+    at
+io.scif.services.DefaultInitializeService.initializeReader(DefaultInitializeService.java:90)
+    at io.scif.img.ImgOpener.createReader(ImgOpener.java:542)
+    ... 38 more
+Caused by: io.scif.FormatException: Invalid TIFF file
+    at
+io.scif.formats.MinimalTIFFFormat$Parser.typedParse(MinimalTIFFFormat.java:412)
+    at
+io.scif.formats.TIFFFormat$BaseTIFFParser.typedParse(TIFFFormat.java:867)
+    at
+io.scif.formats.TIFFFormat$BaseTIFFParser.typedParse(TIFFFormat.java:849)
+    at io.scif.AbstractParser.parse(AbstractParser.java:252)
+    at io.scif.AbstractParser.parse(AbstractParser.java:335)
+    at io.scif.AbstractParser.parse(AbstractParser.java:52)
+    at io.scif.AbstractReader.setSource(AbstractReader.java:270)
+    ... 40 more
+
+
+Note that using File -&gt; Import -&gt; image sequence does correctly open the
+images. Later in the script it opens the images one at a time to apply the
+corrections and this part works.
+
+Information about your version of Java:
+
+  os.arch =&gt; amd64
+  os.name =&gt; Windows NT (unknown)
+  os.version =&gt; 6.2
+  java.version =&gt; 1.6.0_24
+  java.vendor =&gt; Sun Microsystems Inc.
+  java.runtime.name =&gt; Java(TM) SE Runtime Environment
+  java.runtime.version =&gt; 1.6.0_24-b07
+  java.vm.name =&gt; Java HotSpot(TM) 64-Bit Server VM
+  java.vm.version =&gt; 19.1-b02
+  java.vm.vendor =&gt; Sun Microsystems Inc.
+  java.vm.info =&gt; mixed mode
+  java.awt.graphicsenv =&gt; sun.awt.Win32GraphicsEnvironment
+  java.specification.name =&gt; Java Platform API Specification
+  java.specification.version =&gt; 1.6
+  sun.cpu.endian =&gt; little
+  sun.desktop =&gt; windows
+  file.separator =&gt; \
+
+The up-to-date check says: REMIND_LATER
+
+Information relevant to JAVA_HOME related problems:
+
+  JAVA_HOME is set to: C:\PORTAB~1\Fiji.app/java/win64/jdk1.6.0_24//jre
+  imagej.dir =&gt; C:\PORTAB~1\Fiji.app
+
+Information about the version of each plugin:
+
+Activated update sites:
+ImageJ: <A HREF="http://update.imagej.net/">http://update.imagej.net/</A> (last check:20141015111008)
+Fiji: <A HREF="http://fiji.sc/update/">http://fiji.sc/update/</A> (last check:20141014035500)
+
+Files not up-to-date:
+  5996920b (LOCAL_ONLY) 20140806103157 plugins/BMIT/KES_barium.ijm
+  7676da49 (LOCAL_ONLY) 20140719201650 plugins/BMIT/KES_iodine.ijm
+  1bc4fefb (LOCAL_ONLY) 20141009122730
+plugins/BMIT/Micro-CT-Processing_V2.2.ijm
+  cd71f0a5 (LOCAL_ONLY) 20140319113354 plugins/BMIT/Vertical_Scan.ijm
+  d3447486 (LOCAL_ONLY) 20140629143622 plugins/BMIT/normalize_one.ijm
+  76b3e9ee (LOCAL_ONLY) 20141015154722 plugins/BMIT/sum_dark.ijm
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-bugs/attachments/20141015/e189b060/attachment.html">http://imagej.net/pipermail/imagej-bugs/attachments/20141015/e189b060/attachment.html</A>&gt;
+</PRE>
+
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000488.html">[ImageJ-bugs] [Bug 944] Errors during ImageJ launch
+</A></li>
+	<LI>Next message: <A HREF="000473.html">[ImageJ-bugs] [Bug 773] Fiji memory problems on macintosh
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#471">[ date ]</a>
+              <a href="thread.html#471">[ thread ]</a>
+              <a href="subject.html#471">[ subject ]</a>
+              <a href="author.html#471">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-bugs">More information about the Imagej-bugs
+mailing list</a><br>
+</body></html>

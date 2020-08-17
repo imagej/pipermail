@@ -1,0 +1,148 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] ImageJ2 Headless Question
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImageJ2%20Headless%20Question&In-Reply-To=%3CCADN69yn5ruS1-cDgr0btXattq%2BveVw%2BrW1o-KKFG0o1e%2B5bhyg%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001812.html">
+   <LINK REL="Next"  HREF="001802.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] ImageJ2 Headless Question</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20ImageJ2%20Headless%20Question&In-Reply-To=%3CCADN69yn5ruS1-cDgr0btXattq%2BveVw%2BrW1o-KKFG0o1e%2B5bhyg%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] ImageJ2 Headless Question">ctrueden at wisc.edu
+       </A><BR>
+    <I>Tue Oct 22 09:07:26 CDT 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001812.html">[ImageJ-devel] nutron trucks [SEC=UNCLASSIFIED]
+</A></li>
+        <LI>Next message: <A HREF="001802.html">[ImageJ-devel] Accessing metadata from C
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1801">[ date ]</a>
+              <a href="thread.html#1801">[ thread ]</a>
+              <a href="subject.html#1801">[ subject ]</a>
+              <a href="author.html#1801">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Joe,
+
+Very sorry for the delay in reply.
+
+&gt;<i> I'm using the complete snapshot all jar and maybe this is the cause?
+</I>
+Definitely; the &quot;all&quot; JAR was busted. I was able to reproduce this issue,
+and pushed a fix to master last night.
+
+The latest build of imagej-2.0.0-SNAPSHOT-all.jar should start up properly
+now, although there is another outstanding bug on master when quitting
+ImageJ (<A HREF="https://github.com/scijava/scijava-common/pull/14">https://github.com/scijava/scijava-common/pull/14</A>).
+
+That said, I will second Johannes's suggestion to set up a Maven project
+with a dependency on ImageJ Maven artifact(s). The easiest is to extend the
+latest version of pom-scijava as parent, and add this dependency:
+
+  &lt;dependency&gt;
+    &lt;groupId&gt;net.imagej&lt;/groupId&gt;
+    &lt;artifactId&gt;ij-app&lt;/artifactId&gt;
+    &lt;version&gt;${imagej.version}&lt;/version&gt;
+  &lt;/dependency&gt;
+
+That will pull in all the ImageJ2 code transitively for you to use. If you
+are a stickler you can add individual direct dependencies to the components
+you are using, but it is not necessary.
+
+&gt;<i> I've looked at the tutorials for ImageJ2 and I've tried the dataset
+</I>example
+
+So, the ImageJ tutorials are already set up to work this way. Just use File
+&gt;<i> Import &gt; Existing Maven Projects and point it at your imagej-tutorials
+</I>checkout. You'll get all the projects in Eclipse, managed by M2E, with no
+extra work needed. You definitely should *not* need to use the uber-JAR,
+nor ever explicitly manage your classpath in Eclipse. Just edit the Maven
+POM then refresh the project in Eclipse and it will update the &quot;Maven
+dependencies&quot; accordingly.
+
+Regards,
+Curtis
+
+
+On Sun, Sep 22, 2013 at 12:30 AM, Joe Falconer &lt;
+<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">joseph.falconer at lincolnuni.ac.nz</A>&gt; wrote:
+
+&gt;<i> Hi,
+</I>&gt;<i>
+</I>&gt;<i> Hope I'm posting to the correct location.
+</I>&gt;<i>
+</I>&gt;<i> I'm trying to do something that appears quite simple using ImageJ2 - read
+</I>&gt;<i> in a pgm file in headless mode and iterate over and analyse the pixel data
+</I>&gt;<i> in the image.
+</I>&gt;<i>
+</I>&gt;<i> I've looked at the tutorials for ImageJ2 and I've tried the dataset
+</I>&gt;<i> example but I'm having some issues. I'm having Maven connector issues in
+</I>&gt;<i> Eclipse Kepler so I'm using the complete snapshot all jar and maybe this is
+</I>&gt;<i> the cause? This is my trace when running the dataset example :
+</I>&gt;<i>
+</I>&gt;<i> WARN: Ignoring non-Maven build directory: C:\Documents and
+</I>&gt;<i> Settings\Joe\ImagingWorkspace\IJ2Test\bin
+</I>&gt;<i> Exception in thread &quot;main&quot; java.lang.IllegalArgumentException: Invalid
+</I>&gt;<i> service: imagej.console.DefaultConsoleService
+</I>&gt;<i>
+</I>&gt;<i> I've also tried the ImgLib2 examples on the fiji site referred to from the
+</I>&gt;<i> tutorials page but I've had trouble getting them to run without raising &quot;No
+</I>&gt;<i> compatible service: io.scif.SCIFIOService&quot; exception.
+</I>&gt;<i>
+</I>&gt;<i> I'm guessing I have some build/dependency issues - any suggestions?
+</I>&gt;<i>
+</I>&gt;<i> thanks for any help
+</I>&gt;<i>
+</I>&gt;<i> Joe
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20131022/a7d6b69c/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20131022/a7d6b69c/attachment-0001.html</A>&gt;
+</PRE>
+
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001812.html">[ImageJ-devel] nutron trucks [SEC=UNCLASSIFIED]
+</A></li>
+	<LI>Next message: <A HREF="001802.html">[ImageJ-devel] Accessing metadata from C
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1801">[ date ]</a>
+              <a href="thread.html#1801">[ thread ]</a>
+              <a href="subject.html#1801">[ subject ]</a>
+              <a href="author.html#1801">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,142 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] imglib2-io as a test phase dependency of	imglib-algorithms
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20imglib2-io%20as%20a%20test%20phase%20dependency%20of%0A%09imglib-algorithms&In-Reply-To=%3CCAHLFyjeXCOJtuodnZZnf7YtOvxdFateSO1nsN6buPHtpmNYtMw%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001569.html">
+   <LINK REL="Next"  HREF="001573.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] imglib2-io as a test phase dependency of	imglib-algorithms</H1>
+    <B>Lee Kamentsky</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20imglib2-io%20as%20a%20test%20phase%20dependency%20of%0A%09imglib-algorithms&In-Reply-To=%3CCAHLFyjeXCOJtuodnZZnf7YtOvxdFateSO1nsN6buPHtpmNYtMw%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] imglib2-io as a test phase dependency of	imglib-algorithms">leek at broadinstitute.org
+       </A><BR>
+    <I>Thu Jun 20 15:49:43 CDT 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001569.html">[ImageJ-devel] imglib2-io as a test phase dependency of	imglib-algorithms
+</A></li>
+        <LI>Next message: <A HREF="001573.html">[ImageJ-devel] imglib2-io as a test phase dependency of imglib-algorithms
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1571">[ date ]</a>
+              <a href="thread.html#1571">[ thread ]</a>
+              <a href="subject.html#1571">[ subject ]</a>
+              <a href="author.html#1571">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi all,
+
+On Thu, Jun 20, 2013 at 12:27 PM, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt; wrote:
+
+&gt;<i> Hi Lee,
+</I>&gt;<i>
+</I>&gt;<i> &gt; I was thinking it would be nice (= makes my life a little easier) if
+</I>&gt;<i> &gt; imglib2-io was a test phase dependency of imglib-algorithms so you
+</I>&gt;<i> &gt; could use test images in imglib2 tests.
+</I>&gt;<i>
+</I>&gt;<i> I think that's a good idea. However, a couple of comments:
+</I>&gt;<i>
+</I>&gt;<i> 1) net.imglib2:imglib2-io:2.0.0-SNAPSHOT will go away soon, in favor of
+</I>&gt;<i> io.scif:scifio:0.3.0. In other words: the latest ImgOpener/ImgSaver work is
+</I>&gt;<i> being done in the SCIFIO repository (<A HREF="https://github.com/scifio/scifio">https://github.com/scifio/scifio</A>)
+</I>&gt;<i> rather than in the ImgLib2 repo. The reason is that imglib2-io already
+</I>&gt;<i> depends on SCIFIO to do this stuff, and SCIFIO depends on imglib2 core, so
+</I>&gt;<i> why not consolidate and give all SCIFIO users the capability of working
+</I>&gt;<i> with ImgLib2 data structures?
+</I>&gt;<i>
+</I>&gt;<i> So, imglib-algorithms would then have a test-phase dependency on scifio.
+</I>&gt;<i> Same difference though.
+</I>&gt;<i>
+</I>
+I'll look at pulling in scifio instead or possibly hold off on committing
+the tests until things gel a bit more.
+
+
+&gt;<i>
+</I>&gt;<i> I'm thinking of storing very small .tifs as resources
+</I>&gt;<i>
+</I>&gt;<i> 2) Rather than TIFFs, you can use .fake file paths for testing without
+</I>&gt;<i> needing to commit any actual images to the repository. The .fake &quot;file
+</I>&gt;<i> format&quot; was invented for exactly such a purpose, to make unit testing easy.
+</I>&gt;<i> The only downside is that you can't precisely control the pixel contents,
+</I>&gt;<i> but for unit tests you rarely need to. Rather, you typically want the test
+</I>&gt;<i> to verify that it processes data in various structures properly (RGB vs.
+</I>&gt;<i> grayscale, huge plane sizes, etc.).
+</I>&gt;<i>
+</I>&gt;<i> Would that work for you?
+</I>&gt;<i>
+</I>&gt;<i> For the pyramids, I want to compare the output of the C reference
+</I>implementation against my own. That means that I have to generate the
+results using an image with known contents. Johannes suggested generating
+test images. In CellProfiler, I often do similar - use a pseudo-random
+number generator with fixed seed to generate the same image every time. I
+was planning to include the reference implementation outputs (there are six
+different variants = 6 outputs), but perhaps it's enough to randomly sample
+the values at a handful of coordinates and check those instead of checking
+the entire image.
+
+For CP unit tests, we have a standard set of images that we use throughout
+the tests (stored in an svn repository, not GIT). ImageJ has those example
+images and maybe those are enough for testing.
+
+Regards,
+&gt;<i> Curtis
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On Thu, Jun 20, 2013 at 8:53 AM, Lee Kamentsky &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">leek at broadinstitute.org</A>&gt;wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> Hi all,
+</I>&gt;&gt;<i> I was thinking it would be nice (= makes my life a little easier) if
+</I>&gt;&gt;<i> imglib2-io was a test phase dependency of imglib-algorithms so you could
+</I>&gt;&gt;<i> use test images in imglib2 tests. I'm thinking of storing very small .tifs
+</I>&gt;&gt;<i> as resources in the test packages, hope 100x100 pixels is a reasonable size
+</I>&gt;&gt;<i> for GIT, still haven't figured out the best strategy for writing the
+</I>&gt;&gt;<i> resource to a file so that it can be loaded.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> --Lee
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20130620/87a694e5/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20130620/87a694e5/attachment.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001569.html">[ImageJ-devel] imglib2-io as a test phase dependency of	imglib-algorithms
+</A></li>
+	<LI>Next message: <A HREF="001573.html">[ImageJ-devel] imglib2-io as a test phase dependency of imglib-algorithms
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1571">[ date ]</a>
+              <a href="thread.html#1571">[ thread ]</a>
+              <a href="subject.html#1571">[ subject ]</a>
+              <a href="author.html#1571">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

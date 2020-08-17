@@ -1,0 +1,244 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Please don't quit
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Please%20don%27t%20quit&In-Reply-To=%3CCADN69ynbFsr3rDWnKJL-zBdFUL%3D8EoiD8KeXmLbxT3wgP%2BLM1A%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002304.html">
+   <LINK REL="Next"  HREF="002309.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Please don't quit</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Please%20don%27t%20quit&In-Reply-To=%3CCADN69ynbFsr3rDWnKJL-zBdFUL%3D8EoiD8KeXmLbxT3wgP%2BLM1A%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Please don't quit">ctrueden at wisc.edu
+       </A><BR>
+    <I>Wed Nov  5 13:59:25 CST 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002304.html">[ImageJ-devel] Please don't quit
+</A></li>
+        <LI>Next message: <A HREF="002309.html">[ImageJ-devel] On a personal note
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2305">[ date ]</a>
+              <a href="thread.html#2305">[ thread ]</a>
+              <a href="subject.html#2305">[ subject ]</a>
+              <a href="author.html#2305">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Lee,
+
+&gt;<i> So CellProfiler is all caught up, at least it's at 2.0.0 rc 16 -
+</I>
+Awesome!
+
+&gt;<i> hopefully largely locked-down from an API perspective.
+</I>
+Yeah, the API is pretty solid at this point -- especially SciJava Common,
+which is thoroughly out of beta. The only backwards-incompatible change
+planned is a rework of org.scijava.io, but I hope that won't impact most
+downstream code.
+
+The other big eventual changes on the ImageJ2 side will be unification of
+the net.imglib2.meta and net.imagej data structures, as well as
+net.imglib2.ops and net.imagej.ops APIs. If you are a heavy user of
+imagej-common or imagej-ops, you may see some disruption there in a few
+months' time.
+
+In general, if you see breakages and disruption while keeping things up to
+date, you're welcome to complain. Especially if the migration path is not
+obvious.
+
+We are going through some related pain on the ImgLib2 front right now, with
+imglib2 coming out of beta a couple weeks ago. We still haven't sent the
+release announcement because it is not uploaded to the ImageJ update site
+yet -- we have to first upgrade all affected Fiji components to the new
+version. But after this point the imglib2 API will be extremely stable, so
+ultimately it's a good thing.
+
+Regards,
+Curtis
+
+On Wed, Nov 5, 2014 at 1:50 PM, Lee Kamentsky &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">leek at broadinstitute.org</A>&gt;
+wrote:
+
+&gt;<i> Great Curtis, I even made it say &quot;ImageJ for CellProfiler&quot; in the system
+</I>&gt;<i> info. So CellProfiler is all caught up, at least it's at 2.0.0 rc 16 -
+</I>&gt;<i> hopefully largely locked-down from an API perspective.
+</I>&gt;<i>
+</I>&gt;<i> On Wed, Nov 5, 2014 at 12:33 PM, Curtis Rueden &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ctrueden at wisc.edu</A>&gt; wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> Hi Lee,
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> &gt; Please don't quit
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I would suggest avoiding a custom service. There are two other (hopefully
+</I>&gt;&gt;<i> simpler!) ways you can achieve your goal -- see below.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> First, a summary of the architecture:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> The current DefaultAppService responds to AppQuitEvents as follows:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> protected void onEvent(@SuppressWarnings(&quot;unused&quot;) final AppQuitEvent
+</I>&gt;&gt;<i> event) {
+</I>&gt;&gt;<i> getApp().quit();
+</I>&gt;&gt;<i> }
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Which delegates the operation to the App plugin with the highest priority.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> The following App plugins ship with net.imagej:imagej:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> * org.scijava.app.SciJavaApp [LOW priority] -- bundled with
+</I>&gt;&gt;<i> org.scijava:scijava-common
+</I>&gt;&gt;<i> * io.scif.SCIFIOApp [NORMAL priority] -- bundled with io.scif:scifio
+</I>&gt;&gt;<i> * net.imagej.legacy.LegacyImageJApp [NORMAL priority] - bundled with
+</I>&gt;&gt;<i> net.imagej:imagej-legacy
+</I>&gt;&gt;<i> * net.imagej.app.ImageJApp [HIGH priority] -- bundled with
+</I>&gt;&gt;<i> net.imagej:imagej-common
+</I>&gt;&gt;<i> * net.imagej.app.ToplevelImageJApp [HIGH+1 priority] -- bundled with
+</I>&gt;&gt;<i> net.imagej:imagej
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> So:
+</I>&gt;&gt;<i> * If net.imagej:imagej is on the classpath, the ToplevelImageJApp will
+</I>&gt;&gt;<i> take precedence.
+</I>&gt;&gt;<i> Otherwise:
+</I>&gt;&gt;<i> * If net.imagej:imagej-common is on the classpath, the ImageJApp takes
+</I>&gt;&gt;<i> precedence.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> However, ToplevelImageJApp extends ImageJApp and does not override
+</I>&gt;&gt;<i> quit(). So either way, the quit behavior will be the same:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>   public void quit() {
+</I>&gt;&gt;<i>     commandService.run(QuitProgram.class, true);
+</I>&gt;&gt;<i>   }
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> <A HREF="https://github.com/imagej/imagej-common/blob/imagej-common-0.10.1/src/main/java/net/imagej/app/QuitProgram.java#L79-L96">https://github.com/imagej/imagej-common/blob/imagej-common-0.10.1/src/main/java/net/imagej/app/QuitProgram.java#L79-L96</A>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Note that the devastating System.exit(0) is only called when
+</I>&gt;&gt;<i> exitWhenQuitting is set to true. This is part of OptionsMisc:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> <A HREF="https://github.com/imagej/imagej-common/blob/imagej-common-0.10.1/src/main/java/net/imagej/options/OptionsMisc.java#L75-L76">https://github.com/imagej/imagej-common/blob/imagej-common-0.10.1/src/main/java/net/imagej/options/OptionsMisc.java#L75-L76</A>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> So, there are two potential ways I would suggest to achieve your goal:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> 1) Set the OptionsMisc exitWhenQuitting to false. This is handy if you
+</I>&gt;&gt;<i> don't need a lot of control over exactly what happens when quit() is
+</I>&gt;&gt;<i> called, but you just want to stop the System.exit(0) from firing.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> 2) Create a CellProfilerApp plugin and set it to a higher priority than
+</I>&gt;&gt;<i> ImageJ. This solution makes the most sense to me because it gives you more
+</I>&gt;&gt;<i> flexibility over the behavior of a couple other operations, too: about()
+</I>&gt;&gt;<i> and prefs().
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> <A HREF="https://github.com/scijava/scijava-common/blob/scijava-common-2.35.0/src/main/java/org/scijava/app/App.java">https://github.com/scijava/scijava-common/blob/scijava-common-2.35.0/src/main/java/org/scijava/app/App.java</A>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Regards,
+</I>&gt;&gt;<i> Curtis
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> On Wed, Nov 5, 2014 at 10:23 AM, Lee Kamentsky &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">leek at broadinstitute.org</A>&gt;
+</I>&gt;&gt;<i> wrote:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> Oops never mind, what I tried actually worked. AppQuitEvent.consume()
+</I>&gt;&gt;&gt;<i> did the trick. Go figure - you guys really threw the whole kitchen sink
+</I>&gt;&gt;&gt;<i> into it, didn't you?
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> @Plugin(type = Service.class, priority = Priority.HIGH_PRIORITY)
+</I>&gt;&gt;&gt;<i> public class CellProfilerAppService extends DefaultAppService {
+</I>&gt;&gt;&gt;<i> static boolean canQuit = false;
+</I>&gt;&gt;&gt;<i> public static void allowQuit() {
+</I>&gt;&gt;&gt;<i> canQuit = true;
+</I>&gt;&gt;&gt;<i> }
+</I>&gt;&gt;&gt;<i> public static void preventQuit() {
+</I>&gt;&gt;&gt;<i> canQuit = false;
+</I>&gt;&gt;&gt;<i> }
+</I>&gt;&gt;&gt;<i> @EventHandler
+</I>&gt;&gt;&gt;<i> public void onEvent(final AppQuitEvent event) {
+</I>&gt;&gt;&gt;<i> if (canQuit) {
+</I>&gt;&gt;&gt;<i> super.onEvent(event);
+</I>&gt;&gt;&gt;<i> } else {
+</I>&gt;&gt;&gt;<i> final UIService uiService = getContext().getService(UIService.class);
+</I>&gt;&gt;&gt;<i> final LogService logService = getContext().getService(LogService.class);
+</I>&gt;&gt;&gt;<i> if (uiService.isVisible()) {
+</I>&gt;&gt;&gt;<i> UserInterface ui = uiService.getDefaultUI();
+</I>&gt;&gt;&gt;<i> logService.info(&quot;Quit action: hide the application frame&quot;);
+</I>&gt;&gt;&gt;<i> ui.getApplicationFrame().setVisible(false);
+</I>&gt;&gt;&gt;<i> } else {
+</I>&gt;&gt;&gt;<i> logService.info(&quot;Quit action: do nothing&quot;);
+</I>&gt;&gt;&gt;<i> }
+</I>&gt;&gt;&gt;<i> event.consume();
+</I>&gt;&gt;&gt;<i> }
+</I>&gt;&gt;&gt;<i> }
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> }
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> On Wed, Nov 5, 2014 at 11:15 AM, Lee Kamentsky &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">leek at broadinstitute.org</A>&gt;
+</I>&gt;&gt;&gt;<i> wrote:
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> Hi all,
+</I>&gt;&gt;&gt;&gt;<i> I had a class (
+</I>&gt;&gt;&gt;&gt;<i> <A HREF="https://github.com/CellProfiler/CellProfiler/blob/master/java/src/main/java/org/cellprofiler/ijutils/CellProfilerAppEventService.java">https://github.com/CellProfiler/CellProfiler/blob/master/java/src/main/java/org/cellprofiler/ijutils/CellProfilerAppEventService.java</A>)
+</I>&gt;&gt;&gt;&gt;<i> that implemented the deprecated AppEventService whose purpose was to
+</I>&gt;&gt;&gt;&gt;<i> prevent ImageJ from quitting if a user closed its window by overriding
+</I>&gt;&gt;&gt;&gt;<i> AppEventService.quit(). Quitting is pretty devastating for CellProfiler
+</I>&gt;&gt;&gt;&gt;<i> since the process closes when the user's probable intent was to hide the
+</I>&gt;&gt;&gt;&gt;<i> window.
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> I'm hoping someone can give me a hint about how to do it now - I
+</I>&gt;&gt;&gt;&gt;<i> thought I'd cheat by asking instead of figuring it out myself.
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;&gt;<i> Thanks in advance,
+</I>&gt;&gt;&gt;&gt;<i> --Lee
+</I>&gt;&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20141105/3792a3f6/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20141105/3792a3f6/attachment.html</A>&gt;
+</PRE>
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002304.html">[ImageJ-devel] Please don't quit
+</A></li>
+	<LI>Next message: <A HREF="002309.html">[ImageJ-devel] On a personal note
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2305">[ date ]</a>
+              <a href="thread.html#2305">[ thread ]</a>
+              <a href="subject.html#2305">[ subject ]</a>
+              <a href="author.html#2305">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,128 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Fwd: Hist thresh toolbox license question
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Fwd%3A%20Hist%20thresh%20toolbox%20license%20question&In-Reply-To=%3Calpine.LRH.2.02.1302191439400.15465%40savukolibri.cs.tut.fi%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001423.html">
+   <LINK REL="Next"  HREF="001425.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Fwd: Hist thresh toolbox license question</H1>
+    <B>Antti Niemist&#246;</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Fwd%3A%20Hist%20thresh%20toolbox%20license%20question&In-Reply-To=%3Calpine.LRH.2.02.1302191439400.15465%40savukolibri.cs.tut.fi%3E"
+       TITLE="[ImageJ-devel] Fwd: Hist thresh toolbox license question">antti.niemisto at tut.fi
+       </A><BR>
+    <I>Tue Feb 19 06:52:34 CST 2013</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001423.html">[ImageJ-devel] Fwd: Hist thresh toolbox license question
+</A></li>
+        <LI>Next message: <A HREF="001425.html">[ImageJ-devel] Fwd: Hist thresh toolbox license question
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1424">[ date ]</a>
+              <a href="thread.html#1424">[ thread ]</a>
+              <a href="subject.html#1424">[ subject ]</a>
+              <a href="author.html#1424">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Tue, 19 Feb 2013, Gabriel Landini wrote:
+
+&gt;<i> On Monday 18 Feb 2013 22:01:14 Antti Niemist&#246; wrote:
+</I>&gt;&gt;<i> It seems like your ported version does not produce the correct threshold
+</I>&gt;&gt;<i> between the two peaks in the smoothed histogram in certain cases where you
+</I>&gt;&gt;<i> have flat areas in the smoothed histogram.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> For example, try this one.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I = 40*ones(40);
+</I>&gt;&gt;<i> I(10:30,10:30) = 120;
+</I>&gt;&gt;<i> T = th_minimum(I);
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> You'll find the threshold becomes 121. This is of course not between the
+</I>&gt;&gt;<i> two peaks at 40 and 120.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> The code in v1.02 did not assign any value to the threshold in this
+</I>&gt;&gt;<i> example case and in similar cases, so it clearly needed to be fixed.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> I now realize that a much more elegant fix than what I put in v1.03 would
+</I>&gt;&gt;<i> be this (gives T=41 in my simple example):
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> for k = 2:n
+</I>&gt;&gt;<i>    if y(k-1) &gt; y(k) &amp; y(k+1) &gt;= y(k)
+</I>&gt;&gt;<i>      T = k-1;
+</I>&gt;&gt;<i>      break
+</I>&gt;&gt;<i>    end
+</I>&gt;&gt;<i> end
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> The &quot;break&quot; from the loop is essential, in addition to changing the latter
+</I>&gt;&gt;<i> &quot;&gt;&quot; to a &quot;&gt;=&quot;. I would definitely use this code in your port.
+</I>&gt;<i>
+</I>&gt;<i> Hi again,
+</I>&gt;<i> Barry: I seem to have discussed this with Antti that in matlab the arrays
+</I>&gt;<i> start at 1, so the counts for greyscale 0 are in the index 1.
+</I>&gt;<i> So for the Java version, the threshold should be set at:
+</I>&gt;<i> T=k;
+</I>&gt;<i>
+</I>&gt;<i> You want the threshold at y(k), that bin should be smaller than y(k-1).
+</I>&gt;<i> BTW that is what the current IJ plugin does. Antti codes compensates for the
+</I>&gt;<i> indexes starting at 1. IJ does not need that.
+</I>&gt;<i>
+</I>&gt;<i> And do you really need the Break statement?
+</I>&gt;<i> If there are 2 peaks guaranteed, then a 2nd instance of the test would not be
+</I>&gt;<i> found. Or am I wrong?
+</I>
+Hi,
+
+The break statement is needed for cases where the smoothed historgram has 
+a flat tail on the right hand side of the second peak. The test is 
+satisfied in that case due to changing the latter &quot;&gt;&quot; to a &quot;&gt;=&quot; (which was 
+needed to make sure that the test is satisfied in case there is a flat 
+area between the two peaks).
+
+These flat areas do not occur with most images, but with simple images 
+like the one I used as an example in my previous email, it does happen, 
+typically with a tail of zeros in the smoothed histogram. And when it 
+does, without the break statement the threshold value that is returned is 
+on the right hand side of the second peak, as opposed to between the peaks 
+like it should.
+
+-- 
+Antti Niemist&#246; DSc(Tech)              office: TE410
+Research Fellow                       phone:  +358-40-849-0587 (GSM)
+Department of Signal Processing               +358-3-3115-4989 (fax)
+Tampere University of Technology      URI:    <A HREF="http://www.cs.tut.fi/~ant/">http://www.cs.tut.fi/~ant/</A>
+
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001423.html">[ImageJ-devel] Fwd: Hist thresh toolbox license question
+</A></li>
+	<LI>Next message: <A HREF="001425.html">[ImageJ-devel] Fwd: Hist thresh toolbox license question
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1424">[ date ]</a>
+              <a href="thread.html#1424">[ thread ]</a>
+              <a href="subject.html#1424">[ subject ]</a>
+              <a href="author.html#1424">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

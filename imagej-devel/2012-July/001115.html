@@ -1,0 +1,130 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Finding classes and importing the right Maven artifacts
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Finding%20classes%20and%20importing%20the%20right%20Maven%0A%20artifacts&In-Reply-To=%3Calpine.DEB.1.00.1207261851100.32459%40s15462909.onlinehome-server.info%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001113.html">
+   <LINK REL="Next"  HREF="001116.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Finding classes and importing the right Maven artifacts</H1>
+    <B>Johannes Schindelin</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Finding%20classes%20and%20importing%20the%20right%20Maven%0A%20artifacts&In-Reply-To=%3Calpine.DEB.1.00.1207261851100.32459%40s15462909.onlinehome-server.info%3E"
+       TITLE="[ImageJ-devel] Finding classes and importing the right Maven artifacts">Johannes.Schindelin at gmx.de
+       </A><BR>
+    <I>Thu Jul 26 12:00:15 CDT 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001113.html">[ImageJ-devel] Finding classes and importing the right Maven artifacts
+</A></li>
+        <LI>Next message: <A HREF="001116.html">[ImageJ-devel] Finding classes and importing the right Maven	artifacts
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1115">[ date ]</a>
+              <a href="thread.html#1115">[ thread ]</a>
+              <a href="subject.html#1115">[ subject ]</a>
+              <a href="author.html#1115">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Michael,
+
+On Thu, 26 Jul 2012, Michael Doube wrote:
+
+&gt;<i> &gt;&gt; Mostly, Eclipse has handled that OK. But, now I'm editing my pom.xml
+</I>&gt;<i> &gt;&gt; and am missing a couple of dependencies, which are really hard to
+</I>&gt;<i> &gt;&gt; find.
+</I>&gt;<i> 
+</I>&gt;<i> OK, so I found them by trial and error by searching at
+</I>&gt;<i> <A HREF="http://maven.imagej.net:8081/index.html#welcome">http://maven.imagej.net:8081/index.html#welcome</A> and editing pom.xml
+</I>&gt;<i> until build errors went away.
+</I>
+Yes, we need to make that much, much easier. I will write a plugin
+intended for developers you can use to add dependencies given a class name
+(under the condition that the class name is in Fiji's class path and that
+the corresponding .jar file has a valid pom.xml in it) and a pom.xml you
+want to extend.
+
+&gt;<i> What was tripping me up was that there are several versions of
+</I>&gt;<i> ij-platform, for example. The beta releases (fixed states, right?) and
+</I>&gt;<i> the SNAPSHOTS (updating often, right?). So far, so good. But, then there
+</I>&gt;<i> are versions 2.0-SNAPSHOT and 2.0.0-SNAPSHOT. And one with a sources
+</I>&gt;<i> classifier. And there is also an ij-platform artifact with the group ID
+</I>&gt;<i> imagej, version 2.0-SNAPSHOT, and several others with group ID
+</I>&gt;<i> net.imagej. So, even guessing the right artifact name could point at
+</I>&gt;<i> eight distinct actual artifacts.
+</I>
+In general, until the API of ImageJ2 stabilizes, you should always use
+2.0.0-SNAPSHOT. To be safe, you could just make the scijava .pom your
+parent pom (as it is e.g. here:
+<A HREF="https://github.com/fiji/fiji/blob/master/src-plugins/pom.xml;">https://github.com/fiji/fiji/blob/master/src-plugins/pom.xml;</A> it requires
+the &lt;parent&gt; and &lt;repositories&gt; tags to be set correctly) and use
+${imagej.version} instead (see
+<A HREF="https://github.com/scijava/scijava-common/blob/master/pom-scijava/pom.xml">https://github.com/scijava/scijava-common/blob/master/pom-scijava/pom.xml</A>
+for the available properties).
+
+&gt;<i> Even more confusing is this recommendation for pom.xml at
+</I>&gt;<i> <A HREF="http://fiji.sc/wiki/index.php/Maven">http://fiji.sc/wiki/index.php/Maven</A>
+</I>&gt;<i> 
+</I>&gt;<i> 		&lt;dependency&gt;
+</I>&gt;<i> 			&lt;groupId&gt;net.imagej&lt;/groupId&gt;
+</I>&gt;<i> 			&lt;artifactId&gt;ij&lt;/artifactId&gt;
+</I>&gt;<i> 			&lt;version&gt;1.46j&lt;/version&gt;
+</I>&gt;<i> 		&lt;/dependency&gt;
+</I>&gt;<i> 		&lt;dependency&gt;
+</I>&gt;<i> 			&lt;groupId&gt;imagej&lt;/groupId&gt;
+</I>&gt;<i> 			&lt;artifactId&gt;imagej&lt;/artifactId&gt;
+</I>&gt;<i> 			&lt;version&gt;2.0-SNAPSHOT&lt;/version&gt;
+</I>&gt;<i> 		&lt;/dependency&gt;
+</I>&gt;<i> 
+</I>&gt;<i> Which makes it look like ImageJ1 is under net.imagej and ImageJ2 is
+</I>&gt;<i> under imagej.
+</I>
+You should specify exactly which component you require of ImageJ2, e.g.
+ij-data or ij-core. They are in net.imagej and they all have the version
+2.0.0-SNAPSHOT at the moment.
+
+Ciao,
+Dscho
+
+</PRE>
+
+
+
+
+
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001113.html">[ImageJ-devel] Finding classes and importing the right Maven artifacts
+</A></li>
+	<LI>Next message: <A HREF="001116.html">[ImageJ-devel] Finding classes and importing the right Maven	artifacts
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1115">[ date ]</a>
+              <a href="thread.html#1115">[ thread ]</a>
+              <a href="subject.html#1115">[ subject ]</a>
+              <a href="author.html#1115">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

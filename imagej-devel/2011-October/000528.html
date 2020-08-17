@@ -1,0 +1,127 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Candidates images for the &quot;about ImageJ&quot; dialog
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Candidates%20images%20for%20the%20%22about%20ImageJ%22%20dialog&In-Reply-To=%3Calpine.DEB.1.00.1110191249190.32316%40s15462909.onlinehome-server.info%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000526.html">
+   <LINK REL="Next"  HREF="000529.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Candidates images for the &quot;about ImageJ&quot; dialog</H1>
+    <B>Johannes Schindelin</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Candidates%20images%20for%20the%20%22about%20ImageJ%22%20dialog&In-Reply-To=%3Calpine.DEB.1.00.1110191249190.32316%40s15462909.onlinehome-server.info%3E"
+       TITLE="[ImageJ-devel] Candidates images for the &quot;about ImageJ&quot; dialog">schindelin at wisc.edu
+       </A><BR>
+    <I>Wed Oct 19 12:50:56 CDT 2011</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000526.html">[ImageJ-devel] Candidates images for the &quot;about ImageJ&quot; dialog
+</A></li>
+        <LI>Next message: <A HREF="000529.html">[ImageJ-devel] Candidates images for the &quot;about ImageJ&quot; dialog
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#528">[ date ]</a>
+              <a href="thread.html#528">[ thread ]</a>
+              <a href="subject.html#528">[ subject ]</a>
+              <a href="author.html#528">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Gabriel,
+
+On Wed, 19 Oct 2011, Gabriel Landini wrote:
+
+&gt;<i> 5. There are lots of interesting and beautiful images for which it would 
+</I>&gt;<i>    be difficult or impossible to read any text overwritten on them, so 
+</I>&gt;<i>    an idea would be to use the images with an artificial darkening 
+</I>&gt;<i>    horizontal gradient or similar so the text is readable.
+</I>
+You mean something like this Beanshell, right?
+
+-- snipsnap --
+imp = IJ.getImage();
+width = imp.getWidth();
+height = imp.getHeight();
+
+text = &quot;ImageJ2\n&quot;
+	+ &quot;Extensible and robust image processing\n&quot;
+	+ &quot;at your fingertips&quot;;
+ip = new ByteProcessor(width, height);
+ip.setColor(java.awt.Color.WHITE);
+ip.drawString(text, 10, 20);
+ip.invert();
+
+ip2 = ip.duplicate();
+ip2.dilate();
+
+stack = new ImagePlus(&quot;&quot;, ip2).getStack();
+mask = new fiji.process3d.EDT().compute(stack).getProcessor();
+for (j = 0; j &lt; height; j++)
+	for (i = 0; i &lt; width; i++) {
+		value = mask.getf(i, j);
+		// transform smoothly so that 0 is still 0
+		// but large values are 1, so we can multiply the
+		// original image with said value
+		if (value &gt;= 20)
+			value = 1;
+		else
+			value = Math.sin(value * Math.PI / 2 / 20);
+		mask.setf(i, j, (float)value);
+	}
+
+// blending routine
+blend(ip3) {
+	for (j = 0; j &lt; height; j++)
+		for (i = 0; i &lt; width; i++) {
+			if (ip.getf(i, j) != 0 &amp;&amp; ip2.getf(i, j) == 0)
+				ip3.setf(i, j, 255);
+			else
+				ip3.setf(i, j, ip3.getf(i, j)
+					* mask.getf(i, j));
+		}
+}
+
+// blend in the text into the original image
+ip3 = imp.getProcessor().duplicate();
+if (ip3 instanceof ColorProcessor) {
+	red = new byte[width * height];
+	green = new byte[width * height];
+	blue = new byte[width * height];
+	ip3.getRGB(red, green, blue);
+	blend(new ByteProcessor(width, height, red, null));
+	blend(new ByteProcessor(width, height, green, null));
+	blend(new ByteProcessor(width, height, blue, null));
+	ip3.setRGB(red, green, blue);
+}
+else
+	blend(ip3);
+
+new ImagePlus(&quot;About ImageJ2&quot;, ip3).show();
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000526.html">[ImageJ-devel] Candidates images for the &quot;about ImageJ&quot; dialog
+</A></li>
+	<LI>Next message: <A HREF="000529.html">[ImageJ-devel] Candidates images for the &quot;about ImageJ&quot; dialog
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#528">[ date ]</a>
+              <a href="thread.html#528">[ thread ]</a>
+              <a href="subject.html#528">[ subject ]</a>
+              <a href="author.html#528">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

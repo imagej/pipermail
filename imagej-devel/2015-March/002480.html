@@ -1,0 +1,183 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] SemVer policies for ImageJ2 and Fiji
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20SemVer%20policies%20for%20ImageJ2%20and%20Fiji&In-Reply-To=%3C1426473522.18823.132.camel%40saalfeld-thinkpad%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002479.html">
+   <LINK REL="Next"  HREF="002481.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] SemVer policies for ImageJ2 and Fiji</H1>
+    <B>Stephan Saalfeld</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20SemVer%20policies%20for%20ImageJ2%20and%20Fiji&In-Reply-To=%3C1426473522.18823.132.camel%40saalfeld-thinkpad%3E"
+       TITLE="[ImageJ-devel] SemVer policies for ImageJ2 and Fiji">saalfelds at janelia.hhmi.org
+       </A><BR>
+    <I>Sun Mar 15 21:38:42 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002479.html">[ImageJ-devel] SemVer policies for ImageJ2 and Fiji
+</A></li>
+        <LI>Next message: <A HREF="002481.html">[ImageJ-devel] SemVer policies for ImageJ2 and Fiji
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2480">[ date ]</a>
+              <a href="thread.html#2480">[ thread ]</a>
+              <a href="subject.html#2480">[ subject ]</a>
+              <a href="author.html#2480">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Dear ImageJ developers,
+
+my earlier statement about the conclusion that can be drawn from
+bubbling versions in a deployment context are wrong.
+
+Counter proof: Artifact X fixes a bug in one of its public methods, and
+accordingly increases the PATCH counter.  Artifact Y depends on artifact
+X and knew about the bug and had a workaround in place to compensate for
+it.  On upgrade of dependency version for X, it removes the workaround,
+public API remains unchanged.  This is a patch and X had increased the
+PATCH counter, so Y increases the PATCH counter.  Neither X nor Y can be
+deployed independently.  The deployment system (or person) has to
+inspect the entire dependency tree to calculate a correct state or a
+conflict.  The same is true in the non-bubbling situation.  Ergo,
+bubbling versioning has no advantage over non-bubbling versioning in a
+deployment context.
+
+This leads me to the conclusion that non-bubbling versioning is better
+because it carries local information for developers that non-bubbling
+versioning does not, i.e. in what way the API of the versioned artifact
+was changed.
+
+I expect to be wrong still and that I missed something important.
+
+Looking forward to your responses.
+
+Thanks,
+Stephan
+
+
+
+On Sat, 2015-03-14 at 23:12 -0400, Stephan Saalfeld wrote: 
+&gt;<i> Dear list,
+</I>&gt;<i> 
+</I>&gt;<i> a recent SPIM_Registration bug report on GitHub
+</I>&gt;<i> 
+</I>&gt;<i> <A HREF="https://github.com/bigdataviewer/SPIM_Registration/issues/10#issuecomment-79721014">https://github.com/bigdataviewer/SPIM_Registration/issues/10#issuecomment-79721014</A>
+</I>&gt;<i> 
+</I>&gt;<i> resulted in a discussion about the correct way of assigning version
+</I>&gt;<i> numbers to individual artifacts.
+</I>&gt;<i> 
+</I>&gt;<i> We have earlier settled to follow SemVer
+</I>&gt;<i> 
+</I>&gt;<i> <A HREF="http://semver.org/">http://semver.org/</A>
+</I>&gt;<i> 
+</I>&gt;<i> which has reasonably clear guidelines under what circumstances to
+</I>&gt;<i> increase which of three version counters.
+</I>&gt;<i> 
+</I>&gt;<i> &lt;quote src=&quot;<A HREF="http://semver.org/">http://semver.org/</A>&quot;&gt;
+</I>&gt;<i> 1. MAJOR version when you make incompatible API changes,
+</I>&gt;<i> 2. MINOR version when you add functionality in a backwards-compatible
+</I>&gt;<i> manner, and
+</I>&gt;<i> 3. PATCH version when you make backwards-compatible bug fixes.
+</I>&gt;<i> &lt;/quote&gt;
+</I>&gt;<i> 
+</I>&gt;<i> It is unspecified, however, how version changes in dependency artifacts
+</I>&gt;<i> affect the version of the consuming artifact, i.e. do they bubble or do
+</I>&gt;<i> they not?  In my current understanding, there are two competing
+</I>&gt;<i> objectives, deployment (advocated and executed by @dscho and @ctrueden),
+</I>&gt;<i> and development (advocated and executed by @axtimwalde and @ctrueden, we
+</I>&gt;<i> see that @ctrueden is ambivalent, @axtimwalde too, as always, just that
+</I>&gt;<i> you know):
+</I>&gt;<i> 
+</I>&gt;<i> 1.
+</I>&gt;<i> Developer perspective: Don't bubble!  Developers that use the public API
+</I>&gt;<i> of an artifact X in their code use SemVer to reason whether on upgrade
+</I>&gt;<i> of X they will have to change their code or simply recompile with no
+</I>&gt;<i> modification.  Dependency version bubbling would break this contract,
+</I>&gt;<i> because it signalizes API incompatibility in X when a dependency Y of X
+</I>&gt;<i> introduces incompatible changes, although this incompatibility does not
+</I>&gt;<i> affect the public API of X.  Deployment of a set of artifacts following
+</I>&gt;<i> this contract requires complete inspection of the entire set of
+</I>&gt;<i> artifacts to guarantee consistency of the deployed version by other
+</I>&gt;<i> means (maven pom tracing?) because the SemVer versions of individual
+</I>&gt;<i> artifacts do not encode the necessary information.  I have the
+</I>&gt;<i> impression that the developer perspective, ignoring it not being helpful
+</I>&gt;<i> for deployment, was the driver of the SemVer specification and have a
+</I>&gt;<i> preference for it because...
+</I>&gt;<i> 
+</I>&gt;<i> 2.
+</I>&gt;<i> Deployer perspective: Bubble?  Deployers could use SemVer to reason
+</I>&gt;<i> whether a new version of an artifact has ANY incompatible changes
+</I>&gt;<i> anywhere in its dependency tree.  This is useful to know when an
+</I>&gt;<i> artifact in the tree can be released *without* considering its
+</I>&gt;<i> dependents *and* dependencies (PATCH increase).  However, whenever the
+</I>&gt;<i> version number signalizes incompatibility (MAJOR) or new features
+</I>&gt;<i> (MINOR), further inspection of the entire dependency tree is required
+</I>&gt;<i> because consistency cannot be derived from SemVer versions alone.  The
+</I>&gt;<i> only definite conclusion that can be made from observing that an
+</I>&gt;<i> artifact changes its MAJOR or MINOR version, i.e. becomes incompatible,
+</I>&gt;<i> is that all dependents will need to be updated/ recompiled or that
+</I>&gt;<i> there's a problem, consistency across artifacts cannot be guaranteed.
+</I>&gt;<i> I.e. the bubbling scheme, at every individual artifact, sends a signal
+</I>&gt;<i> when further inspection is required.  This information, however is
+</I>&gt;<i> binary, and a single counter would suffice to do that.  If patch
+</I>&gt;<i> counters are desired, one would need two.  The MAJOR and MINOR counters
+</I>&gt;<i> are redundant.
+</I>&gt;<i> 
+</I>&gt;<i> Short:
+</I>&gt;<i> Non-bubbling SemVer tells a developer whether her code will compile with
+</I>&gt;<i> a given dependency artifact (PATCH and MINOR).  Bubbling SemVer tells a
+</I>&gt;<i> deployer when a single artifact can be deployed without considering its
+</I>&gt;<i> environment (PATCH).  Both things exclude each other.  In this setup, I
+</I>&gt;<i> find the benefit for developers stronger and therefore prefer
+</I>&gt;<i> non-bubbling SemVer.
+</I>&gt;<i> 
+</I>&gt;<i> An interesting animal are dependency management poms (BOMs) such as
+</I>&gt;<i> pom-fiji or pom-mpicbg.  Their `public API' is the composite of  managed
+</I>&gt;<i> dependencies and therefore it has to bubble the SemVer versions of the
+</I>&gt;<i> managed dependencies.  This is different from artifacts that consume a
+</I>&gt;<i> dependency, consuming and managing are different.  I may be wrong, but I
+</I>&gt;<i> have the impression that these two things often get confused.
+</I>&gt;<i> 
+</I>&gt;<i> Please let me know your thoughts.
+</I>&gt;<i> 
+</I>&gt;<i> Thanks,
+</I>&gt;<i> Stephan
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>
+
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002479.html">[ImageJ-devel] SemVer policies for ImageJ2 and Fiji
+</A></li>
+	<LI>Next message: <A HREF="002481.html">[ImageJ-devel] SemVer policies for ImageJ2 and Fiji
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2480">[ date ]</a>
+              <a href="thread.html#2480">[ thread ]</a>
+              <a href="subject.html#2480">[ subject ]</a>
+              <a href="author.html#2480">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

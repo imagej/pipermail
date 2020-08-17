@@ -1,0 +1,902 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] how does -Dscijava.enforce.skip work?
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20how%20does%20-Dscijava.enforce.skip%20work%3F&In-Reply-To=%3CCA%2BB%3DmGpZB9QjXwT1MrCb9M9uoR2EWZuqWgQH9gbT4UVcA2SEng%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002310.html">
+   <LINK REL="Next"  HREF="002312.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] how does -Dscijava.enforce.skip work?</H1>
+    <B>Mark Hiner</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20how%20does%20-Dscijava.enforce.skip%20work%3F&In-Reply-To=%3CCA%2BB%3DmGpZB9QjXwT1MrCb9M9uoR2EWZuqWgQH9gbT4UVcA2SEng%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] how does -Dscijava.enforce.skip work?">hiner at wisc.edu
+       </A><BR>
+    <I>Mon Nov 17 10:14:22 CST 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002310.html">[ImageJ-devel] [fiji-devel] On a personal note
+</A></li>
+        <LI>Next message: <A HREF="002312.html">[ImageJ-devel] another enforcer problem
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2311">[ date ]</a>
+              <a href="thread.html#2311">[ thread ]</a>
+              <a href="subject.html#2311">[ subject ]</a>
+              <a href="author.html#2311">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Tobias,
+
+&gt;<i>I do not understand the reason why RequireReproducibleBuilds must be in
+</I>the core rules. Can you elaborate a bit more on this?
+
+So, we wanted the default configuration of RequireReproducibleBuilds to
+only fail by default on first party groupIds: pom-scijava tests
+org.scijava, pom-imagej adds net.imagej, net.imglib2 and io.scif, and
+pom-fiji adds sc.fiji.
+
+Since the intent of this rule is to be configured by project-level poms, I
+didn't want to hide that configuration in a profile (and at the time I
+wasn't sure how overriding profile xml blocks worked).
+
+&gt;<i>then the -Dscijava.enforce.skip is kind of useless, isn&#8217;t it?
+</I>
+There are other rules besides SNAPSHOT checking that are disabled by this
+flag, but yes - it is kind of useless and overly clunky. It should have
+just been removed in the last release, in favor of -Denforcer.skip.
+Basically scijava.enforce.skip failed to provide its original intent:
+granular control over individual rules.
+
+scijava.enforce.skip will be removed in the next release. Use enforcer.skip
+for local testing in the mean time.
+
+Sorry for the confusion!
+- Mark
+
+
+
+On Mon, Nov 17, 2014 at 9:20 AM, Tobias Pietzsch &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pietzsch at mpi-cbg.de</A>&gt;
+wrote:
+
+&gt;<i> Hi Mark,
+</I>&gt;<i>
+</I>&gt;<i> thanks for explaining.
+</I>&gt;<i>
+</I>&gt;<i> I know that I should not release the SNAPSHOT versions. I&#8217;m using this (as
+</I>&gt;<i> intended, I assume) to figure out things locally while working on several
+</I>&gt;<i> projects at the same time. I will bump dependencies to release versions
+</I>&gt;<i> when I release all of the stuff in order.
+</I>&gt;<i>
+</I>&gt;<i> I do not understand the reason why RequireReproducibleBuilds must be in
+</I>&gt;<i> the core rules. Can you elaborate a bit more on this?
+</I>&gt;<i> If it is in the core rules, then the -Dscijava.enforce.skip is kind of
+</I>&gt;<i> useless, isn&#8217;t it? Because the RequireReproducibleBuilds will catch anyway
+</I>&gt;<i> the stuff that the disabled RequireReleaseDeps would have caught?
+</I>&gt;<i>
+</I>&gt;<i> best regards,
+</I>&gt;<i> Tobias
+</I>&gt;<i>
+</I>&gt;<i> On 17 Nov 2014, at 15:24, Mark Hiner &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">hiner at wisc.edu</A>&gt; wrote:
+</I>&gt;<i>
+</I>&gt;<i> Hi Tobias,
+</I>&gt;<i>
+</I>&gt;<i>  I apologize for the confusion over enforcer skipping. I wanted to revise
+</I>&gt;<i> (and document) its operation last week but decided it wasn't critical to
+</I>&gt;<i> block pom-scijava 5.1 and its children.
+</I>&gt;<i>
+</I>&gt;<i>  In pom-scijava, there is maven-enforcer-plugin configuration in two
+</I>&gt;<i> places. The first is in the base &lt;plugins&gt; block. Rules defined in this
+</I>&gt;<i> block - let's call them core rules - will ALWAYS run.
+</I>&gt;<i>
+</I>&gt;<i>  The second definition is in profiles as you saw. These are supplementary
+</I>&gt;<i> rules. The profile is disabled if scijava.enforce.skip is set, causing the
+</I>&gt;<i> supplementary rules to not run. However, the core rules will still be
+</I>&gt;<i> executed.
+</I>&gt;<i>
+</I>&gt;<i>  enforcer.skip is a property defined in the Maven enforcer:enforce
+</I>&gt;<i> &lt;<A HREF="http://maven.apache.org/enforcer/maven-enforcer-plugin/enforce-mojo.html">http://maven.apache.org/enforcer/maven-enforcer-plugin/enforce-mojo.html</A>&gt;
+</I>&gt;<i> goal itself itself. This completely disables all enforcer activation.
+</I>&gt;<i>
+</I>&gt;<i>  Last week I created a RequireReproducibleBuilds
+</I>&gt;<i> &lt;<A HREF="https://github.com/scijava/scijava-maven-plugin/blob/master/src/main/java/org/scijava/maven/plugin/RequireReproducibleBuilds.java">https://github.com/scijava/scijava-maven-plugin/blob/master/src/main/java/org/scijava/maven/plugin/RequireReproducibleBuilds.java</A>&gt;
+</I>&gt;<i> enforcer rule which does more thorough SNAPSHOT checking than the default
+</I>&gt;<i> Maven-enforcer rule set. I put its activation in the core rules instead of
+</I>&gt;<i> the supplementary, because each child of pom-scijava requires different
+</I>&gt;<i> configuration (different groupIds being checked).
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>  I can only speculate that it is possible that the thorough, recursive
+</I>&gt;<i> nature of this check caused the additional dependencies to be downloaded. I
+</I>&gt;<i> would be interested in cross-checking the results of a &quot;mvn dependency:tree
+</I>&gt;<i> -Dverbose&quot; with what was downloaded - to see if unnecessary dependencies
+</I>&gt;<i> were some how downloaded.
+</I>&gt;<i>
+</I>&gt;<i>  Anyway, I assume subsequent runs will/did not require any downloads. The
+</I>&gt;<i> requireReproducibleBuilds rule is kind of slow with lots of dependencies,
+</I>&gt;<i> even without the downloads, but I will be adding some speed enhancements
+</I>&gt;<i> shortly.
+</I>&gt;<i>
+</I>&gt;<i>  I hope this clarifies the different skip flags for the enforcer
+</I>&gt;<i> configuration. That said, *you should not release if you have enforcer
+</I>&gt;<i> failures*. The skip flags are only intended for local testing, which is
+</I>&gt;<i> one of many reasons we have Jenkins deploy all of our projects
+</I>&gt;<i> &lt;<A HREF="http://imagej.net/Fiji_contribution_requirements#Maven_artifacts">http://imagej.net/Fiji_contribution_requirements#Maven_artifacts</A>&gt; - so
+</I>&gt;<i> we ensure that these rules are not skipped. These failures indicate that
+</I>&gt;<i> the current state of BDV is unreproducible, due to a SNAPSHOT parent and
+</I>&gt;<i> direct dependency:
+</I>&gt;<i>
+</I>&gt;<i> &gt; sc.fiji:spim_data:1.0.0-beta-3-SNAPSHOT
+</I>&gt;<i> &gt; sc.fiji:pom-bigdataviewer:1.0.0-SNAPSHOT
+</I>&gt;<i>
+</I>&gt;<i> I assume something between runs, as your first list of SNAPSHOT
+</I>&gt;<i> dependencies was more exhaustive. Note that you did not get the duplicate
+</I>&gt;<i> class failure because that rule is declared in the scijava.enforce.skip
+</I>&gt;<i> profile.
+</I>&gt;<i>
+</I>&gt;<i>  Please let us know if anything here is unclear. Happy to Skype as well if
+</I>&gt;<i> that's easier.
+</I>&gt;<i>
+</I>&gt;<i> Best,
+</I>&gt;<i> Mark
+</I>&gt;<i>
+</I>&gt;<i> On Mon, Nov 17, 2014 at 7:27 AM, Tobias Pietzsch &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pietzsch at mpi-cbg.de</A>&gt;
+</I>&gt;<i> wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> On 17 Nov 2014, at 14:03, Tobias Pietzsch &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pietzsch at mpi-cbg.de</A>&gt; wrote:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> After browsing the maven enforcer documentation
+</I>&gt;&gt;<i> <A HREF="http://maven.apache.org/enforcer/maven-enforcer-plugin/enforce-mojo.html">http://maven.apache.org/enforcer/maven-enforcer-plugin/enforce-mojo.html</A>
+</I>&gt;&gt;<i> I tried &#8220;mvn -Denforcer.skip&quot; which worked.
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Then, I tried &#8220;mvn -Dscijava.enforcer.skip&#8221; and Maven starts downloading
+</I>&gt;&gt;<i> *a lot* of stuff from maven.imagej.net. Absolutely crazy. Looks like
+</I>&gt;&gt;<i> maybe everything that is on maven.imagej.net?
+</I>&gt;&gt;<i> I&#8217;m still waiting for it to finish. I&#8217;ll let you know whether it works in
+</I>&gt;&gt;<i> the end&#8230;
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Hmm, no.
+</I>&gt;&gt;<i> In the end it doesn&#8217;t work.
+</I>&gt;&gt;<i> Here is the output (also showing the maven.image.net download as far
+</I>&gt;&gt;<i> back as my terminal could remember&#8230;):
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-api-container/0.8/cargo-core-api-container-0.8.pom">http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-api-container/0.8/cargo-core-api-container-0.8.pom</A>
+</I>&gt;&gt;<i> (2 KB at 3.1 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/codehaus/cargo/cargo-core-api-module/0.8/cargo-core-api-module-0.8.pom">http://maven.imagej.net/content/repositories/releases/org/codehaus/cargo/cargo-core-api-module/0.8/cargo-core-api-module-0.8.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/codehaus/cargo/cargo-core-api-module/0.8/cargo-core-api-module-0.8.pom">http://maven.imagej.net/content/repositories/snapshots/org/codehaus/cargo/cargo-core-api-module/0.8/cargo-core-api-module-0.8.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-api-module/0.8/cargo-core-api-module-0.8.pom">http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-api-module/0.8/cargo-core-api-module-0.8.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-api-module/0.8/cargo-core-api-module-0.8.pom">http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-api-module/0.8/cargo-core-api-module-0.8.pom</A>
+</I>&gt;&gt;<i> (2 KB at 3.6 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/codehaus/cargo/cargo-core-api-util/0.8/cargo-core-api-util-0.8.pom">http://maven.imagej.net/content/repositories/releases/org/codehaus/cargo/cargo-core-api-util/0.8/cargo-core-api-util-0.8.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/codehaus/cargo/cargo-core-api-util/0.8/cargo-core-api-util-0.8.pom">http://maven.imagej.net/content/repositories/snapshots/org/codehaus/cargo/cargo-core-api-util/0.8/cargo-core-api-util-0.8.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-api-util/0.8/cargo-core-api-util-0.8.pom">http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-api-util/0.8/cargo-core-api-util-0.8.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-api-util/0.8/cargo-core-api-util-0.8.pom">http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-api-util/0.8/cargo-core-api-util-0.8.pom</A>
+</I>&gt;&gt;<i> (837 B at 1.7 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/ant/ant/1.5.4/ant-1.5.4.pom">http://maven.imagej.net/content/repositories/releases/ant/ant/1.5.4/ant-1.5.4.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/ant/ant/1.5.4/ant-1.5.4.pom">http://maven.imagej.net/content/repositories/snapshots/ant/ant/1.5.4/ant-1.5.4.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/ant/ant/1.5.4/ant-1.5.4.pom">http://maven.imagej.net/content/groups/public/ant/ant/1.5.4/ant-1.5.4.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/ant/ant/1.5.4/ant-1.5.4.pom">http://maven.imagej.net/content/groups/public/ant/ant/1.5.4/ant-1.5.4.pom</A>
+</I>&gt;&gt;<i> (140 B at 0.3 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/xmlunit/xmlunit/1.0/xmlunit-1.0.pom">http://maven.imagej.net/content/repositories/releases/xmlunit/xmlunit/1.0/xmlunit-1.0.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/xmlunit/xmlunit/1.0/xmlunit-1.0.pom">http://maven.imagej.net/content/repositories/snapshots/xmlunit/xmlunit/1.0/xmlunit-1.0.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/xmlunit/xmlunit/1.0/xmlunit-1.0.pom">http://maven.imagej.net/content/groups/public/xmlunit/xmlunit/1.0/xmlunit-1.0.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/xmlunit/xmlunit/1.0/xmlunit-1.0.pom">http://maven.imagej.net/content/groups/public/xmlunit/xmlunit/1.0/xmlunit-1.0.pom</A>
+</I>&gt;&gt;<i> (146 B at 0.3 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/apache/geronimo/specs/geronimo-j2ee-deployment_1.1_spec/1.0/geronimo-j2ee-deployment_1.1_spec-1.0.pom">http://maven.imagej.net/content/repositories/releases/org/apache/geronimo/specs/geronimo-j2ee-deployment_1.1_spec/1.0/geronimo-j2ee-deployment_1.1_spec-1.0.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/apache/geronimo/specs/geronimo-j2ee-deployment_1.1_spec/1.0/geronimo-j2ee-deployment_1.1_spec-1.0.pom">http://maven.imagej.net/content/repositories/snapshots/org/apache/geronimo/specs/geronimo-j2ee-deployment_1.1_spec/1.0/geronimo-j2ee-deployment_1.1_spec-1.0.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/apache/geronimo/specs/geronimo-j2ee-deployment_1.1_spec/1.0/geronimo-j2ee-deployment_1.1_spec-1.0.pom">http://maven.imagej.net/content/groups/public/org/apache/geronimo/specs/geronimo-j2ee-deployment_1.1_spec/1.0/geronimo-j2ee-deployment_1.1_spec-1.0.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/apache/geronimo/specs/geronimo-j2ee-deployment_1.1_spec/1.0/geronimo-j2ee-deployment_1.1_spec-1.0.pom">http://maven.imagej.net/content/groups/public/org/apache/geronimo/specs/geronimo-j2ee-deployment_1.1_spec/1.0/geronimo-j2ee-deployment_1.1_spec-1.0.pom</A>
+</I>&gt;&gt;<i> (190 B at 0.4 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/codehaus/cargo/cargo-core-container-geronimo/0.8/cargo-core-container-geronimo-0.8.pom">http://maven.imagej.net/content/repositories/releases/org/codehaus/cargo/cargo-core-container-geronimo/0.8/cargo-core-container-geronimo-0.8.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/codehaus/cargo/cargo-core-container-geronimo/0.8/cargo-core-container-geronimo-0.8.pom">http://maven.imagej.net/content/repositories/snapshots/org/codehaus/cargo/cargo-core-container-geronimo/0.8/cargo-core-container-geronimo-0.8.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-container-geronimo/0.8/cargo-core-container-geronimo-0.8.pom">http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-container-geronimo/0.8/cargo-core-container-geronimo-0.8.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-container-geronimo/0.8/cargo-core-container-geronimo-0.8.pom">http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-container-geronimo/0.8/cargo-core-container-geronimo-0.8.pom</A>
+</I>&gt;&gt;<i> (703 B at 1.4 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/codehaus/cargo/cargo-core-containers/0.8/cargo-core-containers-0.8.pom">http://maven.imagej.net/content/repositories/releases/org/codehaus/cargo/cargo-core-containers/0.8/cargo-core-containers-0.8.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/codehaus/cargo/cargo-core-containers/0.8/cargo-core-containers-0.8.pom">http://maven.imagej.net/content/repositories/snapshots/org/codehaus/cargo/cargo-core-containers/0.8/cargo-core-containers-0.8.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-containers/0.8/cargo-core-containers-0.8.pom">http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-containers/0.8/cargo-core-containers-0.8.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-containers/0.8/cargo-core-containers-0.8.pom">http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-containers/0.8/cargo-core-containers-0.8.pom</A>
+</I>&gt;&gt;<i> (2 KB at 2.7 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/codehaus/cargo/cargo-core-container-jboss/0.8/cargo-core-container-jboss-0.8.pom">http://maven.imagej.net/content/repositories/releases/org/codehaus/cargo/cargo-core-container-jboss/0.8/cargo-core-container-jboss-0.8.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/codehaus/cargo/cargo-core-container-jboss/0.8/cargo-core-container-jboss-0.8.pom">http://maven.imagej.net/content/repositories/snapshots/org/codehaus/cargo/cargo-core-container-jboss/0.8/cargo-core-container-jboss-0.8.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-container-jboss/0.8/cargo-core-container-jboss-0.8.pom">http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-container-jboss/0.8/cargo-core-container-jboss-0.8.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-container-jboss/0.8/cargo-core-container-jboss-0.8.pom">http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-container-jboss/0.8/cargo-core-container-jboss-0.8.pom</A>
+</I>&gt;&gt;<i> (691 B at 1.3 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/codehaus/cargo/cargo-core-container-jetty/0.8/cargo-core-container-jetty-0.8.pom">http://maven.imagej.net/content/repositories/releases/org/codehaus/cargo/cargo-core-container-jetty/0.8/cargo-core-container-jetty-0.8.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/codehaus/cargo/cargo-core-container-jetty/0.8/cargo-core-container-jetty-0.8.pom">http://maven.imagej.net/content/repositories/snapshots/org/codehaus/cargo/cargo-core-container-jetty/0.8/cargo-core-container-jetty-0.8.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-container-jetty/0.8/cargo-core-container-jetty-0.8.pom">http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-container-jetty/0.8/cargo-core-container-jetty-0.8.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-container-jetty/0.8/cargo-core-container-jetty-0.8.pom">http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-container-jetty/0.8/cargo-core-container-jetty-0.8.pom</A>
+</I>&gt;&gt;<i> (691 B at 1.4 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/codehaus/cargo/cargo-core-container-jo/0.8/cargo-core-container-jo-0.8.pom">http://maven.imagej.net/content/repositories/releases/org/codehaus/cargo/cargo-core-container-jo/0.8/cargo-core-container-jo-0.8.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/codehaus/cargo/cargo-core-container-jo/0.8/cargo-core-container-jo-0.8.pom">http://maven.imagej.net/content/repositories/snapshots/org/codehaus/cargo/cargo-core-container-jo/0.8/cargo-core-container-jo-0.8.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-container-jo/0.8/cargo-core-container-jo-0.8.pom">http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-container-jo/0.8/cargo-core-container-jo-0.8.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-container-jo/0.8/cargo-core-container-jo-0.8.pom">http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-container-jo/0.8/cargo-core-container-jo-0.8.pom</A>
+</I>&gt;&gt;<i> (681 B at 1.5 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/codehaus/cargo/cargo-core-container-resin/0.8/cargo-core-container-resin-0.8.pom">http://maven.imagej.net/content/repositories/releases/org/codehaus/cargo/cargo-core-container-resin/0.8/cargo-core-container-resin-0.8.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/codehaus/cargo/cargo-core-container-resin/0.8/cargo-core-container-resin-0.8.pom">http://maven.imagej.net/content/repositories/snapshots/org/codehaus/cargo/cargo-core-container-resin/0.8/cargo-core-container-resin-0.8.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-container-resin/0.8/cargo-core-container-resin-0.8.pom">http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-container-resin/0.8/cargo-core-container-resin-0.8.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-container-resin/0.8/cargo-core-container-resin-0.8.pom">http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-container-resin/0.8/cargo-core-container-resin-0.8.pom</A>
+</I>&gt;&gt;<i> (691 B at 1.4 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/codehaus/cargo/cargo-core-container-tomcat/0.8/cargo-core-container-tomcat-0.8.pom">http://maven.imagej.net/content/repositories/releases/org/codehaus/cargo/cargo-core-container-tomcat/0.8/cargo-core-container-tomcat-0.8.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/codehaus/cargo/cargo-core-container-tomcat/0.8/cargo-core-container-tomcat-0.8.pom">http://maven.imagej.net/content/repositories/snapshots/org/codehaus/cargo/cargo-core-container-tomcat/0.8/cargo-core-container-tomcat-0.8.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-container-tomcat/0.8/cargo-core-container-tomcat-0.8.pom">http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-container-tomcat/0.8/cargo-core-container-tomcat-0.8.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-container-tomcat/0.8/cargo-core-container-tomcat-0.8.pom">http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-container-tomcat/0.8/cargo-core-container-tomcat-0.8.pom</A>
+</I>&gt;&gt;<i> (695 B at 1.3 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/codehaus/cargo/cargo-core-container-orion/0.8/cargo-core-container-orion-0.8.pom">http://maven.imagej.net/content/repositories/releases/org/codehaus/cargo/cargo-core-container-orion/0.8/cargo-core-container-orion-0.8.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/codehaus/cargo/cargo-core-container-orion/0.8/cargo-core-container-orion-0.8.pom">http://maven.imagej.net/content/repositories/snapshots/org/codehaus/cargo/cargo-core-container-orion/0.8/cargo-core-container-orion-0.8.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-container-orion/0.8/cargo-core-container-orion-0.8.pom">http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-container-orion/0.8/cargo-core-container-orion-0.8.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-container-orion/0.8/cargo-core-container-orion-0.8.pom">http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-container-orion/0.8/cargo-core-container-orion-0.8.pom</A>
+</I>&gt;&gt;<i> (691 B at 1.5 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/codehaus/cargo/cargo-core-container-weblogic/0.8/cargo-core-container-weblogic-0.8.pom">http://maven.imagej.net/content/repositories/releases/org/codehaus/cargo/cargo-core-container-weblogic/0.8/cargo-core-container-weblogic-0.8.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/codehaus/cargo/cargo-core-container-weblogic/0.8/cargo-core-container-weblogic-0.8.pom">http://maven.imagej.net/content/repositories/snapshots/org/codehaus/cargo/cargo-core-container-weblogic/0.8/cargo-core-container-weblogic-0.8.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-container-weblogic/0.8/cargo-core-container-weblogic-0.8.pom">http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-container-weblogic/0.8/cargo-core-container-weblogic-0.8.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-container-weblogic/0.8/cargo-core-container-weblogic-0.8.pom">http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-core-container-weblogic/0.8/cargo-core-container-weblogic-0.8.pom</A>
+</I>&gt;&gt;<i> (703 B at 1.5 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/codehaus/cargo/cargo-ant/0.8/cargo-ant-0.8.pom">http://maven.imagej.net/content/repositories/releases/org/codehaus/cargo/cargo-ant/0.8/cargo-ant-0.8.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/codehaus/cargo/cargo-ant/0.8/cargo-ant-0.8.pom">http://maven.imagej.net/content/repositories/snapshots/org/codehaus/cargo/cargo-ant/0.8/cargo-ant-0.8.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-ant/0.8/cargo-ant-0.8.pom">http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-ant/0.8/cargo-ant-0.8.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-ant/0.8/cargo-ant-0.8.pom">http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-ant/0.8/cargo-ant-0.8.pom</A>
+</I>&gt;&gt;<i> (626 B at 1.3 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/codehaus/cargo/cargo-extensions/0.8/cargo-extensions-0.8.pom">http://maven.imagej.net/content/repositories/releases/org/codehaus/cargo/cargo-extensions/0.8/cargo-extensions-0.8.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/codehaus/cargo/cargo-extensions/0.8/cargo-extensions-0.8.pom">http://maven.imagej.net/content/repositories/snapshots/org/codehaus/cargo/cargo-extensions/0.8/cargo-extensions-0.8.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-extensions/0.8/cargo-extensions-0.8.pom">http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-extensions/0.8/cargo-extensions-0.8.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-extensions/0.8/cargo-extensions-0.8.pom">http://maven.imagej.net/content/groups/public/org/codehaus/cargo/cargo-extensions/0.8/cargo-extensions-0.8.pom</A>
+</I>&gt;&gt;<i> (3 KB at 5.6 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/apache/tiles/tiles-jsp/2.0.6/tiles-jsp-2.0.6.pom">http://maven.imagej.net/content/repositories/releases/org/apache/tiles/tiles-jsp/2.0.6/tiles-jsp-2.0.6.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/apache/tiles/tiles-jsp/2.0.6/tiles-jsp-2.0.6.pom">http://maven.imagej.net/content/repositories/snapshots/org/apache/tiles/tiles-jsp/2.0.6/tiles-jsp-2.0.6.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/apache/tiles/tiles-jsp/2.0.6/tiles-jsp-2.0.6.pom">http://maven.imagej.net/content/groups/public/org/apache/tiles/tiles-jsp/2.0.6/tiles-jsp-2.0.6.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/apache/tiles/tiles-jsp/2.0.6/tiles-jsp-2.0.6.pom">http://maven.imagej.net/content/groups/public/org/apache/tiles/tiles-jsp/2.0.6/tiles-jsp-2.0.6.pom</A>
+</I>&gt;&gt;<i> (6 KB at 10.2 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/hibernate/hibernate/3.2.6.ga/hibernate-3.2.6.ga.pom">http://maven.imagej.net/content/repositories/releases/org/hibernate/hibernate/3.2.6.ga/hibernate-3.2.6.ga.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/hibernate/hibernate/3.2.6.ga/hibernate-3.2.6.ga.pom">http://maven.imagej.net/content/repositories/snapshots/org/hibernate/hibernate/3.2.6.ga/hibernate-3.2.6.ga.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/hibernate/hibernate/3.2.6.ga/hibernate-3.2.6.ga.pom">http://maven.imagej.net/content/groups/public/org/hibernate/hibernate/3.2.6.ga/hibernate-3.2.6.ga.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/hibernate/hibernate/3.2.6.ga/hibernate-3.2.6.ga.pom">http://maven.imagej.net/content/groups/public/org/hibernate/hibernate/3.2.6.ga/hibernate-3.2.6.ga.pom</A>
+</I>&gt;&gt;<i> (4 KB at 7.5 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/c3p0/c3p0/0.9.1/c3p0-0.9.1.pom">http://maven.imagej.net/content/repositories/releases/c3p0/c3p0/0.9.1/c3p0-0.9.1.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/c3p0/c3p0/0.9.1/c3p0-0.9.1.pom">http://maven.imagej.net/content/repositories/snapshots/c3p0/c3p0/0.9.1/c3p0-0.9.1.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/c3p0/c3p0/0.9.1/c3p0-0.9.1.pom">http://maven.imagej.net/content/groups/public/c3p0/c3p0/0.9.1/c3p0-0.9.1.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/c3p0/c3p0/0.9.1/c3p0-0.9.1.pom">http://maven.imagej.net/content/groups/public/c3p0/c3p0/0.9.1/c3p0-0.9.1.pom</A>
+</I>&gt;&gt;<i> (854 B at 1.8 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/hibernate/hibernate-entitymanager/3.3.2.GA/hibernate-entitymanager-3.3.2.GA.pom">http://maven.imagej.net/content/repositories/releases/org/hibernate/hibernate-entitymanager/3.3.2.GA/hibernate-entitymanager-3.3.2.GA.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/hibernate/hibernate-entitymanager/3.3.2.GA/hibernate-entitymanager-3.3.2.GA.pom">http://maven.imagej.net/content/repositories/snapshots/org/hibernate/hibernate-entitymanager/3.3.2.GA/hibernate-entitymanager-3.3.2.GA.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/hibernate/hibernate-entitymanager/3.3.2.GA/hibernate-entitymanager-3.3.2.GA.pom">http://maven.imagej.net/content/groups/public/org/hibernate/hibernate-entitymanager/3.3.2.GA/hibernate-entitymanager-3.3.2.GA.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/hibernate/hibernate-entitymanager/3.3.2.GA/hibernate-entitymanager-3.3.2.GA.pom">http://maven.imagej.net/content/groups/public/org/hibernate/hibernate-entitymanager/3.3.2.GA/hibernate-entitymanager-3.3.2.GA.pom</A>
+</I>&gt;&gt;<i> (2 KB at 3.4 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/hibernate/hibernate-annotations/3.3.1.GA/hibernate-annotations-3.3.1.GA.pom">http://maven.imagej.net/content/repositories/releases/org/hibernate/hibernate-annotations/3.3.1.GA/hibernate-annotations-3.3.1.GA.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/hibernate/hibernate-annotations/3.3.1.GA/hibernate-annotations-3.3.1.GA.pom">http://maven.imagej.net/content/repositories/snapshots/org/hibernate/hibernate-annotations/3.3.1.GA/hibernate-annotations-3.3.1.GA.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/hibernate/hibernate-annotations/3.3.1.GA/hibernate-annotations-3.3.1.GA.pom">http://maven.imagej.net/content/groups/public/org/hibernate/hibernate-annotations/3.3.1.GA/hibernate-annotations-3.3.1.GA.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/hibernate/hibernate-annotations/3.3.1.GA/hibernate-annotations-3.3.1.GA.pom">http://maven.imagej.net/content/groups/public/org/hibernate/hibernate-annotations/3.3.1.GA/hibernate-annotations-3.3.1.GA.pom</A>
+</I>&gt;&gt;<i> (2 KB at 2.6 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/hibernate/hibernate-commons-annotations/3.0.0.ga/hibernate-commons-annotations-3.0.0.ga.pom">http://maven.imagej.net/content/repositories/releases/org/hibernate/hibernate-commons-annotations/3.0.0.ga/hibernate-commons-annotations-3.0.0.ga.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/hibernate/hibernate-commons-annotations/3.0.0.ga/hibernate-commons-annotations-3.0.0.ga.pom">http://maven.imagej.net/content/repositories/snapshots/org/hibernate/hibernate-commons-annotations/3.0.0.ga/hibernate-commons-annotations-3.0.0.ga.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/hibernate/hibernate-commons-annotations/3.0.0.ga/hibernate-commons-annotations-3.0.0.ga.pom">http://maven.imagej.net/content/groups/public/org/hibernate/hibernate-commons-annotations/3.0.0.ga/hibernate-commons-annotations-3.0.0.ga.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/hibernate/hibernate-commons-annotations/3.0.0.ga/hibernate-commons-annotations-3.0.0.ga.pom">http://maven.imagej.net/content/groups/public/org/hibernate/hibernate-commons-annotations/3.0.0.ga/hibernate-commons-annotations-3.0.0.ga.pom</A>
+</I>&gt;&gt;<i> (2 KB at 2.9 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/hibernate/ejb3-persistence/1.0.1.GA/ejb3-persistence-1.0.1.GA.pom">http://maven.imagej.net/content/repositories/releases/org/hibernate/ejb3-persistence/1.0.1.GA/ejb3-persistence-1.0.1.GA.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/hibernate/ejb3-persistence/1.0.1.GA/ejb3-persistence-1.0.1.GA.pom">http://maven.imagej.net/content/repositories/snapshots/org/hibernate/ejb3-persistence/1.0.1.GA/ejb3-persistence-1.0.1.GA.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/hibernate/ejb3-persistence/1.0.1.GA/ejb3-persistence-1.0.1.GA.pom">http://maven.imagej.net/content/groups/public/org/hibernate/ejb3-persistence/1.0.1.GA/ejb3-persistence-1.0.1.GA.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/hibernate/ejb3-persistence/1.0.1.GA/ejb3-persistence-1.0.1.GA.pom">http://maven.imagej.net/content/groups/public/org/hibernate/ejb3-persistence/1.0.1.GA/ejb3-persistence-1.0.1.GA.pom</A>
+</I>&gt;&gt;<i> (549 B at 1.2 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/opensymphony/quartz-all/1.6.0/quartz-all-1.6.0.pom">http://maven.imagej.net/content/repositories/releases/opensymphony/quartz-all/1.6.0/quartz-all-1.6.0.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/opensymphony/quartz-all/1.6.0/quartz-all-1.6.0.pom">http://maven.imagej.net/content/repositories/snapshots/opensymphony/quartz-all/1.6.0/quartz-all-1.6.0.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/opensymphony/quartz-all/1.6.0/quartz-all-1.6.0.pom">http://maven.imagej.net/content/groups/public/opensymphony/quartz-all/1.6.0/quartz-all-1.6.0.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://repo.maven.apache.org/maven2/opensymphony/quartz-all/1.6.0/quartz-all-1.6.0.pom">http://repo.maven.apache.org/maven2/opensymphony/quartz-all/1.6.0/quartz-all-1.6.0.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/tomcat/catalina/5.5.23/catalina-5.5.23.pom">http://maven.imagej.net/content/repositories/releases/tomcat/catalina/5.5.23/catalina-5.5.23.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/tomcat/catalina/5.5.23/catalina-5.5.23.pom">http://maven.imagej.net/content/repositories/snapshots/tomcat/catalina/5.5.23/catalina-5.5.23.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/tomcat/catalina/5.5.23/catalina-5.5.23.pom">http://maven.imagej.net/content/groups/public/tomcat/catalina/5.5.23/catalina-5.5.23.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/tomcat/catalina/5.5.23/catalina-5.5.23.pom">http://maven.imagej.net/content/groups/public/tomcat/catalina/5.5.23/catalina-5.5.23.pom</A>
+</I>&gt;&gt;<i> (5 KB at 10.0 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/tomcat/tomcat-parent/5.5.23/tomcat-parent-5.5.23.pom">http://maven.imagej.net/content/repositories/releases/tomcat/tomcat-parent/5.5.23/tomcat-parent-5.5.23.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/tomcat/tomcat-parent/5.5.23/tomcat-parent-5.5.23.pom">http://maven.imagej.net/content/repositories/snapshots/tomcat/tomcat-parent/5.5.23/tomcat-parent-5.5.23.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/tomcat/tomcat-parent/5.5.23/tomcat-parent-5.5.23.pom">http://maven.imagej.net/content/groups/public/tomcat/tomcat-parent/5.5.23/tomcat-parent-5.5.23.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/tomcat/tomcat-parent/5.5.23/tomcat-parent-5.5.23.pom">http://maven.imagej.net/content/groups/public/tomcat/tomcat-parent/5.5.23/tomcat-parent-5.5.23.pom</A>
+</I>&gt;&gt;<i> (898 B at 1.8 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/commons-modeler/commons-modeler/2.0/commons-modeler-2.0.pom">http://maven.imagej.net/content/repositories/releases/commons-modeler/commons-modeler/2.0/commons-modeler-2.0.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/commons-modeler/commons-modeler/2.0/commons-modeler-2.0.pom">http://maven.imagej.net/content/repositories/snapshots/commons-modeler/commons-modeler/2.0/commons-modeler-2.0.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/commons-modeler/commons-modeler/2.0/commons-modeler-2.0.pom">http://maven.imagej.net/content/groups/public/commons-modeler/commons-modeler/2.0/commons-modeler-2.0.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/commons-modeler/commons-modeler/2.0/commons-modeler-2.0.pom">http://maven.imagej.net/content/groups/public/commons-modeler/commons-modeler/2.0/commons-modeler-2.0.pom</A>
+</I>&gt;&gt;<i> (6 KB at 10.3 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/commons-digester/commons-digester/1.2/commons-digester-1.2.pom">http://maven.imagej.net/content/repositories/releases/commons-digester/commons-digester/1.2/commons-digester-1.2.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/commons-digester/commons-digester/1.2/commons-digester-1.2.pom">http://maven.imagej.net/content/repositories/snapshots/commons-digester/commons-digester/1.2/commons-digester-1.2.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/commons-digester/commons-digester/1.2/commons-digester-1.2.pom">http://maven.imagej.net/content/groups/public/commons-digester/commons-digester/1.2/commons-digester-1.2.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/commons-digester/commons-digester/1.2/commons-digester-1.2.pom">http://maven.imagej.net/content/groups/public/commons-digester/commons-digester/1.2/commons-digester-1.2.pom</A>
+</I>&gt;&gt;<i> (164 B at 0.3 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/commons-logging/commons-logging-api/1.0.4/commons-logging-api-1.0.4.pom">http://maven.imagej.net/content/repositories/releases/commons-logging/commons-logging-api/1.0.4/commons-logging-api-1.0.4.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/commons-logging/commons-logging-api/1.0.4/commons-logging-api-1.0.4.pom">http://maven.imagej.net/content/repositories/snapshots/commons-logging/commons-logging-api/1.0.4/commons-logging-api-1.0.4.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/commons-logging/commons-logging-api/1.0.4/commons-logging-api-1.0.4.pom">http://maven.imagej.net/content/groups/public/commons-logging/commons-logging-api/1.0.4/commons-logging-api-1.0.4.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/commons-logging/commons-logging-api/1.0.4/commons-logging-api-1.0.4.pom">http://maven.imagej.net/content/groups/public/commons-logging/commons-logging-api/1.0.4/commons-logging-api-1.0.4.pom</A>
+</I>&gt;&gt;<i> (168 B at 0.3 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/mx4j/mx4j-jmx/2.1.1/mx4j-jmx-2.1.1.pom">http://maven.imagej.net/content/repositories/releases/mx4j/mx4j-jmx/2.1.1/mx4j-jmx-2.1.1.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/mx4j/mx4j-jmx/2.1.1/mx4j-jmx-2.1.1.pom">http://maven.imagej.net/content/repositories/snapshots/mx4j/mx4j-jmx/2.1.1/mx4j-jmx-2.1.1.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/mx4j/mx4j-jmx/2.1.1/mx4j-jmx-2.1.1.pom">http://maven.imagej.net/content/groups/public/mx4j/mx4j-jmx/2.1.1/mx4j-jmx-2.1.1.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/mx4j/mx4j-jmx/2.1.1/mx4j-jmx-2.1.1.pom">http://maven.imagej.net/content/groups/public/mx4j/mx4j-jmx/2.1.1/mx4j-jmx-2.1.1.pom</A>
+</I>&gt;&gt;<i> (146 B at 0.3 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/velocity/velocity/1.5/velocity-1.5.pom">http://maven.imagej.net/content/repositories/releases/velocity/velocity/1.5/velocity-1.5.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/velocity/velocity/1.5/velocity-1.5.pom">http://maven.imagej.net/content/repositories/snapshots/velocity/velocity/1.5/velocity-1.5.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/velocity/velocity/1.5/velocity-1.5.pom">http://maven.imagej.net/content/groups/public/velocity/velocity/1.5/velocity-1.5.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/velocity/velocity/1.5/velocity-1.5.pom">http://maven.imagej.net/content/groups/public/velocity/velocity/1.5/velocity-1.5.pom</A>
+</I>&gt;&gt;<i> (8 KB at 16.4 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/logkit/logkit/2.0/logkit-2.0.pom">http://maven.imagej.net/content/repositories/releases/logkit/logkit/2.0/logkit-2.0.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/logkit/logkit/2.0/logkit-2.0.pom">http://maven.imagej.net/content/repositories/snapshots/logkit/logkit/2.0/logkit-2.0.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/logkit/logkit/2.0/logkit-2.0.pom">http://maven.imagej.net/content/groups/public/logkit/logkit/2.0/logkit-2.0.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/logkit/logkit/2.0/logkit-2.0.pom">http://maven.imagej.net/content/groups/public/logkit/logkit/2.0/logkit-2.0.pom</A>
+</I>&gt;&gt;<i> (144 B at 0.2 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/ant/ant/1.6/ant-1.6.pom">http://maven.imagej.net/content/repositories/releases/ant/ant/1.6/ant-1.6.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/ant/ant/1.6/ant-1.6.pom">http://maven.imagej.net/content/repositories/snapshots/ant/ant/1.6/ant-1.6.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/ant/ant/1.6/ant-1.6.pom">http://maven.imagej.net/content/groups/public/ant/ant/1.6/ant-1.6.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/ant/ant/1.6/ant-1.6.pom">http://maven.imagej.net/content/groups/public/ant/ant/1.6/ant-1.6.pom</A>
+</I>&gt;&gt;<i> (182 B at 0.3 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/werken-xpath/werken-xpath/0.9.4/werken-xpath-0.9.4.pom">http://maven.imagej.net/content/repositories/releases/werken-xpath/werken-xpath/0.9.4/werken-xpath-0.9.4.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/werken-xpath/werken-xpath/0.9.4/werken-xpath-0.9.4.pom">http://maven.imagej.net/content/repositories/snapshots/werken-xpath/werken-xpath/0.9.4/werken-xpath-0.9.4.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/werken-xpath/werken-xpath/0.9.4/werken-xpath-0.9.4.pom">http://maven.imagej.net/content/groups/public/werken-xpath/werken-xpath/0.9.4/werken-xpath-0.9.4.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/werken-xpath/werken-xpath/0.9.4/werken-xpath-0.9.4.pom">http://maven.imagej.net/content/groups/public/werken-xpath/werken-xpath/0.9.4/werken-xpath-0.9.4.pom</A>
+</I>&gt;&gt;<i> (159 B at 0.3 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/velocity-tools/velocity-tools-generic/1.4/velocity-tools-generic-1.4.pom">http://maven.imagej.net/content/repositories/releases/velocity-tools/velocity-tools-generic/1.4/velocity-tools-generic-1.4.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/velocity-tools/velocity-tools-generic/1.4/velocity-tools-generic-1.4.pom">http://maven.imagej.net/content/repositories/snapshots/velocity-tools/velocity-tools-generic/1.4/velocity-tools-generic-1.4.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/velocity-tools/velocity-tools-generic/1.4/velocity-tools-generic-1.4.pom">http://maven.imagej.net/content/groups/public/velocity-tools/velocity-tools-generic/1.4/velocity-tools-generic-1.4.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://repo.maven.apache.org/maven2/velocity-tools/velocity-tools-generic/1.4/velocity-tools-generic-1.4.pom">http://repo.maven.apache.org/maven2/velocity-tools/velocity-tools-generic/1.4/velocity-tools-generic-1.4.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/velocity-tools/velocity-tools-view/1.4/velocity-tools-view-1.4.pom">http://maven.imagej.net/content/repositories/releases/velocity-tools/velocity-tools-view/1.4/velocity-tools-view-1.4.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/velocity-tools/velocity-tools-view/1.4/velocity-tools-view-1.4.pom">http://maven.imagej.net/content/repositories/snapshots/velocity-tools/velocity-tools-view/1.4/velocity-tools-view-1.4.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/velocity-tools/velocity-tools-view/1.4/velocity-tools-view-1.4.pom">http://maven.imagej.net/content/groups/public/velocity-tools/velocity-tools-view/1.4/velocity-tools-view-1.4.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://repo.maven.apache.org/maven2/velocity-tools/velocity-tools-view/1.4/velocity-tools-view-1.4.pom">http://repo.maven.apache.org/maven2/velocity-tools/velocity-tools-view/1.4/velocity-tools-view-1.4.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/hsqldb/hsqldb/1.7.1/hsqldb-1.7.1.pom">http://maven.imagej.net/content/repositories/releases/hsqldb/hsqldb/1.7.1/hsqldb-1.7.1.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/hsqldb/hsqldb/1.7.1/hsqldb-1.7.1.pom">http://maven.imagej.net/content/repositories/snapshots/hsqldb/hsqldb/1.7.1/hsqldb-1.7.1.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/hsqldb/hsqldb/1.7.1/hsqldb-1.7.1.pom">http://maven.imagej.net/content/groups/public/hsqldb/hsqldb/1.7.1/hsqldb-1.7.1.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/hsqldb/hsqldb/1.7.1/hsqldb-1.7.1.pom">http://maven.imagej.net/content/groups/public/hsqldb/hsqldb/1.7.1/hsqldb-1.7.1.pom</A>
+</I>&gt;&gt;<i> (147 B at 0.2 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/jline/jline/1.0/jline-1.0.pom">http://maven.imagej.net/content/repositories/releases/jline/jline/1.0/jline-1.0.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/jline/jline/1.0/jline-1.0.pom">http://maven.imagej.net/content/repositories/snapshots/jline/jline/1.0/jline-1.0.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/jline/jline/1.0/jline-1.0.pom">http://maven.imagej.net/content/groups/public/jline/jline/1.0/jline-1.0.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/jline/jline/1.0/jline-1.0.pom">http://maven.imagej.net/content/groups/public/jline/jline/1.0/jline-1.0.pom</A>
+</I>&gt;&gt;<i> (9 KB at 16.2 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/com/thoughtworks/xstream/xstream/1.4.2/xstream-1.4.2.pom">http://maven.imagej.net/content/repositories/releases/com/thoughtworks/xstream/xstream/1.4.2/xstream-1.4.2.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/com/thoughtworks/xstream/xstream/1.4.2/xstream-1.4.2.pom">http://maven.imagej.net/content/repositories/snapshots/com/thoughtworks/xstream/xstream/1.4.2/xstream-1.4.2.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/com/thoughtworks/xstream/xstream/1.4.2/xstream-1.4.2.pom">http://maven.imagej.net/content/groups/public/com/thoughtworks/xstream/xstream/1.4.2/xstream-1.4.2.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/com/thoughtworks/xstream/xstream/1.4.2/xstream-1.4.2.pom">http://maven.imagej.net/content/groups/public/com/thoughtworks/xstream/xstream/1.4.2/xstream-1.4.2.pom</A>
+</I>&gt;&gt;<i> (9 KB at 16.8 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/com/thoughtworks/xstream/xstream-parent/1.4.2/xstream-parent-1.4.2.pom">http://maven.imagej.net/content/repositories/releases/com/thoughtworks/xstream/xstream-parent/1.4.2/xstream-parent-1.4.2.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/com/thoughtworks/xstream/xstream-parent/1.4.2/xstream-parent-1.4.2.pom">http://maven.imagej.net/content/repositories/snapshots/com/thoughtworks/xstream/xstream-parent/1.4.2/xstream-parent-1.4.2.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/com/thoughtworks/xstream/xstream-parent/1.4.2/xstream-parent-1.4.2.pom">http://maven.imagej.net/content/groups/public/com/thoughtworks/xstream/xstream-parent/1.4.2/xstream-parent-1.4.2.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/com/thoughtworks/xstream/xstream-parent/1.4.2/xstream-parent-1.4.2.pom">http://maven.imagej.net/content/groups/public/com/thoughtworks/xstream/xstream-parent/1.4.2/xstream-parent-1.4.2.pom</A>
+</I>&gt;&gt;<i> (19 KB at 30.1 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/xerces/xercesImpl/2.6.1/xercesImpl-2.6.1.pom">http://maven.imagej.net/content/repositories/releases/xerces/xercesImpl/2.6.1/xercesImpl-2.6.1.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/xerces/xercesImpl/2.6.1/xercesImpl-2.6.1.pom">http://maven.imagej.net/content/repositories/snapshots/xerces/xercesImpl/2.6.1/xercesImpl-2.6.1.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/xerces/xercesImpl/2.6.1/xercesImpl-2.6.1.pom">http://maven.imagej.net/content/groups/public/xerces/xercesImpl/2.6.1/xercesImpl-2.6.1.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/xerces/xercesImpl/2.6.1/xercesImpl-2.6.1.pom">http://maven.imagej.net/content/groups/public/xerces/xercesImpl/2.6.1/xercesImpl-2.6.1.pom</A>
+</I>&gt;&gt;<i> (150 B at 0.3 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/jdom/jaxen-core/1.0-FCS/jaxen-core-1.0-FCS.pom">http://maven.imagej.net/content/repositories/releases/org/jdom/jaxen-core/1.0-FCS/jaxen-core-1.0-FCS.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/jdom/jaxen-core/1.0-FCS/jaxen-core-1.0-FCS.pom">http://maven.imagej.net/content/repositories/snapshots/org/jdom/jaxen-core/1.0-FCS/jaxen-core-1.0-FCS.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/jdom/jaxen-core/1.0-FCS/jaxen-core-1.0-FCS.pom">http://maven.imagej.net/content/groups/public/org/jdom/jaxen-core/1.0-FCS/jaxen-core-1.0-FCS.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/jdom/jaxen-core/1.0-FCS/jaxen-core-1.0-FCS.pom">http://maven.imagej.net/content/groups/public/org/jdom/jaxen-core/1.0-FCS/jaxen-core-1.0-FCS.pom</A>
+</I>&gt;&gt;<i> (207 B at 0.4 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/jdom/jaxen-jdom/1.0-FCS/jaxen-jdom-1.0-FCS.pom">http://maven.imagej.net/content/repositories/releases/org/jdom/jaxen-jdom/1.0-FCS/jaxen-jdom-1.0-FCS.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/jdom/jaxen-jdom/1.0-FCS/jaxen-jdom-1.0-FCS.pom">http://maven.imagej.net/content/repositories/snapshots/org/jdom/jaxen-jdom/1.0-FCS/jaxen-jdom-1.0-FCS.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/jdom/jaxen-jdom/1.0-FCS/jaxen-jdom-1.0-FCS.pom">http://maven.imagej.net/content/groups/public/org/jdom/jaxen-jdom/1.0-FCS/jaxen-jdom-1.0-FCS.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/jdom/jaxen-jdom/1.0-FCS/jaxen-jdom-1.0-FCS.pom">http://maven.imagej.net/content/groups/public/org/jdom/jaxen-jdom/1.0-FCS/jaxen-jdom-1.0-FCS.pom</A>
+</I>&gt;&gt;<i> (207 B at 0.5 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/jdom/saxpath/1.0-FCS/saxpath-1.0-FCS.pom">http://maven.imagej.net/content/repositories/releases/org/jdom/saxpath/1.0-FCS/saxpath-1.0-FCS.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/jdom/saxpath/1.0-FCS/saxpath-1.0-FCS.pom">http://maven.imagej.net/content/repositories/snapshots/org/jdom/saxpath/1.0-FCS/saxpath-1.0-FCS.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/jdom/saxpath/1.0-FCS/saxpath-1.0-FCS.pom">http://maven.imagej.net/content/groups/public/org/jdom/saxpath/1.0-FCS/saxpath-1.0-FCS.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/jdom/saxpath/1.0-FCS/saxpath-1.0-FCS.pom">http://maven.imagej.net/content/groups/public/org/jdom/saxpath/1.0-FCS/saxpath-1.0-FCS.pom</A>
+</I>&gt;&gt;<i> (201 B at 0.4 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/xalan/xalan/2.5.D1/xalan-2.5.D1.pom">http://maven.imagej.net/content/repositories/releases/xalan/xalan/2.5.D1/xalan-2.5.D1.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/xalan/xalan/2.5.D1/xalan-2.5.D1.pom">http://maven.imagej.net/content/repositories/snapshots/xalan/xalan/2.5.D1/xalan-2.5.D1.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/xalan/xalan/2.5.D1/xalan-2.5.D1.pom">http://maven.imagej.net/content/groups/public/xalan/xalan/2.5.D1/xalan-2.5.D1.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/xalan/xalan/2.5.D1/xalan-2.5.D1.pom">http://maven.imagej.net/content/groups/public/xalan/xalan/2.5.D1/xalan-2.5.D1.pom</A>
+</I>&gt;&gt;<i> (146 B at 0.3 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/joda-time/joda-time/1.6/joda-time-1.6.pom">http://maven.imagej.net/content/repositories/releases/joda-time/joda-time/1.6/joda-time-1.6.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/joda-time/joda-time/1.6/joda-time-1.6.pom">http://maven.imagej.net/content/repositories/snapshots/joda-time/joda-time/1.6/joda-time-1.6.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/joda-time/joda-time/1.6/joda-time-1.6.pom">http://maven.imagej.net/content/groups/public/joda-time/joda-time/1.6/joda-time-1.6.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/joda-time/joda-time/1.6/joda-time-1.6.pom">http://maven.imagej.net/content/groups/public/joda-time/joda-time/1.6/joda-time-1.6.pom</A>
+</I>&gt;&gt;<i> (5 KB at 8.9 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/codehaus/woodstox/wstx-asl/3.2.7/wstx-asl-3.2.7.pom">http://maven.imagej.net/content/repositories/releases/org/codehaus/woodstox/wstx-asl/3.2.7/wstx-asl-3.2.7.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/codehaus/woodstox/wstx-asl/3.2.7/wstx-asl-3.2.7.pom">http://maven.imagej.net/content/repositories/snapshots/org/codehaus/woodstox/wstx-asl/3.2.7/wstx-asl-3.2.7.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/codehaus/woodstox/wstx-asl/3.2.7/wstx-asl-3.2.7.pom">http://maven.imagej.net/content/groups/public/org/codehaus/woodstox/wstx-asl/3.2.7/wstx-asl-3.2.7.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/codehaus/woodstox/wstx-asl/3.2.7/wstx-asl-3.2.7.pom">http://maven.imagej.net/content/groups/public/org/codehaus/woodstox/wstx-asl/3.2.7/wstx-asl-3.2.7.pom</A>
+</I>&gt;&gt;<i> (2 KB at 2.5 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/net/sf/kxml/kxml2-min/2.3.0/kxml2-min-2.3.0.pom">http://maven.imagej.net/content/repositories/releases/net/sf/kxml/kxml2-min/2.3.0/kxml2-min-2.3.0.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/net/sf/kxml/kxml2-min/2.3.0/kxml2-min-2.3.0.pom">http://maven.imagej.net/content/repositories/snapshots/net/sf/kxml/kxml2-min/2.3.0/kxml2-min-2.3.0.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/net/sf/kxml/kxml2-min/2.3.0/kxml2-min-2.3.0.pom">http://maven.imagej.net/content/groups/public/net/sf/kxml/kxml2-min/2.3.0/kxml2-min-2.3.0.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/net/sf/kxml/kxml2-min/2.3.0/kxml2-min-2.3.0.pom">http://maven.imagej.net/content/groups/public/net/sf/kxml/kxml2-min/2.3.0/kxml2-min-2.3.0.pom</A>
+</I>&gt;&gt;<i> (2 KB at 3.0 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/net/sf/kxml/kxml2/2.3.0/kxml2-2.3.0.pom">http://maven.imagej.net/content/repositories/releases/net/sf/kxml/kxml2/2.3.0/kxml2-2.3.0.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/net/sf/kxml/kxml2/2.3.0/kxml2-2.3.0.pom">http://maven.imagej.net/content/repositories/snapshots/net/sf/kxml/kxml2/2.3.0/kxml2-2.3.0.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/net/sf/kxml/kxml2/2.3.0/kxml2-2.3.0.pom">http://maven.imagej.net/content/groups/public/net/sf/kxml/kxml2/2.3.0/kxml2-2.3.0.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/net/sf/kxml/kxml2/2.3.0/kxml2-2.3.0.pom">http://maven.imagej.net/content/groups/public/net/sf/kxml/kxml2/2.3.0/kxml2-2.3.0.pom</A>
+</I>&gt;&gt;<i> (2 KB at 2.6 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/ant/ant/1.6.2/ant-1.6.2.pom">http://maven.imagej.net/content/repositories/releases/ant/ant/1.6.2/ant-1.6.2.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/ant/ant/1.6.2/ant-1.6.2.pom">http://maven.imagej.net/content/repositories/snapshots/ant/ant/1.6.2/ant-1.6.2.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/ant/ant/1.6.2/ant-1.6.2.pom">http://maven.imagej.net/content/groups/public/ant/ant/1.6.2/ant-1.6.2.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/ant/ant/1.6.2/ant-1.6.2.pom">http://maven.imagej.net/content/groups/public/ant/ant/1.6.2/ant-1.6.2.pom</A>
+</I>&gt;&gt;<i> (521 B at 1.0 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/xerces/xerces-impl/2.6.2/xerces-impl-2.6.2.pom">http://maven.imagej.net/content/repositories/releases/xerces/xerces-impl/2.6.2/xerces-impl-2.6.2.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/xerces/xerces-impl/2.6.2/xerces-impl-2.6.2.pom">http://maven.imagej.net/content/repositories/snapshots/xerces/xerces-impl/2.6.2/xerces-impl-2.6.2.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/xerces/xerces-impl/2.6.2/xerces-impl-2.6.2.pom">http://maven.imagej.net/content/groups/public/xerces/xerces-impl/2.6.2/xerces-impl-2.6.2.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://repo.maven.apache.org/maven2/xerces/xerces-impl/2.6.2/xerces-impl-2.6.2.pom">http://repo.maven.apache.org/maven2/xerces/xerces-impl/2.6.2/xerces-impl-2.6.2.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/xml-apis/xml-apis/2.6.2/xml-apis-2.6.2.pom">http://maven.imagej.net/content/repositories/releases/xml-apis/xml-apis/2.6.2/xml-apis-2.6.2.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/xml-apis/xml-apis/2.6.2/xml-apis-2.6.2.pom">http://maven.imagej.net/content/repositories/snapshots/xml-apis/xml-apis/2.6.2/xml-apis-2.6.2.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/xml-apis/xml-apis/2.6.2/xml-apis-2.6.2.pom">http://maven.imagej.net/content/groups/public/xml-apis/xml-apis/2.6.2/xml-apis-2.6.2.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://repo.maven.apache.org/maven2/xml-apis/xml-apis/2.6.2/xml-apis-2.6.2.pom">http://repo.maven.apache.org/maven2/xml-apis/xml-apis/2.6.2/xml-apis-2.6.2.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/json/json/20080701/json-20080701.pom">http://maven.imagej.net/content/repositories/releases/org/json/json/20080701/json-20080701.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/json/json/20080701/json-20080701.pom">http://maven.imagej.net/content/repositories/snapshots/org/json/json/20080701/json-20080701.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/json/json/20080701/json-20080701.pom">http://maven.imagej.net/content/groups/public/org/json/json/20080701/json-20080701.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/json/json/20080701/json-20080701.pom">http://maven.imagej.net/content/groups/public/org/json/json/20080701/json-20080701.pom</A>
+</I>&gt;&gt;<i> (2 KB at 3.1 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/codehaus/jettison/jettison/1.2/jettison-1.2.pom">http://maven.imagej.net/content/repositories/releases/org/codehaus/jettison/jettison/1.2/jettison-1.2.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/codehaus/jettison/jettison/1.2/jettison-1.2.pom">http://maven.imagej.net/content/repositories/snapshots/org/codehaus/jettison/jettison/1.2/jettison-1.2.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/codehaus/jettison/jettison/1.2/jettison-1.2.pom">http://maven.imagej.net/content/groups/public/org/codehaus/jettison/jettison/1.2/jettison-1.2.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/codehaus/jettison/jettison/1.2/jettison-1.2.pom">http://maven.imagej.net/content/groups/public/org/codehaus/jettison/jettison/1.2/jettison-1.2.pom</A>
+</I>&gt;&gt;<i> (4 KB at 5.4 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/woodstox/wstx-asl/3.2.2/wstx-asl-3.2.2.pom">http://maven.imagej.net/content/repositories/releases/woodstox/wstx-asl/3.2.2/wstx-asl-3.2.2.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/woodstox/wstx-asl/3.2.2/wstx-asl-3.2.2.pom">http://maven.imagej.net/content/repositories/snapshots/woodstox/wstx-asl/3.2.2/wstx-asl-3.2.2.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/woodstox/wstx-asl/3.2.2/wstx-asl-3.2.2.pom">http://maven.imagej.net/content/groups/public/woodstox/wstx-asl/3.2.2/wstx-asl-3.2.2.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://repo.maven.apache.org/maven2/woodstox/wstx-asl/3.2.2/wstx-asl-3.2.2.pom">http://repo.maven.apache.org/maven2/woodstox/wstx-asl/3.2.2/wstx-asl-3.2.2.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/codehaus/gpars/gpars/1.0-beta-2/gpars-1.0-beta-2.pom">http://maven.imagej.net/content/repositories/releases/org/codehaus/gpars/gpars/1.0-beta-2/gpars-1.0-beta-2.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/codehaus/gpars/gpars/1.0-beta-2/gpars-1.0-beta-2.pom">http://maven.imagej.net/content/repositories/snapshots/org/codehaus/gpars/gpars/1.0-beta-2/gpars-1.0-beta-2.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/codehaus/gpars/gpars/1.0-beta-2/gpars-1.0-beta-2.pom">http://maven.imagej.net/content/groups/public/org/codehaus/gpars/gpars/1.0-beta-2/gpars-1.0-beta-2.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/codehaus/gpars/gpars/1.0-beta-2/gpars-1.0-beta-2.pom">http://maven.imagej.net/content/groups/public/org/codehaus/gpars/gpars/1.0-beta-2/gpars-1.0-beta-2.pom</A>
+</I>&gt;&gt;<i> (2 KB at 3.0 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/codehaus/jcsp/jcsp/1.1-rc5/jcsp-1.1-rc5.pom">http://maven.imagej.net/content/repositories/releases/org/codehaus/jcsp/jcsp/1.1-rc5/jcsp-1.1-rc5.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/codehaus/jcsp/jcsp/1.1-rc5/jcsp-1.1-rc5.pom">http://maven.imagej.net/content/repositories/snapshots/org/codehaus/jcsp/jcsp/1.1-rc5/jcsp-1.1-rc5.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/codehaus/jcsp/jcsp/1.1-rc5/jcsp-1.1-rc5.pom">http://maven.imagej.net/content/groups/public/org/codehaus/jcsp/jcsp/1.1-rc5/jcsp-1.1-rc5.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/codehaus/jcsp/jcsp/1.1-rc5/jcsp-1.1-rc5.pom">http://maven.imagej.net/content/groups/public/org/codehaus/jcsp/jcsp/1.1-rc5/jcsp-1.1-rc5.pom</A>
+</I>&gt;&gt;<i> (7 KB at 14.6 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/apache/felix/org.osgi.core/1.4.0/org.osgi.core-1.4.0.pom">http://maven.imagej.net/content/repositories/releases/org/apache/felix/org.osgi.core/1.4.0/org.osgi.core-1.4.0.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/apache/felix/org.osgi.core/1.4.0/org.osgi.core-1.4.0.pom">http://maven.imagej.net/content/repositories/snapshots/org/apache/felix/org.osgi.core/1.4.0/org.osgi.core-1.4.0.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/apache/felix/org.osgi.core/1.4.0/org.osgi.core-1.4.0.pom">http://maven.imagej.net/content/groups/public/org/apache/felix/org.osgi.core/1.4.0/org.osgi.core-1.4.0.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/apache/felix/org.osgi.core/1.4.0/org.osgi.core-1.4.0.pom">http://maven.imagej.net/content/groups/public/org/apache/felix/org.osgi.core/1.4.0/org.osgi.core-1.4.0.pom</A>
+</I>&gt;&gt;<i> (3 KB at 6.0 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/apache/felix/felix-parent/1.2.0/felix-parent-1.2.0.pom">http://maven.imagej.net/content/repositories/releases/org/apache/felix/felix-parent/1.2.0/felix-parent-1.2.0.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/apache/felix/felix-parent/1.2.0/felix-parent-1.2.0.pom">http://maven.imagej.net/content/repositories/snapshots/org/apache/felix/felix-parent/1.2.0/felix-parent-1.2.0.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/apache/felix/felix-parent/1.2.0/felix-parent-1.2.0.pom">http://maven.imagej.net/content/groups/public/org/apache/felix/felix-parent/1.2.0/felix-parent-1.2.0.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/apache/felix/felix-parent/1.2.0/felix-parent-1.2.0.pom">http://maven.imagej.net/content/groups/public/org/apache/felix/felix-parent/1.2.0/felix-parent-1.2.0.pom</A>
+</I>&gt;&gt;<i> (15 KB at 19.2 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/mockito/mockito-all/1.7/mockito-all-1.7.pom">http://maven.imagej.net/content/repositories/releases/org/mockito/mockito-all/1.7/mockito-all-1.7.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/mockito/mockito-all/1.7/mockito-all-1.7.pom">http://maven.imagej.net/content/repositories/snapshots/org/mockito/mockito-all/1.7/mockito-all-1.7.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/mockito/mockito-all/1.7/mockito-all-1.7.pom">http://maven.imagej.net/content/groups/public/org/mockito/mockito-all/1.7/mockito-all-1.7.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/mockito/mockito-all/1.7/mockito-all-1.7.pom">http://maven.imagej.net/content/groups/public/org/mockito/mockito-all/1.7/mockito-all-1.7.pom</A>
+</I>&gt;&gt;<i> (856 B at 1.6 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/codehaus/jsr166-mirror/jsr166y/1.7.0/jsr166y-1.7.0.pom">http://maven.imagej.net/content/repositories/releases/org/codehaus/jsr166-mirror/jsr166y/1.7.0/jsr166y-1.7.0.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/codehaus/jsr166-mirror/jsr166y/1.7.0/jsr166y-1.7.0.pom">http://maven.imagej.net/content/repositories/snapshots/org/codehaus/jsr166-mirror/jsr166y/1.7.0/jsr166y-1.7.0.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/codehaus/jsr166-mirror/jsr166y/1.7.0/jsr166y-1.7.0.pom">http://maven.imagej.net/content/groups/public/org/codehaus/jsr166-mirror/jsr166y/1.7.0/jsr166y-1.7.0.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/codehaus/jsr166-mirror/jsr166y/1.7.0/jsr166y-1.7.0.pom">http://maven.imagej.net/content/groups/public/org/codehaus/jsr166-mirror/jsr166y/1.7.0/jsr166y-1.7.0.pom</A>
+</I>&gt;&gt;<i> (406 B at 0.8 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/multiverse/multiverse-beta/0.7-RC-1/multiverse-beta-0.7-RC-1.pom">http://maven.imagej.net/content/repositories/releases/org/multiverse/multiverse-beta/0.7-RC-1/multiverse-beta-0.7-RC-1.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/multiverse/multiverse-beta/0.7-RC-1/multiverse-beta-0.7-RC-1.pom">http://maven.imagej.net/content/repositories/snapshots/org/multiverse/multiverse-beta/0.7-RC-1/multiverse-beta-0.7-RC-1.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/multiverse/multiverse-beta/0.7-RC-1/multiverse-beta-0.7-RC-1.pom">http://maven.imagej.net/content/groups/public/org/multiverse/multiverse-beta/0.7-RC-1/multiverse-beta-0.7-RC-1.pom</A>
+</I>&gt;&gt;<i> [WARNING] Checksum validation failed, expected
+</I>&gt;&gt;<i> 7c798b9edd7a744e042def51c31eef256556eee6 but is
+</I>&gt;&gt;<i> ddc682a2b219fcb896732e8ff3546415d708e12e for
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/multiverse/multiverse-beta/0.7-RC-1/multiverse-beta-0.7-RC-1.pom">http://maven.imagej.net/content/groups/public/org/multiverse/multiverse-beta/0.7-RC-1/multiverse-beta-0.7-RC-1.pom</A>
+</I>&gt;&gt;<i> [WARNING] Checksum validation failed, expected
+</I>&gt;&gt;<i> 7c798b9edd7a744e042def51c31eef256556eee6 but is
+</I>&gt;&gt;<i> ddc682a2b219fcb896732e8ff3546415d708e12e for
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/multiverse/multiverse-beta/0.7-RC-1/multiverse-beta-0.7-RC-1.pom">http://maven.imagej.net/content/groups/public/org/multiverse/multiverse-beta/0.7-RC-1/multiverse-beta-0.7-RC-1.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/multiverse/multiverse-beta/0.7-RC-1/multiverse-beta-0.7-RC-1.pom">http://maven.imagej.net/content/groups/public/org/multiverse/multiverse-beta/0.7-RC-1/multiverse-beta-0.7-RC-1.pom</A>
+</I>&gt;&gt;<i> (775 B at 0.9 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/mockito/mockito-all/1.8.2/mockito-all-1.8.2.pom">http://maven.imagej.net/content/repositories/releases/org/mockito/mockito-all/1.8.2/mockito-all-1.8.2.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/mockito/mockito-all/1.8.2/mockito-all-1.8.2.pom">http://maven.imagej.net/content/repositories/snapshots/org/mockito/mockito-all/1.8.2/mockito-all-1.8.2.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/mockito/mockito-all/1.8.2/mockito-all-1.8.2.pom">http://maven.imagej.net/content/groups/public/org/mockito/mockito-all/1.8.2/mockito-all-1.8.2.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/mockito/mockito-all/1.8.2/mockito-all-1.8.2.pom">http://maven.imagej.net/content/groups/public/org/mockito/mockito-all/1.8.2/mockito-all-1.8.2.pom</A>
+</I>&gt;&gt;<i> (858 B at 1.7 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/jboss/netty/netty/3.2.7.Final/netty-3.2.7.Final.pom">http://maven.imagej.net/content/repositories/releases/org/jboss/netty/netty/3.2.7.Final/netty-3.2.7.Final.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/jboss/netty/netty/3.2.7.Final/netty-3.2.7.Final.pom">http://maven.imagej.net/content/repositories/snapshots/org/jboss/netty/netty/3.2.7.Final/netty-3.2.7.Final.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/jboss/netty/netty/3.2.7.Final/netty-3.2.7.Final.pom">http://maven.imagej.net/content/groups/public/org/jboss/netty/netty/3.2.7.Final/netty-3.2.7.Final.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/jboss/netty/netty/3.2.7.Final/netty-3.2.7.Final.pom">http://maven.imagej.net/content/groups/public/org/jboss/netty/netty/3.2.7.Final/netty-3.2.7.Final.pom</A>
+</I>&gt;&gt;<i> (26 KB at 34.9 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/jboss/jboss-parent/5/jboss-parent-5.pom">http://maven.imagej.net/content/repositories/releases/org/jboss/jboss-parent/5/jboss-parent-5.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/jboss/jboss-parent/5/jboss-parent-5.pom">http://maven.imagej.net/content/repositories/snapshots/org/jboss/jboss-parent/5/jboss-parent-5.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/jboss/jboss-parent/5/jboss-parent-5.pom">http://maven.imagej.net/content/groups/public/org/jboss/jboss-parent/5/jboss-parent-5.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/jboss/jboss-parent/5/jboss-parent-5.pom">http://maven.imagej.net/content/groups/public/org/jboss/jboss-parent/5/jboss-parent-5.pom</A>
+</I>&gt;&gt;<i> (19 KB at 30.4 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/easymock/easymockclassextension/2.2.1/easymockclassextension-2.2.1.pom">http://maven.imagej.net/content/repositories/releases/org/easymock/easymockclassextension/2.2.1/easymockclassextension-2.2.1.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/easymock/easymockclassextension/2.2.1/easymockclassextension-2.2.1.pom">http://maven.imagej.net/content/repositories/snapshots/org/easymock/easymockclassextension/2.2.1/easymockclassextension-2.2.1.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/easymock/easymockclassextension/2.2.1/easymockclassextension-2.2.1.pom">http://maven.imagej.net/content/groups/public/org/easymock/easymockclassextension/2.2.1/easymockclassextension-2.2.1.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/easymock/easymockclassextension/2.2.1/easymockclassextension-2.2.1.pom">http://maven.imagej.net/content/groups/public/org/easymock/easymockclassextension/2.2.1/easymockclassextension-2.2.1.pom</A>
+</I>&gt;&gt;<i> (2 KB at 2.5 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/junit/junit/4.1/junit-4.1.pom">http://maven.imagej.net/content/repositories/releases/junit/junit/4.1/junit-4.1.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/junit/junit/4.1/junit-4.1.pom">http://maven.imagej.net/content/repositories/snapshots/junit/junit/4.1/junit-4.1.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/junit/junit/4.1/junit-4.1.pom">http://maven.imagej.net/content/groups/public/junit/junit/4.1/junit-4.1.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/junit/junit/4.1/junit-4.1.pom">http://maven.imagej.net/content/groups/public/junit/junit/4.1/junit-4.1.pom</A>
+</I>&gt;&gt;<i> (583 B at 1.1 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/apache/felix/org.osgi.compendium/1.4.0/org.osgi.compendium-1.4.0.pom">http://maven.imagej.net/content/repositories/releases/org/apache/felix/org.osgi.compendium/1.4.0/org.osgi.compendium-1.4.0.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/apache/felix/org.osgi.compendium/1.4.0/org.osgi.compendium-1.4.0.pom">http://maven.imagej.net/content/repositories/snapshots/org/apache/felix/org.osgi.compendium/1.4.0/org.osgi.compendium-1.4.0.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/apache/felix/org.osgi.compendium/1.4.0/org.osgi.compendium-1.4.0.pom">http://maven.imagej.net/content/groups/public/org/apache/felix/org.osgi.compendium/1.4.0/org.osgi.compendium-1.4.0.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/apache/felix/org.osgi.compendium/1.4.0/org.osgi.compendium-1.4.0.pom">http://maven.imagej.net/content/groups/public/org/apache/felix/org.osgi.compendium/1.4.0/org.osgi.compendium-1.4.0.pom</A>
+</I>&gt;&gt;<i> (4 KB at 8.5 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/apache/felix/javax.servlet/1.0.0/javax.servlet-1.0.0.pom">http://maven.imagej.net/content/repositories/releases/org/apache/felix/javax.servlet/1.0.0/javax.servlet-1.0.0.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/apache/felix/javax.servlet/1.0.0/javax.servlet-1.0.0.pom">http://maven.imagej.net/content/repositories/snapshots/org/apache/felix/javax.servlet/1.0.0/javax.servlet-1.0.0.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/apache/felix/javax.servlet/1.0.0/javax.servlet-1.0.0.pom">http://maven.imagej.net/content/groups/public/org/apache/felix/javax.servlet/1.0.0/javax.servlet-1.0.0.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/apache/felix/javax.servlet/1.0.0/javax.servlet-1.0.0.pom">http://maven.imagej.net/content/groups/public/org/apache/felix/javax.servlet/1.0.0/javax.servlet-1.0.0.pom</A>
+</I>&gt;&gt;<i> (5 KB at 9.9 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/apache/felix/felix/1.0.0/felix-1.0.0.pom">http://maven.imagej.net/content/repositories/releases/org/apache/felix/felix/1.0.0/felix-1.0.0.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/apache/felix/felix/1.0.0/felix-1.0.0.pom">http://maven.imagej.net/content/repositories/snapshots/org/apache/felix/felix/1.0.0/felix-1.0.0.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/apache/felix/felix/1.0.0/felix-1.0.0.pom">http://maven.imagej.net/content/groups/public/org/apache/felix/felix/1.0.0/felix-1.0.0.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/apache/felix/felix/1.0.0/felix-1.0.0.pom">http://maven.imagej.net/content/groups/public/org/apache/felix/felix/1.0.0/felix-1.0.0.pom</A>
+</I>&gt;&gt;<i> (12 KB at 7.1 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/easymock/easymock/1.2_Java1.3/easymock-1.2_Java1.3.pom">http://maven.imagej.net/content/repositories/releases/easymock/easymock/1.2_Java1.3/easymock-1.2_Java1.3.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/easymock/easymock/1.2_Java1.3/easymock-1.2_Java1.3.pom">http://maven.imagej.net/content/repositories/snapshots/easymock/easymock/1.2_Java1.3/easymock-1.2_Java1.3.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/easymock/easymock/1.2_Java1.3/easymock-1.2_Java1.3.pom">http://maven.imagej.net/content/groups/public/easymock/easymock/1.2_Java1.3/easymock-1.2_Java1.3.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/easymock/easymock/1.2_Java1.3/easymock-1.2_Java1.3.pom">http://maven.imagej.net/content/groups/public/easymock/easymock/1.2_Java1.3/easymock-1.2_Java1.3.pom</A>
+</I>&gt;&gt;<i> (192 B at 0.3 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/apache/felix/org.osgi.foundation/1.2.0/org.osgi.foundation-1.2.0.pom">http://maven.imagej.net/content/repositories/releases/org/apache/felix/org.osgi.foundation/1.2.0/org.osgi.foundation-1.2.0.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/apache/felix/org.osgi.foundation/1.2.0/org.osgi.foundation-1.2.0.pom">http://maven.imagej.net/content/repositories/snapshots/org/apache/felix/org.osgi.foundation/1.2.0/org.osgi.foundation-1.2.0.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/apache/felix/org.osgi.foundation/1.2.0/org.osgi.foundation-1.2.0.pom">http://maven.imagej.net/content/groups/public/org/apache/felix/org.osgi.foundation/1.2.0/org.osgi.foundation-1.2.0.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/apache/felix/org.osgi.foundation/1.2.0/org.osgi.foundation-1.2.0.pom">http://maven.imagej.net/content/groups/public/org/apache/felix/org.osgi.foundation/1.2.0/org.osgi.foundation-1.2.0.pom</A>
+</I>&gt;&gt;<i> (2 KB at 3.2 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/apache/felix/felix/1.0.2/felix-1.0.2.pom">http://maven.imagej.net/content/repositories/releases/org/apache/felix/felix/1.0.2/felix-1.0.2.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/apache/felix/felix/1.0.2/felix-1.0.2.pom">http://maven.imagej.net/content/repositories/snapshots/org/apache/felix/felix/1.0.2/felix-1.0.2.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/apache/felix/felix/1.0.2/felix-1.0.2.pom">http://maven.imagej.net/content/groups/public/org/apache/felix/felix/1.0.2/felix-1.0.2.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/apache/felix/felix/1.0.2/felix-1.0.2.pom">http://maven.imagej.net/content/groups/public/org/apache/felix/felix/1.0.2/felix-1.0.2.pom</A>
+</I>&gt;&gt;<i> (14 KB at 4.7 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/jboss/logging/jboss-logging-spi/2.1.2.GA/jboss-logging-spi-2.1.2.GA.pom">http://maven.imagej.net/content/repositories/releases/org/jboss/logging/jboss-logging-spi/2.1.2.GA/jboss-logging-spi-2.1.2.GA.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/jboss/logging/jboss-logging-spi/2.1.2.GA/jboss-logging-spi-2.1.2.GA.pom">http://maven.imagej.net/content/repositories/snapshots/org/jboss/logging/jboss-logging-spi/2.1.2.GA/jboss-logging-spi-2.1.2.GA.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/jboss/logging/jboss-logging-spi/2.1.2.GA/jboss-logging-spi-2.1.2.GA.pom">http://maven.imagej.net/content/groups/public/org/jboss/logging/jboss-logging-spi/2.1.2.GA/jboss-logging-spi-2.1.2.GA.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/jboss/logging/jboss-logging-spi/2.1.2.GA/jboss-logging-spi-2.1.2.GA.pom">http://maven.imagej.net/content/groups/public/org/jboss/logging/jboss-logging-spi/2.1.2.GA/jboss-logging-spi-2.1.2.GA.pom</A>
+</I>&gt;&gt;<i> (679 B at 1.2 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/log4j/log4j/1.2.16/log4j-1.2.16.pom">http://maven.imagej.net/content/repositories/releases/log4j/log4j/1.2.16/log4j-1.2.16.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/log4j/log4j/1.2.16/log4j-1.2.16.pom">http://maven.imagej.net/content/repositories/snapshots/log4j/log4j/1.2.16/log4j-1.2.16.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/log4j/log4j/1.2.16/log4j-1.2.16.pom">http://maven.imagej.net/content/groups/public/log4j/log4j/1.2.16/log4j-1.2.16.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/log4j/log4j/1.2.16/log4j-1.2.16.pom">http://maven.imagej.net/content/groups/public/log4j/log4j/1.2.16/log4j-1.2.16.pom</A>
+</I>&gt;&gt;<i> (20 KB at 32.0 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/javax/mail/mail/1.4.1/mail-1.4.1.pom">http://maven.imagej.net/content/repositories/releases/javax/mail/mail/1.4.1/mail-1.4.1.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/javax/mail/mail/1.4.1/mail-1.4.1.pom">http://maven.imagej.net/content/repositories/snapshots/javax/mail/mail/1.4.1/mail-1.4.1.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/javax/mail/mail/1.4.1/mail-1.4.1.pom">http://maven.imagej.net/content/groups/public/javax/mail/mail/1.4.1/mail-1.4.1.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/javax/mail/mail/1.4.1/mail-1.4.1.pom">http://maven.imagej.net/content/groups/public/javax/mail/mail/1.4.1/mail-1.4.1.pom</A>
+</I>&gt;&gt;<i> (995 B at 1.8 KB/sec)
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/releases/org/easymock/easymock/3.1/easymock-3.1.pom">http://maven.imagej.net/content/repositories/releases/org/easymock/easymock/3.1/easymock-3.1.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/repositories/snapshots/org/easymock/easymock/3.1/easymock-3.1.pom">http://maven.imagej.net/content/repositories/snapshots/org/easymock/easymock/3.1/easymock-3.1.pom</A>
+</I>&gt;&gt;<i> Downloading:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/easymock/easymock/3.1/easymock-3.1.pom">http://maven.imagej.net/content/groups/public/org/easymock/easymock/3.1/easymock-3.1.pom</A>
+</I>&gt;&gt;<i> Downloaded:
+</I>&gt;&gt;<i> <A HREF="http://maven.imagej.net/content/groups/public/org/easymock/easymock/3.1/easymock-3.1.pom">http://maven.imagej.net/content/groups/public/org/easymock/easymock/3.1/easymock-3.1.pom</A>
+</I>&gt;&gt;<i> (6 KB at 11.2 K
+</I>&gt;&gt;<i>
+</I>&gt;<i> ...
+</I>&gt;<i>
+</I>&gt;<i> [Message clipped]
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20141117/f437c18a/attachment-0001.html">http://imagej.net/pipermail/imagej-devel/attachments/20141117/f437c18a/attachment-0001.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002310.html">[ImageJ-devel] [fiji-devel] On a personal note
+</A></li>
+	<LI>Next message: <A HREF="002312.html">[ImageJ-devel] another enforcer problem
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2311">[ date ]</a>
+              <a href="thread.html#2311">[ thread ]</a>
+              <a href="subject.html#2311">[ subject ]</a>
+              <a href="author.html#2311">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

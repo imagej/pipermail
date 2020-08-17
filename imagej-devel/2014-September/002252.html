@@ -1,0 +1,271 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] [fiji-devel] imglib2-neon project for runtime	bytecode transformation
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20imglib2-neon%20project%20for%20runtime%0A%09bytecode%20transformation&In-Reply-To=%3C76A74650-EAD2-4553-A88D-C0104FF8C91A%40mpi-cbg.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002250.html">
+   <LINK REL="Next"  HREF="002276.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] [fiji-devel] imglib2-neon project for runtime	bytecode transformation</H1>
+    <B>Tobias Pietzsch</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20%5Bfiji-devel%5D%20imglib2-neon%20project%20for%20runtime%0A%09bytecode%20transformation&In-Reply-To=%3C76A74650-EAD2-4553-A88D-C0104FF8C91A%40mpi-cbg.de%3E"
+       TITLE="[ImageJ-devel] [fiji-devel] imglib2-neon project for runtime	bytecode transformation">pietzsch at mpi-cbg.de
+       </A><BR>
+    <I>Wed Sep 24 04:24:55 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002250.html">[ImageJ-devel] imglib2-neon project for runtime bytecode	transformation
+</A></li>
+        <LI>Next message: <A HREF="002276.html">[ImageJ-devel] [fiji-devel] imglib2-neon project for runtime	bytecode transformation
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2252">[ date ]</a>
+              <a href="thread.html#2252">[ thread ]</a>
+              <a href="subject.html#2252">[ subject ]</a>
+              <a href="author.html#2252">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Steffi,
+
+On 24 Sep 2014, at 02:12, Preibisch, Stephan &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">preibischs at janelia.hhmi.org</A>&gt; wrote:
+
+&gt;<i> Hi Tobi,
+</I>&gt;<i> 
+</I>&gt;<i> this does look pretty impressive indeed. As it is modified on runtime, it should even work with new Types and Accessibles that are not part of ImgLib2 but some external program that is based on ImgLib2 and adds for example its own types, or?
+</I>
+Yes, absolutely.
+
+&gt;<i> 
+</I>&gt;<i> Did you test if this scales well with larger number of instances? For ImgLib2 it would be something like |accessibles| x |types|, right? In many cases it would not use a lot of the possibilities, but for something like KNIME or ImageJ2 this might actually happen.
+</I>
+I did not do any larger tests yet.
+
+Whether it would be |accessibles| x |types| for imglib depends on how it is used.
+Lets assume that you have a function
+  &lt;T extends Type&lt;T&gt;&gt; T getMax( Cursor&lt;T&gt; c, T type )
+Then it depends on how you annotate it. For
+  @Instantiate &lt;T extends Type&lt;T&gt;&gt; T getMax( @ByTypeOf Cursor&lt;T&gt; c, T type )
+it would be instantiate it for ArrayCursor and ArrayLocalizingCursor, but ArrayCursor&lt;IntType&gt; and ArrayCursor&lt;FloatType&gt; would share the same instance.
+For
+  @Instantiate &lt;T extends Type&lt;T&gt;&gt; T getMax( Cursor&lt;T&gt; c, @ByTypeOf T type )
+it would be instantiated for IntType and FloatType, but ArrayCursor&lt;IntType&gt; and ArrayLocalizingCursor&lt;IntType&gt; would share the same instance.
+For
+  @Instantiate &lt;T extends Type&lt;T&gt;&gt; T getMax( @ByTypeOf Cursor&lt;T&gt; c, @ByTypeOf T type )
+you would have the full |cursor| x |type| space.
+
+I don&#8217;t see this becoming a big problem at the moment.
+We should anyway not indiscriminately apply it everywhere, only where we can really show a performance increase.
+
+I see it as more of an issue if we add more of these instantiation idioms, for example for specializing classes. Then the number of instances might multiply through chains of such instantiations. Imagine the above with Cursor classes being generated depending on Type and number of dimensions. And that with Types being generated depending on the underlying Access.
+
+The nice thing is that you only pay for what you actually use.
+In any case, it is easy to cap the number of instances that are generated at a fixed number, and use the same instance for every newly occurring type after that.
+
+&gt;<i> 
+</I>&gt;<i> Again, looks awesome! And if it turns out to be working in all cases, I agree, this could be a huge game changer.
+</I>
+Cool, thanks!
+Tobias
+
+&gt;<i> 
+</I>&gt;<i> Cheers,
+</I>&gt;<i> Steffi
+</I>&gt;<i> ---
+</I>&gt;<i> 
+</I>&gt;<i> Dr. Stephan Preibisch
+</I>&gt;<i> HFSP Fellow
+</I>&gt;<i> Robert H. Singer / Eugene Myers lab
+</I>&gt;<i> 
+</I>&gt;<i> Albert Einstein College of Medicine / HHMI Janelia Farm / MPI-CBG
+</I>&gt;<i> 
+</I>&gt;<i> email: <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">stephan.preibisch at einstein.yu.edu</A> / <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">preibischs at janelia.hhmi.org</A> / <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">preibisch at mpi-cbg.de</A>
+</I>&gt;<i> web: <A HREF="http://www.preibisch.net/">http://www.preibisch.net/</A>
+</I>&gt;<i> 
+</I>&gt;<i> On Sep 23, 2014, at 19:02 , Tobias Pietzsch &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">pietzsch at mpi-cbg.de</A>&gt; wrote:
+</I>&gt;<i> 
+</I>&gt;&gt;<i> Hi guys,
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> As a weekend project I have started to look into bytecode modification using the wonderful ASM library (<A HREF="http://asm.ow2.org">http://asm.ow2.org</A>).
+</I>&gt;&gt;<i> I have cleaned up what I have played with and put it on github <A HREF="https://github.com/tpietzsch/neon.">https://github.com/tpietzsch/neon.</A>
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> It tackles a long-standing imglib obstacle, namely megamorphic call-sites in certain methods, where the JIT fails to recognise that the runtime target of the polymorphic changes between calls to a method but doesn&#8217;t change in the hot inner loop of the method during a single call. I have been talking about ideas to address this for quite some time, most recently here <A HREF="https://github.com/imglib/imglib/issues/71#issuecomment-51227237.">https://github.com/imglib/imglib/issues/71#issuecomment-51227237.</A> Now I went ahead and actually tried to do something about it.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> I have applied it to an example in imglib, which is described below. But for anyone not familiar with this particular issue (which is everyone except Christian probably) there
+</I>&gt;&gt;<i> is an illustrative example with explanations in the README on github <A HREF="https://github.com/tpietzsch/neon/blob/master/README.md.">https://github.com/tpietzsch/neon/blob/master/README.md.</A>
+</I>&gt;&gt;<i> This does not involve imglib at all and is a clear illustration of the problem (and my solution).
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> I&#8217;m quite happy with how it turned out so far. It certainly has to be applied with care, but I think this can be potentially huge for imglib2. It might open up new possibilities that we have shied away from because of performance reasons, such as internal iteration for IterableIntervals.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> Curtis, Johannes and Christian, I would also be interested what you think of this as a potential tool for imagej-ops.
+</I>&gt;&gt;<i> I think it is orthogonal to what you do with compile-time code generation currently and therefore might complement it nicely.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> I hope you have a look and tell me what you think.
+</I>&gt;&gt;<i> I would be especially interested in whether you can think of optimization idioms besides the @Instantiate @ByTypeOf that is implemented right now.
+</I>&gt;&gt;<i> It would be cool if we discuss this in the upcoming imglib hackathon.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> Okay, everybody except Christian might as well stop reading now.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> all the best,
+</I>&gt;&gt;<i> Tobias
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> PS: the imglib stuff...
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> For the imglib issue <A HREF="https://github.com/imglib/imglib/issues/71,">https://github.com/imglib/imglib/issues/71,</A> we played with ways of iterating pixels which can be optimized for certain subintervals of larger images.
+</I>&gt;&gt;<i> The optimizations work out nicely when done on their own, but everything really breaks down when a single method is used with differnent Cursor incarnations.
+</I>&gt;&gt;<i> This is actually already a potential problem in standard imglib, when Cursors from different Img types are uses in a single method. But adding the new optimized versions
+</I>&gt;&gt;<i> only made it more probable that the problem actually occurs.
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> Here is numbers from a recent test, at a stage where 4 different kinds of cursors are in play:
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> normal cursor | array img
+</I>&gt;&gt;<i> walk through a subinterval
+</I>&gt;&gt;<i> | Unoptimized 
+</I>&gt;&gt;<i> | Optimized | Speedup Time | Speedup % 
+</I>&gt;&gt;<i> |
+</I>&gt;&gt;<i> Best |
+</I>&gt;&gt;<i> 566 |
+</I>&gt;&gt;<i> 371 | 195ms   
+</I>&gt;&gt;<i> | 34.4%    |
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> localizing cursor | array img
+</I>&gt;&gt;<i> walk through a subinterval
+</I>&gt;&gt;<i> | Unoptimized 
+</I>&gt;&gt;<i> | Optimized | Speedup Time | Speedup % 
+</I>&gt;&gt;<i> |
+</I>&gt;&gt;<i> Best |
+</I>&gt;&gt;<i> 907 |
+</I>&gt;&gt;<i> 584 | 323ms   
+</I>&gt;&gt;<i> | 35.6%    |
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> normal cursor | planar img
+</I>&gt;&gt;<i> walk through a subinterval
+</I>&gt;&gt;<i> | Unoptimized 
+</I>&gt;&gt;<i> | Optimized | Speedup Time | Speedup % 
+</I>&gt;&gt;<i> |
+</I>&gt;&gt;<i> Best |
+</I>&gt;&gt;<i> 562 |
+</I>&gt;&gt;<i> 373 | 189ms   
+</I>&gt;&gt;<i> | 33.6%    |
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> localizing cursor | planar img
+</I>&gt;&gt;<i> walk through a subinterval
+</I>&gt;&gt;<i> | Unoptimized 
+</I>&gt;&gt;<i> | Optimized | Speedup Time | Speedup % 
+</I>&gt;&gt;<i> |
+</I>&gt;&gt;<i> Best |
+</I>&gt;&gt;<i> 928 |
+</I>&gt;&gt;<i> 611 | 317ms   
+</I>&gt;&gt;<i> | 34.1%    |
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> With the neon java agent this improves to:
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> normal cursor | array img
+</I>&gt;&gt;<i> walk through a subinterval
+</I>&gt;&gt;<i> | Unoptimized 
+</I>&gt;&gt;<i> | Optimized | Speedup Time | Speedup % 
+</I>&gt;&gt;<i> |
+</I>&gt;&gt;<i> Best |
+</I>&gt;&gt;<i> 153 |
+</I>&gt;&gt;<i> 8 | 145ms   
+</I>&gt;&gt;<i> | 94.7%    |
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> localizing cursor | array img
+</I>&gt;&gt;<i> walk through a subinterval
+</I>&gt;&gt;<i> | Unoptimized 
+</I>&gt;&gt;<i> | Optimized | Speedup Time | Speedup % 
+</I>&gt;&gt;<i> |
+</I>&gt;&gt;<i> Best |
+</I>&gt;&gt;<i> 235 |
+</I>&gt;&gt;<i> 200 | 35ms   
+</I>&gt;&gt;<i> | 14.8%    |
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> normal cursor | planar img
+</I>&gt;&gt;<i> walk through a subinterval
+</I>&gt;&gt;<i> | Unoptimized 
+</I>&gt;&gt;<i> | Optimized | Speedup Time | Speedup % 
+</I>&gt;&gt;<i> |
+</I>&gt;&gt;<i> Best |
+</I>&gt;&gt;<i> 128 |
+</I>&gt;&gt;<i> 8 | 120ms   
+</I>&gt;&gt;<i> | 93.7%    |
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> localizing cursor | planar img
+</I>&gt;&gt;<i> walk through a subinterval
+</I>&gt;&gt;<i> | Unoptimized 
+</I>&gt;&gt;<i> | Optimized | Speedup Time | Speedup % 
+</I>&gt;&gt;<i> |
+</I>&gt;&gt;<i> Best |
+</I>&gt;&gt;<i> 217 |
+</I>&gt;&gt;<i> 208 | 9ms   
+</I>&gt;&gt;<i> | 4.1%    |
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> A speedup of factor ~4 to ~40 can be observed.
+</I>&gt;&gt;<i> These two runs were made with exactly the same code, but for the second one, the program was run with the option
+</I>&gt;&gt;<i>   java -javaagent:/path/to/neon-1.0.0-SNAPSHOT.jar &#8230;
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> I just pushed the example to <A HREF="https://github.com/imglib/imglib/commit/a9b70d923e9a84c4055acae96f71d05ca4a26344">https://github.com/imglib/imglib/commit/a9b70d923e9a84c4055acae96f71d05ca4a26344</A>
+</I>&gt;&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> 
+</I>&gt;<i> -- 
+</I>&gt;<i> -- 
+</I>&gt;<i> Please avoid top-posting, and please make sure to reply-to-all!
+</I>&gt;<i>  
+</I>&gt;<i> Mailing list web interface: <A HREF="http://groups.google.com/group/fiji-devel">http://groups.google.com/group/fiji-devel</A>
+</I>&gt;<i> 
+</I>&gt;<i> --- 
+</I>&gt;<i> You received this message because you are subscribed to the Google Groups &quot;Fiji-devel&quot; group.
+</I>&gt;<i> To unsubscribe from this group and stop receiving emails from it, send an email to <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">fiji-devel+unsubscribe at googlegroups.com.</A>
+</I>&gt;<i> For more options, visit <A HREF="https://groups.google.com/d/optout.">https://groups.google.com/d/optout.</A>
+</I>
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140924/c7772823/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20140924/c7772823/attachment.html</A>&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: signature.asc
+Type: application/pgp-signature
+Size: 455 bytes
+Desc: Message signed with OpenPGP using GPGMail
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20140924/c7772823/attachment.pgp">http://imagej.net/pipermail/imagej-devel/attachments/20140924/c7772823/attachment.pgp</A>&gt;
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002250.html">[ImageJ-devel] imglib2-neon project for runtime bytecode	transformation
+</A></li>
+	<LI>Next message: <A HREF="002276.html">[ImageJ-devel] [fiji-devel] imglib2-neon project for runtime	bytecode transformation
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2252">[ date ]</a>
+              <a href="thread.html#2252">[ thread ]</a>
+              <a href="subject.html#2252">[ subject ]</a>
+              <a href="author.html#2252">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,101 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-bugs] [Bug 1203] memory leak with python script
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%201203%5D%20memory%20leak%20with%20python%20script&In-Reply-To=%3Cbug-1203-19-JL48st4VC8%40http.fiji.sc/bugzilla/%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001551.html">
+   <LINK REL="Next"  HREF="001555.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-bugs] [Bug 1203] memory leak with python script</H1>
+    <B>bugzilla at fiji.sc</B> 
+    <A HREF="mailto:imagej-bugs%40imagej.net?Subject=Re%3A%20%5BImageJ-bugs%5D%20%5BBug%201203%5D%20memory%20leak%20with%20python%20script&In-Reply-To=%3Cbug-1203-19-JL48st4VC8%40http.fiji.sc/bugzilla/%3E"
+       TITLE="[ImageJ-bugs] [Bug 1203] memory leak with python script">bugzilla at fiji.sc
+       </A><BR>
+    <I>Mon Dec 14 12:38:03 CST 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001551.html">[ImageJ-bugs] [Bug 1203] memory leak with python script
+</A></li>
+        <LI>Next message: <A HREF="001555.html">[ImageJ-bugs] [Bug 1203] memory leak with python script
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1554">[ date ]</a>
+              <a href="thread.html#1554">[ thread ]</a>
+              <a href="subject.html#1554">[ subject ]</a>
+              <a href="author.html#1554">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE><A HREF="http://fiji.sc/bugzilla/show_bug.cgi?id=1203">http://fiji.sc/bugzilla/show_bug.cgi?id=1203</A>
+
+Mark Hiner &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">hinerm at gmail.com</A>&gt; changed:
+
+           What    |Removed                     |Added
+----------------------------------------------------------------------------
+             Status|NEEDSINFO                   |CONFIRMED
+
+--- Comment #13 from Mark Hiner &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-bugs">hinerm at gmail.com</A>&gt; ---
+It's definitely an issue with our implementation of the jython script language.
+The python environment is not cleaned up after running a script - and in fact
+there is code that relies on the environment not being cleaned up.
+
+You can hack it right now and effectively &quot;force&quot; the scope of the variables to
+be respected, by explicitly setting them to None before your script ends.
+
+e.g.:
+
+   inputIp = inputImp.getProcessor()
+   #... do some stuff with the IP...
+   inputIp = None
+
+will ensure the image processor doesn't stick around. But that is, of course,
+terrible.
+
+I've been looking at options for cleaning up the python environment[1] but the
+timing of when to do so is tricky.
+
+I'll keep trying...
+
+
+[1]
+<A HREF="http://python.6.x6.nabble.com/Cleaning-up-PythonInterpreter-object-td1777184.html">http://python.6.x6.nabble.com/Cleaning-up-PythonInterpreter-object-td1777184.html</A>
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-bugs/attachments/20151214/99da180b/attachment.html">http://imagej.net/pipermail/imagej-bugs/attachments/20151214/99da180b/attachment.html</A>&gt;
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001551.html">[ImageJ-bugs] [Bug 1203] memory leak with python script
+</A></li>
+	<LI>Next message: <A HREF="001555.html">[ImageJ-bugs] [Bug 1203] memory leak with python script
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1554">[ date ]</a>
+              <a href="thread.html#1554">[ thread ]</a>
+              <a href="subject.html#1554">[ subject ]</a>
+              <a href="author.html#1554">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-bugs">More information about the Imagej-bugs
+mailing list</a><br>
+</body></html>

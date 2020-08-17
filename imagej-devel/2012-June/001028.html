@@ -1,0 +1,145 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] KNIP dynamic ImageJ plugin loading
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20KNIP%20dynamic%20ImageJ%20plugin%20loading&In-Reply-To=%3Calpine.DEB.1.00.1206131221310.16012%40bonsai2%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="001023.html">
+   <LINK REL="Next"  HREF="001029.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] KNIP dynamic ImageJ plugin loading</H1>
+    <B>Johannes Schindelin</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20KNIP%20dynamic%20ImageJ%20plugin%20loading&In-Reply-To=%3Calpine.DEB.1.00.1206131221310.16012%40bonsai2%3E"
+       TITLE="[ImageJ-devel] KNIP dynamic ImageJ plugin loading">Johannes.Schindelin at gmx.de
+       </A><BR>
+    <I>Wed Jun 13 16:30:32 CDT 2012</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="001023.html">[ImageJ-devel] KNIP dynamic ImageJ plugin loading
+</A></li>
+        <LI>Next message: <A HREF="001029.html">[ImageJ-devel] KNIP dynamic ImageJ plugin loading
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1028">[ date ]</a>
+              <a href="thread.html#1028">[ thread ]</a>
+              <a href="subject.html#1028">[ subject ]</a>
+              <a href="author.html#1028">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Mike,
+
+On Wed, 6 Jun 2012, Michael Doube wrote:
+
+&gt;<i> I started a document at the last hackathon but have lacked time to work
+</I>&gt;<i> on it since then: please feel free to add your insight to it:
+</I>&gt;<i> 
+</I>&gt;<i> <A HREF="http://developer.imagej.net/writing-imagej-plugins">http://developer.imagej.net/writing-imagej-plugins</A>
+</I>&gt;<i> 
+</I>&gt;<i> The idea is to make it as easy as possible to start writing plugins in
+</I>&gt;<i> Eclipse: ideally there should be minimal stuff to configure so you can
+</I>&gt;<i> concentrate on learning the new APIs. Because most plugin developers
+</I>&gt;<i> won't be ImageJ developers, there's no sense in forcing them to have
+</I>&gt;<i> full repositories of those projects. It's much leaner to have the
+</I>&gt;<i> snapshot JAR to develop against.
+</I>
+To keep you updated on the progress in this regard:
+
+1) To solve the issue with Eclipse not running the annotation processors
+as mandated by the Java specification, I managed to get code working that
+can quickly detect at startup when the annotation processor needs to be
+run. The last part I need to finish is to edit the Eclipse configuration
+(if it is detected that we're really running inside Eclipse) to at least
+trigger the annotation processing after a Project&gt;Clean. The progress can
+be seen in the 'eclipse-helper' branch in our repository.
+
+2) Since Eclipse 3.7, Maven support is shipped by default. Netbeans and
+IntelliJ already do that, so I think the way we'll go forward is to have
+File&gt;New Plugin write a pom.xml and set up a .java file from a template.
+This pom.xml will have the scijava pom as parent so you do not need to
+bother downloading .jar files or setting up Git submodules or some such at
+all; this is what Maven excels at.
+
+3) There is a ticket (sorry, I cannot look it up, am offline on an airport
+writing this) for File&gt;New Plugin (Eclipse). I am tending now to have a
+unified user interface for all ways to make a new plugin; the dialog will
+not only ask for the class name but also whether to open this in Eclipse,
+Netbeans, IntelliJ or the Script Editor (or any other program which can
+cope with Maven configurations). A first stab at opening stuff in Eclipse
+can be seen attached to this mail (a Beanshell script that can start
+Eclipse given its path from Java); hopefully I'll manage to tell Eclipse
+to add a project to the current workspace and to open a given file right
+away.
+
+4) it should be easy to start the JVM (and by extension, ImageJ) with
+options so that Eclipse's debugger can attach to it. I still have to find
+out which those options are and I need to figure out a good UI to
+configure ImageJ so that it restarts in that mode (I do think that a
+restart is required, though).
+
+If you can help me with any of this, I will be very thankful.
+
+Ciao,
+Johannes
+-------------- next part --------------
+import java.io.File;
+eclipseRoot = new File(System.getProperty(&quot;user.home&quot;) + &quot;/eclipse/&quot;);
+addClassPath(new File(eclipseRoot, &quot;plugins/org.eclipse.osgi_3.7.2.v20120110-1415.jar&quot;).getPath());
+
+/*
+for (File file : new File(eclipseRoot, &quot;plugins&quot;).listFiles())
+	if (file.getName().endsWith(&quot;.jar&quot;))
+		addClassPath(file.getAbsolutePath());
+	else if (file.isDirectory())
+		for (File file2 : file.listFiles())
+			if (file2.getName().endsWith(&quot;.jar&quot;))
+				addClassPath(file2.getAbsolutePath());
+*/
+
+import org.eclipse.core.runtime.adaptor.EclipseStarter;
+import java.util.HashMap;
+import java.util.Map;
+
+Map properties = new HashMap();
+properties.put(&quot;osgi.install.area&quot;, eclipseRoot.getPath());
+properties.put(&quot;osgi.syspath&quot;, eclipseRoot.getPath() + &quot;/plugins&quot;);
+properties.put(&quot;osgi.configuration.area&quot;, eclipseRoot.getPath() + &quot;/configuration&quot;);
+properties.put(&quot;osgi.parentClassloader&quot;, &quot;fwk&quot;);
+EclipseStarter.setInitialProperties(properties );
+
+EclipseStarter.startup(new String[] {}, null);
+c = EclipseStarter.run(null);
+print(c);
+// todo: EclipseStarter.shutdown();
+</PRE>
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="001023.html">[ImageJ-devel] KNIP dynamic ImageJ plugin loading
+</A></li>
+	<LI>Next message: <A HREF="001029.html">[ImageJ-devel] KNIP dynamic ImageJ plugin loading
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1028">[ date ]</a>
+              <a href="thread.html#1028">[ thread ]</a>
+              <a href="subject.html#1028">[ subject ]</a>
+              <a href="author.html#1028">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

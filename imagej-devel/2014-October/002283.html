@@ -1,0 +1,200 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Lock-free bit fields, was Re:  What's left to do for ImgLib2
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Lock-free%20bit%20fields%2C%0A%20was%20Re%3A%20%20What%27s%20left%20to%20do%20for%20ImgLib2&In-Reply-To=%3Calpine.DEB.1.00.1410301043520.990%40s15462909.onlinehome-server.info%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002282.html">
+   <LINK REL="Next"  HREF="002284.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Lock-free bit fields, was Re:  What's left to do for ImgLib2</H1>
+    <B>Johannes Schindelin</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Lock-free%20bit%20fields%2C%0A%20was%20Re%3A%20%20What%27s%20left%20to%20do%20for%20ImgLib2&In-Reply-To=%3Calpine.DEB.1.00.1410301043520.990%40s15462909.onlinehome-server.info%3E"
+       TITLE="[ImageJ-devel] Lock-free bit fields, was Re:  What's left to do for ImgLib2">schindelin at wisc.edu
+       </A><BR>
+    <I>Thu Oct 30 05:49:43 CDT 2014</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002282.html">[ImageJ-devel] [fiji-devel] Re: What's left to do for ImgLib2
+</A></li>
+        <LI>Next message: <A HREF="002284.html">[ImageJ-devel] Lock-free bit fields,	was Re:  What's left to do for ImgLib2
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2283">[ date ]</a>
+              <a href="thread.html#2283">[ thread ]</a>
+              <a href="subject.html#2283">[ subject ]</a>
+              <a href="author.html#2283">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Tobias,
+
+first of all: I am really happy that this discussion is now open, enabling
+us to benefit from the entire expertise available in the ImageJ universe.
+
+I would like to use the opportunity to provide a bit of background for
+those readers who did not benefit from the extensive in-person discussions
+at the hackathon, in particular because there is no public summary
+available yet:
+
+At the hackathon [*1*] the main goal was to get ImgLib2 out of beta (and
+there was a *lot* of progress in that regard), and in the process a couple
+of last-minute changes were introduced, amongst others a memory
+optimization of the bit type containers. In particular, it changed from:
+
+<A HREF="https://github.com/imglib/imglib2/blob/ffeee80%5E/core/src/main/java/net/imglib2/type/logic/BitType.java">https://github.com/imglib/imglib2/blob/ffeee80%5E/core/src/main/java/net/imglib2/type/logic/BitType.java</A>
+
+to
+
+<A HREF="https://github.com/imglib/imglib2/blob/fc0d3ebcd/src/main/java/net/imglib2/type/logic/BitType.java">https://github.com/imglib/imglib2/blob/fc0d3ebcd/src/main/java/net/imglib2/type/logic/BitType.java</A>
+
+That is, the BitAccess was replaced by a LongAccess. The BitAccess was
+implemented by
+
+<A HREF="https://github.com/imglib/imglib2/blob/ffeee80%5E/core/src/main/java/net/imglib2/img/basictypeaccess/array/BitArray.java">https://github.com/imglib/imglib2/blob/ffeee80%5E/core/src/main/java/net/imglib2/img/basictypeaccess/array/BitArray.java</A>
+
+Unfortunately, after upgrading imagej-ops to the ImgLib2 release, the
+regression tests started failing, and Tobias offered an explanation:
+
+On Thu, 30 Oct 2014, Tobias Pietzsch wrote:
+
+&gt;<i> The test uses
+</I>&gt;<i> 		final Img&lt;BitType&gt; out = bitmap();
+</I>&gt;<i> 
+</I>&gt;<i> I bet that for the new BitType from the Fractions branch nobody
+</I>&gt;<i> considered the possibility that two cursors might simultaneously write
+</I>&gt;<i> to bits of the same underlying long value.
+</I>
+As the problem is intermittent and changes between test runs even on the
+same computer, this is quite likely, especially given that the original
+BitArray used locking explicitly:
+
+<A HREF="https://github.com/imglib/imglib2/blob/ffeee80%5E/core/src/main/java/net/imglib2/img/basictypeaccess/array/BitArray.java#L85-L91">https://github.com/imglib/imglib2/blob/ffeee80%5E/core/src/main/java/net/imglib2/img/basictypeaccess/array/BitArray.java#L85-L91</A>
+
+That the BitType is now thread-unsafe is therefore a regression introduced
+just recently.
+
+&gt;<i> One solution would be to use locks to synchronize all accesses to the
+</I>&gt;<i> underlying long[] array (this is for BitType, Unsigned12BitType, etc).
+</I>&gt;<i> However, I fear that this will slow down things considerably.
+</I>
+I agree that this would slow down operations as compared to the current
+code (at the price of correctness *grins*), but it would not slow down
+operations as compared to the BitArray which was used previously.
+
+&gt;<i> Is anyone familiar enough with the Java Memory Model to provide an
+</I>&gt;<i> educated guess as to whether a lock-free approach would be feasible?
+</I>
+The best online resource on this issue I am aware of is
+<A HREF="http://www.vogella.com/tutorials/JavaConcurrency/article.html#nonblocking">http://www.vogella.com/tutorials/JavaConcurrency/article.html#nonblocking</A>
+(while the best offline resource is &quot;Java Concurrency In Practice&quot;).
+
+It talks about the most common lock-free primitive, available in Java
+since version 5.0: compare-and-swap (CAS). Unfortunately, this technique
+would require us to switch to a different data type, as the operation is
+not available on primitive types, let alone primitive type arrays.
+
+Theoretically, we could paper over this issue by using the Unsafe class.
+However, this class is marked as internal API for a good reason, and it
+would not be advisable to make use of it to work around a fundamental
+design issue.
+
+&gt;<i> By lock-free I mean setting the value and then checking whether the
+</I>&gt;<i> value is actually what was expected (and if not, retry).
+</I>
+A na&#239;ve implementation of this technique could easily result in a very
+nasty ping-pong effect: if one thread tries to clear a bit and the next
+thread tries to set it, it is very to run into a trap when not leaving a
+way for one thread to win.
+
+The safest way to resolve this issue is to reinstate the lock-on-write
+method that was in place earlier, i.e. surround the lines
+
+<A HREF="https://github.com/imglib/imglib2/blob/fc0d3ebcd9256e60961180952c0383c47e63d111/src/main/java/net/imglib2/type/logic/BitType.java#L133-L137">https://github.com/imglib/imglib2/blob/fc0d3ebcd9256e60961180952c0383c47e63d111/src/main/java/net/imglib2/type/logic/BitType.java#L133-L137</A>
+
+with a `synchronized (dataAccess) { ... }` guard.
+
+An alternative might be to give up lock-freedom in favor of wait-freedom
+[*2*]. In this regard, a more performant version might be to change
+
+	// Clear the bits first, then or the masked value
+	if ( value )
+		dataAccess.setValue(i1, (dataAccess.getValue(i1) | (1l &lt;&lt; shift) ) );
+	else
+		dataAccess.setValue(i1, (dataAccess.getValue(i1) &amp; ~(1l &lt;&lt; shift)) );
+
+to use Optimistic Concurrency Control [*3*]:
+
+	final long original = dataAccess.getValue(i1);
+	if ( value ) {
+		final long newValue = original | (1l &lt;&lt; shift);
+		dataAccess.setValue(i1, newValue);
+		if ( newValue != dataAccess.getValue( i1 ) ) {
+			synchronized (dataAccess) {
+				dataAccess.setValue( i1, dataAccess.getValue(i1) | (1l &lt;&lt; shift) );
+			}
+		}
+	} else {
+		final long newValue = original &amp; ~(1l &lt;&lt; shift);
+		dataAccess.setValue(i1, newValue);
+		if ( newValue != dataAccess.getValue( i1 ) ) {
+			synchronized (dataAccess) {
+				dataAccess.setValue( i1, dataAccess.getValue(i1) &amp; ~(1l &lt;&lt; shift) );
+			}
+		}
+	}
+
+However, apart from being ugly, it is a little bit too complicated to be
+verified as correct easily even by myself.
+
+As ImgLib2 has yet to attract any concurrency expert, I would be *really*
+reluctant to destabilize ImgLib2 at this criticial time, and would rather
+leave this for a future improvement at a time when we have concurrency
+experts in our ranks.
+
+Correctness trumps speed.
+
+Ciao,
+Johannes
+
+Footnote *1*: The best public information so far is:
+<A HREF="http://imagej.net/pipermail/imagej-devel/2014-October/002280.html">http://imagej.net/pipermail/imagej-devel/2014-October/002280.html</A>
+
+Footnote *2*:
+<A HREF="https://en.wikipedia.org/wiki/Lock-free_and_wait-free_algorithms">https://en.wikipedia.org/wiki/Lock-free_and_wait-free_algorithms</A>
+
+Footnote *3*: <A HREF="https://en.wikipedia.org/wiki/Optimistic_concurrency_control">https://en.wikipedia.org/wiki/Optimistic_concurrency_control</A>
+
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002282.html">[ImageJ-devel] [fiji-devel] Re: What's left to do for ImgLib2
+</A></li>
+	<LI>Next message: <A HREF="002284.html">[ImageJ-devel] Lock-free bit fields,	was Re:  What's left to do for ImgLib2
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2283">[ date ]</a>
+              <a href="thread.html#2283">[ thread ]</a>
+              <a href="subject.html#2283">[ subject ]</a>
+              <a href="author.html#2283">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

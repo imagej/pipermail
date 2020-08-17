@@ -1,0 +1,101 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Simple plugin discovery logic
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Simple%20plugin%20discovery%20logic&In-Reply-To=%3CAANLkTim7j3VRZ9Qi8Dazx-97y_X2Q31wh8oDc1196CYh%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000251.html">
+   <LINK REL="Next"  HREF="000253.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Simple plugin discovery logic</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Simple%20plugin%20discovery%20logic&In-Reply-To=%3CAANLkTim7j3VRZ9Qi8Dazx-97y_X2Q31wh8oDc1196CYh%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Simple plugin discovery logic">ctrueden at wisc.edu
+       </A><BR>
+    <I>Mon Nov 22 17:52:11 CST 2010</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000251.html">[ImageJ-devel] NetBeans references and background
+</A></li>
+        <LI>Next message: <A HREF="000253.html">[ImageJ-devel] Simple plugin discovery logic
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#252">[ date ]</a>
+              <a href="thread.html#252">[ thread ]</a>
+              <a href="subject.html#252">[ subject ]</a>
+              <a href="author.html#252">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Grant et. al,
+
+Today Rick &amp; I added a simple plugin discovery mechanism to the ImageJ2
+codebase. This is a work in progress. The idea is to have an interface,
+PluginFinder, that provides a method, findPlugins(List&lt;PluginEntry&gt;
+plugins), for populating a list with discovered plugins. The IJ1
+compatibility layer can have an Ij1PluginFinder that discovers IJ1 plugins,
+and the ImageJ2 code can have an Ij2PluginFinder (or whatever) for
+discovering any additional plugins of various types.
+
+Here is what we have so far:
+
+In ij2-common:
+  + imagej.plugin.PluginEntry -- very simple data structure for a single
+plugin entry, including plugin class name, and associated menu entry
+  + imagej.plugin.PluginFinder -- interface for anything capable of
+discovering ImageJ plugins -- has one method: findPlugins(List&lt;PluginEntry&gt;
+plugins)
+
+In ij1-bridge:
+  + imagej.ij1bridge.plugin.Ij1PluginFinder -- implementation for
+discovering ImageJ 1.x plugins -- delegates to ij.Menus where possible
+
+In ijx:
+  + ijx.plugin.IjxPluginFinder -- currently a dummy implementation that just
+populates a single fake plugin entry -- eventually will discover ImageJ 2.x
+plugins
+
+Tester class (in ijx):
+  + ijx.plugin.PluginDiscovery -- obtains all implementations of
+PluginFinder interface (using NB Lookup), discovers all available plugins
+and prints out the list
+
+Again, this is a work in progress. The goal is have a very simple,
+encapsulated way of querying for plugins without any assumptions about GUIs,
+etc. The PluginEntry in particular will need to be fleshed out with more
+details&#8212;e.g., there is no way to express the arg string needed by many IJ1
+plugins/commands, no way to link an image icon for use with a toolbar, and
+no way to express order for menus or toolbars.
+
+More later; comments welcome any time.
+
+-Curtis
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20101122/8fad2745/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20101122/8fad2745/attachment.html</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000251.html">[ImageJ-devel] NetBeans references and background
+</A></li>
+	<LI>Next message: <A HREF="000253.html">[ImageJ-devel] Simple plugin discovery logic
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#252">[ date ]</a>
+              <a href="thread.html#252">[ thread ]</a>
+              <a href="subject.html#252">[ subject ]</a>
+              <a href="author.html#252">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

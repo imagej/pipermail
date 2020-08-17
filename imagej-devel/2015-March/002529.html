@@ -1,0 +1,252 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] Problems uploading jars to update site
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Problems%20uploading%20jars%20to%20update%20site&In-Reply-To=%3CCA%2BB%3DmGqsRdk5zf-2TbtpFcKMF3tAmDrER6yYGfZPPYM6T%3D1K3Q%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002527.html">
+   <LINK REL="Next"  HREF="002531.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] Problems uploading jars to update site</H1>
+    <B>Mark Hiner</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20Problems%20uploading%20jars%20to%20update%20site&In-Reply-To=%3CCA%2BB%3DmGqsRdk5zf-2TbtpFcKMF3tAmDrER6yYGfZPPYM6T%3D1K3Q%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] Problems uploading jars to update site">hiner at wisc.edu
+       </A><BR>
+    <I>Mon Mar 30 09:52:38 CDT 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002527.html">[ImageJ-devel] Problems uploading jars to update site
+</A></li>
+        <LI>Next message: <A HREF="002531.html">[ImageJ-devel] Problems uploading jars to update site
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2529">[ date ]</a>
+              <a href="thread.html#2529">[ thread ]</a>
+              <a href="subject.html#2529">[ subject ]</a>
+              <a href="author.html#2529">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Birgit,
+
+&gt;<i>however, here I had to specify an explicit version.
+</I>
+This is because we don't explicitly manage the version of the
+bioformats_package component, since it's an uber-jar as you mentioned. In
+cases that you do need to specify a manual version, it would be best to use
+the ${bio-formats.version} property[1] to avoid mis-matched Bio-Formats
+versions.
+
+&gt;<i>Is the package loci.formats.gui.* somewhere else available, or what is the
+</I>best strategy to resolve these dependencies?
+
+Yes, all the Bio-Formats code lives in individual components. I believe all
+of loci.formats.gui is in formats-bsd. Each component has its own Maven
+entry - you can see a list of them in pom-scijava[2], for example.
+
+When I'm trying to remember which component a particular Bio-formats class
+is in, I often go to the master branch on GitHub[3], press 't' to start
+filtering, and type the class name. All of the Bio-Formats code is
+organized in /component/[component-name] file structure.
+
+Fiji also ships a Find Jar for Class command[4], which is much more
+flexible than searching GitHub :)
+
+Hope that helps.
+
+Best,
+Mark
+
+[1]
+<A HREF="https://github.com/scijava/pom-scijava/blob/pom-scijava-6.1.0/pom.xml#L207">https://github.com/scijava/pom-scijava/blob/pom-scijava-6.1.0/pom.xml#L207</A>
+[2]
+<A HREF="https://github.com/scijava/pom-scijava/blob/pom-scijava-6.1.0/pom.xml#L443-503">https://github.com/scijava/pom-scijava/blob/pom-scijava-6.1.0/pom.xml#L443-503</A>
+[3] <A HREF="https://github.com/openmicroscopy/bioformats/tree/master">https://github.com/openmicroscopy/bioformats/tree/master</A>
+[4]
+<A HREF="http://fiji.sc/Tips_for_developers#find_the_.jar_file_containing_a_certain_class">http://fiji.sc/Tips_for_developers#find_the_.jar_file_containing_a_certain_class</A>
+
+On Sat, Mar 28, 2015 at 1:42 PM, Birgit Moeller &lt;
+<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">birgit.moeller at informatik.uni-halle.de</A>&gt; wrote:
+
+&gt;<i> Hi Curtis!
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Curtis Rueden wrote
+</I>&gt;<i> &gt; Hi Birgit,
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; So your main deps are:
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;&gt; loci:loci_tools:4.4.8
+</I>&gt;<i> &gt;&gt; net.imglib2:imglib2:2.2.0
+</I>&gt;<i> &gt;&gt; net.imglib2:imglib2-algorithms:2.0.0-beta-10
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; There are a couple of problems.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; 1) The imglib2-algorithms artifact is obsolete. Since the 2.0.0 final
+</I>&gt;<i> &gt; release of imglib2, the Algorithms library was renamed to
+</I>&gt;<i> &gt; imglib2-algorithm
+</I>&gt;<i> &gt; instead, for consistency.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; 2) Bio-Formats 4.4.x is no longer shipped with Fiji. It currently ships
+</I>&gt;<i> &gt; Bio-Formats 5.0.x, which will soon become 5.1.0 once the OME team
+</I>&gt;<i> &gt; finalizes
+</I>&gt;<i> &gt; that version. MiToBo will have compatibility problems with Fiji as long
+</I>&gt;<i> as
+</I>&gt;<i> &gt; it still depends on 4.4.8.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; I advise extending pom-imagej (or alternately, import it in your
+</I>&gt;<i> &gt; dependencyManagement section [1]) to inherit its Bill of Materials [2],
+</I>&gt;<i> to
+</I>&gt;<i> &gt; get consistency of versioning. Otherwise, you are just taking a stab in
+</I>&gt;<i> &gt; the
+</I>&gt;<i> &gt; dark at getting all the version numbers right. The BOM exists as a
+</I>&gt;<i> promise
+</I>&gt;<i> &gt; to downstream projects that all the versions declared therein will work
+</I>&gt;<i> &gt; together. In general, if you have not already read over the ImageJ
+</I>&gt;<i> &gt; Architecture page [3], I would suggest doing so.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; As of this writing, if you extend or import the newest pom-imagej 6.0.0,
+</I>&gt;<i> &gt; you can then add the following dependencies:
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt;&gt; ome:formats-api (for loci.formats.*)
+</I>&gt;<i> &gt;&gt; ome:formats-common (for loci.common.*)
+</I>&gt;<i> &gt;&gt; ome:ome-xml (for ome.xml.*)
+</I>&gt;<i> &gt;&gt; ome:formats-bsd (runtime; for open file formats)
+</I>&gt;<i> &gt;&gt; ome:formats-gpl (runtime; for proprietary file formats)
+</I>&gt;<i> &gt;&gt; net.imglib2:imglib2
+</I>&gt;<i> &gt;&gt; net.imglib2:imglib2-algorithm
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; I did not bother to specify the version numbers above -- the whole point
+</I>&gt;<i> &gt; is
+</I>&gt;<i> &gt; that you would leave off the &quot;
+</I>&gt;<i> &gt; &lt;version&gt;
+</I>&gt;<i> &gt; ...
+</I>&gt;<i> &gt; &lt;/version&gt;
+</I>&gt;<i> &gt; &quot; lines in your POM,
+</I>&gt;<i> &gt; since they are managed by pom-imagej instead.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Happy to help if you need further information or assistance with this!
+</I>&gt;<i>
+</I>&gt;<i> I changed our POM file as follows. In the dependency management section I
+</I>&gt;<i> added
+</I>&gt;<i>
+</I>&gt;<i>   &lt;dependencyManagement&gt;
+</I>&gt;<i>     &lt;dependencies&gt;
+</I>&gt;<i>       &lt;dependency&gt;
+</I>&gt;<i>         &lt;groupId&gt;net.imagej&lt;/groupId&gt;
+</I>&gt;<i>         &lt;artifactId&gt;pom-imagej&lt;/artifactId&gt;
+</I>&gt;<i>         &lt;version&gt;6.0.0&lt;/version&gt;
+</I>&gt;<i>         &lt;type&gt;pom&lt;/type&gt;
+</I>&gt;<i>         &lt;scope&gt;import&lt;/scope&gt;
+</I>&gt;<i>       &lt;/dependency&gt;
+</I>&gt;<i>     &lt;/dependencies&gt;
+</I>&gt;<i>   &lt;/dependencyManagement&gt;
+</I>&gt;<i>
+</I>&gt;<i> and in the dependencies themselves I added all the artifacts you suggested.
+</I>&gt;<i> I did not add any version information and in general it seems to work.
+</I>&gt;<i> There
+</I>&gt;<i> was only one problem. We also use functionality from the loci.formats.gui.*
+</I>&gt;<i> package which is not covered by the dependencies you listed above. I found
+</I>&gt;<i> the packages that we need in
+</I>&gt;<i>
+</I>&gt;<i> &lt;dependency&gt;
+</I>&gt;<i>    &lt;groupId&gt;ome&lt;/groupId&gt;
+</I>&gt;<i>    &lt;artifactId&gt;bioformats_package&lt;/artifactId&gt;
+</I>&gt;<i>    &lt;version&gt;5.0.4&lt;/version&gt;
+</I>&gt;<i> &lt;/dependency&gt;
+</I>&gt;<i>
+</I>&gt;<i> however, here I had to specify an explicit version. And if I understood you
+</I>&gt;<i> right, this is again an uber-jar probably not the best choice to depend on.
+</I>&gt;<i> Is the package loci.formats.gui.* somewhere else available, or what is the
+</I>&gt;<i> best strategy to resolve these dependencies?
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Curtis Rueden wrote
+</I>&gt;<i> &gt;&gt; We currently don't have an SCM being publically accessible
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; If you are willing to change that, we would be delighted to add more
+</I>&gt;<i> &gt; MiToBo
+</I>&gt;<i> &gt; links in the relevant places of our SciJava propaganda. In particular:
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; * <A HREF="http://scijava.org/">http://scijava.org/</A>
+</I>&gt;<i> &gt; * <A HREF="http://imagej.net/Philosophy">http://imagej.net/Philosophy</A>
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; And on the Architecture page too, adding (e.g.) a MiToBo GitHub
+</I>&gt;<i> &gt; organization, pom-mitobo, etc., to the various tables.
+</I>&gt;<i>
+</I>&gt;<i> Sounds great, we will discuss that option soon.
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Curtis Rueden wrote
+</I>&gt;<i> &gt; Currently we do include the MiToBo and Alida logos in our talks when we
+</I>&gt;<i> &gt; mention SciJava module interoperability, but it would be nice to link to
+</I>&gt;<i> &gt; more of your project resources.
+</I>&gt;<i>
+</I>&gt;<i> Great, thanks! :-)
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Curtis Rueden wrote
+</I>&gt;<i> &gt; Regards,
+</I>&gt;<i> &gt; Curtis
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; [1]
+</I>&gt;<i> &gt;
+</I>&gt;<i> <A HREF="https://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html#Importing_Dependencies">https://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html#Importing_Dependencies</A>
+</I>&gt;<i> &gt; [2] <A HREF="http://imagej.net/BOM">http://imagej.net/BOM</A>
+</I>&gt;<i> &gt; [3] <A HREF="http://imagej.net/Architecture">http://imagej.net/Architecture</A>
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; [...]
+</I>&gt;<i>
+</I>&gt;<i> Kind regards,
+</I>&gt;<i>
+</I>&gt;<i>  Birgit
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> --
+</I>&gt;<i> View this message in context:
+</I>&gt;<i> <A HREF="http://imagej-devel.54429.x6.nabble.com/Re-Problems-uploading-jars-to-update-site-tp940p954.html">http://imagej-devel.54429.x6.nabble.com/Re-Problems-uploading-jars-to-update-site-tp940p954.html</A>
+</I>&gt;<i> Sent from the ImageJ-devel mailing list archive at Nabble.com.
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20150330/81e0be14/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20150330/81e0be14/attachment.html</A>&gt;
+</PRE>
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002527.html">[ImageJ-devel] Problems uploading jars to update site
+</A></li>
+	<LI>Next message: <A HREF="002531.html">[ImageJ-devel] Problems uploading jars to update site
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2529">[ date ]</a>
+              <a href="thread.html#2529">[ thread ]</a>
+              <a href="subject.html#2529">[ subject ]</a>
+              <a href="author.html#2529">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>

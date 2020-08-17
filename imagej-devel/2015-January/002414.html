@@ -1,0 +1,226 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [ImageJ-devel] SCIFIO and imageJ1
+   </TITLE>
+   <LINK REL="Index" HREF="index.html" >
+   <LINK REL="made" HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20SCIFIO%20and%20imageJ1&In-Reply-To=%3CCADN69ykPJFwSvWQiweygAnhmJCDWiJGZ4RBn9c_GOGX6Cfmrog%40mail.gmail.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="002411.html">
+   <LINK REL="Next"  HREF="002410.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[ImageJ-devel] SCIFIO and imageJ1</H1>
+    <B>Curtis Rueden</B> 
+    <A HREF="mailto:imagej-devel%40imagej.net?Subject=Re%3A%20%5BImageJ-devel%5D%20SCIFIO%20and%20imageJ1&In-Reply-To=%3CCADN69ykPJFwSvWQiweygAnhmJCDWiJGZ4RBn9c_GOGX6Cfmrog%40mail.gmail.com%3E"
+       TITLE="[ImageJ-devel] SCIFIO and imageJ1">ctrueden at wisc.edu
+       </A><BR>
+    <I>Thu Jan 15 15:57:55 CST 2015</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="002411.html">[ImageJ-devel] SCIFIO and imageJ1
+</A></li>
+        <LI>Next message: <A HREF="002410.html">[ImageJ-devel] Save OME Tiff with File &gt; Export &gt; Image
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2414">[ date ]</a>
+              <a href="thread.html#2414">[ thread ]</a>
+              <a href="subject.html#2414">[ subject ]</a>
+              <a href="author.html#2414">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Pietro,
+
+&gt;<i> java.lang.IllegalArgumentException: No compatible service:
+</I>&gt;<i> io.scif.SCIFIOService
+</I>
+You have been bitten by the annotation combining problem: many of the JAR
+files you are trying to combine have a file at
+META-INF/json/org.scijava.plugin.Plugin, which lists the plugins included
+in that JAR file. All of these files need to be appended to one another and
+stored within your uber-JAR, or else plugins will not be discoverable. The
+scheme you are using to build your uberjar is likely not merging these
+files as needed.
+
+We provide some code in scijava-common to facilitate combining this
+metadata in the correct way. If you are using Maven to build, you can use
+it via the following configuration in your pom.xml:
+
+
+<A HREF="https://github.com/imagej/imagej/blob/imagej-2.0.0-rc-22/pom.xml#L577-L594">https://github.com/imagej/imagej/blob/imagej-2.0.0-rc-22/pom.xml#L577-L594</A>
+
+See also:
+<A HREF="https://github.com/scijava/scijava-common/issues/37">https://github.com/scijava/scijava-common/issues/37</A>
+
+Regards,
+Curtis
+
+
+On Thu, Jan 15, 2015 at 7:02 AM, Pietro Incardona &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">incardon at mpi-cbg.de</A>&gt;
+wrote:
+
+&gt;<i>  Hi Curtis
+</I>&gt;<i>
+</I>&gt;<i> I already strongly suggest to use Fiji/ImageJ2, but I would like (if
+</I>&gt;<i> reasonably possible) to maintain an imageJ version
+</I>&gt;<i>
+</I>&gt;<i> I packed this in the jar file
+</I>&gt;<i>
+</I>&gt;<i> /imglib2-2.0.0-beta-26.jar
+</I>&gt;<i> /imglib2-2.0.0-SNAPSHOT.jar
+</I>&gt;<i> /imglib2-algorithms-2.0.0-beta-26.jar
+</I>&gt;<i> /imglib2-algorithms-gpl-2.0.0-beta-26.jar
+</I>&gt;<i> /imglib2-algorithms-legacy-2.0.0-beta-26.jar
+</I>&gt;<i> /imglib2-ij-2.0.0-beta-26.jar
+</I>&gt;<i> /imglib2-meta-2.0.0-beta-26.jar
+</I>&gt;<i> /imglib2-ops-2.0.0-beta-26.jar
+</I>&gt;<i> /imglib2-realtransform-2.0.0-beta-26.jar
+</I>&gt;<i> /imglib2-ui-2.0.0-SNAPSHOT.jar
+</I>&gt;<i> /scifio-0.16.5.jar
+</I>&gt;<i> /scifio-bf-compat-1.8.4.jar
+</I>&gt;<i> /scifio-cli-0.1.0.jar
+</I>&gt;<i> /scifio-jai-imageio-1.1.0.jar
+</I>&gt;<i> /scifio-lifesci-0.5.2.jar
+</I>&gt;<i> /scifio-ome-xml-0.9.2.jar
+</I>&gt;<i> /scifio-tools-0.14.0.jar
+</I>&gt;<i> /scijava-common-2.33.0.jar
+</I>&gt;<i> /scijava-plugins-commands-0.1.7.jar
+</I>&gt;<i> /scijava-plugins-platforms-0.1.2.jar
+</I>&gt;<i> /scijava-plugins-text-markdown-0.1.1.jar
+</I>&gt;<i> /scijava-plugins-text-plain-0.1.1.jar
+</I>&gt;<i> /scijava-ui-awt-0.1.2.jar
+</I>&gt;<i> /scijava-ui-swing-0.3.0.jar
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Apparently it crashes on the instruction
+</I>&gt;<i>
+</I>&gt;<i>         // create the ImgOpener
+</I>&gt;<i>         ImgOpener imgOpener = new ImgOpener();
+</I>&gt;<i>
+</I>&gt;<i> ImageJ 1.48v; Java 1.6.0_24 [64-bit]; Linux 3.16.3-200.fc20.x86_64; 10MB
+</I>&gt;<i> of 455MB (2%)
+</I>&gt;<i>
+</I>&gt;<i> java.lang.IllegalArgumentException: No compatible service:
+</I>&gt;<i> io.scif.SCIFIOService
+</I>&gt;<i>     at
+</I>&gt;<i> org.scijava.service.ServiceHelper.loadService(ServiceHelper.java:242)
+</I>&gt;<i>     at
+</I>&gt;<i> org.scijava.service.ServiceHelper.loadService(ServiceHelper.java:193)
+</I>&gt;<i>     at
+</I>&gt;<i> org.scijava.service.ServiceHelper.loadServices(ServiceHelper.java:169)
+</I>&gt;<i>     at org.scijava.Context.&lt;init&gt;(Context.java:234)
+</I>&gt;<i>     at org.scijava.Context.&lt;init&gt;(Context.java:195)
+</I>&gt;<i>     at org.scijava.Context.&lt;init&gt;(Context.java:138)
+</I>&gt;<i>     at org.scijava.Context.&lt;init&gt;(Context.java:126)
+</I>&gt;<i>     at
+</I>&gt;<i> io.scif.img.AbstractImgIOComponent.&lt;init&gt;(AbstractImgIOComponent.java:57)
+</I>&gt;<i>     at io.scif.img.ImgOpener.&lt;init&gt;(ImgOpener.java:94)
+</I>&gt;<i>     at mosaic.core.utils.MosaicTest.processResult(MosaicTest.java:178)
+</I>&gt;<i>     at mosaic.core.utils.MosaicTest.testPlugin(MosaicTest.java:335)
+</I>&gt;<i>     at mosaic.plugins.test.Jtest.naturalization(Jtest.java:32)
+</I>&gt;<i>     at mosaic.plugins.Jtest.setup(Jtest.java:39)
+</I>&gt;<i>     at
+</I>&gt;<i> ij.plugin.filter.PlugInFilterRunner.&lt;init&gt;(PlugInFilterRunner.java:47)
+</I>&gt;<i>     at ij.IJ.runUserPlugIn(IJ.java:201)
+</I>&gt;<i>     at ij.IJ.runPlugIn(IJ.java:163)
+</I>&gt;<i>     at ij.Executer.runCommand(Executer.java:131)
+</I>&gt;<i>     at ij.Executer.run(Executer.java:64)
+</I>&gt;<i>     at java.lang.Thread.run(Thread.java:662)
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> Cheers
+</I>&gt;<i> Pietro
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> On 01/14/2015 05:07 PM, Curtis Rueden wrote:
+</I>&gt;<i>
+</I>&gt;<i> Hi Pietro,
+</I>&gt;<i>
+</I>&gt;<i>  &gt; Is there any way to pack a jar with SCIFIO included that work also in
+</I>&gt;<i> &gt; imageJ1
+</I>&gt;<i>
+</I>&gt;<i>  Certainly. But it would help to be more specific about what you are
+</I>&gt;<i> trying to do.
+</I>&gt;<i>
+</I>&gt;<i>  By &quot;pack a jar with SCIFIO&quot; do you mean &quot;create an uber-JAR with
+</I>&gt;<i> dependencies embedded&quot;? Or something else?
+</I>&gt;<i>
+</I>&gt;<i>  By &quot;ImageJ1&quot; do you mean the vanilla ImageJ1 distribution from
+</I>&gt;<i> imagej.nih.gov? If so, you can do it, but I would recommend saving
+</I>&gt;<i> yourself a lot of work and just recommending people use ImageJ2, which
+</I>&gt;<i> comes with SCIFIO already bundled. But if you really want to go that route,
+</I>&gt;<i> look at the maven-shade-plugin or maven-assembly-plugin [1].
+</I>&gt;<i>
+</I>&gt;<i>  Regards,
+</I>&gt;<i> Curtis
+</I>&gt;<i>
+</I>&gt;<i>  [1] Here is a starting point for how we create an ImageJ2 uber-JAR with
+</I>&gt;<i> dependencies:
+</I>&gt;<i> <A HREF="https://github.com/imagej/imagej/blob/imagej-2.0.0-rc-22/pom.xml#L421-L648.">https://github.com/imagej/imagej/blob/imagej-2.0.0-rc-22/pom.xml#L421-L648.</A>
+</I>&gt;<i> Your use case would likely be simpler.
+</I>&gt;<i>
+</I>&gt;<i> On Wed, Jan 14, 2015 at 7:18 AM, Pietro Incardona &lt;<A HREF="http://imagej.net/mailman/listinfo/imagej-devel">incardon at mpi-cbg.de</A>&gt;
+</I>&gt;<i> wrote:
+</I>&gt;<i>
+</I>&gt;&gt;<i> Hi All
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Is there any way to pack a jar with SCIFIO included that work also in
+</I>&gt;&gt;<i> imageJ1
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> Cheers
+</I>&gt;&gt;<i> Pietro
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> _______________________________________________
+</I>&gt;&gt;<i> ImageJ-devel mailing list
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> ImageJ-devel mailing list
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">ImageJ-devel at imagej.net</A>
+</I>&gt;<i> <A HREF="http://imagej.net/mailman/listinfo/imagej-devel">http://imagej.net/mailman/listinfo/imagej-devel</A>
+</I>&gt;<i>
+</I>&gt;<i>
+</I>-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: &lt;<A HREF="http://imagej.net/pipermail/imagej-devel/attachments/20150115/75f443b3/attachment.html">http://imagej.net/pipermail/imagej-devel/attachments/20150115/75f443b3/attachment.html</A>&gt;
+</PRE>
+
+
+
+
+
+
+
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="002411.html">[ImageJ-devel] SCIFIO and imageJ1
+</A></li>
+	<LI>Next message: <A HREF="002410.html">[ImageJ-devel] Save OME Tiff with File &gt; Export &gt; Image
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2414">[ date ]</a>
+              <a href="thread.html#2414">[ thread ]</a>
+              <a href="subject.html#2414">[ subject ]</a>
+              <a href="author.html#2414">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="http://imagej.net/mailman/listinfo/imagej-devel">More information about the ImageJ-devel
+mailing list</a><br>
+</body></html>
